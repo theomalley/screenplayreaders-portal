@@ -5,6 +5,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAssignmentRequest;
+use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -73,13 +74,35 @@ class AssignmentController extends Controller
     public function edit(Assignment $assignment)
     {
         $this->authorize('update', $assignment);
-        // TODO: edit form
+
+        $readers = User::where('role', 'reader')
+            ->with('readerProfile')
+            ->orderBy('name')
+            ->get();
+
+        return view('assignments.edit', compact('assignment', 'readers'));
     }
 
-    public function update(Request $request, Assignment $assignment)
+    public function update(UpdateAssignmentRequest $request, Assignment $assignment)
     {
         $this->authorize('update', $assignment);
-        // TODO: validate + update; handle status transitions
+
+        $data = $request->validated();
+        $data['rush'] = $request->boolean('rush');
+
+        if ($data['status'] === Assignment::STATUS_UNASSIGNED
+            && $assignment->status !== Assignment::STATUS_UNASSIGNED) {
+            $data['unassigned_at'] = now();
+        }
+
+        if ($data['status'] === Assignment::STATUS_COMPLETED
+            && $assignment->status !== Assignment::STATUS_COMPLETED) {
+            $data['completed_at'] = now();
+        }
+
+        $assignment->update($data);
+
+        return redirect()->route('assignments.index')->with('success', 'Assignment updated.');
     }
 
     public function accept(Assignment $assignment)
