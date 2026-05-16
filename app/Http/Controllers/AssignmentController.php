@@ -1,52 +1,123 @@
 <?php
 
-// v1.0 — 2026-05-16 | Stub — Assignments Module CRUD + status transitions.
-// Full implementation follows after Breeze auth is in place.
+// v1.1 — 2026-05-16 | index, create, store implemented. accept/cancel/edit stubs remain.
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAssignmentRequest;
 use App\Models\Assignment;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AssignmentController extends Controller
 {
     public function index()
     {
-        // TODO: Phase 1 — split view for readers (available + mine), full list for admin/editor
+        $this->authorize('viewAny', Assignment::class);
+
+        $user = auth()->user();
+
+        if ($user->canManageAssignments()) {
+            $assignments = Assignment::with(['assignedReader.readerProfile', 'requestedReader.readerProfile'])
+                ->orderByRaw("FIELD(status, 'unassigned', 'assigned', 'qc', 'completed', 'incoming', 'on_hold', 'cancelled')")
+                ->orderByRaw('rush DESC')
+                ->orderBy('unassigned_at', 'asc')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return view('assignments.index', compact('assignments'));
+        }
+
+        // Reader: available pool (rush first, oldest first) + their own active assignments
+        $available = Assignment::available()
+            ->with(['requestedReader.readerProfile'])
+            ->orderByRaw('rush DESC')
+            ->orderBy('unassigned_at', 'asc')
+            ->get();
+
+        $mine = Assignment::forReader($user->id)
+            ->with(['requestedReader.readerProfile'])
+            ->orderBy('accepted_at', 'desc')
+            ->get();
+
+        return view('assignments.index', compact('available', 'mine'));
     }
 
     public function create()
     {
-        // TODO: admin/editor only — gate via AssignmentPolicy::create
+        $this->authorize('create', Assignment::class);
+
+        $readers = User::where('role', 'reader')
+            ->with('readerProfile')
+            ->orderBy('name')
+            ->get();
+
+        return view('assignments.create', compact('readers'));
     }
 
-    public function store(Request $request)
+    public function store(StoreAssignmentRequest $request)
     {
-        // TODO: validate via Form Request, upload script to Drive via GoogleDriveService job
-    }
+        $data = $request->validated();
+        $data['rush'] = $request->boolean('rush');
 
-    public function show(Assignment $assignment)
-    {
-        // TODO: gate via AssignmentPolicy::view
+        if (($data['status'] ?? '') === Assignment::STATUS_UNASSIGNED) {
+            $data['unassigned_at'] = now();
+        }
+
+        Assignment::create($data);
+
+        return redirect()->route('assignments.index')->with('success', 'Assignment created.');
     }
 
     public function edit(Assignment $assignment)
     {
-        // TODO: gate via AssignmentPolicy::update
+        $this->authorize('update', $assignment);
+        // TODO: edit form
     }
 
     public function update(Request $request, Assignment $assignment)
     {
-        // TODO: validate + update; handle status transitions with side effects
+        $this->authorize('update', $assignment);
+        // TODO: validate + update; handle status transitions
     }
 
     public function accept(Assignment $assignment)
     {
-        // TODO: DB transaction with SELECT FOR UPDATE; check reader capacity; gate via AssignmentPolicy::accept
+        $this->authorize('accept', $assignment);
+
+        $user = auth()->user();
+
+        DB::transaction(function () use ($assignment, $user) {
+            $fresh = Assignment::lockForUpdate()->findOrFail($assignment->id);
+
+            abort_if($fresh->status !== Assignment::STATUS_UNASSIGNED, 409, 'Assignment no longer available.');
+
+            $profile = $user->readerProfile;
+            if ($profile && $profile->isAtCapacity()) {
+                abort(409, 'You are at your maximum concurrent assignments.');
+            }
+
+            $fresh->update([
+                'status'             => Assignment::STATUS_ASSIGNED,
+                'assigned_reader_id' => $user->id,
+                'accepted_at'        => now(),
+            ]);
+        });
+
+        return back()->with('success', 'Assignment accepted.');
     }
 
     public function cancel(Assignment $assignment)
     {
-        // TODO: revert to unassigned; gate via AssignmentPolicy::cancel
+        $this->authorize('cancel', $assignment);
+
+        $assignment->update([
+            'status'             => Assignment::STATUS_UNASSIGNED,
+            'assigned_reader_id' => null,
+            'accepted_at'        => null,
+        ]);
+
+        return back()->with('success', 'Assignment returned to the pool.');
     }
 }
