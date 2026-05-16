@@ -150,11 +150,28 @@
                                             @endif
                                         </td>
 
-                                        {{-- Status badge --}}
+                                        {{-- Status (inline quick-change) --}}
                                         <td class="px-3 py-3 whitespace-nowrap">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">
-                                                {{ $statusLabel }}
-                                            </span>
+                                            <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <select name="status" onchange="this.form.submit()"
+                                                    class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
+                                                    @foreach ([
+                                                        'incoming'   => 'Incoming',
+                                                        'unassigned' => 'Unassigned',
+                                                        'assigned'   => 'Assigned',
+                                                        'completed'  => 'Completed',
+                                                        'qc'         => 'QC',
+                                                        'on_hold'    => 'On Hold',
+                                                        'cancelled'  => 'Cancelled',
+                                                    ] as $value => $label)
+                                                        <option value="{{ $value }}" {{ $assignment->status === $value ? 'selected' : '' }}>
+                                                            {{ $label }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </form>
                                         </td>
 
                                         {{-- Assigned reader --}}

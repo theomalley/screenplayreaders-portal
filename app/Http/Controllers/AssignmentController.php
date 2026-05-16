@@ -105,6 +105,31 @@ class AssignmentController extends Controller
         return redirect()->route('assignments.index')->with('success', 'Assignment updated.');
     }
 
+    public function updateStatus(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        $request->validate([
+            'status' => ['required', 'in:incoming,unassigned,assigned,completed,qc,cancelled,on_hold'],
+        ]);
+
+        $data = ['status' => $request->status];
+
+        if ($request->status === Assignment::STATUS_UNASSIGNED
+            && $assignment->status !== Assignment::STATUS_UNASSIGNED) {
+            $data['unassigned_at'] = now();
+        }
+
+        if ($request->status === Assignment::STATUS_COMPLETED
+            && $assignment->status !== Assignment::STATUS_COMPLETED) {
+            $data['completed_at'] = now();
+        }
+
+        $assignment->update($data);
+
+        return back()->with('success', 'Status updated.');
+    }
+
     public function accept(Assignment $assignment)
     {
         $this->authorize('accept', $assignment);
