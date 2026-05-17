@@ -121,7 +121,7 @@
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Script / Author</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Script / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pg</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
@@ -190,10 +190,10 @@
                                             {{ $assignment->order_number }}
                                         </td>
 
-                                        {{-- Script / Author --}}
+                                        {{-- Script / Writer --}}
                                         <td class="px-3 py-3">
                                             <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
-                                            <div class="text-xs text-gray-500">{{ $assignment->authorDisplay() }}</div>
+                                            <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                         </td>
 
                                         {{-- Page count --}}
@@ -307,7 +307,7 @@
                                                     @endif
                                                 </div>
                                                 <div class="text-sm text-gray-500 mt-0.5">
-                                                    {{ $assignment->authorDisplay() }} &middot; {{ $assignment->page_count }} pages &middot; ${{ number_format($assignment->pay_rate, 2) }}
+                                                    {{ $assignment->writer_name }} &middot; {{ $assignment->page_count }} pages &middot; ${{ number_format($assignment->pay_rate, 2) }}
                                                 </div>
                                                 @if ($assignment->notes)
                                                     <div class="text-xs text-gray-400 mt-1 truncate max-w-sm" title="{{ $assignment->notes }}">{{ $assignment->notes }}</div>
@@ -355,14 +355,14 @@
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                                 </div>
                                                 <div class="text-sm text-gray-500 mt-0.5">
-                                                    {{ $assignment->authorDisplay() }} &middot; {{ $assignment->page_count }} pages
+                                                    {{ $assignment->writer_name }} &middot; {{ $assignment->page_count }} pages
                                                 </div>
                                             </div>
                                             <div class="shrink-0 flex items-center gap-2">
                                                 @can('submitCoverage', $assignment)
                                                     <a href="{{ route('coverage.show', $assignment) }}"
                                                        class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-indigo-500 transition">
-                                                        Fill Coverage
+                                                        Write Coverage
                                                     </a>
                                                 @endcan
                                                 @can('cancel', $assignment)

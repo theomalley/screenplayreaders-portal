@@ -25,100 +25,101 @@
                         <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
                     </div>
 
-                    {{-- Vendor + Assignment Type --}}
-                    <div x-data="{ vendor: '{{ old('vendor', 'sr') }}' }" class="grid grid-cols-2 gap-3 items-start">
-                        <div>
-                            <x-input-label value="Vendor" />
-                            <div class="mt-2 flex gap-4">
-                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="vendor" value="sr" x-model="vendor"
-                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-                                    SR
-                                </label>
-                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="vendor" value="wd" x-model="vendor"
-                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-                                    WD
-                                </label>
+                    {{-- Vendor + Assignment Type + Rate auto-fill --}}
+                    <div x-data="assignmentForm('{{ old('vendor', 'sr') }}', '{{ old('assignment_type', '') }}')"
+                         class="space-y-5">
+
+                        <div class="grid grid-cols-2 gap-3 items-start">
+                            <div>
+                                <x-input-label value="Vendor" />
+                                <div class="mt-2 flex gap-4">
+                                    <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
+                                        <input type="radio" name="vendor" value="sr" x-model="vendor"
+                                            @change="onVendorChange()"
+                                            class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                                        SR
+                                    </label>
+                                    <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
+                                        <input type="radio" name="vendor" value="wd" x-model="vendor"
+                                            @change="onVendorChange()"
+                                            class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                                        WD
+                                    </label>
+                                </div>
+                                <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
                             </div>
-                            <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
+                            <div>
+                                <x-input-label for="assignment_type" value="Assignment Type" />
+                                <select id="assignment_type" name="assignment_type"
+                                    x-model="assignmentType"
+                                    @change="onTypeChange()"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    <option value="">— Set later —</option>
+                                    <template x-if="vendor === 'sr'">
+                                        <optgroup label="SR">
+                                            <option value="script_coverage">Script Coverage</option>
+                                            <option value="notes_only">Notes-Only Coverage</option>
+                                            <option value="short">Short Coverage</option>
+                                            <option value="deep_dive">Deep-Dive Development Notes</option>
+                                            <option value="budget">Budget Script Coverage</option>
+                                            <option value="book">Book Coverage</option>
+                                        </optgroup>
+                                    </template>
+                                    <template x-if="vendor === 'wd'">
+                                        <optgroup label="WD">
+                                            <option value="coverage">Coverage</option>
+                                            <option value="development_notes">Development Notes</option>
+                                        </optgroup>
+                                    </template>
+                                </select>
+                                <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
+                            </div>
                         </div>
-                        <div>
-                            <x-input-label for="assignment_type" value="Assignment Type (optional)" />
-                            <select id="assignment_type" name="assignment_type"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="">— Set later —</option>
-                                <template x-if="vendor === 'sr'">
-                                    <optgroup label="SR">
-                                        @foreach (['script_coverage' => 'Script Coverage', 'notes_only' => 'Notes Only', 'short' => 'Short Coverage', 'deep_dive' => 'Deep-Dive Dev Notes', 'budget' => 'Budget Coverage', 'book' => 'Book Coverage'] as $val => $label)
-                                            <option value="{{ $val }}" {{ old('assignment_type') === $val ? 'selected' : '' }}>{{ $label }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                </template>
-                                <template x-if="vendor === 'wd'">
-                                    <optgroup label="WD">
-                                        @foreach (['coverage' => 'Coverage', 'development_notes' => 'Development Notes'] as $val => $label)
-                                            <option value="{{ $val }}" {{ old('assignment_type') === $val ? 'selected' : '' }}>{{ $label }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                </template>
-                            </select>
-                            <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
-                        </div>
-                    </div>
 
-                    {{-- Script title --}}
-                    <div>
-                        <x-input-label for="script_title" value="Script Title" />
-                        <x-text-input id="script_title" name="script_title" type="text"
-                            class="mt-1 block w-full"
-                            value="{{ old('script_title') }}"
-                            required />
-                        <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
-                    </div>
+                        {{-- Script title + Writer --}}
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <x-input-label for="script_title" value="Script Title" />
+                                <x-text-input id="script_title" name="script_title" type="text"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('script_title') }}"
+                                    required />
+                                <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="writer_name" value="Writer" />
+                                <x-text-input id="writer_name" name="writer_name" type="text"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('writer_name') }}"
+                                    required />
+                                <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
+                            </div>
+                        </div>
 
-                    {{-- Author --}}
-                    <div class="grid grid-cols-3 gap-3">
-                        <div>
-                            <x-input-label for="author_first_initial" value="Author Initial" />
-                            <x-text-input id="author_first_initial" name="author_first_initial" type="text"
-                                class="mt-1 block w-full uppercase"
-                                value="{{ old('author_first_initial') }}"
-                                maxlength="1"
-                                placeholder="J"
-                                required />
-                            <x-input-error :messages="$errors->get('author_first_initial')" class="mt-1" />
+                        {{-- Page count + Pay rate --}}
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <x-input-label for="page_count" value="Page Count" />
+                                <x-text-input id="page_count" name="page_count" type="number"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('page_count') }}"
+                                    min="1" max="9999"
+                                    required />
+                                <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="pay_rate" value="Pay Rate ($)" />
+                                <x-text-input id="pay_rate" name="pay_rate" type="number"
+                                    x-ref="payRate"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('pay_rate') }}"
+                                    min="0" step="0.01"
+                                    required />
+                                <p x-show="rateSuggested" class="mt-1 text-xs text-indigo-500" x-text="rateNote"></p>
+                                <x-input-error :messages="$errors->get('pay_rate')" class="mt-1" />
+                            </div>
                         </div>
-                        <div class="col-span-2">
-                            <x-input-label for="author_last_name" value="Author Last Name" />
-                            <x-text-input id="author_last_name" name="author_last_name" type="text"
-                                class="mt-1 block w-full"
-                                value="{{ old('author_last_name') }}"
-                                required />
-                            <x-input-error :messages="$errors->get('author_last_name')" class="mt-1" />
-                        </div>
-                    </div>
 
-                    {{-- Page count + Pay rate --}}
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <x-input-label for="page_count" value="Page Count" />
-                            <x-text-input id="page_count" name="page_count" type="number"
-                                class="mt-1 block w-full"
-                                value="{{ old('page_count') }}"
-                                min="1" max="9999"
-                                required />
-                            <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
-                        </div>
-                        <div>
-                            <x-input-label for="pay_rate" value="Pay Rate ($)" />
-                            <x-text-input id="pay_rate" name="pay_rate" type="number"
-                                class="mt-1 block w-full"
-                                value="{{ old('pay_rate') }}"
-                                min="0" step="0.01"
-                                required />
-                            <x-input-error :messages="$errors->get('pay_rate')" class="mt-1" />
-                        </div>
                     </div>
 
                     {{-- Requested reader --}}
@@ -178,4 +179,41 @@
             </div>
         </div>
     </div>
+    <script>
+    // SR reader pay rates sourced from woo_order-financials.php COGS values
+    function assignmentForm(initialVendor, initialType) {
+        return {
+            vendor: initialVendor,
+            assignmentType: initialType,
+            rateSuggested: false,
+            rateNote: '',
+
+            srRates: {
+                script_coverage: 70.00,
+                notes_only:      70.00,
+                short:           55.00,
+                deep_dive:      215.00,
+                budget:           0.00,
+                book:             0.00,
+            },
+
+            onVendorChange() {
+                this.assignmentType = '';
+                this.rateSuggested = false;
+            },
+
+            onTypeChange() {
+                if (this.vendor !== 'sr' || !this.assignmentType) {
+                    this.rateSuggested = false;
+                    return;
+                }
+                const rate = this.srRates[this.assignmentType];
+                if (rate === undefined) return;
+                this.$refs.payRate.value = rate.toFixed(2);
+                this.rateSuggested = true;
+                this.rateNote = 'Auto-suggested from SR financials — edit if needed.';
+            },
+        };
+    }
+    </script>
 </x-app-layout>

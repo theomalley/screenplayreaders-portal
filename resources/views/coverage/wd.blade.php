@@ -102,21 +102,7 @@
                         </div>
                     </div>
 
-                    {{-- Reader Request --}}
-                    <div>
-                        <x-input-label value="Reader Request?" />
-                        <div class="mt-2 flex gap-5">
-                            @foreach ([0 => 'No', 1 => 'Yes'] as $val => $label)
-                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="wd_request" value="{{ $val }}"
-                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                        {{ old('wd_request', $existing?->wd_request) == $val ? 'checked' : '' }} />
-                                    {{ $label }}
-                                </label>
-                            @endforeach
-                        </div>
-                        <x-input-error :messages="$errors->get('wd_request')" class="mt-1" />
-                    </div>
+                    <input type="hidden" name="wd_request" value="{{ $assignment->requested_reader_id ? 1 : 0 }}" />
                 </div>
 
                 {{-- ── Section 2: Content ───────────────────────────────────────────────── --}}

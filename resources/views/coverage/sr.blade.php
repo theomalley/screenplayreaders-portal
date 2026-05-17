@@ -20,22 +20,21 @@
             @php
                 $typeLabels = [
                     'script_coverage' => 'Script Coverage',
-                    'notes_only'      => 'Notes Only',
+                    'notes_only'      => 'Notes-Only Coverage',
                     'short'           => 'Short Coverage',
-                    'deep_dive'       => 'Deep-Dive Dev Notes',
-                    'budget'          => 'Budget Coverage',
+                    'deep_dive'       => 'Deep-Dive Development Notes',
+                    'budget'          => 'Budget Script Coverage',
                     'book'            => 'Book Coverage',
                 ];
                 $typeDisplay = $typeLabels[$assignment->assignment_type] ?? ucfirst(str_replace('_', ' ', $assignment->assignment_type ?? '—'));
-                $writerDisplay = $existing?->writer_name ?? $assignment->authorDisplay();
+                $writerDisplay = $existing?->writer_name ?? $assignment->writer_name;
             @endphp
             <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div><span class="text-indigo-500 font-medium block">Script</span>{{ $assignment->script_title }}</div>
-                <div><span class="text-indigo-500 font-medium block">Author</span>{{ $assignment->authorDisplay() }}</div>
+                <div><span class="text-indigo-500 font-medium block">Writer</span>{{ $writerDisplay }}</div>
                 <div><span class="text-indigo-500 font-medium block">Pages</span>{{ $assignment->page_count }}</div>
                 <div><span class="text-indigo-500 font-medium block">Rate</span>${{ number_format($assignment->pay_rate, 2) }}</div>
                 <div><span class="text-indigo-500 font-medium block">Type</span>{{ $typeDisplay }}</div>
-                <div><span class="text-indigo-500 font-medium block">Writer</span>{{ $writerDisplay }}</div>
                 <div><span class="text-indigo-500 font-medium block">Request?</span>{{ $assignment->requested_reader_id ? 'Yes' : 'No' }}</div>
                 <div><span class="text-indigo-500 font-medium block">Reader</span>{{ auth()->user()->readerProfile?->initials ?? '—' }}</div>
             </div>

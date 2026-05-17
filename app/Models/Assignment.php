@@ -1,6 +1,6 @@
 <?php
 
-// v1.1 — 2026-05-17 | Add vendor + assignment_type to fillable and casts
+// v1.2 — 2026-05-17 | Replace author_first_initial/author_last_name with writer_name
 
 namespace App\Models;
 
@@ -24,8 +24,7 @@ class Assignment extends Model
         'vendor',
         'assignment_type',
         'script_title',
-        'author_first_initial',
-        'author_last_name',
+        'writer_name',
         'page_count',
         'requested_reader_id',
         'rush',
@@ -66,12 +65,6 @@ class Assignment extends Model
     public function isAvailable(): bool
     {
         return $this->status === self::STATUS_UNASSIGNED;
-    }
-
-    /** Formatted author for display: "J. Smith" */
-    public function authorDisplay(): string
-    {
-        return $this->author_first_initial . '. ' . $this->author_last_name;
     }
 
     // --- Relationships ---
