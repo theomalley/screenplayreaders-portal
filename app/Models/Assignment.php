@@ -1,6 +1,6 @@
 <?php
 
-// v1.0 — 2026-05-16 | Initial scaffold: full Phase 1 schema, status helpers, relationships
+// v1.1 — 2026-05-17 | Add vendor + assignment_type to fillable and casts
 
 namespace App\Models;
 
@@ -21,6 +21,8 @@ class Assignment extends Model
 
     protected $fillable = [
         'order_number',
+        'vendor',
+        'assignment_type',
         'script_title',
         'author_first_initial',
         'author_last_name',
