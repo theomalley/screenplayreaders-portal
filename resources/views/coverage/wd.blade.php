@@ -19,7 +19,7 @@
             {{-- Read-only assignment info --}}
             <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div><span class="text-indigo-500 font-medium block">Script</span>{{ $assignment->script_title }}</div>
-                <div><span class="text-indigo-500 font-medium block">Author</span>{{ $assignment->authorDisplay() }}</div>
+                <div><span class="text-indigo-500 font-medium block">Writer</span>{{ $assignment->writer_name }}</div>
                 <div><span class="text-indigo-500 font-medium block">Pages</span>{{ $assignment->page_count }}</div>
                 <div><span class="text-indigo-500 font-medium block">Reader</span>{{ auth()->user()->readerProfile?->initials ?? '—' }}</div>
             </div>
