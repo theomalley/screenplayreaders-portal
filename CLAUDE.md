@@ -523,11 +523,13 @@ Customer email delivery. Integration approach TBD (see Coverage Delivery above).
 ### Forge deploy script (set in Forge → Site → Deployment)
 
 Laravel app lives at the site root (`/home/forge/portal.screenplayreaders.com/`).
-Nginx serves from `public/` in the site root directly — no symlink/releases system.
+Nginx config has `root /home/forge/portal.screenplayreaders.com/current/public` — `current` is a
+symlink that must point to the site root. The deploy script re-affirms this on every deploy.
 forge user has no passwordless sudo, so OPcache is reset via a temporary HTTP-hit PHP file.
 
 ```bash
 cd /home/forge/portal.screenplayreaders.com
+ln -sfn /home/forge/portal.screenplayreaders.com /home/forge/portal.screenplayreaders.com/current
 git pull origin $FORGE_SITE_BRANCH
 $FORGE_COMPOSER install --no-interaction --prefer-dist --optimize-autoloader
 npm install --no-package-lock
@@ -590,4 +592,4 @@ Then pull locally so the IDE stays in sync.
 
 ---
 
-*Last updated: 2026-05-17 — coverage form field spec complete (SR + WD); vendor/assignment_type added to assignments table; coverage_submissions table fully specced; deploy script corrected (OPcache via HTTP, no symlinks).*
+*Last updated: 2026-05-17 — coverage form field spec complete (SR + WD); vendor/assignment_type added to assignments table; coverage_submissions table fully specced; deploy script corrected (OPcache via HTTP); Nginx uses current/ symlink pointing to site root — deploy script re-affirms this.*
