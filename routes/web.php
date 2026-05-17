@@ -4,6 +4,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReaderProfileController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/readers/{user}/edit', [ReaderProfileController::class, 'edit'])->name('readers.edit');
     Route::patch('/readers/{user}', [ReaderProfileController::class, 'update'])->name('readers.update');
+
+    Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo');
 });
 
 require __DIR__.'/auth.php';
