@@ -94,7 +94,7 @@
                                                             <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span>
                                                         @endif
                                                         <span class="font-medium">{{ $ra->script_title }}</span>
-                                                        <span class="text-gray-400">{{ $ra->authorDisplay() }}</span>
+                                                        <span class="text-gray-400">{{ $ra->writer_name }}</span>
                                                         <span class="text-gray-400">&middot; {{ $ra->page_count }}pp</span>
                                                     </li>
                                                 @endforeach
