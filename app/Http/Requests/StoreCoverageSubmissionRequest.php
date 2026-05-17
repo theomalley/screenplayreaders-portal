@@ -32,8 +32,6 @@ class StoreCoverageSubmissionRequest extends FormRequest
         $type = $this->input('sr_assignment_type');
 
         $noPageCount      = $type === 'book';
-        $noReaders        = in_array($type, ['deep_dive', 'short', 'book', 'budget'], true);
-        $noProofreading   = in_array($type, ['book', 'short'], true);
         $showLogline      = in_array($type, ['script_coverage', 'short', 'deep_dive', 'book'], true);
         $showSynopsis     = in_array($type, ['script_coverage', 'book'], true);
         $pageCount        = (int) $this->input('page_count', 0);
@@ -48,9 +46,9 @@ class StoreCoverageSubmissionRequest extends FormRequest
             'estimated_budget'       => ['required', 'string', 'max:100'],
 
             'page_count'             => $noPageCount ? ['nullable', 'integer'] : ['required', 'integer', 'min:1', 'max:9999'],
-            'sr_number_of_readers'   => $noReaders   ? ['nullable', 'string']  : ['required', 'in:1 Reader,2 Readers,3 Readers,other'],
+            'sr_number_of_readers'   => ['nullable', 'string'],
             'sr_reader_request'      => ['nullable', 'boolean'],
-            'sr_proofreading'        => $noProofreading  ? ['nullable', 'boolean'] : ['required', 'boolean'],
+            'sr_proofreading'        => ['nullable', 'boolean'],
             'sr_custom_oversized_fee'=> $showOversized ? ['nullable', 'numeric', 'min:0'] : ['nullable', 'numeric'],
 
             'sr_logline'             => $showLogline  ? ['required', 'string'] : ['nullable', 'string'],

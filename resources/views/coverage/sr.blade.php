@@ -17,11 +17,25 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             {{-- Read-only assignment info --}}
-            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+            @php
+                $typeLabels = [
+                    'script_coverage' => 'Script Coverage',
+                    'notes_only'      => 'Notes Only',
+                    'short'           => 'Short Coverage',
+                    'deep_dive'       => 'Deep-Dive Dev Notes',
+                    'budget'          => 'Budget Coverage',
+                    'book'            => 'Book Coverage',
+                ];
+                $typeDisplay = $typeLabels[$assignment->assignment_type] ?? ucfirst(str_replace('_', ' ', $assignment->assignment_type ?? '—'));
+                $writerDisplay = $existing?->writer_name ?? $assignment->authorDisplay();
+            @endphp
+            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div><span class="text-indigo-500 font-medium block">Script</span>{{ $assignment->script_title }}</div>
                 <div><span class="text-indigo-500 font-medium block">Author</span>{{ $assignment->authorDisplay() }}</div>
                 <div><span class="text-indigo-500 font-medium block">Pages</span>{{ $assignment->page_count }}</div>
                 <div><span class="text-indigo-500 font-medium block">Rate</span>${{ number_format($assignment->pay_rate, 2) }}</div>
+                <div><span class="text-indigo-500 font-medium block">Type</span>{{ $typeDisplay }}</div>
+                <div><span class="text-indigo-500 font-medium block">Writer</span>{{ $writerDisplay }}</div>
                 <div><span class="text-indigo-500 font-medium block">Request?</span>{{ $assignment->requested_reader_id ? 'Yes' : 'No' }}</div>
                 <div><span class="text-indigo-500 font-medium block">Reader</span>{{ auth()->user()->readerProfile?->initials ?? '—' }}</div>
             </div>
@@ -40,56 +54,14 @@
             <form method="POST" action="{{ route('coverage.store', $assignment) }}"
                   x-data="srCoverage()" x-cloak>
                 @csrf
+                <input type="hidden" name="sr_assignment_type" value="{{ $existing?->sr_assignment_type ?? $assignment->assignment_type }}" />
+                <input type="hidden" name="writer_name" value="{{ $writerDisplay }}" />
+                <input type="hidden" name="page_count" value="{{ $assignment->page_count }}" />
                 <input type="hidden" name="sr_reader_request" value="{{ $assignment->requested_reader_id ? 1 : 0 }}" />
 
                 {{-- ── Section 1: Assignment Metadata ──────────────────────────────────── --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-5">
                     <h3 class="font-semibold text-gray-700 text-base border-b border-gray-100 pb-2">Assignment Details</h3>
-
-                    {{-- Assignment Type --}}
-                    <div>
-                        <x-input-label value="Assignment Type" />
-                        <div class="mt-2 flex flex-wrap gap-x-5 gap-y-2">
-                            @foreach ([
-                                'script_coverage' => 'Script Coverage',
-                                'notes_only'      => 'Notes Only',
-                                'short'           => 'Short Coverage',
-                                'deep_dive'       => 'Deep-Dive Dev Notes',
-                                'budget'          => 'Budget Coverage',
-                                'book'            => 'Book Coverage',
-                            ] as $val => $label)
-                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="sr_assignment_type" value="{{ $val }}"
-                                        x-model="type"
-                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                        {{ old('sr_assignment_type', $existing?->sr_assignment_type ?? $assignment->assignment_type) === $val ? 'checked' : '' }} />
-                                    {{ $label }}
-                                </label>
-                            @endforeach
-                        </div>
-                        <x-input-error :messages="$errors->get('sr_assignment_type')" class="mt-1" />
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        {{-- Writer's Name --}}
-                        <div class="col-span-2 sm:col-span-1">
-                            <x-input-label for="writer_name" value="Writer's Name" />
-                            <x-text-input id="writer_name" name="writer_name" type="text" class="mt-1 block w-full"
-                                value="{{ old('writer_name', $existing?->writer_name ?? $assignment->authorDisplay()) }}" required />
-                            <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
-                        </div>
-
-                        {{-- Page Count (hidden for book) --}}
-                        <div x-show="type !== 'book'">
-                            <x-input-label for="page_count" value="Page Count" />
-                            <x-text-input id="page_count" name="page_count" type="number"
-                                class="mt-1 block w-full"
-                                x-model.number="pageCount"
-                                value="{{ old('page_count', $existing?->assignment?->page_count ?? $assignment->page_count) }}"
-                                min="1" max="9999" />
-                            <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
-                        </div>
-                    </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -116,37 +88,6 @@
                                 value="{{ old('estimated_budget', $existing?->estimated_budget) }}"
                                 placeholder="low / medium / high" required />
                             <x-input-error :messages="$errors->get('estimated_budget')" class="mt-1" />
-                        </div>
-                    </div>
-
-                    {{-- Number of Readers (hidden for deep_dive, short, book, budget) --}}
-                    <div x-show="!['deep_dive','short','book','budget'].includes(type)">
-                        <x-input-label value="Number of Readers" />
-                        <div class="mt-2 flex flex-wrap gap-x-5 gap-y-2">
-                            @foreach (['1 Reader', '2 Readers', '3 Readers', 'other'] as $opt)
-                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="sr_number_of_readers" value="{{ $opt }}"
-                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                        {{ old('sr_number_of_readers', $existing?->sr_number_of_readers) === $opt ? 'checked' : '' }} />
-                                    {{ $opt }}
-                                </label>
-                            @endforeach
-                        </div>
-                        <x-input-error :messages="$errors->get('sr_number_of_readers')" class="mt-1" />
-                    </div>
-
-                    {{-- Proofreading (hidden for book, short) --}}
-                    <div x-show="!['book','short'].includes(type)">
-                        <x-input-label value="Proofreading?" />
-                        <div class="mt-2 flex gap-4">
-                            @foreach ([0 => 'No', 1 => 'Yes'] as $val => $label)
-                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="sr_proofreading" value="{{ $val }}"
-                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                        {{ old('sr_proofreading', $existing?->sr_proofreading) == $val ? 'checked' : '' }} />
-                                    {{ $label }}
-                                </label>
-                            @endforeach
                         </div>
                     </div>
 
