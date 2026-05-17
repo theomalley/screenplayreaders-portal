@@ -25,6 +25,48 @@
                         <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
                     </div>
 
+                    {{-- Vendor + Assignment Type --}}
+                    <div x-data="{ vendor: '{{ old('vendor', 'sr') }}' }" class="grid grid-cols-2 gap-3 items-start">
+                        <div>
+                            <x-input-label value="Vendor" />
+                            <div class="mt-2 flex gap-4">
+                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input type="radio" name="vendor" value="sr" x-model="vendor"
+                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                                    SR
+                                </label>
+                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input type="radio" name="vendor" value="wd" x-model="vendor"
+                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                                    WD
+                                </label>
+                            </div>
+                            <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="assignment_type" value="Assignment Type (optional)" />
+                            <select id="assignment_type" name="assignment_type"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">— Set later —</option>
+                                <template x-if="vendor === 'sr'">
+                                    <optgroup label="SR">
+                                        @foreach (['script_coverage' => 'Script Coverage', 'notes_only' => 'Notes Only', 'short' => 'Short Coverage', 'deep_dive' => 'Deep-Dive Dev Notes', 'budget' => 'Budget Coverage', 'book' => 'Book Coverage'] as $val => $label)
+                                            <option value="{{ $val }}" {{ old('assignment_type') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                </template>
+                                <template x-if="vendor === 'wd'">
+                                    <optgroup label="WD">
+                                        @foreach (['coverage' => 'Coverage', 'development_notes' => 'Development Notes'] as $val => $label)
+                                            <option value="{{ $val }}" {{ old('assignment_type') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                </template>
+                            </select>
+                            <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
+                        </div>
+                    </div>
+
                     {{-- Script title --}}
                     <div>
                         <x-input-label for="script_title" value="Script Title" />

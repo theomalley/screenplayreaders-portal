@@ -16,6 +16,8 @@ class StoreAssignmentRequest extends FormRequest
     {
         return [
             'order_number'         => ['required', 'string', 'max:50'],
+            'vendor'               => ['required', 'in:sr,wd'],
+            'assignment_type'      => ['nullable', 'string'],
             'script_title'         => ['required', 'string', 'max:255'],
             'author_first_initial' => ['required', 'string', 'size:1'],
             'author_last_name'     => ['required', 'string', 'max:100'],
