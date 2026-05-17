@@ -33,13 +33,11 @@ class StoreCoverageSubmissionRequest extends FormRequest
 
         $noPageCount      = $type === 'book';
         $noReaders        = in_array($type, ['deep_dive', 'short', 'book', 'budget'], true);
-        $noReaderRequest  = $type === 'deep_dive';
         $noProofreading   = in_array($type, ['book', 'short'], true);
-        $bookOnly         = $type === 'book';
         $showLogline      = in_array($type, ['script_coverage', 'short', 'deep_dive', 'book'], true);
         $showSynopsis     = in_array($type, ['script_coverage', 'book'], true);
         $pageCount        = (int) $this->input('page_count', 0);
-        $showOversized    = $pageCount > 160 && !$bookOnly;
+        $showOversized    = $pageCount > 160 && !$noPageCount;
 
         return [
             'sr_assignment_type'     => ['required', 'in:script_coverage,notes_only,short,deep_dive,budget,book'],
@@ -48,13 +46,11 @@ class StoreCoverageSubmissionRequest extends FormRequest
             'time_period'            => ['required', 'string', 'max:255'],
             'locations'              => ['required', 'string', 'max:255'],
             'estimated_budget'       => ['required', 'string', 'max:100'],
-            'sr_net15'               => ['required', 'boolean'],
 
             'page_count'             => $noPageCount ? ['nullable', 'integer'] : ['required', 'integer', 'min:1', 'max:9999'],
             'sr_number_of_readers'   => $noReaders   ? ['nullable', 'string']  : ['required', 'in:1 Reader,2 Readers,3 Readers,other'],
-            'sr_reader_request'      => $noReaderRequest ? ['nullable', 'boolean'] : ['required', 'boolean'],
+            'sr_reader_request'      => ['nullable', 'boolean'],
             'sr_proofreading'        => $noProofreading  ? ['nullable', 'boolean'] : ['required', 'boolean'],
-            'sr_book_pay_rate'       => $bookOnly    ? ['required', 'numeric', 'min:0'] : ['nullable', 'numeric'],
             'sr_custom_oversized_fee'=> $showOversized ? ['nullable', 'numeric', 'min:0'] : ['nullable', 'numeric'],
 
             'sr_logline'             => $showLogline  ? ['required', 'string'] : ['nullable', 'string'],

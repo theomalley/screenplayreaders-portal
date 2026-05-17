@@ -17,10 +17,12 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             {{-- Read-only assignment info --}}
-            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
                 <div><span class="text-indigo-500 font-medium block">Script</span>{{ $assignment->script_title }}</div>
                 <div><span class="text-indigo-500 font-medium block">Author</span>{{ $assignment->authorDisplay() }}</div>
                 <div><span class="text-indigo-500 font-medium block">Pages</span>{{ $assignment->page_count }}</div>
+                <div><span class="text-indigo-500 font-medium block">Rate</span>${{ number_format($assignment->pay_rate, 2) }}</div>
+                <div><span class="text-indigo-500 font-medium block">Request?</span>{{ $assignment->requested_reader_id ? 'Yes' : 'No' }}</div>
                 <div><span class="text-indigo-500 font-medium block">Reader</span>{{ auth()->user()->readerProfile?->initials ?? '—' }}</div>
             </div>
 
@@ -38,6 +40,7 @@
             <form method="POST" action="{{ route('coverage.store', $assignment) }}"
                   x-data="srCoverage()" x-cloak>
                 @csrf
+                <input type="hidden" name="sr_reader_request" value="{{ $assignment->requested_reader_id ? 1 : 0 }}" />
 
                 {{-- ── Section 1: Assignment Metadata ──────────────────────────────────── --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-5">
@@ -132,50 +135,18 @@
                         <x-input-error :messages="$errors->get('sr_number_of_readers')" class="mt-1" />
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {{-- Reader Request (hidden for deep_dive) --}}
-                        <div x-show="type !== 'deep_dive'">
-                            <x-input-label value="Reader Request?" />
-                            <div class="mt-2 flex gap-4">
-                                @foreach ([0 => 'No', 1 => 'Yes'] as $val => $label)
-                                    <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                        <input type="radio" name="sr_reader_request" value="{{ $val }}"
-                                            class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                            {{ old('sr_reader_request', $existing?->sr_reader_request) == $val ? 'checked' : '' }} />
-                                        {{ $label }}
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        {{-- Proofreading (hidden for book, short) --}}
-                        <div x-show="!['book','short'].includes(type)">
-                            <x-input-label value="Proofreading?" />
-                            <div class="mt-2 flex gap-4">
-                                @foreach ([0 => 'No', 1 => 'Yes'] as $val => $label)
-                                    <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                        <input type="radio" name="sr_proofreading" value="{{ $val }}"
-                                            class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                            {{ old('sr_proofreading', $existing?->sr_proofreading) == $val ? 'checked' : '' }} />
-                                        {{ $label }}
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        {{-- NET15 --}}
-                        <div>
-                            <x-input-label value="NET15?" />
-                            <div class="mt-2 flex gap-4">
-                                @foreach ([0 => 'No', 1 => 'Yes'] as $val => $label)
-                                    <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                        <input type="radio" name="sr_net15" value="{{ $val }}"
-                                            class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                            {{ old('sr_net15', $existing?->sr_net15) == $val ? 'checked' : '' }} />
-                                        {{ $label }}
-                                    </label>
-                                @endforeach
-                            </div>
+                    {{-- Proofreading (hidden for book, short) --}}
+                    <div x-show="!['book','short'].includes(type)">
+                        <x-input-label value="Proofreading?" />
+                        <div class="mt-2 flex gap-4">
+                            @foreach ([0 => 'No', 1 => 'Yes'] as $val => $label)
+                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input type="radio" name="sr_proofreading" value="{{ $val }}"
+                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                        {{ old('sr_proofreading', $existing?->sr_proofreading) == $val ? 'checked' : '' }} />
+                                    {{ $label }}
+                                </label>
+                            @endforeach
                         </div>
                     </div>
 
@@ -188,14 +159,6 @@
                         <x-input-error :messages="$errors->get('sr_custom_oversized_fee')" class="mt-1" />
                     </div>
 
-                    {{-- Book Pay Rate (book only) --}}
-                    <div x-show="type === 'book'">
-                        <x-input-label for="sr_book_pay_rate" value="Book Pay Rate ($)" />
-                        <x-text-input id="sr_book_pay_rate" name="sr_book_pay_rate" type="number"
-                            class="mt-1 block w-48" min="0" step="0.01"
-                            value="{{ old('sr_book_pay_rate', $existing?->sr_book_pay_rate) }}" />
-                        <x-input-error :messages="$errors->get('sr_book_pay_rate')" class="mt-1" />
-                    </div>
                 </div>
 
                 {{-- ── Section 2: Content ───────────────────────────────────────────────── --}}
