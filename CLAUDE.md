@@ -535,6 +535,7 @@ $FORGE_COMPOSER install --no-interaction --prefer-dist --optimize-autoloader
 npm install --no-package-lock
 npm run build
 $FORGE_PHP artisan migrate --force
+$FORGE_PHP artisan storage:link
 $FORGE_PHP artisan view:clear
 $FORGE_PHP artisan config:clear
 $FORGE_PHP artisan route:clear
@@ -592,4 +593,4 @@ Then pull locally so the IDE stays in sync.
 
 ---
 
-*Last updated: 2026-05-17 — coverage form field spec complete (SR + WD); vendor/assignment_type added to assignments table; coverage_submissions table fully specced; deploy script corrected (OPcache via HTTP); Nginx uses current/ symlink pointing to site root — deploy script re-affirms this.*
+*Last updated: 2026-05-17 — coverage form field spec complete (SR + WD); vendor/assignment_type added to assignments table; coverage_submissions table fully specced; deploy script corrected (OPcache via HTTP); Nginx uses current/ symlink pointing to site root — deploy script re-affirms this. storage:link added to deploy script (required for logo uploads).*

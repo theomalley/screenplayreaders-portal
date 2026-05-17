@@ -31,6 +31,7 @@
 
             {{-- ===== ADMIN / EDITOR VIEW ===== --}}
             @if ($canManage)
+            <script>setInterval(() => location.reload(), 30000);</script>
 
                 {{-- Reader list panel --}}
                 @if ($readers->isNotEmpty())

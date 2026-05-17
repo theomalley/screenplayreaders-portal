@@ -137,6 +137,23 @@
                         <x-input-error :messages="$errors->get('requested_reader_id')" class="mt-1" />
                     </div>
 
+                    {{-- Custom oversized fee: shown when pages > 160 and not book --}}
+                    <div x-show="pageCount > 160 && !(vendor === 'sr' && assignmentType === 'book')" x-cloak>
+                        <x-input-label value="Custom Oversized Fee ($)" />
+                        <x-text-input type="number" x-ref="customOversized" @input="computeRate()"
+                            min="0" step="0.01" class="mt-1 block w-full"
+                            placeholder="Fee for scripts over 160 pages" />
+                        <x-input-error :messages="$errors->get('custom_oversized_fee')" class="mt-1" />
+                    </div>
+
+                    {{-- Book pay rate: shown only for SR book coverage --}}
+                    <div x-show="vendor === 'sr' && assignmentType === 'book'" x-cloak>
+                        <x-input-label value="Book Pay Rate ($)" />
+                        <x-text-input type="number" x-ref="bookPayRate" @input="computeRate()"
+                            min="0" step="0.01" class="mt-1 block w-full"
+                            placeholder="Custom rate for book coverage" />
+                    </div>
+
                     {{-- Rush + Status --}}
                     <div class="grid grid-cols-2 gap-3 items-start">
                         <div>
@@ -182,7 +199,7 @@
     </div>
 
     <script>
-    // SR reader pay rates sourced from woo_order-financials.php COGS values
+    // Rates from woo_order-financials.php COGS / step-03-reader-assignment-processing.js
     function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount) {
         return {
             vendor:            initialVendor,
@@ -192,40 +209,55 @@
             pageCount:         initialPageCount || 0,
             rateNote:          '',
 
-            // Base COGS per assignment type (1-reader rate from woo_order-financials.php)
-            srRates: {
-                script_coverage: 70.00,
-                notes_only:      70.00,
-                short:           55.00,
-                deep_dive:      215.00,
-                budget:           0.00,
-                book:             0.00,
-            },
-
             onVendorChange() {
                 this.assignmentType = '';
                 this.rateNote = '';
             },
 
             computeRate() {
-                if (this.vendor !== 'sr' || !this.assignmentType) {
+                const pages = parseInt(this.pageCount) || 0;
+                let base = 0, rush = 0, request = 0, oversized = 0;
+
+                if (this.vendor === 'sr' && this.assignmentType) {
+                    const srBases = {
+                        script_coverage: 70.00,
+                        notes_only:      55.00,
+                        short:           55.00,
+                        deep_dive:      215.00,
+                        budget:          55.00,
+                        book:             0.00,
+                    };
+                    if (this.assignmentType === 'book') {
+                        base     = parseFloat(this.$refs.bookPayRate?.value) || 0;
+                        oversized = 0;
+                    } else {
+                        base = srBases[this.assignmentType] ?? 0;
+                        if (pages >= 121 && pages <= 160)      oversized = 15.00;
+                        else if (pages > 160)                  oversized = parseFloat(this.$refs.customOversized?.value) || 0;
+                    }
+                    rush    = this.isRush ? 50.00 : 0;
+                    request = this.requestedReaderId ? 40.00 : 0;
+
+                } else if (this.vendor === 'wd' && this.assignmentType) {
+                    const wdBases = { coverage: 60.00, development_notes: 120.00 };
+                    base = wdBases[this.assignmentType] ?? 0;
+                    if (pages >= 121 && pages <= 160)          oversized = 15.00;
+                    else if (pages > 160)                      oversized = parseFloat(this.$refs.customOversized?.value) || 0;
+                    request = this.requestedReaderId ? 15.00 : 0;
+                } else {
                     this.rateNote = '';
                     return;
                 }
-                const base     = this.srRates[this.assignmentType] ?? 0;
-                const rush     = this.isRush ? 50.00 : 0;
-                const request  = this.requestedReaderId ? 40.00 : 0;
-                const oversized = (this.pageCount > 160 && this.assignmentType !== 'book') ? 15.00 : 0;
-                const total    = base + rush + request + oversized;
 
+                const total = base + rush + request + oversized;
                 this.$refs.payRate.value = total.toFixed(2);
 
                 const parts = [];
-                if (base > 0)      parts.push(`$${base} base`);
-                if (rush > 0)      parts.push(`$${rush} rush`);
-                if (request > 0)   parts.push(`$${request} request`);
-                if (oversized > 0) parts.push(`$${oversized} oversized`);
-                this.rateNote = (parts.length ? parts.join(' + ') : '$0') + ' — edit if needed';
+                if (base > 0)      parts.push(`$${base.toFixed(2)} base`);
+                if (rush > 0)      parts.push(`$${rush.toFixed(2)} rush`);
+                if (request > 0)   parts.push(`$${request.toFixed(2)} request`);
+                if (oversized > 0) parts.push(`$${oversized.toFixed(2)} oversized`);
+                this.rateNote = parts.length ? parts.join(' + ') + ' — edit if needed' : '';
             },
         };
     }
