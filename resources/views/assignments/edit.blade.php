@@ -14,7 +14,7 @@
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <form method="POST" action="{{ route('assignments.update', $assignment) }}" class="p-6 space-y-5"
-                      x-data="assignmentForm('{{ old('vendor', $assignment->vendor) }}', '{{ old('assignment_type', $assignment->assignment_type) }}', {{ old('rush', $assignment->rush) ? 'true' : 'false' }}, '{{ old('requested_reader_id', $assignment->requested_reader_id ?? '') }}', {{ (int) old('page_count', $assignment->page_count) }}, '{{ old('assigned_reader_id', $assignment->assigned_reader_id ?? '') }}', '{{ old('status', $assignment->status) }}')">
+                      x-data="assignmentForm('{{ old('vendor', $assignment->vendor) }}', '{{ old('assignment_type', $assignment->assignment_type) }}', {{ old('rush', $assignment->rush) ? 'true' : 'false' }}, '{{ old('requested_reader_id', $assignment->requested_reader_id ?? '') }}', {{ (int) old('page_count', $assignment->page_count) }}, '{{ old('assigned_reader_id', $assignment->assigned_reader_id ?? '') }}', '{{ old('status', $assignment->status) }}', @json($rates))">
                     @csrf
                     @method('PATCH')
 
@@ -225,7 +225,7 @@
 
     <script>
     // Rates from woo_order-financials.php COGS / step-03-reader-assignment-processing.js
-    function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus) {
+    function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus, rates) {
         return {
             vendor:            initialVendor,
             assignmentType:    initialType,
@@ -234,6 +234,7 @@
             pageCount:         initialPageCount || 0,
             assignedReaderId:  String(initialAssignedReaderId),
             statusValue:       initialStatus,
+            rates:             rates,
             rateNote:          '',
 
             onVendorChange() {
@@ -252,34 +253,38 @@
 
             computeRate() {
                 const pages = parseInt(this.pageCount) || 0;
+                const r = this.rates;
                 let base = 0, rush = 0, request = 0, oversized = 0;
 
                 if (this.vendor === 'sr' && this.assignmentType) {
                     const srBases = {
-                        script_coverage: 70.00,
-                        notes_only:      55.00,
-                        short:           55.00,
-                        deep_dive:      215.00,
-                        budget:          55.00,
-                        book:             0.00,
+                        script_coverage: r['rate_sr_script_coverage'],
+                        notes_only:      r['rate_sr_notes_only'],
+                        short:           r['rate_sr_short'],
+                        deep_dive:       r['rate_sr_deep_dive'],
+                        budget:          r['rate_sr_budget'],
+                        book:            0,
                     };
                     if (this.assignmentType === 'book') {
-                        base     = parseFloat(this.$refs.bookPayRate?.value) || 0;
+                        base      = parseFloat(this.$refs.bookPayRate?.value) || 0;
                         oversized = 0;
                     } else {
                         base = srBases[this.assignmentType] ?? 0;
-                        if (pages >= 121 && pages <= 160)      oversized = 15.00;
-                        else if (pages > 160)                  oversized = parseFloat(this.$refs.customOversized?.value) || 0;
+                        if (pages >= 121 && pages <= 160)  oversized = r['rate_sr_oversized_121_160'];
+                        else if (pages > 160)              oversized = parseFloat(this.$refs.customOversized?.value) || 0;
                     }
-                    rush    = this.isRush ? 50.00 : 0;
-                    request = this.requestedReaderId ? 40.00 : 0;
+                    rush    = this.isRush ? r['rate_sr_rush'] : 0;
+                    request = this.requestedReaderId ? r['rate_sr_request'] : 0;
 
                 } else if (this.vendor === 'wd' && this.assignmentType) {
-                    const wdBases = { coverage: 60.00, development_notes: 120.00 };
+                    const wdBases = {
+                        coverage:          r['rate_wd_coverage'],
+                        development_notes: r['rate_wd_development_notes'],
+                    };
                     base = wdBases[this.assignmentType] ?? 0;
-                    if (pages >= 121 && pages <= 160)          oversized = 15.00;
-                    else if (pages > 160)                      oversized = parseFloat(this.$refs.customOversized?.value) || 0;
-                    request = this.requestedReaderId ? 15.00 : 0;
+                    if (pages >= 121 && pages <= 160)      oversized = r['rate_wd_oversized_121_160'];
+                    else if (pages > 160)                  oversized = parseFloat(this.$refs.customOversized?.value) || 0;
+                    request = this.requestedReaderId ? r['rate_wd_request'] : 0;
                 } else {
                     this.rateNote = '';
                     return;

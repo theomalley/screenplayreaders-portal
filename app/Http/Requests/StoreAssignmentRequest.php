@@ -22,10 +22,11 @@ class StoreAssignmentRequest extends FormRequest
             'writer_name'     => ['required', 'string', 'max:255'],
             'page_count'      => ['required', 'integer', 'min:1', 'max:9999'],
             'requested_reader_id'  => ['nullable', 'exists:users,id'],
+            'assigned_reader_id'   => ['nullable', 'exists:users,id'],
             'rush'                 => ['boolean'],
             'pay_rate'             => ['required', 'numeric', 'min:0', 'max:9999.99'],
             'notes'                => ['nullable', 'string', 'max:2000'],
-            'status'               => ['required', 'in:' . Assignment::STATUS_INCOMING . ',' . Assignment::STATUS_UNASSIGNED],
+            'status'               => ['required', 'in:' . Assignment::STATUS_INCOMING . ',' . Assignment::STATUS_UNASSIGNED . ',' . Assignment::STATUS_ASSIGNED],
         ];
     }
 }

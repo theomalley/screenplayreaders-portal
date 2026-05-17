@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAssignmentRequest;
 use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +68,9 @@ class AssignmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('assignments.create', compact('readers'));
+        $rates = Setting::ratesForForms();
+
+        return view('assignments.create', compact('readers', 'rates'));
     }
 
     public function store(StoreAssignmentRequest $request)
@@ -75,7 +78,10 @@ class AssignmentController extends Controller
         $data = $request->validated();
         $data['rush'] = $request->boolean('rush');
 
-        if (($data['status'] ?? '') === Assignment::STATUS_UNASSIGNED) {
+        if (!empty($data['assigned_reader_id'])) {
+            $data['status']      = Assignment::STATUS_ASSIGNED;
+            $data['accepted_at'] = now();
+        } elseif (($data['status'] ?? '') === Assignment::STATUS_UNASSIGNED) {
             $data['unassigned_at'] = now();
         }
 
@@ -93,7 +99,9 @@ class AssignmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('assignments.edit', compact('assignment', 'readers'));
+        $rates = Setting::ratesForForms();
+
+        return view('assignments.edit', compact('assignment', 'readers', 'rates'));
     }
 
     public function update(UpdateAssignmentRequest $request, Assignment $assignment)

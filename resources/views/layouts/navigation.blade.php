@@ -42,6 +42,11 @@
                     <x-nav-link :href="route('assignments.index')" :active="request()->routeIs('assignments.*')">
                         {{ __('Assignments') }}
                     </x-nav-link>
+                    @if(auth()->user()?->canManageAssignments())
+                        <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
+                            {{ __('Ratebook') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -90,6 +95,11 @@
             <x-responsive-nav-link :href="route('assignments.index')" :active="request()->routeIs('assignments.*')">
                 {{ __('Assignments') }}
             </x-responsive-nav-link>
+            @if(auth()->user()?->canManageAssignments())
+                <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
+                    {{ __('Ratebook') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">
