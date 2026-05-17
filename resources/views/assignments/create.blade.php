@@ -12,7 +12,7 @@
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5"
-                      x-data="assignmentForm('{{ old('vendor', 'sr') }}', '{{ old('assignment_type', '') }}', {{ old('rush') ? 'true' : 'false' }}, '{{ old('requested_reader_id', '') }}', {{ (int) old('page_count', 0) }}, '{{ old('assigned_reader_id', '') }}', '{{ old('status', 'incoming') }}', @json($rates))">
+                      x-data="assignmentForm('{{ old('vendor', 'sr') }}', '{{ old('assignment_type', '') }}', {{ old('rush') ? 'true' : 'false' }}, '{{ old('requested_reader_id', '') }}', {{ (int) old('page_count', 0) }}, '{{ old('assigned_reader_id', '') }}', '{{ old('status', 'incoming') }}')">
                     @csrf
 
                     {{-- Order number --}}

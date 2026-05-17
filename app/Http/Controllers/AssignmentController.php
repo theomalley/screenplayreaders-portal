@@ -116,6 +116,11 @@ class AssignmentController extends Controller
             $data['unassigned_at'] = now();
         }
 
+        if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
+            $data['assigned_reader_id'] = null;
+            $data['accepted_at']        = null;
+        }
+
         if ($data['status'] === Assignment::STATUS_COMPLETED
             && $assignment->status !== Assignment::STATUS_COMPLETED) {
             $data['completed_at'] = now();
@@ -139,6 +144,11 @@ class AssignmentController extends Controller
         if ($request->status === Assignment::STATUS_UNASSIGNED
             && $assignment->status !== Assignment::STATUS_UNASSIGNED) {
             $data['unassigned_at'] = now();
+        }
+
+        if ($request->status === Assignment::STATUS_UNASSIGNED) {
+            $data['assigned_reader_id'] = null;
+            $data['accepted_at']        = null;
         }
 
         if ($request->status === Assignment::STATUS_COMPLETED
