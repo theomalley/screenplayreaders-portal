@@ -14,7 +14,7 @@
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <form method="POST" action="{{ route('assignments.update', $assignment) }}" class="p-6 space-y-5"
-                      x-data="assignmentForm('{{ old('vendor', $assignment->vendor) }}', '{{ old('assignment_type', $assignment->assignment_type) }}', {{ old('rush', $assignment->rush) ? 'true' : 'false' }}, '{{ old('requested_reader_id', $assignment->requested_reader_id ?? '') }}', {{ (int) old('page_count', $assignment->page_count) }}, '{{ old('assigned_reader_id', $assignment->assigned_reader_id ?? '') }}', '{{ old('status', $assignment->status) }}', @json($rates))">
+                      x-data="assignmentForm('{{ old('vendor', $assignment->vendor) }}', '{{ old('assignment_type', $assignment->assignment_type) }}', {{ old('rush', $assignment->rush) ? 'true' : 'false' }}, '{{ old('requested_reader_id', $assignment->requested_reader_id ?? '') }}', {{ (int) old('page_count', $assignment->page_count) }}, '{{ old('assigned_reader_id', $assignment->assigned_reader_id ?? '') }}', '{{ old('status', $assignment->status) }}', {{ (float) old('pay_rate', $assignment->pay_rate) }}, @json($rates))">
                     @csrf
                     @method('PATCH')
 
@@ -108,9 +108,8 @@
                         <div>
                             <x-input-label for="pay_rate" value="Pay Rate ($)" />
                             <x-text-input id="pay_rate" name="pay_rate" type="number"
-                                x-ref="payRate"
+                                x-model="payRate"
                                 class="mt-1 block w-full"
-                                value="{{ old('pay_rate', $assignment->pay_rate) }}"
                                 min="0" step="0.01"
                                 required />
                             <p x-show="rateNote" class="mt-1 text-xs text-indigo-500" x-text="rateNote"></p>
@@ -221,7 +220,7 @@
 
     <script>
     // Rates from woo_order-financials.php COGS / step-03-reader-assignment-processing.js
-    function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus, rates) {
+    function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus, initialPayRate, rates) {
         return {
             vendor:            initialVendor,
             assignmentType:    initialType,
@@ -230,6 +229,7 @@
             pageCount:         initialPageCount || 0,
             assignedReaderId:  String(initialAssignedReaderId),
             statusValue:       initialStatus,
+            payRate:           initialPayRate || '',
             rates:             rates,
             rateNote:          '',
 
@@ -287,7 +287,7 @@
                 }
 
                 const total = base + rush + request + oversized;
-                this.$refs.payRate.value = total.toFixed(2);
+                this.payRate = total.toFixed(2);
 
                 const parts = [];
                 if (base > 0)      parts.push(`$${base.toFixed(2)} base`);
