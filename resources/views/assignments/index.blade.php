@@ -85,6 +85,8 @@
                                             @if ($rProfile?->paypal_email)
                                                 <span class="text-xs text-gray-400">PayPal: {{ $rProfile->paypal_email }}</span>
                                             @endif
+                                            <a href="{{ route('readers.edit', $reader) }}"
+                                               class="text-xs text-indigo-500 hover:text-indigo-700 underline ml-auto">Edit Profile</a>
                                         </div>
                                         @if ($reader->assignments->isNotEmpty())
                                             <ul class="mt-2 space-y-1">

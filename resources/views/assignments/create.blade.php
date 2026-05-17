@@ -11,7 +11,8 @@
     <div class="py-6">
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5">
+                <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5"
+                      x-data="assignmentForm('{{ old('vendor', 'sr') }}', '{{ old('assignment_type', '') }}', {{ old('rush') ? 'true' : 'false' }}, '{{ old('requested_reader_id', '') }}', {{ (int) old('page_count', 0) }})">
                     @csrf
 
                     {{-- Order number --}}
@@ -25,107 +26,106 @@
                         <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
                     </div>
 
-                    {{-- Vendor + Assignment Type + Rate auto-fill --}}
-                    <div x-data="assignmentForm('{{ old('vendor', 'sr') }}', '{{ old('assignment_type', '') }}')"
-                         class="space-y-5">
-
-                        <div class="grid grid-cols-2 gap-3 items-start">
-                            <div>
-                                <x-input-label value="Vendor" />
-                                <div class="mt-2 flex gap-4">
-                                    <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                        <input type="radio" name="vendor" value="sr" x-model="vendor"
-                                            @change="onVendorChange()"
-                                            class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-                                        SR
-                                    </label>
-                                    <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                        <input type="radio" name="vendor" value="wd" x-model="vendor"
-                                            @change="onVendorChange()"
-                                            class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-                                        WD
-                                    </label>
-                                </div>
-                                <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
+                    {{-- Vendor + Assignment Type --}}
+                    <div class="grid grid-cols-2 gap-3 items-start">
+                        <div>
+                            <x-input-label value="Vendor" />
+                            <div class="mt-2 flex gap-4">
+                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input type="radio" name="vendor" value="sr" x-model="vendor"
+                                        @change="onVendorChange()"
+                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                                    SR
+                                </label>
+                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
+                                    <input type="radio" name="vendor" value="wd" x-model="vendor"
+                                        @change="onVendorChange()"
+                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
+                                    WD
+                                </label>
                             </div>
-                            <div>
-                                <x-input-label for="assignment_type" value="Assignment Type" />
-                                <select id="assignment_type" name="assignment_type"
-                                    x-model="assignmentType"
-                                    @change="onTypeChange()"
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                    <option value="">— Set later —</option>
-                                    <template x-if="vendor === 'sr'">
-                                        <optgroup label="SR">
-                                            <option value="script_coverage">Script Coverage</option>
-                                            <option value="notes_only">Notes-Only Coverage</option>
-                                            <option value="short">Short Coverage</option>
-                                            <option value="deep_dive">Deep-Dive Development Notes</option>
-                                            <option value="budget">Budget Script Coverage</option>
-                                            <option value="book">Book Coverage</option>
-                                        </optgroup>
-                                    </template>
-                                    <template x-if="vendor === 'wd'">
-                                        <optgroup label="WD">
-                                            <option value="coverage">Coverage</option>
-                                            <option value="development_notes">Development Notes</option>
-                                        </optgroup>
-                                    </template>
-                                </select>
-                                <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
-                            </div>
+                            <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
                         </div>
-
-                        {{-- Script title + Writer --}}
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <x-input-label for="script_title" value="Script Title" />
-                                <x-text-input id="script_title" name="script_title" type="text"
-                                    class="mt-1 block w-full"
-                                    value="{{ old('script_title') }}"
-                                    required />
-                                <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
-                            </div>
-                            <div>
-                                <x-input-label for="writer_name" value="Writer" />
-                                <x-text-input id="writer_name" name="writer_name" type="text"
-                                    class="mt-1 block w-full"
-                                    value="{{ old('writer_name') }}"
-                                    required />
-                                <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
-                            </div>
+                        <div>
+                            <x-input-label for="assignment_type" value="Assignment Type" />
+                            <select id="assignment_type" name="assignment_type"
+                                x-model="assignmentType"
+                                @change="computeRate()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">— Set later —</option>
+                                <template x-if="vendor === 'sr'">
+                                    <optgroup label="SR">
+                                        <option value="script_coverage">Script Coverage</option>
+                                        <option value="notes_only">Notes-Only Coverage</option>
+                                        <option value="short">Short Coverage</option>
+                                        <option value="deep_dive">Deep-Dive Development Notes</option>
+                                        <option value="budget">Budget Script Coverage</option>
+                                        <option value="book">Book Coverage</option>
+                                    </optgroup>
+                                </template>
+                                <template x-if="vendor === 'wd'">
+                                    <optgroup label="WD">
+                                        <option value="coverage">Coverage</option>
+                                        <option value="development_notes">Development Notes</option>
+                                    </optgroup>
+                                </template>
+                            </select>
+                            <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                         </div>
+                    </div>
 
-                        {{-- Page count + Pay rate --}}
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <x-input-label for="page_count" value="Page Count" />
-                                <x-text-input id="page_count" name="page_count" type="number"
-                                    class="mt-1 block w-full"
-                                    value="{{ old('page_count') }}"
-                                    min="1" max="9999"
-                                    required />
-                                <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
-                            </div>
-                            <div>
-                                <x-input-label for="pay_rate" value="Pay Rate ($)" />
-                                <x-text-input id="pay_rate" name="pay_rate" type="number"
-                                    x-ref="payRate"
-                                    class="mt-1 block w-full"
-                                    value="{{ old('pay_rate') }}"
-                                    min="0" step="0.01"
-                                    required />
-                                <p x-show="rateSuggested" class="mt-1 text-xs text-indigo-500" x-text="rateNote"></p>
-                                <x-input-error :messages="$errors->get('pay_rate')" class="mt-1" />
-                            </div>
+                    {{-- Script title + Writer --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <x-input-label for="script_title" value="Script Title" />
+                            <x-text-input id="script_title" name="script_title" type="text"
+                                class="mt-1 block w-full"
+                                value="{{ old('script_title') }}"
+                                required />
+                            <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
                         </div>
+                        <div>
+                            <x-input-label for="writer_name" value="Writer" />
+                            <x-text-input id="writer_name" name="writer_name" type="text"
+                                class="mt-1 block w-full"
+                                value="{{ old('writer_name') }}"
+                                required />
+                            <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
+                        </div>
+                    </div>
 
+                    {{-- Page count + Pay rate --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <x-input-label for="page_count" value="Page Count" />
+                            <x-text-input id="page_count" name="page_count" type="number"
+                                class="mt-1 block w-full"
+                                value="{{ old('page_count') }}"
+                                x-model.number="pageCount"
+                                @input="computeRate()"
+                                min="1" max="9999"
+                                required />
+                            <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="pay_rate" value="Pay Rate ($)" />
+                            <x-text-input id="pay_rate" name="pay_rate" type="number"
+                                x-ref="payRate"
+                                class="mt-1 block w-full"
+                                value="{{ old('pay_rate') }}"
+                                min="0" step="0.01"
+                                required />
+                            <p x-show="rateNote" class="mt-1 text-xs text-indigo-500" x-text="rateNote"></p>
+                            <x-input-error :messages="$errors->get('pay_rate')" class="mt-1" />
+                        </div>
                     </div>
 
                     {{-- Requested reader --}}
                     <div>
                         <x-input-label for="requested_reader_id" value="Requested Reader (optional)" />
                         <select id="requested_reader_id" name="requested_reader_id"
+                            x-model="requestedReaderId"
+                            @change="computeRate()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— None —</option>
                             @foreach ($readers as $reader)
@@ -140,10 +140,11 @@
                     {{-- Rush + Status --}}
                     <div class="grid grid-cols-2 gap-3 items-start">
                         <div>
-                            <x-input-label value="Type" />
+                            <x-input-label value="Rush" />
                             <div class="mt-2 flex items-center gap-2">
                                 <input id="rush" name="rush" type="checkbox" value="1"
-                                    {{ old('rush') ? 'checked' : '' }}
+                                    x-model="isRush"
+                                    @change="computeRate()"
                                     class="rounded border-gray-300 text-amber-500 shadow-sm focus:ring-amber-500" />
                                 <label for="rush" class="text-sm text-gray-700 font-medium">Rush (24h turnaround)</label>
                             </div>
@@ -179,15 +180,19 @@
             </div>
         </div>
     </div>
+
     <script>
     // SR reader pay rates sourced from woo_order-financials.php COGS values
-    function assignmentForm(initialVendor, initialType) {
+    function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount) {
         return {
-            vendor: initialVendor,
-            assignmentType: initialType,
-            rateSuggested: false,
-            rateNote: '',
+            vendor:            initialVendor,
+            assignmentType:    initialType,
+            isRush:            initialRush,
+            requestedReaderId: String(initialRequestedReaderId),
+            pageCount:         initialPageCount || 0,
+            rateNote:          '',
 
+            // Base COGS per assignment type (1-reader rate from woo_order-financials.php)
             srRates: {
                 script_coverage: 70.00,
                 notes_only:      70.00,
@@ -199,19 +204,28 @@
 
             onVendorChange() {
                 this.assignmentType = '';
-                this.rateSuggested = false;
+                this.rateNote = '';
             },
 
-            onTypeChange() {
+            computeRate() {
                 if (this.vendor !== 'sr' || !this.assignmentType) {
-                    this.rateSuggested = false;
+                    this.rateNote = '';
                     return;
                 }
-                const rate = this.srRates[this.assignmentType];
-                if (rate === undefined) return;
-                this.$refs.payRate.value = rate.toFixed(2);
-                this.rateSuggested = true;
-                this.rateNote = 'Auto-suggested from SR financials — edit if needed.';
+                const base     = this.srRates[this.assignmentType] ?? 0;
+                const rush     = this.isRush ? 50.00 : 0;
+                const request  = this.requestedReaderId ? 40.00 : 0;
+                const oversized = (this.pageCount > 160 && this.assignmentType !== 'book') ? 15.00 : 0;
+                const total    = base + rush + request + oversized;
+
+                this.$refs.payRate.value = total.toFixed(2);
+
+                const parts = [];
+                if (base > 0)      parts.push(`$${base} base`);
+                if (rush > 0)      parts.push(`$${rush} rush`);
+                if (request > 0)   parts.push(`$${request} request`);
+                if (oversized > 0) parts.push(`$${oversized} oversized`);
+                this.rateNote = (parts.length ? parts.join(' + ') : '$0') + ' — edit if needed';
             },
         };
     }
