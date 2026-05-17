@@ -358,16 +358,24 @@
                                                     {{ $assignment->authorDisplay() }} &middot; {{ $assignment->page_count }} pages
                                                 </div>
                                             </div>
-                                            @can('cancel', $assignment)
-                                                <form method="POST" action="{{ route('assignments.cancel', $assignment) }}" class="shrink-0">
-                                                    @csrf
-                                                    <button type="submit"
-                                                            onclick="return confirm('Return this assignment to the pool?')"
-                                                            class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
-                                                        Cancel
-                                                    </button>
-                                                </form>
-                                            @endcan
+                                            <div class="shrink-0 flex items-center gap-2">
+                                                @can('submitCoverage', $assignment)
+                                                    <a href="{{ route('coverage.show', $assignment) }}"
+                                                       class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-indigo-500 transition">
+                                                        Fill Coverage
+                                                    </a>
+                                                @endcan
+                                                @can('cancel', $assignment)
+                                                    <form method="POST" action="{{ route('assignments.cancel', $assignment) }}">
+                                                        @csrf
+                                                        <button type="submit"
+                                                                onclick="return confirm('Return this assignment to the pool?')"
+                                                                class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
+                                                            Cancel
+                                                        </button>
+                                                    </form>
+                                                @endcan
+                                            </div>
                                         </div>
                                     </div>
                                 @endforeach
