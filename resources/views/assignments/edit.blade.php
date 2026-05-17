@@ -55,22 +55,18 @@
                                 @change="computeRate()"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                 <option value="">— Set later —</option>
-                                <template x-if="vendor === 'sr'">
-                                    <optgroup label="SR">
-                                        <option value="script_coverage">Script Coverage</option>
-                                        <option value="notes_only">Notes-Only Coverage</option>
-                                        <option value="short">Short Coverage</option>
-                                        <option value="deep_dive">Deep-Dive Development Notes</option>
-                                        <option value="budget">Budget Script Coverage</option>
-                                        <option value="book">Book Coverage</option>
-                                    </optgroup>
-                                </template>
-                                <template x-if="vendor === 'wd'">
-                                    <optgroup label="WD">
-                                        <option value="coverage">Coverage</option>
-                                        <option value="development_notes">Development Notes</option>
-                                    </optgroup>
-                                </template>
+                                <optgroup label="SR" x-show="vendor === 'sr'">
+                                    <option value="script_coverage">Script Coverage</option>
+                                    <option value="notes_only">Notes-Only Coverage</option>
+                                    <option value="short">Short Coverage</option>
+                                    <option value="deep_dive">Deep-Dive Development Notes</option>
+                                    <option value="budget">Budget Script Coverage</option>
+                                    <option value="book">Book Coverage</option>
+                                </optgroup>
+                                <optgroup label="WD" x-show="vendor === 'wd'">
+                                    <option value="coverage">Coverage</option>
+                                    <option value="development_notes">Development Notes</option>
+                                </optgroup>
                             </select>
                             <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                         </div>

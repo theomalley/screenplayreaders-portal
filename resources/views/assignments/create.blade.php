@@ -12,7 +12,7 @@
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5"
-                      x-data="assignmentForm('{{ old('vendor', 'sr') }}', '{{ old('assignment_type', '') }}', {{ old('rush') ? 'true' : 'false' }}, '{{ old('requested_reader_id', '') }}', {{ (int) old('page_count', 0) }}, '{{ old('assigned_reader_id', '') }}', '{{ old('status', 'incoming') }}')">
+                      x-data="assignmentForm('{{ old('vendor', 'sr') }}', '{{ old('assignment_type', '') }}', {{ old('rush') ? 'true' : 'false' }}, '{{ old('requested_reader_id', '') }}', {{ (int) old('page_count', 0) }}, '{{ old('assigned_reader_id', '') }}', '{{ old('status', 'incoming') }}', @json($rates))">
                     @csrf
 
                     {{-- Order number --}}
@@ -53,22 +53,18 @@
                                 @change="computeRate()"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                 <option value="">— Set later —</option>
-                                <template x-if="vendor === 'sr'">
-                                    <optgroup label="SR">
-                                        <option value="script_coverage">Script Coverage</option>
-                                        <option value="notes_only">Notes-Only Coverage</option>
-                                        <option value="short">Short Coverage</option>
-                                        <option value="deep_dive">Deep-Dive Development Notes</option>
-                                        <option value="budget">Budget Script Coverage</option>
-                                        <option value="book">Book Coverage</option>
-                                    </optgroup>
-                                </template>
-                                <template x-if="vendor === 'wd'">
-                                    <optgroup label="WD">
-                                        <option value="coverage">Coverage</option>
-                                        <option value="development_notes">Development Notes</option>
-                                    </optgroup>
-                                </template>
+                                <optgroup label="SR" x-show="vendor === 'sr'">
+                                    <option value="script_coverage">Script Coverage</option>
+                                    <option value="notes_only">Notes-Only Coverage</option>
+                                    <option value="short">Short Coverage</option>
+                                    <option value="deep_dive">Deep-Dive Development Notes</option>
+                                    <option value="budget">Budget Script Coverage</option>
+                                    <option value="book">Book Coverage</option>
+                                </optgroup>
+                                <optgroup label="WD" x-show="vendor === 'wd'">
+                                    <option value="coverage">Coverage</option>
+                                    <option value="development_notes">Development Notes</option>
+                                </optgroup>
                             </select>
                             <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                         </div>
