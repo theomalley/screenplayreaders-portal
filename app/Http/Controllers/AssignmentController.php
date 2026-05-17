@@ -32,7 +32,11 @@ class AssignmentController extends Controller
                 ->orderBy('name')
                 ->get();
 
-            return view('assignments.index', compact('assignments', 'readers'));
+            return view('assignments.index', [
+                'canManage'   => true,
+                'assignments' => $assignments,
+                'readers'     => $readers,
+            ]);
         }
 
         // Reader: available pool (rush first, oldest first) + their own active assignments
@@ -47,7 +51,11 @@ class AssignmentController extends Controller
             ->orderBy('accepted_at', 'desc')
             ->get();
 
-        return view('assignments.index', compact('available', 'mine'));
+        return view('assignments.index', [
+            'canManage' => false,
+            'available' => $available,
+            'mine'      => $mine,
+        ]);
     }
 
     public function create()
