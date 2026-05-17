@@ -211,7 +211,7 @@
     // Rates from woo_order-financials.php COGS / step-03-reader-assignment-processing.js
     function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus, initialPayRate, rates) {
         return {
-            vendor:            initialVendor,
+            vendor:            initialVendor || 'sr',
             assignmentType:    initialType,
             isRush:            initialRush,
             requestedReaderId: String(initialRequestedReaderId),

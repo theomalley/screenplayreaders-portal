@@ -97,7 +97,6 @@
                             <x-input-label for="page_count" value="Page Count" />
                             <x-text-input id="page_count" name="page_count" type="number"
                                 class="mt-1 block w-full"
-                                value="{{ old('page_count', $assignment->page_count) }}"
                                 x-model.number="pageCount"
                                 min="1" max="9999"
                                 required />
@@ -218,11 +217,11 @@
     // Rates from woo_order-financials.php COGS / step-03-reader-assignment-processing.js
     function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus, initialPayRate, rates) {
         return {
-            vendor:            initialVendor,
+            vendor:            initialVendor || 'sr',
             assignmentType:    initialType,
             isRush:            initialRush,
             requestedReaderId: String(initialRequestedReaderId),
-            pageCount:         initialPageCount || 0,
+            pageCount:         initialPageCount || null,
             assignedReaderId:  String(initialAssignedReaderId),
             statusValue:       initialStatus,
             payRate:           initialPayRate || '',
@@ -251,7 +250,7 @@
             },
 
             computeRate() {
-                const pages = parseInt(this.pageCount) || 0;
+                const pages = parseInt(this.pageCount ?? 0) || 0;
                 const r = this.rates;
                 let base = 0, rush = 0, request = 0, oversized = 0;
 
