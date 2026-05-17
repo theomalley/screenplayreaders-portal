@@ -52,7 +52,6 @@
                             <x-input-label for="assignment_type" value="Assignment Type" />
                             <select id="assignment_type" name="assignment_type"
                                 x-model="assignmentType"
-                                @change="computeRate()"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                 <option value="">— Set later —</option>
                                 <optgroup label="SR" x-show="vendor === 'sr'">
@@ -100,7 +99,6 @@
                                 class="mt-1 block w-full"
                                 value="{{ old('page_count', $assignment->page_count) }}"
                                 x-model.number="pageCount"
-                                @input="computeRate()"
                                 min="1" max="9999"
                                 required />
                             <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
@@ -155,7 +153,6 @@
                             <div class="mt-2 flex items-center gap-2 h-9">
                                 <input id="rush" name="rush" type="checkbox" value="1"
                                     x-model="isRush"
-                                    @change="computeRate()"
                                     class="rounded border-gray-300 text-amber-500 shadow-sm focus:ring-amber-500" />
                                 <label for="rush" class="text-sm text-gray-700 font-medium">Rush (24h turnaround)</label>
                             </div>
@@ -167,7 +164,6 @@
                         <x-input-label for="requested_reader_id" value="Requested Reader (optional)" />
                         <select id="requested_reader_id" name="requested_reader_id"
                             x-model="requestedReaderId"
-                            @change="computeRate()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— None —</option>
                             @foreach ($readers as $reader)
@@ -232,6 +228,13 @@
             payRate:           initialPayRate || '',
             rates:             rates,
             rateNote:          '',
+
+            init() {
+                this.$watch('assignmentType',    () => this.computeRate());
+                this.$watch('pageCount',         () => this.computeRate());
+                this.$watch('isRush',            () => this.computeRate());
+                this.$watch('requestedReaderId', () => this.computeRate());
+            },
 
             onVendorChange() {
                 this.assignmentType = '';
