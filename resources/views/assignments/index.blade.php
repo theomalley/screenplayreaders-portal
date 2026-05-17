@@ -30,6 +30,85 @@
             {{-- ===== ADMIN / EDITOR VIEW ===== --}}
             @if (auth()->user()->canManageAssignments())
 
+                {{-- Reader list panel --}}
+                @if ($readers->isNotEmpty())
+                    <div class="mb-5" x-data="{ activeReader: null }">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            @foreach ($readers as $reader)
+                                @php
+                                    $rProfile  = $reader->readerProfile;
+                                    $rInitials = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
+                                    $rActive   = $reader->assignments->count();
+                                    $rMax      = $rProfile?->max_concurrent_assignments ?? 0;
+                                    $rFull     = $rMax > 0 && $rActive >= $rMax;
+                                @endphp
+                                <button
+                                    type="button"
+                                    @click="activeReader = activeReader === {{ $reader->id }} ? null : {{ $reader->id }}"
+                                    :class="activeReader === {{ $reader->id }} ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
+                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer
+                                        {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}"
+                                    title="{{ $rProfile?->displayName() ?? $reader->name }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
+                                >
+                                    {{ $rInitials }}
+                                    @if ($rActive > 0)
+                                        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold
+                                            {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
+                                            {{ $rActive }}
+                                        </span>
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
+
+                        {{-- Detail panel for the selected reader --}}
+                        @foreach ($readers as $reader)
+                            @php
+                                $rProfile  = $reader->readerProfile;
+                                $rInitials = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
+                                $rActive   = $reader->assignments->count();
+                                $rMax      = $rProfile?->max_concurrent_assignments ?? 0;
+                            @endphp
+                            <div x-show="activeReader === {{ $reader->id }}" x-cloak
+                                 x-transition:enter="transition ease-out duration-150"
+                                 x-transition:enter-start="opacity-0 -translate-y-1"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="mt-3 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-mono font-semibold text-gray-700 shrink-0">
+                                        {{ $rInitials }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-baseline gap-3">
+                                            <span class="font-semibold text-gray-900">{{ $rProfile?->displayName() ?? $reader->name }}</span>
+                                            <span class="text-xs text-gray-400">{{ $rActive }} / {{ $rMax ?: '—' }} assignment{{ $rMax === 1 ? '' : 's' }}</span>
+                                            @if ($rProfile?->paypal_email)
+                                                <span class="text-xs text-gray-400">PayPal: {{ $rProfile->paypal_email }}</span>
+                                            @endif
+                                        </div>
+                                        @if ($reader->assignments->isNotEmpty())
+                                            <ul class="mt-2 space-y-1">
+                                                @foreach ($reader->assignments as $ra)
+                                                    <li class="flex items-center gap-2 text-sm text-gray-700">
+                                                        @if ($ra->rush)
+                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span>
+                                                        @endif
+                                                        <span class="font-medium">{{ $ra->script_title }}</span>
+                                                        <span class="text-gray-400">{{ $ra->authorDisplay() }}</span>
+                                                        <span class="text-gray-400">&middot; {{ $ra->page_count }}pp</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            <p class="mt-1 text-sm text-gray-400">No active assignments.</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
                 @if ($assignments->isEmpty())
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-gray-500">
                         No assignments yet.

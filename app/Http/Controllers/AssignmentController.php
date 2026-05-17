@@ -27,7 +27,12 @@ class AssignmentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            return view('assignments.index', compact('assignments'));
+            $readers = User::where('role', 'reader')
+                ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
+                ->orderBy('name')
+                ->get();
+
+            return view('assignments.index', compact('assignments', 'readers'));
         }
 
         // Reader: available pool (rush first, oldest first) + their own active assignments
