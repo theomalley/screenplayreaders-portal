@@ -24,6 +24,7 @@ class Setting extends Model
         'rate_wd_coverage'          => 60.00,
         'rate_wd_development_notes' => 120.00,
         'rate_wd_oversized_121_160' => 15.00,
+        'rate_wd_rush'              => 25.00,
         'rate_wd_request'           => 15.00,
     ];
 

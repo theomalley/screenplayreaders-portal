@@ -145,6 +145,7 @@
                         <tbody class="divide-y divide-gray-100">
                             @php
                             $wdModRows = [
+                                'rate_wd_rush'              => 'Rush (24h turnaround)',
                                 'rate_wd_request'           => 'Reader Request',
                                 'rate_wd_oversized_121_160' => 'Oversized (121–160 pages)',
                             ];

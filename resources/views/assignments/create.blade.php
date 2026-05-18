@@ -72,8 +72,9 @@
                                       if (!isNaN(fee)) total += fee;
                                   }
                               }
-                              if (this.rush && this.vendor === 'sr') {
-                                  total += parseFloat(r.rate_sr_rush || 0);
+                              if (this.rush) {
+                                  const rushRate = { sr: r.rate_sr_rush, wd: r.rate_wd_rush };
+                                  total += parseFloat(rushRate[this.vendor] || 0);
                               }
                               if (this.requestedReader) {
                                   const reqRate = { sr: r.rate_sr_request, wd: r.rate_wd_request };
