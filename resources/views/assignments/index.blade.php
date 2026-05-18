@@ -289,6 +289,12 @@
 
                                         {{-- Actions --}}
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
+                                            @can('update', $assignment)
+                                                <a href="{{ route('assignments.edit', $assignment) }}"
+                                                   class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
+                                                    Edit
+                                                </a>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @endforeach
