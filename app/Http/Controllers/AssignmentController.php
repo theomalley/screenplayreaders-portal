@@ -88,6 +88,7 @@ class AssignmentController extends Controller
 
         if ($numReaders === 1) {
             $data['requested_reader_id'] = $readerIds[0];
+            $data['pay_rate']            = $data['pay_rate'] ?? 0;
             if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
                 $data['unassigned_at'] = now();
             }
@@ -191,8 +192,9 @@ class AssignmentController extends Controller
         $data         = $request->validated();
         $data['rush'] = $request->boolean('rush');
 
+        $newCreatedAt = null;
         if (!empty($data['date']) && !empty($data['time'])) {
-            $assignment->created_at = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time']);
+            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time']);
         }
         unset($data['date'], $data['time']);
 
@@ -212,6 +214,12 @@ class AssignmentController extends Controller
         }
 
         $assignment->update($data);
+
+        if ($newCreatedAt) {
+            DB::table('assignments')
+                ->where('id', $assignment->id)
+                ->update(['created_at' => $newCreatedAt->format('Y-m-d H:i:s')]);
+        }
 
         return redirect()->route('assignments.index')->with('success', 'Assignment updated.');
     }
