@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Setting;
 use App\Models\User;
@@ -70,9 +71,18 @@ class AssignmentController extends Controller
         return view('assignments.create', compact('rates', 'readers'));
     }
 
-    public function store()
+    public function store(StoreAssignmentRequest $request)
     {
         $this->authorize('create', Assignment::class);
+
+        $data         = $request->validated();
+        $data['rush'] = $request->boolean('rush');
+
+        if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
+            $data['unassigned_at'] = now();
+        }
+
+        Assignment::create($data);
 
         return redirect()->route('assignments.index')->with('success', 'Assignment created.');
     }
