@@ -1,3 +1,4 @@
+@use('Illuminate\Support\Facades\Storage')
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-4">
@@ -13,7 +14,8 @@
     <div class="py-6">
         <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <form method="POST" action="{{ route('readers.update', $user) }}" class="p-6 space-y-5">
+                <form method="POST" action="{{ route('readers.update', $user) }}" class="p-6 space-y-5"
+                      enctype="multipart/form-data">
                     @csrf
                     @method('PATCH')
 
@@ -26,6 +28,33 @@
                             </ul>
                         </div>
                     @endif
+
+                    {{-- Photo --}}
+                    <div>
+                        <x-input-label value="Photo" />
+                        <div class="mt-2 flex items-center gap-4">
+                            @if ($profile?->photo)
+                                <img src="{{ Storage::url($profile->photo) }}"
+                                     alt="{{ $profile->initials }}"
+                                     class="w-16 h-16 rounded-full object-cover border border-gray-200 shrink-0" />
+                            @else
+                                <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-lg font-mono font-semibold shrink-0">
+                                    {{ $profile?->initials ?? '?' }}
+                                </div>
+                            @endif
+                            <div class="flex-1">
+                                <input type="file" name="photo" id="photo" accept="image/*"
+                                       class="block w-full text-sm text-gray-500
+                                              file:mr-3 file:py-1.5 file:px-3
+                                              file:rounded file:border file:border-gray-300
+                                              file:text-xs file:font-medium file:text-gray-700
+                                              file:bg-white hover:file:bg-gray-50 file:cursor-pointer
+                                              cursor-pointer" />
+                                <p class="mt-1 text-xs text-gray-400">JPEG or PNG, max 4 MB. Leave blank to keep current photo.</p>
+                            </div>
+                        </div>
+                        <x-input-error :messages="$errors->get('photo')" class="mt-1" />
+                    </div>
 
                     {{-- Initials --}}
                     <div>

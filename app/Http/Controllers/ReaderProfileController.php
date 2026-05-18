@@ -8,6 +8,7 @@ use App\Models\Assignment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class ReaderProfileController extends Controller
 {
@@ -90,7 +91,18 @@ class ReaderProfileController extends Controller
             'last_name'                  => ['required', 'string', 'max:100'],
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
+            'photo'                      => ['nullable', 'image', 'max:4096'],
         ]);
+
+        if ($request->hasFile('photo')) {
+            $profile = $user->readerProfile;
+            if ($profile?->photo) {
+                Storage::disk('public')->delete($profile->photo);
+            }
+            $data['photo'] = $request->file('photo')->store('reader-photos', 'public');
+        } else {
+            unset($data['photo']);
+        }
 
         $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],
