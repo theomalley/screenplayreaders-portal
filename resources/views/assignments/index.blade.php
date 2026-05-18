@@ -127,6 +127,7 @@
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Script / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
@@ -178,6 +179,17 @@
                                         $rowClass = ($assignment->rush && $assignment->status === 'unassigned')
                                             ? 'border-l-4 border-amber-400'
                                             : '';
+                                        $typeLabel = match($assignment->assignment_type) {
+                                            'script_coverage'   => 'Script Coverage',
+                                            'notes_only'        => 'Notes-Only',
+                                            'deep_dive'         => 'Deep-Dive',
+                                            'short'             => 'Short',
+                                            'budget'            => 'Budget',
+                                            'book'              => 'Book',
+                                            'coverage'          => 'Coverage',
+                                            'development_notes' => 'Dev Notes',
+                                            default             => $assignment->assignment_type ?? '—',
+                                        };
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                         {{-- Age --}}
@@ -199,6 +211,11 @@
                                         {{-- Page count --}}
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">
                                             {{ $assignment->page_count }}
+                                        </td>
+
+                                        {{-- Assignment Type --}}
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">
+                                            {{ $typeLabel }}
                                         </td>
 
                                         {{-- Turnaround --}}
@@ -316,6 +333,7 @@
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Script / Writer</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
+                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
@@ -347,6 +365,17 @@
                                                 $statusLabel = $assignment->status === 'assigned' ? 'Assigned to you'
                                                     : ($assignment->status === 'qc' ? 'QC' : ucfirst($assignment->status));
                                                 $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                $typeLabel = match($assignment->assignment_type) {
+                                                    'script_coverage'   => 'Script Coverage',
+                                                    'notes_only'        => 'Notes-Only',
+                                                    'deep_dive'         => 'Deep-Dive',
+                                                    'short'             => 'Short',
+                                                    'budget'            => 'Budget',
+                                                    'book'              => 'Book',
+                                                    'coverage'          => 'Coverage',
+                                                    'development_notes' => 'Dev Notes',
+                                                    default             => $assignment->assignment_type ?? '—',
+                                                };
                                             @endphp
                                             <tr class="hover:bg-gray-50 bg-indigo-50/30 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
@@ -356,6 +385,7 @@
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($assignment->rush)
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Rush</span>
@@ -407,7 +437,7 @@
                                         {{-- Separator when both sections have rows --}}
                                         @if($mine->isNotEmpty() && $available->isNotEmpty())
                                             <tr>
-                                                <td colspan="10" class="px-3 py-1.5 bg-gray-50 text-xs text-gray-400 uppercase tracking-wider font-medium border-t border-gray-200">
+                                                <td colspan="11" class="px-3 py-1.5 bg-gray-50 text-xs text-gray-400 uppercase tracking-wider font-medium border-t border-gray-200">
                                                     Available Pool
                                                 </td>
                                             </tr>
@@ -427,6 +457,17 @@
                                                 $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
                                                 $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
                                                 $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                $typeLabel = match($assignment->assignment_type) {
+                                                    'script_coverage'   => 'Script Coverage',
+                                                    'notes_only'        => 'Notes-Only',
+                                                    'deep_dive'         => 'Deep-Dive',
+                                                    'short'             => 'Short',
+                                                    'budget'            => 'Budget',
+                                                    'book'              => 'Book',
+                                                    'coverage'          => 'Coverage',
+                                                    'development_notes' => 'Dev Notes',
+                                                    default             => $assignment->assignment_type ?? '—',
+                                                };
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
@@ -441,6 +482,7 @@
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($assignment->rush)
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Rush</span>
@@ -500,6 +542,7 @@
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Script / Writer</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
+                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
@@ -529,6 +572,17 @@
                                                 $statusLabel = $assignment->status === 'assigned' ? 'Assigned to you'
                                                     : ($assignment->status === 'qc' ? 'QC' : ucfirst($assignment->status));
                                                 $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                $typeLabel = match($assignment->assignment_type) {
+                                                    'script_coverage'   => 'Script Coverage',
+                                                    'notes_only'        => 'Notes-Only',
+                                                    'deep_dive'         => 'Deep-Dive',
+                                                    'short'             => 'Short',
+                                                    'budget'            => 'Budget',
+                                                    'book'              => 'Book',
+                                                    'coverage'          => 'Coverage',
+                                                    'development_notes' => 'Dev Notes',
+                                                    default             => $assignment->assignment_type ?? '—',
+                                                };
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
@@ -538,6 +592,7 @@
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($assignment->rush)
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Rush</span>
