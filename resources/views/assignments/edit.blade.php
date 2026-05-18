@@ -45,14 +45,14 @@
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
                                     <input type="radio" name="vendor" value="sr"
                                         :checked="vendor === 'sr'"
-                                        @change="vendor = 'sr'; assignmentType = ''; updateTypeOptions(); computeRate()"
+                                        @change="vendor = 'sr'; assignmentType = ''; computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     SR
                                 </label>
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
                                     <input type="radio" name="vendor" value="wd"
                                         :checked="vendor === 'wd'"
-                                        @change="vendor = 'wd'; assignmentType = ''; updateTypeOptions(); computeRate()"
+                                        @change="vendor = 'wd'; assignmentType = ''; computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     WD
                                 </label>
@@ -61,13 +61,29 @@
                         </div>
                         <div>
                             <x-input-label for="assignment_type" value="Assignment Type" />
-                            <select id="assignment_type" name="assignment_type"
+                            {{-- SR types: shown when vendor = sr --}}
+                            <select x-show="vendor === 'sr'" x-cloak
+                                id="assignment_type" name="assignment_type"
+                                :disabled="vendor !== 'sr'"
                                 @change="assignmentType = $event.target.value; computeRate()"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                 <option value="">— Set later —</option>
-                                <template x-for="opt in assignmentTypeOptions" :key="opt.value">
-                                    <option :value="opt.value" :selected="opt.value === assignmentType" x-text="opt.label"></option>
-                                </template>
+                                <option value="script_coverage"  :selected="assignmentType === 'script_coverage'">Script Coverage</option>
+                                <option value="notes_only"       :selected="assignmentType === 'notes_only'">Notes-Only Coverage</option>
+                                <option value="short"            :selected="assignmentType === 'short'">Short Coverage</option>
+                                <option value="deep_dive"        :selected="assignmentType === 'deep_dive'">Deep-Dive Dev Notes</option>
+                                <option value="budget"           :selected="assignmentType === 'budget'">Budget Script Coverage</option>
+                                <option value="book"             :selected="assignmentType === 'book'">Book Coverage</option>
+                            </select>
+                            {{-- WD types: shown when vendor = wd --}}
+                            <select x-show="vendor === 'wd'" x-cloak
+                                name="assignment_type"
+                                :disabled="vendor !== 'wd'"
+                                @change="assignmentType = $event.target.value; computeRate()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">— Set later —</option>
+                                <option value="coverage"          :selected="assignmentType === 'coverage'">Coverage</option>
+                                <option value="development_notes" :selected="assignmentType === 'development_notes'">Development Notes</option>
                             </select>
                             <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                         </div>
@@ -248,31 +264,8 @@
             rateNote:             '',
             bookPayRateInput:     '',
             customOversizedInput: '',
-            assignmentTypeOptions: [],
-
             init() {
-                this.updateTypeOptions();
                 this.computeRate();
-            },
-
-            updateTypeOptions() {
-                if (this.vendor === 'sr') {
-                    this.assignmentTypeOptions = [
-                        { value: 'script_coverage', label: 'Script Coverage' },
-                        { value: 'notes_only',       label: 'Notes-Only Coverage' },
-                        { value: 'short',            label: 'Short Coverage' },
-                        { value: 'deep_dive',        label: 'Deep-Dive Dev Notes' },
-                        { value: 'budget',           label: 'Budget Script Coverage' },
-                        { value: 'book',             label: 'Book Coverage' },
-                    ];
-                } else if (this.vendor === 'wd') {
-                    this.assignmentTypeOptions = [
-                        { value: 'coverage',          label: 'Coverage' },
-                        { value: 'development_notes', label: 'Development Notes' },
-                    ];
-                } else {
-                    this.assignmentTypeOptions = [];
-                }
             },
 
             onAssignedReaderChange() {
