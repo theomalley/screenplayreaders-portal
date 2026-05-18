@@ -46,26 +46,31 @@
                                     $rFull     = $rMax > 0 && $rActive >= $rMax;
                                     $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                                 @endphp
-                                <button
-                                    type="button"
-                                    @click="activeReader = activeReader === {{ $reader->id }} ? null : {{ $reader->id }}"
-                                    :class="activeReader === {{ $reader->id }} ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
-                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer overflow-hidden
-                                        {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}"
-                                    title="{{ $rProfile?->displayName() ?? $reader->name }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
-                                >
-                                    @if ($rPhotoUrl)
-                                        <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="absolute inset-0 w-full h-full object-cover" />
-                                    @else
-                                        {{ $rInitials }}
-                                    @endif
-                                    @if ($rActive > 0)
-                                        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
-                                            {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
-                                            {{ $rActive }}
-                                        </span>
-                                    @endif
-                                </button>
+                                <div class="flex flex-col items-center gap-0.5">
+                                    <button
+                                        type="button"
+                                        @click="activeReader = activeReader === {{ $reader->id }} ? null : {{ $reader->id }}"
+                                        :class="activeReader === {{ $reader->id }} ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
+                                        class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer
+                                            {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}"
+                                        title="{{ $rProfile?->displayName() ?? $reader->name }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
+                                    >
+                                        @if ($rPhotoUrl)
+                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="w-full h-full object-cover" />
+                                            </span>
+                                        @else
+                                            {{ $rInitials }}
+                                        @endif
+                                        @if ($rActive > 0)
+                                            <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
+                                                {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
+                                                {{ $rActive }}
+                                            </span>
+                                        @endif
+                                    </button>
+                                    <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rInitials }}</span>
+                                </div>
                             @endforeach
                         </div>
 
@@ -315,13 +320,18 @@
                                         {{-- Assigned reader --}}
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             @if ($assignedInitials)
-                                                <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold overflow-hidden">
-                                                    @if ($assignedPhotoUrl)
-                                                        <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="absolute inset-0 w-full h-full object-cover" />
-                                                    @else
-                                                        {{ $assignedInitials }}
-                                                    @endif
-                                                </span>
+                                                <div class="flex flex-col items-center gap-0.5">
+                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
+                                                        @if ($assignedPhotoUrl)
+                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
+                                                            </span>
+                                                        @else
+                                                            {{ $assignedInitials }}
+                                                        @endif
+                                                    </span>
+                                                    <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
+                                                </div>
                                             @else
                                                 <span class="text-gray-300">—</span>
                                             @endif
