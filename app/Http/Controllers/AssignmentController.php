@@ -22,10 +22,7 @@ class AssignmentController extends Controller
 
         if ($user->canManageAssignments()) {
             $assignments = Assignment::with(['assignedReader.readerProfile', 'requestedReader.readerProfile'])
-                ->orderByRaw("FIELD(status, 'unassigned', 'assigned', 'qc', 'completed', 'incoming', 'on_hold', 'cancelled')")
-                ->orderByRaw('rush DESC')
-                ->orderBy('unassigned_at', 'asc')
-                ->orderBy('created_at', 'desc')
+                ->orderBy('created_at', 'asc')
                 ->get();
 
             $readers = User::where('role', 'reader')
