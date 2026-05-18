@@ -80,9 +80,9 @@ class AssignmentController extends Controller
 
         // Extract per-slot reader IDs then strip form-only keys from $data
         $readerIds = [
-            (int) ($data['requested_reader_id_1'] ?: 0) ?: null,
-            (int) ($data['requested_reader_id_2'] ?: 0) ?: null,
-            (int) ($data['requested_reader_id_3'] ?: 0) ?: null,
+            $data['requested_reader_id_1'] ?? null,
+            $data['requested_reader_id_2'] ?? null,
+            $data['requested_reader_id_3'] ?? null,
         ];
         unset($data['num_readers'], $data['requested_reader_id_1'], $data['requested_reader_id_2'], $data['requested_reader_id_3']);
 
