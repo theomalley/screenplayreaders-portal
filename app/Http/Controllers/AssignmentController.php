@@ -272,6 +272,15 @@ class AssignmentController extends Controller
         return back()->with('success', 'Assignment accepted.');
     }
 
+    public function destroy(Assignment $assignment)
+    {
+        $this->authorize('delete', $assignment);
+
+        $assignment->delete();
+
+        return redirect()->route('assignments.index')->with('success', 'Assignment deleted.');
+    }
+
     public function cancel(Assignment $assignment)
     {
         $this->authorize('cancel', $assignment);

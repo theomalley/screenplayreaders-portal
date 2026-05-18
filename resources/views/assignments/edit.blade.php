@@ -302,10 +302,21 @@
                     </div>
 
                     {{-- Actions --}}
-                    <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
-                        <a href="{{ route('assignments.index') }}"
-                           class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
-                        <x-primary-button>Save Changes</x-primary-button>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
+                              onsubmit="return confirm('Permanently delete this assignment? This cannot be undone.')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                                Delete Assignment
+                            </button>
+                        </form>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('assignments.index') }}"
+                               class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
+                            <x-primary-button>Save Changes</x-primary-button>
+                        </div>
                     </div>
 
                 </form>
