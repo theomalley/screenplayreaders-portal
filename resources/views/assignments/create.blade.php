@@ -279,6 +279,21 @@
                             </div>
                         </div>
 
+                        <div>
+                            <x-input-label for="status" value="Status" />
+                            <select id="status" name="status"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="incoming"   {{ old('status', 'incoming') === 'incoming'   ? 'selected' : '' }}>Incoming</option>
+                                <option value="unassigned" {{ old('status', 'incoming') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
+                                <option value="assigned"   {{ old('status', 'incoming') === 'assigned'   ? 'selected' : '' }}>Assigned</option>
+                                <option value="qc"         {{ old('status', 'incoming') === 'qc'         ? 'selected' : '' }}>QC</option>
+                                <option value="completed"  {{ old('status', 'incoming') === 'completed'  ? 'selected' : '' }}>Completed</option>
+                                <option value="on_hold"    {{ old('status', 'incoming') === 'on_hold'    ? 'selected' : '' }}>On Hold</option>
+                                <option value="cancelled"  {{ old('status', 'incoming') === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
+                            </select>
+                            <x-input-error :messages="$errors->get('status')" class="mt-1" />
+                        </div>
+
                     </div>
 
                     {{-- Actions --}}
