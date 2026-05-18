@@ -17,7 +17,7 @@
                     $rushActive = $isOld ? (bool) old('rush') : (bool) $assignment->rush;
                 @endphp
 
-                <form method="POST" action="{{ route('assignments.update', $assignment) }}" class="p-6 space-y-5"
+                <form id="update-form" method="POST" action="{{ route('assignments.update', $assignment) }}" class="p-6 space-y-5"
                       x-data="{
                           vendor: '{{ $v('vendor', $assignment->vendor) }}',
                           assignmentType: '{{ $v('assignment_type', $assignment->assignment_type ?? '') }}',
@@ -318,25 +318,25 @@
 
                     </div>
 
-                    {{-- Actions --}}
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
-                              onsubmit="return confirm('Permanently delete this assignment? This cannot be undone.')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                                Delete Assignment
-                            </button>
-                        </form>
-                        <div class="flex items-center gap-3">
-                            <a href="{{ route('assignments.index') }}"
-                               class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
-                            <x-primary-button>Save Changes</x-primary-button>
-                        </div>
-                    </div>
-
                 </form>
+
+                {{-- Actions — outside the edit form so the delete form is never nested --}}
+                <div class="flex items-center justify-between px-6 pb-6 pt-4 border-t border-gray-100">
+                    <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
+                          onsubmit="return confirm('Permanently delete this assignment? This cannot be undone.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                            Delete Assignment
+                        </button>
+                    </form>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('assignments.index') }}"
+                           class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
+                        <x-primary-button form="update-form">Save Changes</x-primary-button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
