@@ -192,7 +192,7 @@ class AssignmentController extends Controller
         $data['rush'] = $request->boolean('rush');
 
         if (!empty($data['date']) && !empty($data['time'])) {
-            $data['created_at'] = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time']);
+            $assignment->created_at = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time']);
         }
         unset($data['date'], $data['time']);
 
