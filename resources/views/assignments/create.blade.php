@@ -18,10 +18,11 @@
                           pageCount: '{{ old('page_count', '') }}',
                           customOversizedFee: '{{ old('custom_oversized_fee', '') }}',
                           rush: {{ old('rush') ? 'true' : 'false' }},
+                          numReaders: '{{ old('num_readers', '1') }}',
                           requestedReader: '{{ old('requested_reader_id', '') }}',
                           overrideRate: false,
                           updatePayDisplay() {
-                              if (this.overrideRate) return;
+                              if (this.overrideRate && this.numReaders === '1') return;
                               const r = window._srRates;
                               const map = {
                                   sr: {
@@ -36,13 +37,43 @@
                                       development_notes: r.rate_wd_development_notes,
                                   },
                               };
-                              const oversized121 = {
-                                  sr: r.rate_sr_oversized_121_160,
-                                  wd: r.rate_wd_oversized_121_160,
-                              };
+                              const oversized121 = { sr: r.rate_sr_oversized_121_160, wd: r.rate_wd_oversized_121_160 };
                               const el = document.getElementById('pay_rate_display');
                               const hidden = document.getElementById('pay_rate_hidden');
                               if (!el) return;
+
+                              // Compute modifiers once — applied to every sub-assignment
+                              let mod = 0;
+                              const pages = parseInt(this.pageCount, 10);
+                              if (!isNaN(pages)) {
+                                  if (pages >= 121 && pages <= 160) {
+                                      mod += parseFloat(oversized121[this.vendor] || 0);
+                                  } else if (pages >= 161) {
+                                      const fee = parseFloat(this.customOversizedFee);
+                                      if (!isNaN(fee)) mod += fee;
+                                  }
+                              }
+                              if (this.rush)
+                                  mod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
+                              if (this.requestedReader)
+                                  mod += parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
+
+                              if (this.numReaders !== '1') {
+                                  const typeA  = this.vendor === 'sr' ? 'script_coverage'   : 'coverage';
+                                  const typeB  = this.vendor === 'sr' ? 'notes_only'         : 'development_notes';
+                                  const labelA = this.vendor === 'sr' ? 'SC'                 : 'Coverage';
+                                  const labelB = this.vendor === 'sr' ? 'NO'                 : 'Dev Notes';
+                                  const rateA  = parseFloat((map[this.vendor] || {})[typeA] || 0) + mod;
+                                  const rateB  = parseFloat((map[this.vendor] || {})[typeB] || 0) + mod;
+                                  const numB   = parseInt(this.numReaders) - 1;
+                                  const parts  = ['$' + rateA.toFixed(2) + ' (' + labelA + ')'];
+                                  for (let i = 0; i < numB; i++) parts.push('$' + rateB.toFixed(2) + ' (' + labelB + ')');
+                                  el.textContent = parts.join(' + ');
+                                  el.className = 'text-sm font-semibold text-gray-900';
+                                  if (hidden) hidden.value = '';
+                                  return;
+                              }
+
                               if (!this.assignmentType) {
                                   el.textContent = '—';
                                   el.className = 'text-sm text-gray-400';
@@ -62,24 +93,7 @@
                                   if (hidden) hidden.value = '';
                                   return;
                               }
-                              let total = parseFloat(base);
-                              const pages = parseInt(this.pageCount, 10);
-                              if (!isNaN(pages)) {
-                                  if (pages >= 121 && pages <= 160) {
-                                      total += parseFloat(oversized121[this.vendor] || 0);
-                                  } else if (pages >= 161) {
-                                      const fee = parseFloat(this.customOversizedFee);
-                                      if (!isNaN(fee)) total += fee;
-                                  }
-                              }
-                              if (this.rush) {
-                                  const rushRate = { sr: r.rate_sr_rush, wd: r.rate_wd_rush };
-                                  total += parseFloat(rushRate[this.vendor] || 0);
-                              }
-                              if (this.requestedReader) {
-                                  const reqRate = { sr: r.rate_sr_request, wd: r.rate_wd_request };
-                                  total += parseFloat(reqRate[this.vendor] || 0);
-                              }
+                              const total = parseFloat(base) + mod;
                               el.textContent = '$' + total.toFixed(2);
                               el.className = 'text-sm font-semibold text-gray-900';
                               if (hidden) hidden.value = total.toFixed(2);
@@ -111,10 +125,10 @@
                     </div>
 
                     {{-- Assignment Type (SR) --}}
-                    <div x-show="vendor === 'sr'">
+                    <div x-show="vendor === 'sr' && numReaders === '1'">
                         <x-input-label for="assignment_type_sr" value="Assignment Type" />
                         <select id="assignment_type_sr" name="assignment_type"
-                            :disabled="vendor !== 'sr'"
+                            :disabled="vendor !== 'sr' || numReaders !== '1'"
                             @change="assignmentType = $event.target.value; updatePayDisplay()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— Select type —</option>
@@ -129,10 +143,10 @@
                     </div>
 
                     {{-- Assignment Type (WD) --}}
-                    <div x-show="vendor === 'wd'">
+                    <div x-show="vendor === 'wd' && numReaders === '1'">
                         <x-input-label for="assignment_type_wd" value="Assignment Type" />
                         <select id="assignment_type_wd" name="assignment_type"
-                            :disabled="vendor !== 'wd'"
+                            :disabled="vendor !== 'wd' || numReaders !== '1'"
                             @change="assignmentType = $event.target.value; updatePayDisplay()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— Select type —</option>
@@ -140,6 +154,19 @@
                             <option value="development_notes" {{ old('assignment_type') === 'development_notes' ? 'selected' : '' }}>Development Notes</option>
                         </select>
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
+                    </div>
+
+                    {{-- # of Readers --}}
+                    <div>
+                        <x-input-label for="num_readers" value="# of Readers" />
+                        <select id="num_readers" name="num_readers"
+                            @change="numReaders = $event.target.value; updatePayDisplay()"
+                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="1" {{ old('num_readers', '1') === '1' ? 'selected' : '' }}>1R</option>
+                            <option value="2" {{ old('num_readers', '1') === '2' ? 'selected' : '' }}>2R</option>
+                            <option value="3" {{ old('num_readers', '1') === '3' ? 'selected' : '' }}>3R</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('num_readers')" class="mt-1" />
                     </div>
 
                     {{-- Page Count --}}
@@ -200,7 +227,7 @@
                             <x-input-label for="custom_oversized_fee" value="Oversized Fee (161+ pages)" />
                             <div class="mt-1 flex items-center gap-1">
                                 <span class="text-gray-400 text-sm">+$</span>
-                                <input type="number" id="custom_oversized_fee"
+                                <input type="number" id="custom_oversized_fee" name="custom_oversized_fee"
                                     min="0" step="0.01" placeholder="0.00"
                                     x-model="customOversizedFee"
                                     @input="updatePayDisplay()"
@@ -215,7 +242,7 @@
                                 class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                         </div>
 
-                        <div class="mt-2 flex items-center gap-2">
+                        <div x-show="numReaders === '1'" class="mt-2 flex items-center gap-2">
                             <input type="checkbox" id="override_rate" x-model="overrideRate"
                                 @change="if (!overrideRate) updatePayDisplay()"
                                 class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />

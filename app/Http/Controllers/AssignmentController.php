@@ -77,14 +77,90 @@ class AssignmentController extends Controller
 
         $data         = $request->validated();
         $data['rush'] = $request->boolean('rush');
+        $numReaders   = (int) $data['num_readers'];
+        unset($data['num_readers']);
 
-        if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
-            $data['unassigned_at'] = now();
+        if ($numReaders === 1) {
+            if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
+                $data['unassigned_at'] = now();
+            }
+            Assignment::create($data);
+        } else {
+            $rates    = Setting::ratesForForms();
+            $pageCount           = (int) ($data['page_count'] ?? 0);
+            $customOversizedFee  = (float) $request->input('custom_oversized_fee', 0);
+
+            $types = $numReaders === 2
+                ? ['script_coverage', 'notes_only']
+                : ['script_coverage', 'notes_only', 'notes_only'];
+
+            $base = $data;
+            unset($base['assignment_type'], $base['pay_rate']);
+
+            foreach ($types as $type) {
+                $row = array_merge($base, [
+                    'assignment_type' => $type,
+                    'pay_rate'        => $this->computePayRate(
+                        $rates,
+                        $data['vendor'],
+                        $type,
+                        $data['rush'],
+                        $pageCount,
+                        $customOversizedFee,
+                        $data['requested_reader_id'] ?? null,
+                    ),
+                ]);
+                if ($row['status'] === Assignment::STATUS_UNASSIGNED) {
+                    $row['unassigned_at'] = now();
+                }
+                Assignment::create($row);
+            }
         }
 
-        Assignment::create($data);
+        $label = $numReaders === 1 ? 'Assignment created.' : "{$numReaders} assignments created.";
+        return redirect()->route('assignments.index')->with('success', $label);
+    }
 
-        return redirect()->route('assignments.index')->with('success', 'Assignment created.');
+    private function computePayRate(
+        array $rates,
+        string $vendor,
+        string $type,
+        bool $rush,
+        int $pageCount,
+        float $customOversizedFee,
+        ?int $requestedReaderId,
+    ): float {
+        $baseMap = [
+            'sr' => [
+                'script_coverage'   => $rates['rate_sr_script_coverage'],
+                'notes_only'        => $rates['rate_sr_notes_only'],
+                'deep_dive'         => $rates['rate_sr_deep_dive'],
+                'short'             => $rates['rate_sr_short'],
+                'budget'            => $rates['rate_sr_budget'],
+            ],
+            'wd' => [
+                'coverage'          => $rates['rate_wd_coverage'],
+                'development_notes' => $rates['rate_wd_development_notes'],
+            ],
+        ];
+
+        $total = (float) ($baseMap[$vendor][$type] ?? 0);
+
+        if ($pageCount >= 121 && $pageCount <= 160) {
+            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_oversized_121_160'] : $rates['rate_wd_oversized_121_160']);
+        } elseif ($pageCount >= 161 && $customOversizedFee > 0) {
+            $total += $customOversizedFee;
+        }
+
+        if ($rush) {
+            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_rush'] : $rates['rate_wd_rush']);
+        }
+
+        if ($requestedReaderId) {
+            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_request'] : $rates['rate_wd_request']);
+        }
+
+        return round($total, 2);
     }
 
     public function updateStatus(Request $request, Assignment $assignment)
