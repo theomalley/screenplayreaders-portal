@@ -248,16 +248,27 @@
                                             @if ($reqInitials)
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
                                             @else
-                                                <span class="text-xs text-gray-400">No.</span>
+                                                <span class="text-xs text-gray-400">—</span>
                                             @endif
                                         </td>
 
                                         {{-- Status (inline quick-change) --}}
                                         <td class="px-3 py-3 whitespace-nowrap">
-                                            <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}">
+                                            <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
+                                                  x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
                                                 @csrf
                                                 @method('PATCH')
-                                                <select name="status" onchange="this.form.submit()"
+                                                <input type="hidden" name="assigned_reader_id" x-ref="rInput" value="" />
+                                                <select name="status" x-ref="sSel"
+                                                    @change="
+                                                        if ($event.target.value === 'assigned') {
+                                                            pendingAssign = true;
+                                                        } else {
+                                                            pendingAssign = false;
+                                                            $refs.rInput.value = '';
+                                                            $event.target.closest('form').submit();
+                                                        }
+                                                    "
                                                     class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
                                                     @foreach ([
                                                         'incoming'   => 'Pending',
@@ -273,6 +284,24 @@
                                                         </option>
                                                     @endforeach
                                                 </select>
+
+                                                {{-- Reader sub-picker — appears when Assigned is selected --}}
+                                                <div x-show="pendingAssign" x-cloak class="mt-1.5 flex items-center gap-1">
+                                                    <select
+                                                        @change="if ($event.target.value) { $refs.rInput.value = $event.target.value; $event.target.closest('form').submit(); }"
+                                                        class="text-xs rounded border border-gray-200 bg-white py-0.5 pl-2 pr-5 cursor-pointer focus:ring-indigo-400">
+                                                        <option value="">→ reader</option>
+                                                        @foreach ($readers as $reader)
+                                                            <option value="{{ $reader->id }}">
+                                                                {{ $reader->readerProfile?->initials ?? strtoupper(substr($reader->name, 0, 2)) }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="button"
+                                                            @click="pendingAssign = false; $refs.sSel.value = curStatus"
+                                                            class="text-gray-400 hover:text-gray-700 text-base leading-none px-0.5"
+                                                            title="Cancel">×</button>
+                                                </div>
                                             </form>
                                         </td>
 
@@ -411,7 +440,7 @@
                                                     @if($reqInitials)
                                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
                                                     @else
-                                                        <span class="text-xs text-gray-400">No.</span>
+                                                        <span class="text-xs text-gray-400">—</span>
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
@@ -508,7 +537,7 @@
                                                     @if($reqInitials)
                                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
                                                     @else
-                                                        <span class="text-xs text-gray-400">No.</span>
+                                                        <span class="text-xs text-gray-400">—</span>
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
@@ -618,7 +647,7 @@
                                                     @if($reqInitials)
                                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
                                                     @else
-                                                        <span class="text-xs text-gray-400">No.</span>
+                                                        <span class="text-xs text-gray-400">—</span>
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">

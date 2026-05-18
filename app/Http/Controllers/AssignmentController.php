@@ -218,7 +218,8 @@ class AssignmentController extends Controller
         $this->authorize('update', $assignment);
 
         $request->validate([
-            'status' => ['required', 'in:incoming,unassigned,assigned,completed,qc,cancelled,on_hold'],
+            'status'             => ['required', 'in:incoming,unassigned,assigned,completed,qc,cancelled,on_hold'],
+            'assigned_reader_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $data = ['status' => $request->status];
@@ -231,6 +232,11 @@ class AssignmentController extends Controller
         if ($request->status === Assignment::STATUS_UNASSIGNED) {
             $data['assigned_reader_id'] = null;
             $data['accepted_at']        = null;
+        }
+
+        if ($request->status === Assignment::STATUS_ASSIGNED && $request->filled('assigned_reader_id')) {
+            $data['assigned_reader_id'] = $request->assigned_reader_id;
+            $data['accepted_at']        = now();
         }
 
         if ($request->status === Assignment::STATUS_COMPLETED
