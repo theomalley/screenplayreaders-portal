@@ -43,6 +43,9 @@
                         {{ __('Assignments') }}
                     </x-nav-link>
                     @if(auth()->user()?->canManageAssignments())
+                        <x-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
+                            {{ __('Readers') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                             {{ __('Ratebook') }}
                         </x-nav-link>
@@ -96,6 +99,9 @@
                 {{ __('Assignments') }}
             </x-responsive-nav-link>
             @if(auth()->user()?->canManageAssignments())
+                <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
+                    {{ __('Readers') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                     {{ __('Ratebook') }}
                 </x-responsive-nav-link>

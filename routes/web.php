@@ -33,8 +33,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'show'])->name('coverage.show');
     Route::post('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'store'])->name('coverage.store');
 
+    Route::get('/readers', [ReaderProfileController::class, 'index'])->name('readers.index');
+    Route::get('/readers/create', [ReaderProfileController::class, 'create'])->name('readers.create');
+    Route::post('/readers', [ReaderProfileController::class, 'store'])->name('readers.store');
     Route::get('/readers/{user}/edit', [ReaderProfileController::class, 'edit'])->name('readers.edit');
     Route::patch('/readers/{user}', [ReaderProfileController::class, 'update'])->name('readers.update');
+    Route::delete('/readers/{user}', [ReaderProfileController::class, 'destroy'])->name('readers.destroy');
 
     Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo');
 

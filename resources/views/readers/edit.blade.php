@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-4">
-            <a href="{{ route('assignments.index') }}" class="text-gray-400 hover:text-gray-600">
+            <a href="{{ route('readers.index') }}" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </a>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -87,7 +87,7 @@
                     <div class="flex items-center justify-between pt-2 border-t border-gray-100">
                         <p class="text-xs text-gray-400">{{ $user->email }}</p>
                         <div class="flex items-center gap-3">
-                            <a href="{{ route('assignments.index') }}"
+                            <a href="{{ route('readers.index') }}"
                                class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
                             <x-primary-button>Save Profile</x-primary-button>
                         </div>
