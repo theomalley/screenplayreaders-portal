@@ -4,12 +4,6 @@
             <div class="flex items-center gap-3">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Assignments</h2>
             </div>
-            @can('create', \App\Models\Assignment::class)
-                <a href="{{ route('assignments.create') }}"
-                   class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150">
-                    + Create Assignment
-                </a>
-            @endcan
         </div>
     </x-slot>
 
@@ -117,7 +111,6 @@
                 @if ($assignments->isEmpty())
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-gray-500">
                         No assignments yet.
-                        <a href="{{ route('assignments.create') }}" class="text-gray-800 underline ml-1">Create one.</a>
                     </div>
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -273,8 +266,6 @@
 
                                         {{-- Actions --}}
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
-                                            <a href="{{ route('assignments.edit', $assignment) }}"
-                                               class="text-xs text-gray-500 hover:text-gray-800 underline">Edit</a>
                                         </td>
                                     </tr>
                                 @endforeach
