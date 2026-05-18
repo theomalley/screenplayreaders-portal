@@ -106,8 +106,8 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <x-input-label for="page_count" value="Page Count" />
-                            <x-text-input id="page_count" name="page_count" type="number"
-                                class="mt-1 block w-full"
+                            <input id="page_count" name="page_count" type="number"
+                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 :value="pageCount"
                                 @input="pageCount = $event.target.value; computeRate()"
                                 min="1" max="9999"
@@ -116,12 +116,11 @@
                         </div>
                         <div>
                             <x-input-label for="pay_rate" value="Pay Rate ($)" />
-                            <x-text-input id="pay_rate" name="pay_rate" type="number"
+                            <input id="pay_rate" name="pay_rate" type="number"
                                 :value="payRate"
                                 @input="payRate = $event.target.value"
                                 :readonly="!overrideRate"
-                                :class="!overrideRate ? 'bg-gray-50 cursor-not-allowed' : ''"
-                                class="mt-1 block w-full"
+                                :class="!overrideRate ? 'mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm bg-gray-50 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm'"
                                 min="0" step="0.01"
                                 required />
                             <div class="mt-1.5 flex items-center gap-2">
