@@ -243,8 +243,8 @@
                                                 <select name="status" onchange="this.form.submit()"
                                                     class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
                                                     @foreach ([
-                                                        'incoming'   => 'Incoming',
-                                                        'unassigned' => 'Unassigned',
+                                                        'incoming'   => 'Pending',
+                                                        'unassigned' => 'Available',
                                                         'assigned'   => 'Assigned',
                                                         'completed'  => 'Completed',
                                                         'qc'         => 'QC',
@@ -464,7 +464,7 @@
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Unassigned</span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right">
                                                     <form method="POST" action="{{ route('assignments.accept', $assignment) }}">
