@@ -56,6 +56,20 @@ class AssignmentController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        $this->authorize('create', Assignment::class);
+
+        return view('assignments.create');
+    }
+
+    public function store()
+    {
+        $this->authorize('create', Assignment::class);
+
+        return redirect()->route('assignments.index')->with('success', 'Assignment created.');
+    }
+
     public function updateStatus(Request $request, Assignment $assignment)
     {
         $this->authorize('update', $assignment);

@@ -4,6 +4,12 @@
             <div class="flex items-center gap-3">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Assignments</h2>
             </div>
+            @can('create', \App\Models\Assignment::class)
+                <a href="{{ route('assignments.create') }}"
+                   class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150">
+                    + Create Assignment
+                </a>
+            @endcan
         </div>
     </x-slot>
 

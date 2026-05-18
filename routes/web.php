@@ -22,6 +22,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+    Route::get('assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');
+    Route::post('assignments', [AssignmentController::class, 'store'])->name('assignments.store');
     Route::post('assignments/{assignment}/accept', [AssignmentController::class, 'accept'])->name('assignments.accept');
     Route::post('assignments/{assignment}/cancel', [AssignmentController::class, 'cancel'])->name('assignments.cancel');
     Route::patch('assignments/{assignment}/status', [AssignmentController::class, 'updateStatus'])->name('assignments.updateStatus');
