@@ -1,4 +1,3 @@
-@use('Illuminate\Support\Facades\Storage')
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-4">
@@ -30,20 +29,21 @@
                     @endif
 
                     {{-- Photo --}}
-                    <div>
+                    @php $currentPhotoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : ''; @endphp
+                    <div x-data="{ previewUrl: '{{ $currentPhotoUrl }}' }">
                         <x-input-label value="Photo" />
                         <div class="mt-2 flex items-center gap-4">
-                            @if ($profile?->photo)
-                                <img src="{{ Storage::url($profile->photo) }}"
-                                     alt="{{ $profile->initials }}"
-                                     class="w-16 h-16 rounded-full object-cover border border-gray-200 shrink-0" />
-                            @else
-                                <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-lg font-mono font-semibold shrink-0">
-                                    {{ $profile?->initials ?? '?' }}
-                                </div>
-                            @endif
+                            <div class="relative w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-lg font-mono font-semibold shrink-0 overflow-hidden">
+                                <img x-show="previewUrl" :src="previewUrl" alt="" class="absolute inset-0 w-full h-full object-cover" />
+                                <span x-show="!previewUrl">{{ $profile?->initials ?? '?' }}</span>
+                            </div>
                             <div class="flex-1">
                                 <input type="file" name="photo" id="photo" accept="image/*"
+                                       @change="if ($event.target.files[0]) {
+                                           const r = new FileReader();
+                                           r.onload = e => previewUrl = e.target.result;
+                                           r.readAsDataURL($event.target.files[0]);
+                                       }"
                                        class="block w-full text-sm text-gray-500
                                               file:mr-3 file:py-1.5 file:px-3
                                               file:rounded file:border file:border-gray-300

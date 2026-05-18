@@ -44,18 +44,23 @@
                                     $rActive   = $reader->assignments->count();
                                     $rMax      = $rProfile?->max_concurrent_assignments ?? 0;
                                     $rFull     = $rMax > 0 && $rActive >= $rMax;
+                                    $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                                 @endphp
                                 <button
                                     type="button"
                                     @click="activeReader = activeReader === {{ $reader->id }} ? null : {{ $reader->id }}"
                                     :class="activeReader === {{ $reader->id }} ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
-                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer
+                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer overflow-hidden
                                         {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}"
                                     title="{{ $rProfile?->displayName() ?? $reader->name }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
                                 >
-                                    {{ $rInitials }}
+                                    @if ($rPhotoUrl)
+                                        <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                    @else
+                                        {{ $rInitials }}
+                                    @endif
                                     @if ($rActive > 0)
-                                        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold
+                                        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
                                             {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
                                             {{ $rActive }}
                                         </span>
@@ -71,6 +76,7 @@
                                 $rInitials = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                                 $rActive   = $reader->assignments->count();
                                 $rMax      = $rProfile?->max_concurrent_assignments ?? 0;
+                                $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                             @endphp
                             <div x-show="activeReader === {{ $reader->id }}" x-cloak
                                  x-transition:enter="transition ease-out duration-150"
@@ -78,8 +84,12 @@
                                  x-transition:enter-end="opacity-100 translate-y-0"
                                  class="mt-3 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                 <div class="flex items-start gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-mono font-semibold text-gray-700 shrink-0">
-                                        {{ $rInitials }}
+                                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-mono font-semibold text-gray-700 shrink-0 overflow-hidden relative">
+                                        @if ($rPhotoUrl)
+                                            <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                        @else
+                                            {{ $rInitials }}
+                                        @endif
                                     </div>
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-baseline gap-3">
@@ -169,6 +179,9 @@
 
                                         $assignedInitials = $assignment->assignedReader?->readerProfile?->initials
                                             ?? ($assignment->assignedReader ? substr($assignment->assignedReader->name, 0, 2) : null);
+                                        $assignedPhotoUrl = $assignment->assignedReader?->readerProfile?->photo
+                                            ? asset('storage/' . $assignment->assignedReader->readerProfile->photo)
+                                            : null;
 
                                         $rowClass = ($assignment->rush && $assignment->status === 'unassigned')
                                             ? 'border-l-4 border-amber-400'
@@ -302,8 +315,12 @@
                                         {{-- Assigned reader --}}
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             @if ($assignedInitials)
-                                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
-                                                    {{ $assignedInitials }}
+                                                <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold overflow-hidden">
+                                                    @if ($assignedPhotoUrl)
+                                                        <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                                    @else
+                                                        {{ $assignedInitials }}
+                                                    @endif
                                                 </span>
                                             @else
                                                 <span class="text-gray-300">—</span>

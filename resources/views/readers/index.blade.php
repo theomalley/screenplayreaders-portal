@@ -46,17 +46,22 @@
                         <tbody class="bg-white divide-y divide-gray-100">
                             @foreach ($readers as $reader)
                                 @php
-                                    $profile  = $reader->readerProfile;
-                                    $initials = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
-                                    $max      = $profile?->max_concurrent_assignments ?? 0;
-                                    $active   = $reader->active_count;
-                                    $atCap    = $max > 0 && $active >= $max;
+                                    $profile   = $reader->readerProfile;
+                                    $initials  = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
+                                    $max       = $profile?->max_concurrent_assignments ?? 0;
+                                    $active    = $reader->active_count;
+                                    $atCap     = $max > 0 && $active >= $max;
+                                    $photoUrl  = $profile?->photo ? asset('storage/' . $profile->photo) : null;
                                 @endphp
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-4 py-3">
                                         <div class="flex items-center gap-3">
-                                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0">
-                                                {{ $initials }}
+                                            <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 overflow-hidden">
+                                                @if ($photoUrl)
+                                                    <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                                @else
+                                                    {{ $initials }}
+                                                @endif
                                             </span>
                                             <div>
                                                 <div class="font-medium text-gray-900">
