@@ -4,10 +4,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreAssignmentRequest;
-use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
-use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,78 +54,6 @@ class AssignmentController extends Controller
             'available' => $available,
             'mine'      => $mine,
         ]);
-    }
-
-    public function create()
-    {
-        $this->authorize('create', Assignment::class);
-
-        $readers = User::where('role', 'reader')
-            ->with('readerProfile')
-            ->orderBy('name')
-            ->get();
-
-        $rates = Setting::ratesForForms();
-
-        return view('assignments.create', compact('readers', 'rates'));
-    }
-
-    public function store(StoreAssignmentRequest $request)
-    {
-        $data = $request->validated();
-        $data['rush'] = $request->boolean('rush');
-
-        if (!empty($data['assigned_reader_id'])) {
-            $data['status']      = Assignment::STATUS_ASSIGNED;
-            $data['accepted_at'] = now();
-        } elseif (($data['status'] ?? '') === Assignment::STATUS_UNASSIGNED) {
-            $data['unassigned_at'] = now();
-        }
-
-        Assignment::create($data);
-
-        return redirect()->route('assignments.index')->with('success', 'Assignment created.');
-    }
-
-    public function edit(Assignment $assignment)
-    {
-        $this->authorize('update', $assignment);
-
-        $readers = User::where('role', 'reader')
-            ->with('readerProfile')
-            ->orderBy('name')
-            ->get();
-
-        $rates = Setting::ratesForForms();
-
-        return view('assignments.edit', compact('assignment', 'readers', 'rates'));
-    }
-
-    public function update(UpdateAssignmentRequest $request, Assignment $assignment)
-    {
-        $this->authorize('update', $assignment);
-
-        $data = $request->validated();
-        $data['rush'] = $request->boolean('rush');
-
-        if ($data['status'] === Assignment::STATUS_UNASSIGNED
-            && $assignment->status !== Assignment::STATUS_UNASSIGNED) {
-            $data['unassigned_at'] = now();
-        }
-
-        if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
-            $data['assigned_reader_id'] = null;
-            $data['accepted_at']        = null;
-        }
-
-        if ($data['status'] === Assignment::STATUS_COMPLETED
-            && $assignment->status !== Assignment::STATUS_COMPLETED) {
-            $data['completed_at'] = now();
-        }
-
-        $assignment->update($data);
-
-        return redirect()->route('assignments.index')->with('success', 'Assignment updated.');
     }
 
     public function updateStatus(Request $request, Assignment $assignment)
