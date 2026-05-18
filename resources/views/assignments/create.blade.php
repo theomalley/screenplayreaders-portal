@@ -15,8 +15,11 @@
                       x-data="{
                           vendor: '{{ old('vendor', 'sr') }}',
                           assignmentType: '{{ old('assignment_type', '') }}',
+                          pageCount: '{{ old('page_count', '') }}',
+                          customOversizedFee: '{{ old('custom_oversized_fee', '') }}',
                           overrideRate: false,
                           updatePayDisplay() {
+                              if (this.overrideRate) return;
                               const r = window._srRates;
                               const map = {
                                   sr: {
@@ -31,30 +34,45 @@
                                       development_notes: r.rate_wd_development_notes,
                                   },
                               };
-                              if (this.overrideRate) return;
+                              const oversized121 = {
+                                  sr: r.rate_sr_oversized_121_160,
+                                  wd: r.rate_wd_oversized_121_160,
+                              };
                               const el = document.getElementById('pay_rate_display');
+                              const hidden = document.getElementById('pay_rate_hidden');
                               if (!el) return;
                               if (!this.assignmentType) {
                                   el.textContent = '—';
                                   el.className = 'text-sm text-gray-400';
+                                  if (hidden) hidden.value = '';
                                   return;
                               }
                               if (this.vendor === 'sr' && this.assignmentType === 'book') {
                                   el.textContent = 'Custom (set per assignment)';
                                   el.className = 'text-sm text-gray-500 italic';
+                                  if (hidden) hidden.value = '';
                                   return;
                               }
-                              const rate = (map[this.vendor] || {})[this.assignmentType];
-                              const hidden = document.getElementById('pay_rate_hidden');
-                              if (rate !== undefined) {
-                                  el.textContent = '$' + parseFloat(rate).toFixed(2);
-                                  el.className = 'text-sm font-semibold text-gray-900';
-                                  if (hidden) hidden.value = parseFloat(rate).toFixed(2);
-                              } else {
+                              const base = (map[this.vendor] || {})[this.assignmentType];
+                              if (base === undefined) {
                                   el.textContent = '—';
                                   el.className = 'text-sm text-gray-400';
                                   if (hidden) hidden.value = '';
+                                  return;
                               }
+                              let total = parseFloat(base);
+                              const pages = parseInt(this.pageCount, 10);
+                              if (!isNaN(pages)) {
+                                  if (pages >= 121 && pages <= 160) {
+                                      total += parseFloat(oversized121[this.vendor] || 0);
+                                  } else if (pages >= 161) {
+                                      const fee = parseFloat(this.customOversizedFee);
+                                      if (!isNaN(fee)) total += fee;
+                                  }
+                              }
+                              el.textContent = '$' + total.toFixed(2);
+                              el.className = 'text-sm font-semibold text-gray-900';
+                              if (hidden) hidden.value = total.toFixed(2);
                           },
                           init() { this.updatePayDisplay(); }
                       }">
@@ -114,6 +132,17 @@
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                     </div>
 
+                    {{-- Page Count --}}
+                    <div>
+                        <x-input-label for="page_count" value="Page Count" />
+                        <input type="number" id="page_count" name="page_count"
+                            min="1" step="1" placeholder="e.g. 95"
+                            x-model="pageCount"
+                            @input="updatePayDisplay()"
+                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
+                    </div>
+
                     {{-- Pay Rate display --}}
                     <div class="pt-4 border-t border-gray-100">
                         <x-input-label value="Pay Rate" />
@@ -122,6 +151,18 @@
 
                         <div x-show="!overrideRate" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
                             <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
+                        </div>
+
+                        <div x-show="parseInt(pageCount) >= 161 && !overrideRate" class="mt-3">
+                            <x-input-label for="custom_oversized_fee" value="Oversized Fee (161+ pages)" />
+                            <div class="mt-1 flex items-center gap-1">
+                                <span class="text-gray-400 text-sm">+$</span>
+                                <input type="number" id="custom_oversized_fee"
+                                    min="0" step="0.01" placeholder="0.00"
+                                    x-model="customOversizedFee"
+                                    @input="updatePayDisplay()"
+                                    class="block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
                         </div>
 
                         <div x-show="overrideRate" class="mt-1">
