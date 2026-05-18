@@ -61,9 +61,13 @@ class AssignmentController extends Controller
     {
         $this->authorize('create', Assignment::class);
 
-        $rates = Setting::ratesForForms();
+        $rates   = Setting::ratesForForms();
+        $readers = User::where('role', 'reader')
+            ->with('readerProfile')
+            ->orderBy('name')
+            ->get();
 
-        return view('assignments.create', compact('rates'));
+        return view('assignments.create', compact('rates', 'readers'));
     }
 
     public function store()

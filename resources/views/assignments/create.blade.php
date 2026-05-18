@@ -18,6 +18,7 @@
                           pageCount: '{{ old('page_count', '') }}',
                           customOversizedFee: '{{ old('custom_oversized_fee', '') }}',
                           rush: {{ old('rush') ? 'true' : 'false' }},
+                          requestedReader: '{{ old('requested_reader_id', '') }}',
                           overrideRate: false,
                           updatePayDisplay() {
                               if (this.overrideRate) return;
@@ -73,6 +74,10 @@
                               }
                               if (this.rush && this.vendor === 'sr') {
                                   total += parseFloat(r.rate_sr_rush || 0);
+                              }
+                              if (this.requestedReader) {
+                                  const reqRate = { sr: r.rate_sr_request, wd: r.rate_wd_request };
+                                  total += parseFloat(reqRate[this.vendor] || 0);
                               }
                               el.textContent = '$' + total.toFixed(2);
                               el.className = 'text-sm font-semibold text-gray-900';
@@ -161,6 +166,23 @@
                             <span x-show="!rush" class="text-sm text-gray-400">Standard</span>
                             <span x-show="rush" class="text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
                         </div>
+                    </div>
+
+                    {{-- Reader Request --}}
+                    <div>
+                        <x-input-label for="requested_reader_id" value="Reader Request" />
+                        <select id="requested_reader_id" name="requested_reader_id"
+                            @change="requestedReader = $event.target.value; updatePayDisplay()"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="">None</option>
+                            @foreach ($readers as $reader)
+                                <option value="{{ $reader->id }}"
+                                    {{ old('requested_reader_id') == $reader->id ? 'selected' : '' }}>
+                                    {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('requested_reader_id')" class="mt-1" />
                     </div>
 
                     {{-- Pay Rate display --}}
