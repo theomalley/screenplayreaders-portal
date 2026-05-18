@@ -260,6 +260,23 @@
                             <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
                         </div>
 
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="date" value="Date" />
+                                <input type="date" id="date" name="date"
+                                    value="{{ $v('date', $assignment->created_at->toDateString()) }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                <x-input-error :messages="$errors->get('date')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="time" value="Time" />
+                                <input type="time" id="time" name="time"
+                                    value="{{ $v('time', $assignment->created_at->format('H:i')) }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                <x-input-error :messages="$errors->get('time')" class="mt-1" />
+                            </div>
+                        </div>
+
                         <div>
                             <x-input-label for="assigned_reader_id" value="Assigned Reader" />
                             <select id="assigned_reader_id" name="assigned_reader_id"

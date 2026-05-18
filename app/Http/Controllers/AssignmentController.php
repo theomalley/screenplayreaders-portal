@@ -10,6 +10,7 @@ use App\Models\Assignment;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class AssignmentController extends Controller
@@ -189,6 +190,11 @@ class AssignmentController extends Controller
 
         $data         = $request->validated();
         $data['rush'] = $request->boolean('rush');
+
+        if (!empty($data['date']) && !empty($data['time'])) {
+            $data['created_at'] = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time']);
+        }
+        unset($data['date'], $data['time']);
 
         if ($data['status'] === Assignment::STATUS_UNASSIGNED
             && $assignment->status !== Assignment::STATUS_UNASSIGNED) {

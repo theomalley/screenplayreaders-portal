@@ -36,6 +36,8 @@ class UpdateAssignmentRequest extends FormRequest
             'rush'                 => ['nullable', 'boolean'],
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'notes'                => ['nullable', 'string', 'max:2000'],
+            'date'                 => ['nullable', 'date_format:Y-m-d'],
+            'time'                 => ['nullable', 'date_format:H:i'],
             'status'               => ['required', 'in:' . $allStatuses],
         ];
     }
