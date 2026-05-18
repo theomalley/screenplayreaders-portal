@@ -11,7 +11,8 @@
     <div class="py-6">
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5">
+                <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5"
+                      x-data="{ vendor: '{{ old('vendor', 'sr') }}' }">
                     @csrf
 
                     {{-- Vendor: SR is default --}}
@@ -21,17 +22,49 @@
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="sr"
                                     {{ old('vendor', 'sr') === 'sr' ? 'checked' : '' }}
+                                    @change="vendor = 'sr'"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 SR
                             </label>
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="wd"
                                     {{ old('vendor', 'sr') === 'wd' ? 'checked' : '' }}
+                                    @change="vendor = 'wd'"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 WD
                             </label>
                         </div>
                         <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
+                    </div>
+
+                    {{-- Assignment Type (SR) --}}
+                    <div x-show="vendor === 'sr'">
+                        <x-input-label for="assignment_type_sr" value="Assignment Type" />
+                        <select id="assignment_type_sr" name="assignment_type"
+                            :disabled="vendor !== 'sr'"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="">— Select type —</option>
+                            <option value="script_coverage"  {{ old('assignment_type') === 'script_coverage'  ? 'selected' : '' }}>Script Coverage</option>
+                            <option value="notes_only"       {{ old('assignment_type') === 'notes_only'       ? 'selected' : '' }}>Notes-Only</option>
+                            <option value="deep_dive"        {{ old('assignment_type') === 'deep_dive'        ? 'selected' : '' }}>Deep-Dive Dev Notes</option>
+                            <option value="short"            {{ old('assignment_type') === 'short'            ? 'selected' : '' }}>Short Coverage</option>
+                            <option value="budget"           {{ old('assignment_type') === 'budget'           ? 'selected' : '' }}>Budget Coverage</option>
+                            <option value="book"             {{ old('assignment_type') === 'book'             ? 'selected' : '' }}>Book Coverage</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
+                    </div>
+
+                    {{-- Assignment Type (WD) --}}
+                    <div x-show="vendor === 'wd'">
+                        <x-input-label for="assignment_type_wd" value="Assignment Type" />
+                        <select id="assignment_type_wd" name="assignment_type"
+                            :disabled="vendor !== 'wd'"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="">— Select type —</option>
+                            <option value="coverage"          {{ old('assignment_type') === 'coverage'          ? 'selected' : '' }}>Coverage</option>
+                            <option value="development_notes" {{ old('assignment_type') === 'development_notes' ? 'selected' : '' }}>Development Notes</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                     </div>
 
                     {{-- Actions --}}
