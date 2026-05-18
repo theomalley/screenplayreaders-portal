@@ -88,7 +88,7 @@ class AssignmentController extends Controller
 
         if ($numReaders === 1) {
             $data['requested_reader_id'] = $readerIds[0];
-            $data['pay_rate']            = $data['pay_rate'] ?? 0;
+            $data['pay_rate']            = (float) ($data['pay_rate'] ?: 0);
             if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
                 $data['unassigned_at'] = now();
             }

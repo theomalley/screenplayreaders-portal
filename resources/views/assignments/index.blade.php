@@ -140,11 +140,13 @@
                             <tbody class="bg-white divide-y divide-gray-100">
                                 @foreach ($assignments as $assignment)
                                     @php
-                                        $diff     = now()->diff($assignment->created_at);
-                                        $ageStr   = $diff->days >= 1
-                                            ? ($diff->days . 'd ' . $diff->h . 'h')
-                                            : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm'));
-                                        $ageTitle = $assignment->created_at->format('M j, Y g:ia');
+                                        $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                        $ageStr   = $diff
+                                            ? ($diff->days >= 1
+                                                ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                            : '—';
+                                        $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
 
                                         $statusColor = match($assignment->status) {
                                             'unassigned' => 'bg-amber-100 text-amber-800',
@@ -374,11 +376,13 @@
                                         {{-- Reader's own assignments first --}}
                                         @foreach($mine as $assignment)
                                             @php
-                                                $diff     = now()->diff($assignment->created_at);
-                                                $ageStr   = $diff->days >= 1
-                                                    ? ($diff->days . 'd ' . $diff->h . 'h')
-                                                    : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm'));
-                                                $ageTitle = $assignment->created_at->format('M j, Y g:ia');
+                                                $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                                $ageStr   = $diff
+                                                    ? ($diff->days >= 1
+                                                        ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                        : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                                    : '—';
+                                                $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                                 $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
                                                 $statusColor = match($assignment->status) {
                                                     'assigned'  => 'bg-green-100 text-green-800',
@@ -470,11 +474,13 @@
                                         {{-- Available assignments --}}
                                         @foreach($available as $assignment)
                                             @php
-                                                $diff     = now()->diff($assignment->created_at);
-                                                $ageStr   = $diff->days >= 1
-                                                    ? ($diff->days . 'd ' . $diff->h . 'h')
-                                                    : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm'));
-                                                $ageTitle = $assignment->created_at->format('M j, Y g:ia');
+                                                $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                                $ageStr   = $diff
+                                                    ? ($diff->days >= 1
+                                                        ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                        : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                                    : '—';
+                                                $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                                 $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
                                                 $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
                                                 $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
@@ -575,11 +581,13 @@
                                     <tbody class="bg-white divide-y divide-gray-100">
                                         @foreach($mine as $assignment)
                                             @php
-                                                $diff     = now()->diff($assignment->created_at);
-                                                $ageStr   = $diff->days >= 1
-                                                    ? ($diff->days . 'd ' . $diff->h . 'h')
-                                                    : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm'));
-                                                $ageTitle = $assignment->created_at->format('M j, Y g:ia');
+                                                $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                                $ageStr   = $diff
+                                                    ? ($diff->days >= 1
+                                                        ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                        : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                                    : '—';
+                                                $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                                 $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
                                                 $statusColor = match($assignment->status) {
                                                     'assigned'  => 'bg-green-100 text-green-800',
