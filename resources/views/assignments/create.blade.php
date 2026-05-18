@@ -41,16 +41,16 @@
                             <x-input-label value="Vendor" />
                             <div class="mt-2 flex gap-4">
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="vendor" value="sr" x-model="vendor"
-                                        {{ old('vendor', 'sr') === 'sr' ? 'checked' : '' }}
-                                        @change="vendor = 'sr'; assignmentType = ''; computeRate()"
+                                    <input type="radio" name="vendor" value="sr"
+                                        :checked="vendor === 'sr'"
+                                        @change="vendor = 'sr'; assignmentType = ''; updateTypeOptions(); computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     SR
                                 </label>
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="vendor" value="wd" x-model="vendor"
-                                        {{ old('vendor', 'sr') === 'wd' ? 'checked' : '' }}
-                                        @change="vendor = 'wd'; assignmentType = ''; computeRate()"
+                                    <input type="radio" name="vendor" value="wd"
+                                        :checked="vendor === 'wd'"
+                                        @change="vendor = 'wd'; assignmentType = ''; updateTypeOptions(); computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     WD
                                 </label>
@@ -63,7 +63,7 @@
                                 @change="assignmentType = $event.target.value; computeRate()"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                 <option value="">— Set later —</option>
-                                <template x-for="opt in currentAssignmentTypeOptions" :key="opt.value">
+                                <template x-for="opt in assignmentTypeOptions" :key="opt.value">
                                     <option :value="opt.value" :selected="opt.value === assignmentType" x-text="opt.label"></option>
                                 </template>
                             </select>
@@ -241,14 +241,16 @@
             rateNote:             '',
             bookPayRateInput:     '',
             customOversizedInput: '',
+            assignmentTypeOptions: [],
 
             init() {
+                this.updateTypeOptions();
                 this.computeRate();
             },
 
-            get currentAssignmentTypeOptions() {
+            updateTypeOptions() {
                 if (this.vendor === 'sr') {
-                    return [
+                    this.assignmentTypeOptions = [
                         { value: 'script_coverage', label: 'Script Coverage' },
                         { value: 'notes_only',       label: 'Notes-Only Coverage' },
                         { value: 'short',            label: 'Short Coverage' },
@@ -256,14 +258,14 @@
                         { value: 'budget',           label: 'Budget Script Coverage' },
                         { value: 'book',             label: 'Book Coverage' },
                     ];
-                }
-                if (this.vendor === 'wd') {
-                    return [
+                } else if (this.vendor === 'wd') {
+                    this.assignmentTypeOptions = [
                         { value: 'coverage',          label: 'Coverage' },
                         { value: 'development_notes', label: 'Development Notes' },
                     ];
+                } else {
+                    this.assignmentTypeOptions = [];
                 }
-                return [];
             },
 
             onAssignedReaderChange() {
