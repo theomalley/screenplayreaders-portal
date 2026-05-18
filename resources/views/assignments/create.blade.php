@@ -223,6 +223,64 @@
                         </div>
                     </div>
 
+                    {{-- Assignment Details --}}
+                    <div class="pt-4 border-t border-gray-100 space-y-5">
+
+                        <div>
+                            <x-input-label for="order_number" value="Order #" />
+                            <input type="text" id="order_number" name="order_number"
+                                value="{{ old('order_number') }}"
+                                placeholder="e.g. 12345"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="script_title" value="Title" />
+                            <input type="text" id="script_title" name="script_title"
+                                value="{{ old('script_title') }}"
+                                placeholder="Script title"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="writer_name" value="Writer Name" />
+                            <input type="text" id="writer_name" name="writer_name"
+                                value="{{ old('writer_name') }}"
+                                placeholder="e.g. John Smith"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="date" value="Date" />
+                                <input type="date" id="date" name="date"
+                                    value="{{ old('date', now()->toDateString()) }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                <x-input-error :messages="$errors->get('date')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="time" value="Time" />
+                                @php
+                                    $defaultTime = now()->setMinutes(now()->minute < 30 ? 0 : 30)->format('H:i');
+                                @endphp
+                                <select id="time" name="time"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    @for ($h = 0; $h < 24; $h++)
+                                        @foreach ([0, 30] as $m)
+                                            @php $t = sprintf('%02d:%02d', $h, $m); @endphp
+                                            <option value="{{ $t }}" {{ old('time', $defaultTime) === $t ? 'selected' : '' }}>{{ $t }}</option>
+                                        @endforeach
+                                    @endfor
+                                </select>
+                                <x-input-error :messages="$errors->get('time')" class="mt-1" />
+                            </div>
+                        </div>
+
+                    </div>
+
                     {{-- Actions --}}
                     <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
                         <a href="{{ route('assignments.index') }}"
