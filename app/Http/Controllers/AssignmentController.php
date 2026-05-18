@@ -1,6 +1,6 @@
 <?php
 
-// v1.1 — 2026-05-16 | index, create, store implemented. accept/cancel/edit stubs remain.
+// v1.2 — 2026-05-18 | multi-reader assignments; per-slot reader request dropdowns.
 
 namespace App\Http\Controllers;
 
