@@ -19,7 +19,7 @@
                           customOversizedFee: '{{ old('custom_oversized_fee', '') }}',
                           rush: {{ old('rush') ? 'true' : 'false' }},
                           numReaders: '{{ old('num_readers', '1') }}',
-                          requestedReader: '{{ old('requested_reader_id', '') }}',
+                          requestedReaders: ['{{ old('requested_reader_id_1', '') }}', '{{ old('requested_reader_id_2', '') }}', '{{ old('requested_reader_id_3', '') }}'],
                           overrideRate: false,
                           updatePayDisplay() {
                               if (this.overrideRate && this.numReaders === '1') return;
@@ -42,38 +42,45 @@
                               const hidden = document.getElementById('pay_rate_hidden');
                               if (!el) return;
 
-                              // Compute modifiers once — applied to every sub-assignment
-                              let mod = 0;
+                              // Shared modifiers: oversized + rush (same for every sub-assignment)
+                              let sharedMod = 0;
                               const pages = parseInt(this.pageCount, 10);
                               if (!isNaN(pages)) {
                                   if (pages >= 121 && pages <= 160) {
-                                      mod += parseFloat(oversized121[this.vendor] || 0);
+                                      sharedMod += parseFloat(oversized121[this.vendor] || 0);
                                   } else if (pages >= 161) {
                                       const fee = parseFloat(this.customOversizedFee);
-                                      if (!isNaN(fee)) mod += fee;
+                                      if (!isNaN(fee)) sharedMod += fee;
                                   }
                               }
                               if (this.rush)
-                                  mod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
-                              if (this.requestedReader)
-                                  mod += parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
+                                  sharedMod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
+
+                              // Reader request modifier — per slot, since each reader may or may not be requested
+                              const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
+                              const modFor  = (i) => this.requestedReaders[i] ? reqRate : 0;
 
                               if (this.numReaders !== '1') {
-                                  const typeA  = this.vendor === 'sr' ? 'script_coverage'   : 'coverage';
-                                  const typeB  = this.vendor === 'sr' ? 'notes_only'         : 'development_notes';
-                                  const labelA = this.vendor === 'sr' ? 'SC'                 : 'Coverage';
-                                  const labelB = this.vendor === 'sr' ? 'NO'                 : 'Dev Notes';
-                                  const rateA  = parseFloat((map[this.vendor] || {})[typeA] || 0) + mod;
-                                  const rateB  = parseFloat((map[this.vendor] || {})[typeB] || 0) + mod;
-                                  const numB   = parseInt(this.numReaders) - 1;
-                                  const parts  = ['$' + rateA.toFixed(2) + ' (' + labelA + ')'];
-                                  for (let i = 0; i < numB; i++) parts.push('$' + rateB.toFixed(2) + ' (' + labelB + ')');
+                                  const typeA  = this.vendor === 'sr' ? 'script_coverage' : 'coverage';
+                                  const typeB  = this.vendor === 'sr' ? 'notes_only'       : 'development_notes';
+                                  const labelA = this.vendor === 'sr' ? 'SC'               : 'Coverage';
+                                  const labelB = this.vendor === 'sr' ? 'NO'               : 'Dev Notes';
+                                  const baseA  = parseFloat((map[this.vendor] || {})[typeA] || 0);
+                                  const baseB  = parseFloat((map[this.vendor] || {})[typeB] || 0);
+                                  const n      = parseInt(this.numReaders);
+                                  const parts  = [];
+                                  for (let i = 0; i < n; i++) {
+                                      const base  = i === 0 ? baseA : baseB;
+                                      const label = i === 0 ? labelA : labelB;
+                                      parts.push('$' + (base + sharedMod + modFor(i)).toFixed(2) + ' (' + label + ')');
+                                  }
                                   el.textContent = parts.join(' + ');
                                   el.className = 'text-sm font-semibold text-gray-900';
                                   if (hidden) hidden.value = '';
                                   return;
                               }
 
+                              // 1R path
                               if (!this.assignmentType) {
                                   el.textContent = '—';
                                   el.className = 'text-sm text-gray-400';
@@ -93,7 +100,7 @@
                                   if (hidden) hidden.value = '';
                                   return;
                               }
-                              const total = parseFloat(base) + mod;
+                              const total = parseFloat(base) + sharedMod + modFor(0);
                               el.textContent = '$' + total.toFixed(2);
                               el.className = 'text-sm font-semibold text-gray-900';
                               if (hidden) hidden.value = total.toFixed(2);
@@ -109,14 +116,14 @@
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="sr"
                                     {{ old('vendor', 'sr') === 'sr' ? 'checked' : '' }}
-                                    @change="vendor = 'sr'; assignmentType = ''; updatePayDisplay()"
+                                    @change="vendor = 'sr'; assignmentType = ''; requestedReaders = ['', '', '']; updatePayDisplay()"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 SR
                             </label>
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="wd"
                                     {{ old('vendor', 'sr') === 'wd' ? 'checked' : '' }}
-                                    @change="vendor = 'wd'; assignmentType = ''; numReaders = '1'; updatePayDisplay()"
+                                    @change="vendor = 'wd'; assignmentType = ''; numReaders = '1'; requestedReaders = ['', '', '']; updatePayDisplay()"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 WD
                             </label>
@@ -207,21 +214,67 @@
                         </div>
                     </div>
 
-                    {{-- Reader Request --}}
-                    <div>
-                        <x-input-label for="requested_reader_id" value="Reader Request" />
-                        <select id="requested_reader_id" name="requested_reader_id"
-                            @change="requestedReader = $event.target.value; updatePayDisplay()"
-                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="">None</option>
-                            @foreach ($readers as $reader)
-                                <option value="{{ $reader->id }}"
-                                    {{ old('requested_reader_id') == $reader->id ? 'selected' : '' }}>
-                                    {{ $reader->readerProfile?->initials ?? $reader->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('requested_reader_id')" class="mt-1" />
+                    {{-- Reader Request(s) --}}
+                    <div class="space-y-3">
+
+                        {{-- Slot 1 — always visible --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">
+                                <span x-text="numReaders !== '1' ? 'Reader Request 1' : 'Reader Request'"></span>
+                            </label>
+                            <select name="requested_reader_id_1"
+                                @change="requestedReaders[0] = $event.target.value; updatePayDisplay()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">None</option>
+                                @foreach ($readers as $reader)
+                                    <option value="{{ $reader->id }}"
+                                        :disabled="requestedReaders[1] === '{{ $reader->id }}' || requestedReaders[2] === '{{ $reader->id }}'"
+                                        {{ old('requested_reader_id_1') == $reader->id ? 'selected' : '' }}>
+                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('requested_reader_id_1')" class="mt-1" />
+                        </div>
+
+                        {{-- Slot 2 — visible for 2R and 3R --}}
+                        <div x-show="numReaders === '2' || numReaders === '3'">
+                            <x-input-label value="Reader Request 2" />
+                            <select name="requested_reader_id_2"
+                                :disabled="numReaders === '1'"
+                                @change="requestedReaders[1] = $event.target.value; updatePayDisplay()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">None</option>
+                                @foreach ($readers as $reader)
+                                    <option value="{{ $reader->id }}"
+                                        :disabled="requestedReaders[0] === '{{ $reader->id }}' || requestedReaders[2] === '{{ $reader->id }}'"
+                                        {{ old('requested_reader_id_2') == $reader->id ? 'selected' : '' }}>
+                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('requested_reader_id_2')" class="mt-1" />
+                        </div>
+
+                        {{-- Slot 3 — visible for 3R only --}}
+                        <div x-show="numReaders === '3'">
+                            <x-input-label value="Reader Request 3" />
+                            <select name="requested_reader_id_3"
+                                :disabled="numReaders !== '3'"
+                                @change="requestedReaders[2] = $event.target.value; updatePayDisplay()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">None</option>
+                                @foreach ($readers as $reader)
+                                    <option value="{{ $reader->id }}"
+                                        :disabled="requestedReaders[0] === '{{ $reader->id }}' || requestedReaders[1] === '{{ $reader->id }}'"
+                                        {{ old('requested_reader_id_3') == $reader->id ? 'selected' : '' }}>
+                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('requested_reader_id_3')" class="mt-1" />
+                        </div>
+
                     </div>
 
                     {{-- Pay Rate display --}}

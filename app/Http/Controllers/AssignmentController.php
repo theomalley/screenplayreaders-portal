@@ -78,36 +78,45 @@ class AssignmentController extends Controller
         $data         = $request->validated();
         $data['rush'] = $request->boolean('rush');
         $numReaders   = (int) $data['num_readers'];
-        unset($data['num_readers']);
+
+        // Extract per-slot reader IDs then strip form-only keys from $data
+        $readerIds = [
+            (int) ($data['requested_reader_id_1'] ?: 0) ?: null,
+            (int) ($data['requested_reader_id_2'] ?: 0) ?: null,
+            (int) ($data['requested_reader_id_3'] ?: 0) ?: null,
+        ];
+        unset($data['num_readers'], $data['requested_reader_id_1'], $data['requested_reader_id_2'], $data['requested_reader_id_3']);
 
         if ($numReaders === 1) {
+            $data['requested_reader_id'] = $readerIds[0];
             if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
                 $data['unassigned_at'] = now();
             }
             Assignment::create($data);
         } else {
-            $rates    = Setting::ratesForForms();
-            $pageCount           = (int) ($data['page_count'] ?? 0);
-            $customOversizedFee  = (float) $request->input('custom_oversized_fee', 0);
+            $rates              = Setting::ratesForForms();
+            $pageCount          = (int) ($data['page_count'] ?? 0);
+            $customOversizedFee = (float) $request->input('custom_oversized_fee', 0);
 
             $types = $numReaders === 2
                 ? ['script_coverage', 'notes_only']
                 : ['script_coverage', 'notes_only', 'notes_only'];
 
             $base = $data;
-            unset($base['assignment_type'], $base['pay_rate']);
+            unset($base['assignment_type'], $base['pay_rate'], $base['requested_reader_id']);
 
-            foreach ($types as $type) {
+            foreach ($types as $index => $type) {
                 $row = array_merge($base, [
-                    'assignment_type' => $type,
-                    'pay_rate'        => $this->computePayRate(
+                    'assignment_type'     => $type,
+                    'requested_reader_id' => $readerIds[$index] ?? null,
+                    'pay_rate'            => $this->computePayRate(
                         $rates,
                         $data['vendor'],
                         $type,
                         $data['rush'],
                         $pageCount,
                         $customOversizedFee,
-                        $data['requested_reader_id'] ?? null,
+                        $readerIds[$index] ?? null,
                     ),
                 ]);
                 if ($row['status'] === Assignment::STATUS_UNASSIGNED) {
