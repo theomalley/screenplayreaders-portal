@@ -5,6 +5,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,9 @@ class AssignmentController extends Controller
     {
         $this->authorize('create', Assignment::class);
 
-        return view('assignments.create');
+        $rates = Setting::ratesForForms();
+
+        return view('assignments.create', compact('rates'));
     }
 
     public function store()

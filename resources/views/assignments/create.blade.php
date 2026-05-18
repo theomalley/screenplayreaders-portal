@@ -12,7 +12,47 @@
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5"
-                      x-data="{ vendor: '{{ old('vendor', 'sr') }}' }">
+                      x-data="{
+                          vendor: '{{ old('vendor', 'sr') }}',
+                          assignmentType: '{{ old('assignment_type', '') }}',
+                          updatePayDisplay() {
+                              const r = window._srRates;
+                              const map = {
+                                  sr: {
+                                      script_coverage: r.rate_sr_script_coverage,
+                                      notes_only:      r.rate_sr_notes_only,
+                                      deep_dive:       r.rate_sr_deep_dive,
+                                      short:           r.rate_sr_short,
+                                      budget:          r.rate_sr_budget,
+                                  },
+                                  wd: {
+                                      coverage:          r.rate_wd_coverage,
+                                      development_notes: r.rate_wd_development_notes,
+                                  },
+                              };
+                              const el = document.getElementById('pay_rate_display');
+                              if (!el) return;
+                              if (!this.assignmentType) {
+                                  el.textContent = '—';
+                                  el.className = 'text-sm text-gray-400';
+                                  return;
+                              }
+                              if (this.vendor === 'sr' && this.assignmentType === 'book') {
+                                  el.textContent = 'Custom (set per assignment)';
+                                  el.className = 'text-sm text-gray-500 italic';
+                                  return;
+                              }
+                              const rate = (map[this.vendor] || {})[this.assignmentType];
+                              if (rate !== undefined) {
+                                  el.textContent = '$' + parseFloat(rate).toFixed(2);
+                                  el.className = 'text-sm font-semibold text-gray-900';
+                              } else {
+                                  el.textContent = '—';
+                                  el.className = 'text-sm text-gray-400';
+                              }
+                          },
+                          init() { this.updatePayDisplay(); }
+                      }">
                     @csrf
 
                     {{-- Vendor: SR is default --}}
@@ -22,14 +62,14 @@
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="sr"
                                     {{ old('vendor', 'sr') === 'sr' ? 'checked' : '' }}
-                                    @change="vendor = 'sr'"
+                                    @change="vendor = 'sr'; assignmentType = ''; updatePayDisplay()"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 SR
                             </label>
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="wd"
                                     {{ old('vendor', 'sr') === 'wd' ? 'checked' : '' }}
-                                    @change="vendor = 'wd'"
+                                    @change="vendor = 'wd'; assignmentType = ''; updatePayDisplay()"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 WD
                             </label>
@@ -42,6 +82,7 @@
                         <x-input-label for="assignment_type_sr" value="Assignment Type" />
                         <select id="assignment_type_sr" name="assignment_type"
                             :disabled="vendor !== 'sr'"
+                            @change="assignmentType = $event.target.value; updatePayDisplay()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— Select type —</option>
                             <option value="script_coverage"  {{ old('assignment_type') === 'script_coverage'  ? 'selected' : '' }}>Script Coverage</option>
@@ -59,12 +100,21 @@
                         <x-input-label for="assignment_type_wd" value="Assignment Type" />
                         <select id="assignment_type_wd" name="assignment_type"
                             :disabled="vendor !== 'wd'"
+                            @change="assignmentType = $event.target.value; updatePayDisplay()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— Select type —</option>
                             <option value="coverage"          {{ old('assignment_type') === 'coverage'          ? 'selected' : '' }}>Coverage</option>
                             <option value="development_notes" {{ old('assignment_type') === 'development_notes' ? 'selected' : '' }}>Development Notes</option>
                         </select>
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
+                    </div>
+
+                    {{-- Pay Rate display --}}
+                    <div class="pt-4 border-t border-gray-100">
+                        <x-input-label value="Pay Rate" />
+                        <div class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
+                            <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
+                        </div>
                     </div>
 
                     {{-- Actions --}}
@@ -78,4 +128,8 @@
             </div>
         </div>
     </div>
+
+    <script>
+    window._srRates = @json($rates);
+    </script>
 </x-app-layout>
