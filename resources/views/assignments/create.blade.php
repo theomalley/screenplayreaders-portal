@@ -116,7 +116,7 @@
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="wd"
                                     {{ old('vendor', 'sr') === 'wd' ? 'checked' : '' }}
-                                    @change="vendor = 'wd'; assignmentType = ''; updatePayDisplay()"
+                                    @change="vendor = 'wd'; assignmentType = ''; numReaders = '1'; updatePayDisplay()"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 WD
                             </label>
@@ -124,7 +124,20 @@
                         <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
                     </div>
 
-                    {{-- Assignment Type (SR) --}}
+                    {{-- # of Readers (SR only) --}}
+                    <div x-show="vendor === 'sr'">
+                        <x-input-label for="num_readers" value="# of Readers" />
+                        <select id="num_readers" name="num_readers"
+                            @change="numReaders = $event.target.value; updatePayDisplay()"
+                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="1" {{ old('num_readers', '1') === '1' ? 'selected' : '' }}>1R</option>
+                            <option value="2" {{ old('num_readers', '1') === '2' ? 'selected' : '' }}>2R</option>
+                            <option value="3" {{ old('num_readers', '1') === '3' ? 'selected' : '' }}>3R</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('num_readers')" class="mt-1" />
+                    </div>
+
+                    {{-- Assignment Type (SR — 1R: all options) --}}
                     <div x-show="vendor === 'sr' && numReaders === '1'">
                         <x-input-label for="assignment_type_sr" value="Assignment Type" />
                         <select id="assignment_type_sr" name="assignment_type"
@@ -142,11 +155,22 @@
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                     </div>
 
+                    {{-- Assignment Type (SR — 2R/3R: locked to Script Coverage) --}}
+                    <div x-show="vendor === 'sr' && numReaders !== '1'">
+                        <x-input-label for="assignment_type_sr_multi" value="Assignment Type" />
+                        <select id="assignment_type_sr_multi"
+                            disabled
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm bg-gray-50 text-gray-500 cursor-not-allowed">
+                            <option value="script_coverage" selected>Script Coverage</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-400">Notes-Only coverage(s) auto-created for the additional reader(s).</p>
+                    </div>
+
                     {{-- Assignment Type (WD) --}}
-                    <div x-show="vendor === 'wd' && numReaders === '1'">
+                    <div x-show="vendor === 'wd'">
                         <x-input-label for="assignment_type_wd" value="Assignment Type" />
                         <select id="assignment_type_wd" name="assignment_type"
-                            :disabled="vendor !== 'wd' || numReaders !== '1'"
+                            :disabled="vendor !== 'wd'"
                             @change="assignmentType = $event.target.value; updatePayDisplay()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— Select type —</option>
@@ -154,19 +178,6 @@
                             <option value="development_notes" {{ old('assignment_type') === 'development_notes' ? 'selected' : '' }}>Development Notes</option>
                         </select>
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
-                    </div>
-
-                    {{-- # of Readers --}}
-                    <div>
-                        <x-input-label for="num_readers" value="# of Readers" />
-                        <select id="num_readers" name="num_readers"
-                            @change="numReaders = $event.target.value; updatePayDisplay()"
-                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="1" {{ old('num_readers', '1') === '1' ? 'selected' : '' }}>1R</option>
-                            <option value="2" {{ old('num_readers', '1') === '2' ? 'selected' : '' }}>2R</option>
-                            <option value="3" {{ old('num_readers', '1') === '3' ? 'selected' : '' }}>3R</option>
-                        </select>
-                        <x-input-error :messages="$errors->get('num_readers')" class="mt-1" />
                     </div>
 
                     {{-- Page Count --}}
