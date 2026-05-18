@@ -17,6 +17,7 @@
                           assignmentType: '{{ old('assignment_type', '') }}',
                           pageCount: '{{ old('page_count', '') }}',
                           customOversizedFee: '{{ old('custom_oversized_fee', '') }}',
+                          rush: {{ old('rush') ? 'true' : 'false' }},
                           overrideRate: false,
                           updatePayDisplay() {
                               if (this.overrideRate) return;
@@ -69,6 +70,9 @@
                                       const fee = parseFloat(this.customOversizedFee);
                                       if (!isNaN(fee)) total += fee;
                                   }
+                              }
+                              if (this.rush && this.vendor === 'sr') {
+                                  total += parseFloat(r.rate_sr_rush || 0);
                               }
                               el.textContent = '$' + total.toFixed(2);
                               el.className = 'text-sm font-semibold text-gray-900';
@@ -141,6 +145,22 @@
                             @input="updatePayDisplay()"
                             class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                         <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
+                    </div>
+
+                    {{-- Turnaround --}}
+                    <div>
+                        <x-input-label value="Turnaround" />
+                        <div class="mt-2 flex items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" name="rush" value="1"
+                                    {{ old('rush') ? 'checked' : '' }}
+                                    @change="rush = $event.target.checked; updatePayDisplay()"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+                                <span class="text-sm text-gray-700">Rush</span>
+                            </label>
+                            <span x-show="!rush" class="text-sm text-gray-400">Standard</span>
+                            <span x-show="rush" class="text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
+                        </div>
                     </div>
 
                     {{-- Pay Rate display --}}
