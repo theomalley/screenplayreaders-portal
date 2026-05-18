@@ -22,7 +22,6 @@
                           '{{ old('page_count', $assignment->page_count) }}',
                           '{{ old('assigned_reader_id', $assignment->assigned_reader_id ?? '') }}',
                           '{{ old('status', $assignment->status) }}',
-                          '{{ old('pay_rate', $assignment->pay_rate) }}',
                           @json($rates)
                       )">
                     @csrf
@@ -45,13 +44,15 @@
                             <div class="mt-2 flex gap-4">
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
                                     <input type="radio" name="vendor" value="sr" x-model="vendor"
-                                        @change="vendor = 'sr'; assignmentType = ''; rateNote = ''"
+                                        {{ old('vendor', $assignment->vendor ?? 'sr') === 'sr' ? 'checked' : '' }}
+                                        @change="vendor = 'sr'; assignmentType = ''; computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     SR
                                 </label>
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
                                     <input type="radio" name="vendor" value="wd" x-model="vendor"
-                                        @change="vendor = 'wd'; assignmentType = ''; rateNote = ''"
+                                        {{ old('vendor', $assignment->vendor ?? 'sr') === 'wd' ? 'checked' : '' }}
+                                        @change="vendor = 'wd'; assignmentType = ''; computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     WD
                                 </label>
@@ -61,22 +62,12 @@
                         <div>
                             <x-input-label for="assignment_type" value="Assignment Type" />
                             <select id="assignment_type" name="assignment_type"
-                                x-model="assignmentType"
                                 @change="assignmentType = $event.target.value; computeRate()"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                 <option value="">— Set later —</option>
-                                <optgroup label="SR" x-show="vendor === 'sr'">
-                                    <option value="script_coverage">Script Coverage</option>
-                                    <option value="notes_only">Notes-Only Coverage</option>
-                                    <option value="short">Short Coverage</option>
-                                    <option value="deep_dive">Deep-Dive Development Notes</option>
-                                    <option value="budget">Budget Script Coverage</option>
-                                    <option value="book">Book Coverage</option>
-                                </optgroup>
-                                <optgroup label="WD" x-show="vendor === 'wd'">
-                                    <option value="coverage">Coverage</option>
-                                    <option value="development_notes">Development Notes</option>
-                                </optgroup>
+                                <template x-for="opt in currentAssignmentTypeOptions" :key="opt.value">
+                                    <option :value="opt.value" :selected="opt.value === assignmentType" x-text="opt.label"></option>
+                                </template>
                             </select>
                             <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                         </div>
@@ -103,7 +94,7 @@
                     </div>
 
                     {{-- Page count + Pay rate --}}
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-3 items-start">
                         <div>
                             <x-input-label for="page_count" value="Page Count" />
                             <input id="page_count" name="page_count" type="number"
@@ -115,28 +106,36 @@
                             <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label for="pay_rate" value="Pay Rate ($)" />
-                            <input id="pay_rate" name="pay_rate" type="number"
-                                :value="payRate"
-                                @input="payRate = $event.target.value"
-                                :readonly="!overrideRate"
-                                :class="!overrideRate ? 'mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm bg-gray-50 cursor-not-allowed' : 'mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm'"
-                                min="0" step="0.01"
-                                required />
+                            <x-input-label value="Pay Rate" />
+                            <input type="hidden" name="pay_rate" :value="payRate" />
+
+                            <div x-show="!overrideRate" class="mt-1">
+                                <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
+                                    <span x-text="payRate ? '$' + parseFloat(payRate).toFixed(2) : '—'"
+                                          :class="payRate ? 'text-sm font-semibold text-gray-900' : 'text-sm text-gray-400'"></span>
+                                </div>
+                                <p x-show="rateNote" x-cloak class="mt-1 text-xs text-indigo-500" x-text="rateNote"></p>
+                            </div>
+
+                            <input x-show="overrideRate" x-cloak
+                                type="number" x-model="payRate"
+                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm"
+                                min="0" step="0.01" placeholder="0.00" />
+
                             <div class="mt-1.5 flex items-center gap-2">
                                 <input type="checkbox" id="override_rate" x-model="overrideRate"
+                                    @change="if (!overrideRate) computeRate()"
                                     class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
                                 <label for="override_rate" class="text-xs text-gray-500 cursor-pointer select-none">Override auto-rate</label>
                             </div>
-                            <p x-show="rateNote && !overrideRate" x-cloak class="mt-1 text-xs text-indigo-500" x-text="rateNote"></p>
                             <x-input-error :messages="$errors->get('pay_rate')" class="mt-1" />
                         </div>
                     </div>
 
-                    {{-- Custom oversized fee: shown when pages > 160 and not book --}}
+                    {{-- Custom oversized fee: shown when pages > 160 and not SR book --}}
                     <div x-show="Number(pageCount) > 160 && !(vendor === 'sr' && assignmentType === 'book')" x-cloak>
                         <x-input-label value="Custom Oversized Fee ($)" />
-                        <x-text-input type="number" x-ref="customOversized" @input="computeRate()"
+                        <x-text-input type="number" x-model="customOversizedInput" @input="computeRate()"
                             min="0" step="0.01" class="mt-1 block w-full"
                             placeholder="Fee for scripts over 160 pages" />
                     </div>
@@ -144,7 +143,7 @@
                     {{-- Book pay rate: shown only for SR book coverage --}}
                     <div x-show="vendor === 'sr' && assignmentType === 'book'" x-cloak>
                         <x-input-label value="Book Pay Rate ($)" />
-                        <x-text-input type="number" x-ref="bookPayRate" @input="computeRate()"
+                        <x-text-input type="number" x-model="bookPayRateInput" @input="computeRate()"
                             min="0" step="0.01" class="mt-1 block w-full"
                             placeholder="Custom rate for book coverage" />
                     </div>
@@ -234,19 +233,45 @@
     </div>
 
     <script>
-    function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus, initialPayRate, rates) {
+    function assignmentForm(initialVendor, initialType, initialRush, initialRequestedReaderId, initialPageCount, initialAssignedReaderId, initialStatus, rates) {
         return {
-            vendor:            initialVendor || 'sr',
-            assignmentType:    initialType || '',
-            isRush:            initialRush,
-            requestedReaderId: String(initialRequestedReaderId || ''),
-            pageCount:         initialPageCount || '',
-            assignedReaderId:  String(initialAssignedReaderId || ''),
-            statusValue:       initialStatus,
-            payRate:           initialPayRate || '',
-            overrideRate:      false,
-            rates:             rates,
-            rateNote:          '',
+            vendor:               initialVendor || 'sr',
+            assignmentType:       initialType || '',
+            isRush:               initialRush,
+            requestedReaderId:    String(initialRequestedReaderId || ''),
+            pageCount:            initialPageCount || '',
+            assignedReaderId:     String(initialAssignedReaderId || ''),
+            statusValue:          initialStatus,
+            payRate:              '',
+            overrideRate:         false,
+            rates:                rates,
+            rateNote:             '',
+            bookPayRateInput:     '',
+            customOversizedInput: '',
+
+            init() {
+                this.computeRate();
+            },
+
+            get currentAssignmentTypeOptions() {
+                if (this.vendor === 'sr') {
+                    return [
+                        { value: 'script_coverage', label: 'Script Coverage' },
+                        { value: 'notes_only',       label: 'Notes-Only Coverage' },
+                        { value: 'short',            label: 'Short Coverage' },
+                        { value: 'deep_dive',        label: 'Deep-Dive Dev Notes' },
+                        { value: 'budget',           label: 'Budget Script Coverage' },
+                        { value: 'book',             label: 'Book Coverage' },
+                    ];
+                }
+                if (this.vendor === 'wd') {
+                    return [
+                        { value: 'coverage',          label: 'Coverage' },
+                        { value: 'development_notes', label: 'Development Notes' },
+                    ];
+                }
+                return [];
+            },
 
             onAssignedReaderChange() {
                 if (this.assignedReaderId && this.statusValue === 'unassigned') {
@@ -259,46 +284,46 @@
 
             computeRate() {
                 if (this.overrideRate) return;
-                if (!this.assignmentType) { this.rateNote = ''; return; }
+                if (!this.assignmentType) { this.payRate = ''; this.rateNote = ''; return; }
 
                 const pages = parseInt(this.pageCount) || 0;
                 const r = this.rates;
                 let base = 0, rush = 0, request = 0, oversized = 0;
 
                 if (this.vendor === 'sr') {
-                    const bases = {
+                    const srBases = {
                         script_coverage: r.rate_sr_script_coverage,
                         notes_only:      r.rate_sr_notes_only,
                         short:           r.rate_sr_short,
                         deep_dive:       r.rate_sr_deep_dive,
                         budget:          r.rate_sr_budget,
-                        book:            0,
                     };
                     if (this.assignmentType === 'book') {
-                        base = parseFloat(this.$refs.bookPayRate?.value) || 0;
+                        base = parseFloat(this.bookPayRateInput) || 0;
                     } else {
-                        base = bases[this.assignmentType] ?? 0;
-                        if (pages >= 121 && pages <= 160) oversized = r.rate_sr_oversized_121_160;
-                        else if (pages > 160)             oversized = parseFloat(this.$refs.customOversized?.value) || 0;
+                        base     = parseFloat(srBases[this.assignmentType]) || 0;
+                        if (pages >= 121 && pages <= 160) oversized = parseFloat(r.rate_sr_oversized_121_160) || 0;
+                        else if (pages > 160)             oversized = parseFloat(this.customOversizedInput) || 0;
                     }
-                    rush    = this.isRush ? r.rate_sr_rush : 0;
-                    request = this.requestedReaderId ? r.rate_sr_request : 0;
+                    rush    = this.isRush ? (parseFloat(r.rate_sr_rush) || 0) : 0;
+                    request = this.requestedReaderId ? (parseFloat(r.rate_sr_request) || 0) : 0;
 
                 } else if (this.vendor === 'wd') {
-                    const bases = {
+                    const wdBases = {
                         coverage:          r.rate_wd_coverage,
                         development_notes: r.rate_wd_development_notes,
                     };
-                    base = bases[this.assignmentType] ?? 0;
-                    if (pages >= 121 && pages <= 160) oversized = r.rate_wd_oversized_121_160;
-                    else if (pages > 160)             oversized = parseFloat(this.$refs.customOversized?.value) || 0;
-                    request = this.requestedReaderId ? r.rate_wd_request : 0;
+                    base    = parseFloat(wdBases[this.assignmentType]) || 0;
+                    if (pages >= 121 && pages <= 160) oversized = parseFloat(r.rate_wd_oversized_121_160) || 0;
+                    else if (pages > 160)             oversized = parseFloat(this.customOversizedInput) || 0;
+                    request = this.requestedReaderId ? (parseFloat(r.rate_wd_request) || 0) : 0;
+
                 } else {
-                    this.rateNote = ''; return;
+                    this.payRate = ''; this.rateNote = ''; return;
                 }
 
                 const total = base + rush + request + oversized;
-                this.payRate = total.toFixed(2);
+                this.payRate = total > 0 ? total.toFixed(2) : '';
 
                 const parts = [];
                 if (base > 0)      parts.push(`$${base.toFixed(2)} base`);
