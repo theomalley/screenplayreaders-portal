@@ -59,8 +59,8 @@
                         </div>
                         <div>
                             <x-input-label for="assignment_type" value="Assignment Type" />
-                            {{-- SR types: shown when vendor = sr --}}
-                            <select x-show="vendor === 'sr'" x-cloak
+                            {{-- SR types: visible by default (vendor defaults to sr) --}}
+                            <select x-show="vendor === 'sr'"
                                 id="assignment_type" name="assignment_type"
                                 :disabled="vendor !== 'sr'"
                                 @change="assignmentType = $event.target.value; computeRate()"
@@ -73,8 +73,8 @@
                                 <option value="budget"           :selected="assignmentType === 'budget'">Budget Script Coverage</option>
                                 <option value="book"             :selected="assignmentType === 'book'">Book Coverage</option>
                             </select>
-                            {{-- WD types: shown when vendor = wd --}}
-                            <select x-show="vendor === 'wd'" x-cloak
+                            {{-- WD types: hidden initially; shown when vendor switches to wd --}}
+                            <select x-show="vendor === 'wd'" style="display:none"
                                 name="assignment_type"
                                 :disabled="vendor !== 'wd'"
                                 @change="assignmentType = $event.target.value; computeRate()"
