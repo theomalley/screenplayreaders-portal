@@ -44,14 +44,14 @@
                             <div class="mt-2 flex gap-4">
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
                                     <input type="radio" name="vendor" value="sr"
-                                        :checked="vendor === 'sr'"
+                                        {{ old('vendor', $assignment->vendor ?? 'sr') === 'sr' ? 'checked' : '' }}
                                         @change="vendor = 'sr'; swapTypeOptions('sr'); computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     SR
                                 </label>
                                 <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
                                     <input type="radio" name="vendor" value="wd"
-                                        :checked="vendor === 'wd'"
+                                        {{ old('vendor', $assignment->vendor ?? 'sr') === 'wd' ? 'checked' : '' }}
                                         @change="vendor = 'wd'; swapTypeOptions('wd'); computeRate()"
                                         class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                     WD
@@ -116,14 +116,13 @@
                         </div>
                         <div>
                             <x-input-label value="Pay Rate" />
-                            <input type="hidden" name="pay_rate" :value="payRate" />
+                            <input type="hidden" id="pay_rate_hidden" name="pay_rate" :value="payRate" />
 
                             <div x-show="!overrideRate" class="mt-1">
                                 <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
-                                    <span x-text="payRate ? '$' + parseFloat(payRate).toFixed(2) : '—'"
-                                          :class="payRate ? 'text-sm font-semibold text-gray-900' : 'text-sm text-gray-400'"></span>
+                                    <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
                                 </div>
-                                <p x-show="rateNote" x-cloak class="mt-1 text-xs text-indigo-500" x-text="rateNote"></p>
+                                <p id="rate_note_display" class="mt-1 text-xs text-indigo-500" style="display:none"></p>
                             </div>
 
                             <input x-show="overrideRate" x-cloak
@@ -262,7 +261,7 @@
             },
 
             swapTypeOptions(newVendor) {
-                const select = this.$refs.typeSelect;
+                const select = document.getElementById('assignment_type');
                 const srOpts = [
                     ['script_coverage', 'Script Coverage'],
                     ['notes_only',      'Notes-Only Coverage'],
@@ -340,6 +339,24 @@
                 if (request > 0)   parts.push(`$${request.toFixed(2)} request`);
                 if (oversized > 0) parts.push(`$${oversized.toFixed(2)} oversized`);
                 this.rateNote = parts.join(' + ');
+
+                const display = document.getElementById('pay_rate_display');
+                const note    = document.getElementById('rate_note_display');
+                const hidden  = document.getElementById('pay_rate_hidden');
+                if (display) {
+                    if (this.payRate) {
+                        display.textContent = '$' + parseFloat(this.payRate).toFixed(2);
+                        display.className   = 'text-sm font-semibold text-gray-900';
+                    } else {
+                        display.textContent = '—';
+                        display.className   = 'text-sm text-gray-400';
+                    }
+                }
+                if (note) {
+                    note.textContent   = this.rateNote || '';
+                    note.style.display = this.rateNote ? '' : 'none';
+                }
+                if (hidden) hidden.value = this.payRate || '';
             },
         };
     }
