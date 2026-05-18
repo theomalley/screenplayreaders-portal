@@ -14,7 +14,7 @@
                 <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5">
                     @csrf
 
-                    {{-- Vendor --}}
+                    {{-- Vendor: SR is default --}}
                     <div>
                         <x-input-label value="Vendor" />
                         <div class="mt-2 flex gap-6">
