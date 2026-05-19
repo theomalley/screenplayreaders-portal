@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'google' => [
+        // Path to service account JSON key file — set GOOGLE_APPLICATION_CREDENTIALS in .env
+        'credentials_path'         => env('GOOGLE_APPLICATION_CREDENTIALS'),
+        'drive_scripts_folder_id'  => env('GOOGLE_DRIVE_SCRIPTS_FOLDER_ID'),
+        'drive_coverage_folder_id' => env('GOOGLE_DRIVE_COVERAGE_FOLDER_ID'),
+    ],
+
+    'portal' => [
+        'webhook_secret' => env('PORTAL_WEBHOOK_SECRET'),
+    ],
+
 ];

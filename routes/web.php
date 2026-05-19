@@ -45,6 +45,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');
+
+    // --- Admin Drive connection test (dev utility — admin/editor only) ---
+    Route::get('/admin/drive-test', function () {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        return view('admin.drive-test');
+    })->name('admin.drive-test');
+
+    Route::post('/admin/drive-test', function (\Illuminate\Http\Request $request, \App\Services\GoogleDriveService $drive) {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $request->validate(['script' => 'required|file|mimes:pdf|max:51200']);
+        $fileId   = $drive->uploadScript(0, $request->file('script')->getPathname());
+        $viewLink = $drive->viewLink($fileId);
+        $dlUrl    = $drive->downloadUrl($fileId);
+        return back()->with(compact('fileId', 'viewLink', 'dlUrl'));
+    })->name('admin.drive-test.post');
 });
 
 require __DIR__.'/auth.php';

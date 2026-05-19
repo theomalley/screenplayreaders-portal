@@ -1,54 +1,159 @@
 <?php
 
-// v1.0 — 2026-05-16 | Stub — all Google Drive API calls will live here.
-// Requires google/apiclient — add to composer.json when Drive integration is built.
+// v1.1 — 2026-05-19 | Full Drive implementation — upload script, view/download links, file replace.
+//                     createCoverageDoc, exportDocToPdf, removeTitlePage stubbed for later phases.
 
 namespace App\Services;
 
+use Google\Client;
+use Google\Service\Drive;
+use Google\Service\Drive\DriveFile;
+use Google\Service\Drive\Permission;
+
 class GoogleDriveService
 {
-    // Drive folder IDs are set via GOOGLE_DRIVE_SCRIPTS_FOLDER_ID and
-    // GOOGLE_DRIVE_COVERAGE_FOLDER_ID environment variables.
+    private Drive $drive;
+
+    public function __construct()
+    {
+        $client = new Client();
+        // Reads GOOGLE_APPLICATION_CREDENTIALS env var automatically
+        $client->useApplicationDefaultCredentials();
+        $client->addScope(Drive::DRIVE);
+        $this->drive = new Drive($client);
+    }
 
     /**
-     * Upload a script PDF to the scripts/{assignment_id}/ Drive folder.
-     * Returns the Drive file ID.
+     * Upload a script PDF into scripts/{assignmentId}/ and return the Drive file ID.
+     * The file is set view-only (anyone with link, no download/print).
      */
     public function uploadScript(int $assignmentId, string $localPath): string
     {
-        throw new \RuntimeException('GoogleDriveService not yet implemented.');
+        $folderId = $this->ensureFolder(
+            config('services.google.drive_scripts_folder_id'),
+            (string) $assignmentId
+        );
+
+        $file = $this->drive->files->create(
+            new DriveFile(['name' => 'script.pdf', 'parents' => [$folderId]]),
+            [
+                'data'       => file_get_contents($localPath),
+                'mimeType'   => 'application/pdf',
+                'uploadType' => 'multipart',
+                'fields'     => 'id',
+            ]
+        );
+
+        $this->setViewOnly($file->id);
+
+        return $file->id;
     }
 
     /**
-     * Remove the first page of a PDF, re-upload in place, and return the same file ID.
-     * Uses a local PDF library (e.g. spatie/pdf-to-image or barryvdh/laravel-dompdf).
+     * Replace the content of an existing Drive file in place (same file ID, same sharing).
+     * Used when an admin removes a title page and re-uploads.
      */
-    public function removeTitlePage(string $driveFileId, string $localPath): string
+    public function replaceFile(string $fileId, string $localPath): string
     {
-        throw new \RuntimeException('GoogleDriveService not yet implemented.');
+        $this->drive->files->update(
+            $fileId,
+            new DriveFile(),
+            [
+                'data'       => file_get_contents($localPath),
+                'mimeType'   => 'application/pdf',
+                'uploadType' => 'multipart',
+            ]
+        );
+
+        return $fileId;
     }
 
     /**
-     * Create a Google Doc from coverage content and return the Doc file ID.
+     * Iframe-embeddable view-only URL (no download button shown in the Drive viewer).
+     * Use this for reader-facing script display.
      */
-    public function createCoverageDoc(int $assignmentId, string $htmlContent): string
+    public function viewLink(string $fileId): string
     {
-        throw new \RuntimeException('GoogleDriveService not yet implemented.');
+        return "https://drive.google.com/file/d/{$fileId}/preview";
     }
 
     /**
-     * Export a Google Doc to PDF, save to Drive, and return the PDF file ID.
+     * Direct download URL — only surface this in admin/editor UI.
      */
-    public function exportDocToPdf(string $docFileId, int $assignmentId): string
+    public function downloadUrl(string $fileId): string
     {
-        throw new \RuntimeException('GoogleDriveService not yet implemented.');
+        return "https://drive.google.com/uc?export=download&id={$fileId}";
     }
 
     /**
-     * Return a view-only sharing link for a Drive file.
+     * Strip the first page from a Drive PDF, re-upload in place, return same file ID.
+     * Requires a local PDF manipulation library (e.g. spatie/pdf-to-image + Imagick).
      */
-    public function viewLink(string $driveFileId): string
+    public function removeTitlePage(string $_fileId, string $_localPath): string
     {
-        throw new \RuntimeException('GoogleDriveService not yet implemented.');
+        throw new \RuntimeException('removeTitlePage not yet implemented.');
+    }
+
+    /**
+     * Create a Google Doc from formatted coverage HTML and return the Doc file ID.
+     * Called by the coverage submission job after a reader submits.
+     */
+    public function createCoverageDoc(int $_assignmentId, string $_htmlContent): string
+    {
+        throw new \RuntimeException('createCoverageDoc not yet implemented.');
+    }
+
+    /**
+     * Export an existing Google Doc to PDF, save to Drive, return the PDF file ID.
+     */
+    public function exportDocToPdf(string $_docFileId, int $_assignmentId): string
+    {
+        throw new \RuntimeException('exportDocToPdf not yet implemented.');
+    }
+
+    // -------------------------------------------------------------------------
+
+    /**
+     * Set a file to "anyone with link = viewer" and prevent viewers from downloading or printing.
+     */
+    private function setViewOnly(string $fileId): void
+    {
+        $this->drive->permissions->create(
+            $fileId,
+            new Permission(['type' => 'anyone', 'role' => 'reader']),
+            ['fields' => 'id']
+        );
+
+        // copyRequiresWriterPermission blocks the download/print options in Drive UI
+        $this->drive->files->update($fileId, new DriveFile([
+            'copyRequiresWriterPermission' => true,
+        ]));
+    }
+
+    /**
+     * Find or create a subfolder named $name inside $parentId. Returns the folder ID.
+     */
+    private function ensureFolder(string $parentId, string $name): string
+    {
+        $results = $this->drive->files->listFiles([
+            'q'      => "name='{$name}' and '{$parentId}' in parents"
+                      . " and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            'fields' => 'files(id)',
+        ]);
+
+        if (!empty($results->files)) {
+            return $results->files[0]->id;
+        }
+
+        $folder = $this->drive->files->create(
+            new DriveFile([
+                'name'     => $name,
+                'mimeType' => 'application/vnd.google-apps.folder',
+                'parents'  => [$parentId],
+            ]),
+            ['fields' => 'id']
+        );
+
+        return $folder->id;
     }
 }
