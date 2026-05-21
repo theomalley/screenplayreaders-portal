@@ -106,7 +106,10 @@ class ReaderProfileController extends Controller
             unset($data['photo']);
         }
 
-        $userUpdate = ['email' => $data['email']];
+        $userUpdate = [
+            'name'  => $data['first_name'] . ' ' . $data['last_name'],
+            'email' => $data['email'],
+        ];
         if (!empty($data['password'])) {
             $userUpdate['password'] = Hash::make($data['password']);
         }
