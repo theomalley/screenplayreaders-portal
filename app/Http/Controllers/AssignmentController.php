@@ -172,6 +172,44 @@ class AssignmentController extends Controller
         return round($total, 2);
     }
 
+    public function removePages(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        abort_unless($assignment->drive_script_file_id, 422, 'No script on file.');
+
+        $request->validate([
+            'pages' => 'required|string|max:200',
+        ]);
+
+        $drive     = app(\App\Services\GoogleDriveService::class);
+        $rawInput  = trim($request->input('pages'));
+
+        // "last" is a special token — resolve to actual last page number
+        if ($rawInput === 'last') {
+            $tmp       = $drive->downloadToTemp($assignment->drive_script_file_id);
+            $pdf       = new \setasign\Fpdi\Fpdi();
+            $pageCount = $pdf->setSourceFile($tmp);
+            @unlink($tmp);
+            $pages = [$pageCount];
+        } else {
+            $pages = array_values(array_filter(
+                array_map('intval', explode(',', $rawInput)),
+                fn($n) => $n > 0,
+            ));
+        }
+
+        abort_if(empty($pages), 422, 'No valid page numbers provided.');
+
+        $drive->deletePages($assignment->drive_script_file_id, $pages);
+
+        $label = count($pages) === 1
+            ? 'Page ' . $pages[0] . ' removed.'
+            : count($pages) . ' pages removed.';
+
+        return redirect()->route('assignments.edit', $assignment)->with('success', $label);
+    }
+
     public function uploadScript(Request $request, Assignment $assignment)
     {
         $this->authorize('update', $assignment);

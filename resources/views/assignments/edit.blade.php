@@ -354,14 +354,54 @@
                     $viewUrl = "https://drive.google.com/file/d/{$fileId}/preview";
                     $dlUrl   = "https://drive.google.com/uc?export=download&id={$fileId}";
                 @endphp
-                <div class="flex items-center gap-4 mb-3">
+                <div class="flex items-center gap-4 mb-4">
                     <p class="text-sm font-medium text-gray-700">Script on file:</p>
                     <a href="{{ $viewUrl }}" target="_blank"
                        class="text-sm text-indigo-600 hover:text-indigo-800">View</a>
                     <a href="{{ $dlUrl }}" target="_blank"
                        class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
                 </div>
-                <p class="text-xs text-gray-500 mb-3">Replace it:</p>
+
+                {{-- Page removal --}}
+                <div class="mb-4 pb-4 border-b border-gray-100">
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Remove pages</p>
+                    <div class="flex flex-wrap gap-2">
+                        <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                              onsubmit="return confirm('Remove title page (page 1)?')">
+                            @csrf
+                            <input type="hidden" name="pages" value="1">
+                            <button type="submit"
+                                    class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
+                                Remove title page
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                              x-data="{}"
+                              onsubmit="return confirm('Remove last page?')">
+                            @csrf
+                            <input type="hidden" name="pages" value="last">
+                            <button type="submit"
+                                    class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
+                                Remove last page
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                              class="flex items-center gap-2"
+                              onsubmit="return this.querySelector('input[name=pages]').value.trim() !== '' || false">
+                            @csrf
+                            <input type="text" name="pages" placeholder="e.g. 1, 5, 103"
+                                   class="w-36 text-xs border border-gray-300 rounded px-2 py-1.5 focus:ring-indigo-500 focus:border-indigo-500">
+                            <button type="submit"
+                                    class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
+                                Remove
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <p class="text-xs text-gray-500 mb-3">Replace script file:</p>
             @else
                 <p class="text-sm font-medium text-gray-700 mb-3">No script uploaded yet:</p>
             @endif

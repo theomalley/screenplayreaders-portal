@@ -10,6 +10,7 @@ use Google\Client;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
 use Google\Service\Drive\Permission;
+use setasign\Fpdi\Fpdi;
 
 class GoogleDriveService
 {
@@ -89,12 +90,66 @@ class GoogleDriveService
     }
 
     /**
-     * Strip the first page from a Drive PDF, re-upload in place, return same file ID.
-     * Requires a local PDF manipulation library (e.g. spatie/pdf-to-image + Imagick).
+     * Download a Drive file to a local temp path and return that path.
      */
-    public function removeTitlePage(string $_fileId, string $_localPath): string
+    public function downloadToTemp(string $fileId): string
     {
-        throw new \RuntimeException('removeTitlePage not yet implemented.');
+        $response = $this->drive->files->get($fileId, [
+            'alt'               => 'media',
+            'supportsAllDrives' => true,
+        ]);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'sr_pdf_') . '.pdf';
+        file_put_contents($tmp, $response->getBody()->getContents());
+
+        return $tmp;
+    }
+
+    /**
+     * Delete specific pages from the Drive PDF, re-upload in place, return same file ID.
+     * $pages is a 1-indexed array of page numbers to remove, e.g. [1] or [1, 103].
+     */
+    public function deletePages(string $fileId, array $pages): string
+    {
+        $source = $this->downloadToTemp($fileId);
+
+        try {
+            $pdf       = new Fpdi();
+            $pageCount = $pdf->setSourceFile($source);
+            $keep      = array_diff(range(1, $pageCount), $pages);
+
+            if (empty($keep)) {
+                throw new \RuntimeException('Cannot delete all pages from the PDF.');
+            }
+
+            foreach ($keep as $pageNum) {
+                $tpl = $pdf->importPage($pageNum);
+                $size = $pdf->getTemplateSize($tpl);
+                $pdf->AddPage($size['width'] > $size['height'] ? 'L' : 'P', [$size['width'], $size['height']]);
+                $pdf->useTemplate($tpl);
+            }
+
+            $output = tempnam(sys_get_temp_dir(), 'sr_out_') . '.pdf';
+            $pdf->Output('F', $output);
+        } finally {
+            @unlink($source);
+        }
+
+        try {
+            $this->replaceFile($fileId, $output);
+        } finally {
+            @unlink($output);
+        }
+
+        return $fileId;
+    }
+
+    /**
+     * Strip the first page from a Drive PDF, re-upload in place, return same file ID.
+     */
+    public function removeTitlePage(string $fileId): string
+    {
+        return $this->deletePages($fileId, [1]);
     }
 
     /**
