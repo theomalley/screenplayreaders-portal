@@ -29,11 +29,11 @@ class GoogleDriveService
      * Upload a script PDF into scripts/{assignmentId}/ and return the Drive file ID.
      * The file is set view-only (anyone with link, no download/print).
      */
-    public function uploadScript(int $assignmentId, string $localPath, string $fileName = 'script.pdf'): string
+    public function uploadScript(string $orderNumber, string $localPath, string $fileName = 'script.pdf'): string
     {
         $folderId = $this->ensureFolder(
             config('services.google.drive_scripts_folder_id'),
-            (string) $assignmentId
+            $orderNumber
         );
 
         $file = $this->drive->files->create(

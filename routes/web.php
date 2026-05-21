@@ -59,7 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/drive-test', function (\Illuminate\Http\Request $request, \App\Services\GoogleDriveService $drive) {
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
         $request->validate(['script' => 'required|file|mimes:pdf|max:51200']);
-        $fileId   = $drive->uploadScript(0, $request->file('script')->getPathname());
+        $fileId   = $drive->uploadScript('drive-test', $request->file('script')->getPathname());
         $viewLink = $drive->viewLink($fileId);
         $dlUrl    = $drive->downloadUrl($fileId);
         return back()->with(compact('fileId', 'viewLink', 'dlUrl'));

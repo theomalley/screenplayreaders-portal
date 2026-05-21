@@ -136,7 +136,7 @@ class AssignmentController extends Controller
             $drive    = app(\App\Services\GoogleDriveService::class);
             $file     = $request->file('script');
             $fileName = $file->getClientOriginalName();
-            $fileId   = $drive->uploadScript($firstAssignment->id, $file->getPathname(), $fileName);
+            $fileId   = $drive->uploadScript($firstAssignment->order_number, $file->getPathname(), $fileName);
             $firstAssignment->update([
                 'drive_script_file_id'  => $fileId,
                 'drive_script_filename' => $fileName,
@@ -242,7 +242,7 @@ class AssignmentController extends Controller
             $drive->replaceFile($assignment->drive_script_file_id, $path, $fileName);
             $assignment->update(['drive_script_filename' => $fileName]);
         } else {
-            $fileId = $drive->uploadScript($assignment->id, $path, $fileName);
+            $fileId = $drive->uploadScript($assignment->order_number, $path, $fileName);
             $assignment->update([
                 'drive_script_file_id'  => $fileId,
                 'drive_script_filename' => $fileName,
