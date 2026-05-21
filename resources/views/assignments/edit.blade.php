@@ -463,11 +463,25 @@
                 <div class="mb-4">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Script on file</p>
                     <p class="text-sm text-gray-800 font-medium mb-2">{{ $assignment->drive_script_filename ?? 'script.pdf' }}</p>
-                    <div class="flex items-center gap-4">
-                        <a href="{{ $viewUrl }}" target="_blank"
-                           class="text-sm text-indigo-600 hover:text-indigo-800">View</a>
+                    <div class="flex items-center gap-4" x-data="{ open: false }">
+                        <button @click="open = true" type="button"
+                                class="text-sm text-indigo-600 hover:text-indigo-800">View</button>
                         <a href="{{ $dlUrl }}" target="_blank"
                            class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
+
+                        {{-- Full-screen script preview modal --}}
+                        <div x-show="open" x-cloak
+                             @keydown.escape.window="open = false"
+                             class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
+                                <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? 'Script' }}</span>
+                                <button @click="open = false" type="button"
+                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-4 px-1">×</button>
+                            </div>
+                            <iframe :src="open ? @js($viewUrl) : ''"
+                                    class="flex-1 w-full border-0"
+                                    allowfullscreen></iframe>
+                        </div>
                     </div>
                 </div>
 
