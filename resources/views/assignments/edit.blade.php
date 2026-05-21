@@ -27,7 +27,7 @@
                           pageCount: '{{ $v('page_count', $assignment->page_count) }}',
                           customOversizedFee: '{{ $v('custom_oversized_fee', '') }}',
                           rush: {{ $rushActive ? 'true' : 'false' }},
-                          numReaders: '{{ $v('num_readers', '1') }}',
+                          numReaders: '{{ $v('num_readers', (string) min($siblingCount, 3)) }}',
                           requestedReaders: ['{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}', '', ''],
                           overrideRate: true,
                           updatePayDisplay() {
@@ -144,9 +144,10 @@
                         <select id="num_readers" name="num_readers"
                             @change="numReaders = $event.target.value; updatePayDisplay()"
                             class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="1" {{ $v('num_readers', '1') === '1' ? 'selected' : '' }}>1R</option>
-                            <option value="2" {{ $v('num_readers', '1') === '2' ? 'selected' : '' }}>2R</option>
-                            <option value="3" {{ $v('num_readers', '1') === '3' ? 'selected' : '' }}>3R</option>
+                            @php $defaultReaders = (string) min($siblingCount, 3); @endphp
+                            <option value="1" {{ $v('num_readers', $defaultReaders) === '1' ? 'selected' : '' }}>1R</option>
+                            <option value="2" {{ $v('num_readers', $defaultReaders) === '2' ? 'selected' : '' }}>2R</option>
+                            <option value="3" {{ $v('num_readers', $defaultReaders) === '3' ? 'selected' : '' }}>3R</option>
                         </select>
                     </div>
 
