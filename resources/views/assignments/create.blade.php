@@ -379,7 +379,8 @@
                                 <option value="assigned"   {{ old('status', 'incoming') === 'assigned'   ? 'selected' : '' }}>Assigned</option>
                                 <option value="qc"         {{ old('status', 'incoming') === 'qc'         ? 'selected' : '' }}>QC</option>
                                 <option value="completed"  {{ old('status', 'incoming') === 'completed'  ? 'selected' : '' }}>Completed</option>
-                                <option value="on_hold"    {{ old('status', 'incoming') === 'on_hold'    ? 'selected' : '' }}>On Hold</option>
+                                <option value="on_hold_customer" {{ old('status', 'incoming') === 'on_hold_customer' ? 'selected' : '' }}>On Hold – Customer</option>
+                                <option value="on_hold_sr"       {{ old('status', 'incoming') === 'on_hold_sr'       ? 'selected' : '' }}>On Hold – SR</option>
                                 <option value="cancelled"  {{ old('status', 'incoming') === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
                             </select>
                             <x-input-error :messages="$errors->get('status')" class="mt-1" />

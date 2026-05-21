@@ -21,7 +21,8 @@ class UpdateAssignmentRequest extends FormRequest
             Assignment::STATUS_COMPLETED,
             Assignment::STATUS_QC,
             Assignment::STATUS_CANCELLED,
-            Assignment::STATUS_ON_HOLD,
+            Assignment::STATUS_ON_HOLD_CUSTOMER,
+            Assignment::STATUS_ON_HOLD_SR,
         ]);
 
         return [

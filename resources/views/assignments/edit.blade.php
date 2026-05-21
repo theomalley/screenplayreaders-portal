@@ -393,7 +393,8 @@
                                 <option value="assigned"   {{ $v('status', $assignment->status) === 'assigned'   ? 'selected' : '' }}>Assigned</option>
                                 <option value="qc"         {{ $v('status', $assignment->status) === 'qc'         ? 'selected' : '' }}>QC</option>
                                 <option value="completed"  {{ $v('status', $assignment->status) === 'completed'  ? 'selected' : '' }}>Completed</option>
-                                <option value="on_hold"    {{ $v('status', $assignment->status) === 'on_hold'    ? 'selected' : '' }}>On Hold</option>
+                                <option value="on_hold_customer" {{ $v('status', $assignment->status) === 'on_hold_customer' ? 'selected' : '' }}>On Hold – Customer</option>
+                                <option value="on_hold_sr"       {{ $v('status', $assignment->status) === 'on_hold_sr'       ? 'selected' : '' }}>On Hold – SR</option>
                                 <option value="cancelled"  {{ $v('status', $assignment->status) === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
                             </select>
                             <x-input-error :messages="$errors->get('status')" class="mt-1" />

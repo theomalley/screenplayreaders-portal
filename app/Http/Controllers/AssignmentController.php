@@ -364,7 +364,7 @@ class AssignmentController extends Controller
         $this->authorize('update', $assignment);
 
         $request->validate([
-            'status'             => ['required', 'in:incoming,unassigned,assigned,completed,qc,cancelled,on_hold'],
+            'status'             => ['required', 'in:incoming,unassigned,assigned,completed,qc,cancelled,on_hold_customer,on_hold_sr'],
             'assigned_reader_id' => ['nullable', 'exists:users,id'],
         ]);
 

@@ -16,8 +16,9 @@ class Assignment extends Model
     const STATUS_ASSIGNED   = 'assigned';
     const STATUS_COMPLETED  = 'completed';
     const STATUS_QC         = 'qc';
-    const STATUS_CANCELLED  = 'cancelled';
-    const STATUS_ON_HOLD    = 'on_hold';
+    const STATUS_CANCELLED       = 'cancelled';
+    const STATUS_ON_HOLD_CUSTOMER = 'on_hold_customer';
+    const STATUS_ON_HOLD_SR      = 'on_hold_sr';
 
     protected $fillable = [
         'order_number',
