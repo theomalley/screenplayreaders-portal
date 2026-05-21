@@ -48,11 +48,12 @@ class User extends Authenticatable
         return in_array($this->role, $roles, true);
     }
 
-    public function isAdmin(): bool    { return $this->role === 'admin'; }
-    public function isEditor(): bool   { return $this->role === 'editor'; }
-    public function isReader(): bool   { return $this->role === 'reader'; }
-    public function isWriter(): bool   { return $this->role === 'writer'; }
-    public function isProducer(): bool { return $this->role === 'producer'; }
+    public function isAdmin(): bool          { return $this->role === 'admin'; }
+    public function isEditor(): bool         { return $this->role === 'editor'; }
+    public function isReader(): bool         { return $this->role === 'reader'; }
+    public function isWriter(): bool         { return $this->role === 'writer'; }
+    public function isProducer(): bool       { return $this->role === 'producer'; }
+    public function isAdminOrEditor(): bool  { return $this->hasAnyRole(['admin', 'editor']); }
 
     // Admin and editor have the same assignment-management privileges
     public function canManageAssignments(): bool
