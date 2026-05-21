@@ -172,6 +172,25 @@ class AssignmentController extends Controller
         return round($total, 2);
     }
 
+    public function uploadScript(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        $request->validate(['script' => 'required|file|mimes:pdf|max:51200']);
+
+        $drive    = app(\App\Services\GoogleDriveService::class);
+        $path     = $request->file('script')->getPathname();
+
+        if ($assignment->drive_script_file_id) {
+            $drive->replaceFile($assignment->drive_script_file_id, $path);
+        } else {
+            $fileId = $drive->uploadScript($assignment->id, $path);
+            $assignment->update(['drive_script_file_id' => $fileId]);
+        }
+
+        return redirect()->route('assignments.edit', $assignment)->with('success', 'Script uploaded.');
+    }
+
     public function show(Assignment $assignment)
     {
         $this->authorize('view', $assignment);

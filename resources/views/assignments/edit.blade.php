@@ -344,4 +344,28 @@
     <script>
     window._srRates = @json($rates);
     </script>
+
+    {{-- Script upload — separate form so enctype doesn't affect the PATCH form --}}
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-5">
+            <p class="text-sm font-medium text-gray-700 mb-3">
+                {{ $assignment->drive_script_file_id ? 'Script on file — replace it:' : 'No script uploaded yet:' }}
+            </p>
+            <form method="POST"
+                  action="{{ route('assignments.uploadScript', $assignment) }}"
+                  enctype="multipart/form-data"
+                  class="flex items-center gap-3">
+                @csrf
+                <input type="file" name="script" accept="application/pdf" required
+                       class="block text-sm text-gray-700 border border-gray-300 rounded px-3 py-1.5 w-full">
+                <button type="submit"
+                        class="shrink-0 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 whitespace-nowrap">
+                    {{ $assignment->drive_script_file_id ? 'Replace Script' : 'Upload Script' }}
+                </button>
+            </form>
+            @if ($errors->has('script'))
+                <p class="mt-1 text-xs text-red-600">{{ $errors->first('script') }}</p>
+            @endif
+        </div>
+    </div>
 </x-app-layout>
