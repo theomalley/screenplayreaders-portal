@@ -29,7 +29,7 @@ class GoogleDriveService
      * Upload a script PDF into scripts/{assignmentId}/ and return the Drive file ID.
      * The file is set view-only (anyone with link, no download/print).
      */
-    public function uploadScript(int $assignmentId, string $localPath): string
+    public function uploadScript(int $assignmentId, string $localPath, string $fileName = 'script.pdf'): string
     {
         $folderId = $this->ensureFolder(
             config('services.google.drive_scripts_folder_id'),
@@ -37,7 +37,7 @@ class GoogleDriveService
         );
 
         $file = $this->drive->files->create(
-            new DriveFile(['name' => 'script.pdf', 'parents' => [$folderId]]),
+            new DriveFile(['name' => $fileName, 'parents' => [$folderId]]),
             [
                 'data'             => file_get_contents($localPath),
                 'mimeType'         => 'application/pdf',
@@ -56,11 +56,11 @@ class GoogleDriveService
      * Replace the content of an existing Drive file in place (same file ID, same sharing).
      * Used when an admin removes a title page and re-uploads.
      */
-    public function replaceFile(string $fileId, string $localPath): string
+    public function replaceFile(string $fileId, string $localPath, ?string $fileName = null): string
     {
         $this->drive->files->update(
             $fileId,
-            new DriveFile(),
+            new DriveFile($fileName ? ['name' => $fileName] : []),
             [
                 'data'              => file_get_contents($localPath),
                 'mimeType'          => 'application/pdf',

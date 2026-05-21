@@ -218,13 +218,19 @@ class AssignmentController extends Controller
         $request->validate(['script' => 'required|file|mimes:pdf|max:51200']);
 
         $drive    = app(\App\Services\GoogleDriveService::class);
-        $path     = $request->file('script')->getPathname();
+        $file     = $request->file('script');
+        $path     = $file->getPathname();
+        $fileName = $file->getClientOriginalName();
 
         if ($assignment->drive_script_file_id) {
-            $drive->replaceFile($assignment->drive_script_file_id, $path);
+            $drive->replaceFile($assignment->drive_script_file_id, $path, $fileName);
+            $assignment->update(['drive_script_filename' => $fileName]);
         } else {
-            $fileId = $drive->uploadScript($assignment->id, $path);
-            $assignment->update(['drive_script_file_id' => $fileId]);
+            $fileId = $drive->uploadScript($assignment->id, $path, $fileName);
+            $assignment->update([
+                'drive_script_file_id'  => $fileId,
+                'drive_script_filename' => $fileName,
+            ]);
         }
 
         return redirect()->route('assignments.edit', $assignment)->with('success', 'Script uploaded.');

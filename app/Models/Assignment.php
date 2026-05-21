@@ -32,6 +32,7 @@ class Assignment extends Model
         'notes',
         'status',
         'drive_script_file_id',
+        'drive_script_filename',
         'drive_coverage_doc_id',
         'drive_coverage_pdf_id',
         'assigned_reader_id',

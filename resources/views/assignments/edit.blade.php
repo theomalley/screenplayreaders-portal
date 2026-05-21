@@ -459,12 +459,15 @@
                     $viewUrl = "https://drive.google.com/file/d/{$fileId}/preview";
                     $dlUrl   = "https://drive.google.com/uc?export=download&id={$fileId}";
                 @endphp
-                <div class="flex items-center gap-4 mb-4">
-                    <p class="text-sm font-medium text-gray-700">Script on file:</p>
-                    <a href="{{ $viewUrl }}" target="_blank"
-                       class="text-sm text-indigo-600 hover:text-indigo-800">View</a>
-                    <a href="{{ $dlUrl }}" target="_blank"
-                       class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
+                <div class="mb-4">
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Script on file</p>
+                    <p class="text-sm text-gray-800 font-medium mb-2">{{ $assignment->drive_script_filename ?? 'script.pdf' }}</p>
+                    <div class="flex items-center gap-4">
+                        <a href="{{ $viewUrl }}" target="_blank"
+                           class="text-sm text-indigo-600 hover:text-indigo-800">View</a>
+                        <a href="{{ $dlUrl }}" target="_blank"
+                           class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
+                    </div>
                 </div>
 
                 {{-- Page removal --}}
