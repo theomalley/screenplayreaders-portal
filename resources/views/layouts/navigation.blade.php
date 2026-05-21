@@ -50,6 +50,9 @@
                             {{ __('Ratebook') }}
                         </x-nav-link>
                     @endif
+                    <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
+                        {{ __('Reader Manual') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -106,6 +109,9 @@
                     {{ __('Ratebook') }}
                 </x-responsive-nav-link>
             @endif
+            <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
+                {{ __('Reader Manual') }}
+            </x-responsive-nav-link>
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">

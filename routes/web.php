@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CoverageSubmissionController;
+use App\Http\Controllers\ManualController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RatebookController;
 use App\Http\Controllers\ReaderProfileController;
@@ -45,6 +46,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/readers/{user}/edit', [ReaderProfileController::class, 'edit'])->name('readers.edit');
     Route::patch('/readers/{user}', [ReaderProfileController::class, 'update'])->name('readers.update');
     Route::delete('/readers/{user}', [ReaderProfileController::class, 'destroy'])->name('readers.destroy');
+
+    Route::get('/manual', [ManualController::class, 'show'])->name('manual.show');
+    Route::patch('/manual', [ManualController::class, 'update'])->name('manual.update');
 
     Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo');
 
