@@ -566,7 +566,7 @@
                                         @if($mine->isNotEmpty() && $available->isNotEmpty())
                                             <tr>
                                                 <td colspan="11" class="px-3 py-1.5 bg-gray-50 text-xs text-gray-400 uppercase tracking-wider font-medium border-t border-gray-200">
-                                                    Available Pool
+                                                    Available Assignments
                                                 </td>
                                             </tr>
                                         @endif
