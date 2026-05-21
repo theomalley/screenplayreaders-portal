@@ -80,7 +80,7 @@
                                   }
                                   el.textContent = parts.join(' + ');
                                   el.className = 'text-sm font-semibold text-gray-900';
-                                  if (hidden) hidden.value = '';
+                                  // do not clear hidden pay_rate — this assignment still needs a value
                                   return;
                               }
 
