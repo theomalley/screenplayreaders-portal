@@ -113,13 +113,39 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <p class="text-xs text-gray-400">{{ $user->email }}</p>
-                        <div class="flex items-center gap-3">
-                            <a href="{{ route('readers.index') }}"
-                               class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
-                            <x-primary-button>Save Profile</x-primary-button>
+                    {{-- Account --}}
+                    <div class="pt-4 border-t border-gray-100 space-y-4">
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Account</p>
+
+                        <div>
+                            <x-input-label for="email" value="Email" />
+                            <x-text-input id="email" name="email" type="email"
+                                class="mt-1 block w-full"
+                                value="{{ old('email', $user->email) }}"
+                                required />
+                            <x-input-error :messages="$errors->get('email')" class="mt-1" />
                         </div>
+
+                        <div>
+                            <x-input-label for="password" value="New Password" />
+                            <x-text-input id="password" name="password" type="password"
+                                class="mt-1 block w-full"
+                                placeholder="Leave blank to keep current password" />
+                            <x-input-error :messages="$errors->get('password')" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="password_confirmation" value="Confirm New Password" />
+                            <x-text-input id="password_confirmation" name="password_confirmation" type="password"
+                                class="mt-1 block w-full"
+                                placeholder="Leave blank to keep current password" />
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+                        <a href="{{ route('readers.index') }}"
+                           class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
+                        <x-primary-button>Save Profile</x-primary-button>
                     </div>
 
                 </form>

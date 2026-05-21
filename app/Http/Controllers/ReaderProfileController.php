@@ -92,6 +92,8 @@ class ReaderProfileController extends Controller
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
             'photo'                      => ['nullable', 'image', 'max:4096'],
+            'email'                      => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'password'                   => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -104,9 +106,15 @@ class ReaderProfileController extends Controller
             unset($data['photo']);
         }
 
+        $userUpdate = ['email' => $data['email']];
+        if (!empty($data['password'])) {
+            $userUpdate['password'] = Hash::make($data['password']);
+        }
+        $user->update($userUpdate);
+
         $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],
-            $data
+            collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
         );
 
         return redirect()->route('readers.index')->with('success', 'Reader profile updated.');
