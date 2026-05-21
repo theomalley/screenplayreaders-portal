@@ -126,11 +126,7 @@ class GoogleDriveService
             new Permission(['type' => 'anyone', 'role' => 'reader']),
             ['fields' => 'id', 'supportsAllDrives' => true]
         );
-
-        // copyRequiresWriterPermission blocks the download/print options in Drive UI
-        $this->drive->files->update($fileId, new DriveFile([
-            'copyRequiresWriterPermission' => true,
-        ]), ['supportsAllDrives' => true]);
+        // copyRequiresWriterPermission cannot be set per-file on Shared Drives — manage at drive level instead.
     }
 
     /**
