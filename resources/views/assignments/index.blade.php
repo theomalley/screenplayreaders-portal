@@ -180,7 +180,10 @@
                                             default   => ucfirst($assignment->status),
                                         };
 
-                                        $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
+                                        $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
+                                        $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
+                                            ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
+                                            : null;
 
                                         $assignedInitials = $assignment->assignedReader?->readerProfile?->initials
                                             ?? ($assignment->assignedReader ? substr($assignment->assignedReader->name, 0, 2) : null);
@@ -247,9 +250,20 @@
                                         {{-- Request --}}
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             @if ($reqInitials)
-                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
+                                                <div class="flex flex-col items-center gap-0.5">
+                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-mono font-semibold">
+                                                        @if ($reqPhotoUrl)
+                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                            </span>
+                                                        @else
+                                                            {{ $reqInitials }}
+                                                        @endif
+                                                    </span>
+                                                    <span class="text-[9px] text-purple-400 font-mono leading-none">{{ $reqInitials }}</span>
+                                                </div>
                                             @else
-                                                <span class="text-xs text-gray-400">—</span>
+                                                <span class="text-gray-300">—</span>
                                             @endif
                                         </td>
 
@@ -445,7 +459,10 @@
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
                                                 $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
-                                                $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
+                                                $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
+                                                $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
+                                                    ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
+                                                    : null;
                                                 $statusColor = match($assignment->status) {
                                                     'assigned'  => 'bg-green-100 text-green-800',
                                                     'completed' => 'bg-green-100 text-green-800',
@@ -486,9 +503,20 @@
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">${{ number_format($assignment->pay_rate, 2) }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($reqInitials)
-                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
+                                                        <div class="flex flex-col items-center gap-0.5">
+                                                            <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-mono font-semibold">
+                                                                @if($reqPhotoUrl)
+                                                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                        <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                                    </span>
+                                                                @else
+                                                                    {{ $reqInitials }}
+                                                                @endif
+                                                            </span>
+                                                            <span class="text-[9px] text-purple-400 font-mono leading-none">{{ $reqInitials }}</span>
+                                                        </div>
                                                     @else
-                                                        <span class="text-xs text-gray-400">—</span>
+                                                        <span class="text-gray-300">—</span>
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
@@ -553,7 +581,10 @@
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
                                                 $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
-                                                $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
+                                                $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
+                                                $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
+                                                    ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
+                                                    : null;
                                                 $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
                                                 $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
                                                 $typeLabel = match($assignment->assignment_type) {
@@ -592,9 +623,20 @@
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">${{ number_format($assignment->pay_rate, 2) }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($reqInitials)
-                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
+                                                        <div class="flex flex-col items-center gap-0.5">
+                                                            <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-mono font-semibold">
+                                                                @if($reqPhotoUrl)
+                                                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                        <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                                    </span>
+                                                                @else
+                                                                    {{ $reqInitials }}
+                                                                @endif
+                                                            </span>
+                                                            <span class="text-[9px] text-purple-400 font-mono leading-none">{{ $reqInitials }}</span>
+                                                        </div>
                                                     @else
-                                                        <span class="text-xs text-gray-400">—</span>
+                                                        <span class="text-gray-300">—</span>
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
@@ -670,7 +712,10 @@
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
                                                 $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
-                                                $reqInitials = $assignment->requestedReader?->readerProfile?->initials;
+                                                $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
+                                                $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
+                                                    ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
+                                                    : null;
                                                 $statusColor = match($assignment->status) {
                                                     'assigned'  => 'bg-green-100 text-green-800',
                                                     'completed' => 'bg-green-100 text-green-800',
@@ -711,9 +756,20 @@
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">${{ number_format($assignment->pay_rate, 2) }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($reqInitials)
-                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
+                                                        <div class="flex flex-col items-center gap-0.5">
+                                                            <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-mono font-semibold">
+                                                                @if($reqPhotoUrl)
+                                                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                        <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                                    </span>
+                                                                @else
+                                                                    {{ $reqInitials }}
+                                                                @endif
+                                                            </span>
+                                                            <span class="text-[9px] text-purple-400 font-mono leading-none">{{ $reqInitials }}</span>
+                                                        </div>
                                                     @else
-                                                        <span class="text-xs text-gray-400">—</span>
+                                                        <span class="text-gray-300">—</span>
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
