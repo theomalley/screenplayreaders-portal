@@ -461,7 +461,7 @@
                     $dlUrl   = "https://drive.google.com/uc?export=download&id={$fileId}";
                 @endphp
                 <div class="mb-4">
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Script on file</p>
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Assignment File</p>
                     <p class="text-sm text-gray-800 font-medium mb-2">{{ $assignment->drive_script_filename ?? 'script.pdf' }}</p>
                     <div class="flex items-center gap-4" x-data="{ open: false }">
                         <button @click="open = true" type="button"
