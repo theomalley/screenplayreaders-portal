@@ -20,13 +20,25 @@ class ProfileController extends Controller
 
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $validated = $request->validated();
+
+        $request->user()->fill($validated);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
         }
 
         $request->user()->save();
+
+        if ($request->user()->isReader()) {
+            $request->user()->readerProfile()->updateOrCreate(
+                ['user_id' => $request->user()->id],
+                [
+                    'phone'             => $validated['phone'] ?? null,
+                    'sms_notifications' => $request->boolean('sms_notifications'),
+                ]
+            );
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

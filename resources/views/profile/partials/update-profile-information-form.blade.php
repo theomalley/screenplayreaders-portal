@@ -43,6 +43,28 @@
             @endif
         </div>
 
+        @if(auth()->user()->isReader())
+        <div>
+            <x-input-label for="phone" :value="__('Phone Number')" />
+            <x-text-input id="phone" name="phone" type="tel" class="mt-1 block w-full"
+                :value="old('phone', auth()->user()->readerProfile?->phone)"
+                placeholder="e.g. +1 555 123 4567"
+                autocomplete="tel" />
+            <x-input-error class="mt-2" :messages="$errors->get('phone')" />
+            <p class="mt-1 text-xs text-gray-500">Used for voice calls and optional SMS notifications.</p>
+        </div>
+
+        <div class="flex items-start gap-3">
+            <input id="sms_notifications" name="sms_notifications" type="checkbox" value="1"
+                   class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                   {{ auth()->user()->readerProfile?->sms_notifications ? 'checked' : '' }} />
+            <div>
+                <label for="sms_notifications" class="text-sm font-medium text-gray-700">Receive SMS notifications</label>
+                <p class="text-xs text-gray-500">Get a text message when new assignments are available.</p>
+            </div>
+        </div>
+        @endif
+
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
 

@@ -23,6 +23,9 @@ class ProfileUpdateRequest extends FormRequest
 
         if (!$this->user()->isReader()) {
             $rules['name'] = ['required', 'string', 'max:255'];
+        } else {
+            $rules['phone']              = ['nullable', 'string', 'max:30'];
+            $rules['sms_notifications']  = ['nullable', 'boolean'];
         }
 
         return $rules;

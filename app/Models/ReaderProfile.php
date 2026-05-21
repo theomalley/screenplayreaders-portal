@@ -18,6 +18,12 @@ class ReaderProfile extends Model
         'photo',
         'max_concurrent_assignments',
         'paypal_email',
+        'phone',
+        'sms_notifications',
+    ];
+
+    protected $casts = [
+        'sms_notifications' => 'boolean',
     ];
 
     public function user(): BelongsTo
