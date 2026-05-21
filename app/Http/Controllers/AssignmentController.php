@@ -230,6 +230,48 @@ class AssignmentController extends Controller
         return redirect()->route('assignments.edit', $assignment)->with('success', 'Script uploaded.');
     }
 
+    public function addReader(Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        abort_unless($assignment->vendor === 'sr', 422, 'Only SR assignments support multiple readers.');
+        abort_unless($assignment->order_number, 422, 'Assignment must have an order number.');
+
+        $siblingCount = Assignment::where('order_number', $assignment->order_number)->count();
+        abort_if($siblingCount >= 3, 422, 'This order already has 3 readers (maximum).');
+
+        $rates   = Setting::ratesForForms();
+        $payRate = $this->computePayRate(
+            $rates,
+            'sr',
+            'notes_only',
+            (bool) $assignment->rush,
+            (int) $assignment->page_count,
+            0,
+            null,
+        );
+
+        $newStatus = $assignment->status === Assignment::STATUS_UNASSIGNED
+            ? Assignment::STATUS_UNASSIGNED
+            : Assignment::STATUS_INCOMING;
+
+        Assignment::create([
+            'order_number'    => $assignment->order_number,
+            'vendor'          => 'sr',
+            'assignment_type' => 'notes_only',
+            'script_title'    => $assignment->script_title,
+            'writer_name'     => $assignment->writer_name,
+            'page_count'      => $assignment->page_count,
+            'rush'            => $assignment->rush,
+            'pay_rate'        => $payRate,
+            'status'          => $newStatus,
+            'unassigned_at'   => $newStatus === Assignment::STATUS_UNASSIGNED ? now() : null,
+            'notes'           => $assignment->notes,
+        ]);
+
+        return back()->with('success', 'Notes-Only assignment added to this order.');
+    }
+
     public function show(Assignment $assignment)
     {
         $this->authorize('view', $assignment);

@@ -12,9 +12,12 @@
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 @php
-                    $isOld      = session()->hasOldInput();
-                    $v          = fn($field, $default) => $isOld ? old($field) : $default;
-                    $rushActive = $isOld ? (bool) old('rush') : (bool) $assignment->rush;
+                    $isOld        = session()->hasOldInput();
+                    $v            = fn($field, $default) => $isOld ? old($field) : $default;
+                    $rushActive   = $isOld ? (bool) old('rush') : (bool) $assignment->rush;
+                    $siblingCount = $assignment->order_number
+                        ? \App\Models\Assignment::where('order_number', $assignment->order_number)->count()
+                        : 1;
                 @endphp
 
                 <form id="update-form" method="POST" action="{{ route('assignments.update', $assignment) }}" class="p-6 space-y-5"
@@ -409,15 +412,29 @@
 
                 {{-- Actions — outside the edit form so the delete form is never nested --}}
                 <div class="flex items-center justify-between px-6 pb-6 pt-4 border-t border-gray-100">
-                    <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
-                          onsubmit="return confirm('Permanently delete this assignment? This cannot be undone.')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit"
-                                class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                            Delete Assignment
-                        </button>
-                    </form>
+                    <div class="flex items-center gap-2">
+                        <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
+                              onsubmit="return confirm('Permanently delete this assignment? This cannot be undone.')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                                Delete Assignment
+                            </button>
+                        </form>
+
+                        @if ($assignment->vendor === 'sr' && $assignment->order_number && $siblingCount < 3)
+                            <form method="POST" action="{{ route('assignments.addReader', $assignment) }}">
+                                @csrf
+                                <button type="submit"
+                                        class="inline-flex items-center px-3 py-1.5 bg-white border border-indigo-300 rounded text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition"
+                                        title="{{ $siblingCount }}R on this order — click to add a Notes-Only reader">
+                                    + Add Reader
+                                    <span class="ml-1 text-indigo-400">({{ $siblingCount }}R → {{ $siblingCount + 1 }}R)</span>
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                     <div class="flex items-center gap-3">
                         <a href="{{ route('assignments.index') }}"
                            class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
