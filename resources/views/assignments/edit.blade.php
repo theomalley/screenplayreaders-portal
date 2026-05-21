@@ -348,9 +348,23 @@
     {{-- Script upload — separate form so enctype doesn't affect the PATCH form --}}
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-5">
-            <p class="text-sm font-medium text-gray-700 mb-3">
-                {{ $assignment->drive_script_file_id ? 'Script on file — replace it:' : 'No script uploaded yet:' }}
-            </p>
+            @if ($assignment->drive_script_file_id)
+                @php
+                    $fileId  = $assignment->drive_script_file_id;
+                    $viewUrl = "https://drive.google.com/file/d/{$fileId}/preview";
+                    $dlUrl   = "https://drive.google.com/uc?export=download&id={$fileId}";
+                @endphp
+                <div class="flex items-center gap-4 mb-3">
+                    <p class="text-sm font-medium text-gray-700">Script on file:</p>
+                    <a href="{{ $viewUrl }}" target="_blank"
+                       class="text-sm text-indigo-600 hover:text-indigo-800">View</a>
+                    <a href="{{ $dlUrl }}" target="_blank"
+                       class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
+                </div>
+                <p class="text-xs text-gray-500 mb-3">Replace it:</p>
+            @else
+                <p class="text-sm font-medium text-gray-700 mb-3">No script uploaded yet:</p>
+            @endif
             <form method="POST"
                   action="{{ route('assignments.uploadScript', $assignment) }}"
                   enctype="multipart/form-data"
