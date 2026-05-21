@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-21 | script upload, page deletion, assignment show view.
 // v1.2 — 2026-05-18 | multi-reader assignments; per-slot reader request dropdowns.
 
 namespace App\Http\Controllers;
