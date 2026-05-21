@@ -145,10 +145,10 @@
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Reader</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                                     <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
@@ -244,17 +244,6 @@
                                             ${{ number_format($assignment->pay_rate, 2) }}
                                         </td>
 
-                                        {{-- Notes --}}
-                                        <td class="px-3 py-3 max-w-xs">
-                                            @if ($assignment->notes)
-                                                <span class="text-gray-600 truncate block max-w-[180px]" title="{{ $assignment->notes }}">
-                                                    {{ $assignment->notes }}
-                                                </span>
-                                            @else
-                                                <span class="text-gray-300">—</span>
-                                            @endif
-                                        </td>
-
                                         {{-- Request --}}
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             @if ($reqInitials)
@@ -337,6 +326,52 @@
                                             @endif
                                         </td>
 
+                                        {{-- Notes (sticky-note icon, inline edit) --}}
+                                        <td class="px-3 py-3"
+                                            x-data="{
+                                                open: false,
+                                                note: @js($assignment->notes ?? ''),
+                                                saving: false,
+                                                saved: false,
+                                                async save() {
+                                                    this.saving = true; this.saved = false;
+                                                    try {
+                                                        const r = await fetch(@js(route('assignments.updateNotes', $assignment)), {
+                                                            method: 'PATCH',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                                'Accept': 'application/json',
+                                                            },
+                                                            body: JSON.stringify({ notes: this.note }),
+                                                        });
+                                                        if (r.ok) this.saved = true;
+                                                    } finally { this.saving = false; }
+                                                }
+                                            }">
+                                            @if($assignment->notes)
+                                                <button @click="open = !open" type="button"
+                                                        class="text-amber-500 hover:text-amber-600 transition"
+                                                        title="View / edit note">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                </button>
+                                                <div x-show="open" x-cloak class="mt-1.5 w-56">
+                                                    <textarea x-model="note" rows="3"
+                                                              class="w-full text-xs border border-gray-200 rounded p-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"></textarea>
+                                                    <div class="flex items-center justify-end gap-1 mt-1">
+                                                        <button type="button" @click="open=false"
+                                                                class="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-0.5">Close</button>
+                                                        <button type="button" :disabled="saving" @click="save()"
+                                                                class="text-xs px-2 py-0.5 bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50"
+                                                                x-text="saving ? 'Saving…' : 'Save'"></button>
+                                                    </div>
+                                                    <span x-show="saved" class="text-[10px] text-green-600 block mt-0.5">Saved</span>
+                                                </div>
+                                            @endif
+                                        </td>
+
                                         {{-- Actions --}}
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
                                             @can('update', $assignment)
@@ -392,9 +427,9 @@
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                                             <th class="px-3 py-3"></th>
                                         </tr>
                                     </thead>
@@ -449,13 +484,6 @@
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">${{ number_format($assignment->pay_rate, 2) }}</td>
-                                                <td class="px-3 py-3 max-w-xs">
-                                                    @if($assignment->notes)
-                                                        <span class="text-gray-600 truncate block max-w-[180px]" title="{{ $assignment->notes }}">{{ $assignment->notes }}</span>
-                                                    @else
-                                                        <span class="text-gray-300">—</span>
-                                                    @endif
-                                                </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($reqInitials)
                                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
@@ -465,6 +493,23 @@
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
+                                                </td>
+                                                {{-- Notes (sticky-note icon, read-only for readers) --}}
+                                                <td class="px-3 py-3" x-data="{ open: false, note: @js($assignment->notes ?? '') }">
+                                                    @if($assignment->notes)
+                                                        <button @click="open = !open" type="button"
+                                                                class="text-amber-500 hover:text-amber-600 transition"
+                                                                title="View note">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                            </svg>
+                                                        </button>
+                                                        <div x-show="open" x-cloak class="mt-1.5 w-56">
+                                                            <p class="text-xs text-gray-700 whitespace-pre-wrap" x-text="note"></p>
+                                                            <button type="button" @click="open=false"
+                                                                    class="mt-1 text-xs text-gray-400 hover:text-gray-600">Close</button>
+                                                        </div>
+                                                    @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right">
                                                     <div class="flex items-center justify-end gap-2">
@@ -545,13 +590,6 @@
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">${{ number_format($assignment->pay_rate, 2) }}</td>
-                                                <td class="px-3 py-3 max-w-xs">
-                                                    @if($assignment->notes)
-                                                        <span class="text-gray-600 truncate block max-w-[180px]" title="{{ $assignment->notes }}">{{ $assignment->notes }}</span>
-                                                    @else
-                                                        <span class="text-gray-300">—</span>
-                                                    @endif
-                                                </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($reqInitials)
                                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
@@ -561,6 +599,23 @@
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
+                                                </td>
+                                                {{-- Notes (sticky-note icon, read-only for readers) --}}
+                                                <td class="px-3 py-3" x-data="{ open: false, note: @js($assignment->notes ?? '') }">
+                                                    @if($assignment->notes)
+                                                        <button @click="open = !open" type="button"
+                                                                class="text-amber-500 hover:text-amber-600 transition"
+                                                                title="View note">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                            </svg>
+                                                        </button>
+                                                        <div x-show="open" x-cloak class="mt-1.5 w-56">
+                                                            <p class="text-xs text-gray-700 whitespace-pre-wrap" x-text="note"></p>
+                                                            <button type="button" @click="open=false"
+                                                                    class="mt-1 text-xs text-gray-400 hover:text-gray-600">Close</button>
+                                                        </div>
+                                                    @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right">
                                                     <form method="POST" action="{{ route('assignments.accept', $assignment) }}">
@@ -599,9 +654,9 @@
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                                             <th class="px-3 py-3"></th>
                                         </tr>
                                     </thead>
@@ -654,13 +709,6 @@
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">${{ number_format($assignment->pay_rate, 2) }}</td>
-                                                <td class="px-3 py-3 max-w-xs">
-                                                    @if($assignment->notes)
-                                                        <span class="text-gray-600 truncate block max-w-[180px]" title="{{ $assignment->notes }}">{{ $assignment->notes }}</span>
-                                                    @else
-                                                        <span class="text-gray-300">—</span>
-                                                    @endif
-                                                </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     @if($reqInitials)
                                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 font-mono font-semibold">{{ $reqInitials }}</span>
@@ -670,6 +718,23 @@
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
+                                                </td>
+                                                {{-- Notes (sticky-note icon, read-only for readers) --}}
+                                                <td class="px-3 py-3" x-data="{ open: false, note: @js($assignment->notes ?? '') }">
+                                                    @if($assignment->notes)
+                                                        <button @click="open = !open" type="button"
+                                                                class="text-amber-500 hover:text-amber-600 transition"
+                                                                title="View note">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                            </svg>
+                                                        </button>
+                                                        <div x-show="open" x-cloak class="mt-1.5 w-56">
+                                                            <p class="text-xs text-gray-700 whitespace-pre-wrap" x-text="note"></p>
+                                                            <button type="button" @click="open=false"
+                                                                    class="mt-1 text-xs text-gray-400 hover:text-gray-600">Close</button>
+                                                        </div>
+                                                    @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right">
                                                     <div class="flex items-center justify-end gap-2">

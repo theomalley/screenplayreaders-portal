@@ -439,6 +439,17 @@ class AssignmentController extends Controller
         return redirect()->route('assignments.index')->with('success', 'Assignment deleted.');
     }
 
+    public function updateNotes(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        $request->validate(['notes' => ['nullable', 'string', 'max:2000']]);
+
+        $assignment->update(['notes' => $request->input('notes')]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function cancel(Assignment $assignment)
     {
         $this->authorize('cancel', $assignment);
