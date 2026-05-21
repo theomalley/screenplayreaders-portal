@@ -377,16 +377,21 @@ class AssignmentController extends Controller
     {
         $this->authorize('accept', $assignment);
 
-        $user = auth()->user();
+        $user  = auth()->user();
+        $error = null;
 
-        DB::transaction(function () use ($assignment, $user) {
+        DB::transaction(function () use ($assignment, $user, &$error) {
             $fresh = Assignment::lockForUpdate()->findOrFail($assignment->id);
 
-            abort_if($fresh->status !== Assignment::STATUS_UNASSIGNED, 409, 'Assignment no longer available.');
+            if ($fresh->status !== Assignment::STATUS_UNASSIGNED) {
+                $error = 'This assignment is no longer available.';
+                return;
+            }
 
             $profile = $user->readerProfile;
             if ($profile && $profile->isAtCapacity()) {
-                abort(409, 'You are at your maximum concurrent assignments.');
+                $error = 'You have reached your maximum concurrent assignments.';
+                return;
             }
 
             $fresh->update([
@@ -395,6 +400,10 @@ class AssignmentController extends Controller
                 'accepted_at'        => now(),
             ]);
         });
+
+        if ($error) {
+            return back()->with('error', $error);
+        }
 
         return back()->with('success', 'Assignment accepted.');
     }
