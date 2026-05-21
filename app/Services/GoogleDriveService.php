@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-21 | Add supportsAllDrives to all API calls — required for Shared Drive usage.
 // v1.1 — 2026-05-19 | Full Drive implementation — upload script, view/download links, file replace.
 //                     createCoverageDoc, exportDocToPdf, removeTitlePage stubbed for later phases.
 
@@ -37,10 +38,11 @@ class GoogleDriveService
         $file = $this->drive->files->create(
             new DriveFile(['name' => 'script.pdf', 'parents' => [$folderId]]),
             [
-                'data'       => file_get_contents($localPath),
-                'mimeType'   => 'application/pdf',
-                'uploadType' => 'multipart',
-                'fields'     => 'id',
+                'data'             => file_get_contents($localPath),
+                'mimeType'         => 'application/pdf',
+                'uploadType'       => 'multipart',
+                'fields'           => 'id',
+                'supportsAllDrives' => true,
             ]
         );
 
@@ -59,9 +61,10 @@ class GoogleDriveService
             $fileId,
             new DriveFile(),
             [
-                'data'       => file_get_contents($localPath),
-                'mimeType'   => 'application/pdf',
-                'uploadType' => 'multipart',
+                'data'              => file_get_contents($localPath),
+                'mimeType'          => 'application/pdf',
+                'uploadType'        => 'multipart',
+                'supportsAllDrives' => true,
             ]
         );
 
@@ -121,13 +124,13 @@ class GoogleDriveService
         $this->drive->permissions->create(
             $fileId,
             new Permission(['type' => 'anyone', 'role' => 'reader']),
-            ['fields' => 'id']
+            ['fields' => 'id', 'supportsAllDrives' => true]
         );
 
         // copyRequiresWriterPermission blocks the download/print options in Drive UI
         $this->drive->files->update($fileId, new DriveFile([
             'copyRequiresWriterPermission' => true,
-        ]));
+        ]), ['supportsAllDrives' => true]);
     }
 
     /**
@@ -136,9 +139,11 @@ class GoogleDriveService
     private function ensureFolder(string $parentId, string $name): string
     {
         $results = $this->drive->files->listFiles([
-            'q'      => "name='{$name}' and '{$parentId}' in parents"
-                      . " and mimeType='application/vnd.google-apps.folder' and trashed=false",
-            'fields' => 'files(id)',
+            'q'                         => "name='{$name}' and '{$parentId}' in parents"
+                                         . " and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            'fields'                    => 'files(id)',
+            'includeItemsFromAllDrives' => true,
+            'supportsAllDrives'         => true,
         ]);
 
         if (!empty($results->files)) {
@@ -151,7 +156,7 @@ class GoogleDriveService
                 'mimeType' => 'application/vnd.google-apps.folder',
                 'parents'  => [$parentId],
             ]),
-            ['fields' => 'id']
+            ['fields' => 'id', 'supportsAllDrives' => true]
         );
 
         return $folder->id;
