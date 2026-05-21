@@ -13,6 +13,14 @@
         </div>
     </x-slot>
 
+    <style>
+        @keyframes request-pulse {
+            0%, 100% { border-left-color: rgb(192, 132, 252); }
+            50%       { border-left-color: rgb(233, 213, 255); }
+        }
+        .request-pulse { animation: request-pulse 2.5s ease-in-out infinite; }
+    </style>
+
     <div class="py-6">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -486,6 +494,7 @@
                                                 $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
                                                     : null;
+                                                $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
                                                 $statusColor = match($assignment->status) {
                                                     'assigned'  => 'bg-green-100 text-green-800',
                                                     'completed' => 'bg-green-100 text-green-800',
@@ -494,7 +503,9 @@
                                                 };
                                                 $statusLabel = $assignment->status === 'assigned' ? 'Assigned to you'
                                                     : ($assignment->status === 'qc' ? 'QC' : ucfirst($assignment->status));
-                                                $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                $rowClass = $isRequestedForMe
+                                                    ? 'border-l-4 request-pulse'
+                                                    : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
                                                 $viewUrl  = $assignment->drive_script_file_id
                                                     ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
                                                     : null;
@@ -629,7 +640,9 @@
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
                                                     : null;
                                                 $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
-                                                $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                $rowClass = $isRequestedForMe
+                                                    ? 'border-l-4 request-pulse'
+                                                    : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
                                                 $viewUrl  = $assignment->drive_script_file_id
                                                     ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
                                                     : null;
@@ -792,7 +805,10 @@
                                                 };
                                                 $statusLabel = $assignment->status === 'assigned' ? 'Assigned to you'
                                                     : ($assignment->status === 'qc' ? 'QC' : ucfirst($assignment->status));
-                                                $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
+                                                $rowClass = $isRequestedForMe
+                                                    ? 'border-l-4 request-pulse'
+                                                    : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
                                                 $viewUrl  = $assignment->drive_script_file_id
                                                     ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
                                                     : null;

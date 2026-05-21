@@ -137,10 +137,11 @@ class AssignmentController extends Controller
             $file     = $request->file('script');
             $fileName = $file->getClientOriginalName();
             $fileId   = $drive->uploadScript($firstAssignment->order_number, $file->getPathname(), $fileName);
-            $firstAssignment->update([
-                'drive_script_file_id'  => $fileId,
-                'drive_script_filename' => $fileName,
-            ]);
+            Assignment::where('order_number', $firstAssignment->order_number)
+                ->update([
+                    'drive_script_file_id'  => $fileId,
+                    'drive_script_filename' => $fileName,
+                ]);
         }
 
         $label = $numReaders === 1 ? 'Assignment created.' : "{$numReaders} assignments created.";
@@ -240,13 +241,15 @@ class AssignmentController extends Controller
 
         if ($assignment->drive_script_file_id) {
             $drive->replaceFile($assignment->drive_script_file_id, $path, $fileName);
-            $assignment->update(['drive_script_filename' => $fileName]);
+            Assignment::where('order_number', $assignment->order_number)
+                ->update(['drive_script_filename' => $fileName]);
         } else {
             $fileId = $drive->uploadScript($assignment->order_number, $path, $fileName);
-            $assignment->update([
-                'drive_script_file_id'  => $fileId,
-                'drive_script_filename' => $fileName,
-            ]);
+            Assignment::where('order_number', $assignment->order_number)
+                ->update([
+                    'drive_script_file_id'  => $fileId,
+                    'drive_script_filename' => $fileName,
+                ]);
         }
 
         return redirect()->route('assignments.edit', $assignment)->with('success', 'Script uploaded.');
@@ -278,17 +281,19 @@ class AssignmentController extends Controller
             : Assignment::STATUS_INCOMING;
 
         Assignment::create([
-            'order_number'    => $assignment->order_number,
-            'vendor'          => 'sr',
-            'assignment_type' => 'notes_only',
-            'script_title'    => $assignment->script_title,
-            'writer_name'     => $assignment->writer_name,
-            'page_count'      => $assignment->page_count,
-            'rush'            => $assignment->rush,
-            'pay_rate'        => $payRate,
-            'status'          => $newStatus,
-            'unassigned_at'   => $newStatus === Assignment::STATUS_UNASSIGNED ? now() : null,
-            'notes'           => $assignment->notes,
+            'order_number'         => $assignment->order_number,
+            'vendor'               => 'sr',
+            'assignment_type'      => 'notes_only',
+            'script_title'         => $assignment->script_title,
+            'writer_name'          => $assignment->writer_name,
+            'page_count'           => $assignment->page_count,
+            'rush'                 => $assignment->rush,
+            'pay_rate'             => $payRate,
+            'status'               => $newStatus,
+            'unassigned_at'        => $newStatus === Assignment::STATUS_UNASSIGNED ? now() : null,
+            'notes'                => $assignment->notes,
+            'drive_script_file_id'  => $assignment->drive_script_file_id,
+            'drive_script_filename' => $assignment->drive_script_filename,
         ]);
 
         return back()->with('success', 'Notes-Only assignment added to this order.');
