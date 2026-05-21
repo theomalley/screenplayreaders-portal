@@ -506,19 +506,32 @@
                     </div>
                 </div>
 
-                <p class="text-xs text-gray-500 mb-3">Replace script file:</p>
-            @else
-                <p class="text-sm font-medium text-gray-700 mb-3">No script uploaded yet:</p>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{{ $assignment->drive_script_file_id ? 'Replace script file' : 'Upload script' }}</p>
             @endif
             <form method="POST"
                   action="{{ route('assignments.uploadScript', $assignment) }}"
                   enctype="multipart/form-data"
-                  class="flex items-center gap-3">
+                  x-data="{ fileName: '' }">
                 @csrf
-                <input type="file" name="script" accept="application/pdf" required
-                       class="block text-sm text-gray-700 border border-gray-300 rounded px-3 py-1.5 w-full">
+                <input type="file" id="script_upload" name="script" accept="application/pdf" required
+                       class="sr-only"
+                       @change="fileName = $event.target.files[0]?.name || ''">
+
+                <label for="script_upload"
+                       class="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg px-6 py-6 cursor-pointer transition"
+                       :class="fileName ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50'">
+                    <svg class="w-8 h-8 mb-2" :class="fileName ? 'text-indigo-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="text-sm font-medium" :class="fileName ? 'text-indigo-700' : 'text-gray-500'"
+                       x-text="fileName || 'Click to choose a PDF'"></p>
+                    <p class="text-xs text-gray-400 mt-1" x-show="!fileName">PDF only · max 50 MB</p>
+                </label>
+
                 <button type="submit"
-                        class="shrink-0 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 whitespace-nowrap">
+                        x-show="fileName"
+                        class="mt-3 w-full px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 transition">
                     {{ $assignment->drive_script_file_id ? 'Replace Script' : 'Upload Script' }}
                 </button>
             </form>
