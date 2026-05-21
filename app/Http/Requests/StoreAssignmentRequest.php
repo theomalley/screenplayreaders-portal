@@ -29,6 +29,7 @@ class StoreAssignmentRequest extends FormRequest
             'rush'                 => ['nullable', 'boolean'],
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'notes'                => ['nullable', 'string', 'max:2000'],
+            'script'               => ['nullable', 'file', 'mimes:pdf', 'max:51200'],
             'status'               => ['required', 'in:' . implode(',', [
                                           Assignment::STATUS_INCOMING,
                                           Assignment::STATUS_UNASSIGNED,

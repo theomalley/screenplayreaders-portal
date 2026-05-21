@@ -87,13 +87,15 @@ class AssignmentController extends Controller
         ];
         unset($data['num_readers'], $data['requested_reader_id_1'], $data['requested_reader_id_2'], $data['requested_reader_id_3']);
 
+        $firstAssignment = null;
+
         if ($numReaders === 1) {
             $data['requested_reader_id'] = $readerIds[0];
             $data['pay_rate']            = (float) ($data['pay_rate'] ?: 0);
             if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
                 $data['unassigned_at'] = now();
             }
-            Assignment::create($data);
+            $firstAssignment = Assignment::create($data);
         } else {
             $rates              = Setting::ratesForForms();
             $pageCount          = (int) ($data['page_count'] ?? 0);
@@ -123,8 +125,22 @@ class AssignmentController extends Controller
                 if ($row['status'] === Assignment::STATUS_UNASSIGNED) {
                     $row['unassigned_at'] = now();
                 }
-                Assignment::create($row);
+                $created = Assignment::create($row);
+                if ($firstAssignment === null) {
+                    $firstAssignment = $created;
+                }
             }
+        }
+
+        if ($firstAssignment && $request->hasFile('script')) {
+            $drive    = app(\App\Services\GoogleDriveService::class);
+            $file     = $request->file('script');
+            $fileName = $file->getClientOriginalName();
+            $fileId   = $drive->uploadScript($firstAssignment->id, $file->getPathname(), $fileName);
+            $firstAssignment->update([
+                'drive_script_file_id'  => $fileId,
+                'drive_script_filename' => $fileName,
+            ]);
         }
 
         $label = $numReaders === 1 ? 'Assignment created.' : "{$numReaders} assignments created.";

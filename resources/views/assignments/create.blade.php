@@ -11,7 +11,7 @@
     <div class="py-6">
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5"
+                <form method="POST" action="{{ route('assignments.store') }}" class="p-6 space-y-5" enctype="multipart/form-data"
                       x-data="{
                           vendor: '{{ old('vendor', 'sr') }}',
                           assignmentType: '{{ old('assignment_type', '') }}',
@@ -385,6 +385,29 @@
                             <x-input-error :messages="$errors->get('status')" class="mt-1" />
                         </div>
 
+                    </div>
+
+                    {{-- Script upload (optional) --}}
+                    <div class="pt-4 border-t border-gray-100" x-data="{ fileName: '' }">
+                        <x-input-label value="Script (optional)" />
+                        <p class="text-xs text-gray-400 mb-2">PDF only · max 50 MB · can also be uploaded after creation</p>
+
+                        <input type="file" id="script_upload" name="script" accept="application/pdf"
+                               class="sr-only"
+                               @change="fileName = $event.target.files[0]?.name || ''">
+
+                        <label for="script_upload"
+                               class="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg px-6 py-6 cursor-pointer transition"
+                               :class="fileName ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50'">
+                            <svg class="w-8 h-8 mb-2" :class="fileName ? 'text-indigo-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p class="text-sm font-medium" :class="fileName ? 'text-indigo-700' : 'text-gray-500'"
+                               x-text="fileName || 'Click to choose a PDF'"></p>
+                        </label>
+
+                        <x-input-error :messages="$errors->get('script')" class="mt-1" />
                     </div>
 
                     {{-- Actions --}}
