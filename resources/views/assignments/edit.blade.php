@@ -24,10 +24,11 @@
                           pageCount: '{{ $v('page_count', $assignment->page_count) }}',
                           customOversizedFee: '{{ $v('custom_oversized_fee', '') }}',
                           rush: {{ $rushActive ? 'true' : 'false' }},
-                          requestedReaderId: '{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}',
+                          numReaders: '{{ $v('num_readers', '1') }}',
+                          requestedReaders: ['{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}', '', ''],
                           overrideRate: true,
                           updatePayDisplay() {
-                              if (this.overrideRate) return;
+                              if (this.overrideRate && this.numReaders === '1') return;
                               const r = window._srRates;
                               const map = {
                                   sr: {
@@ -61,7 +62,27 @@
                                   sharedMod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
 
                               const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
-                              const reqMod  = this.requestedReaderId ? reqRate : 0;
+                              const modFor  = (i) => this.requestedReaders[i] ? reqRate : 0;
+
+                              if (this.numReaders !== '1') {
+                                  const typeA  = this.vendor === 'sr' ? 'script_coverage' : 'coverage';
+                                  const typeB  = this.vendor === 'sr' ? 'notes_only'       : 'development_notes';
+                                  const labelA = this.vendor === 'sr' ? 'SC'               : 'Coverage';
+                                  const labelB = this.vendor === 'sr' ? 'NO'               : 'Dev Notes';
+                                  const baseA  = parseFloat((map[this.vendor] || {})[typeA] || 0);
+                                  const baseB  = parseFloat((map[this.vendor] || {})[typeB] || 0);
+                                  const n      = parseInt(this.numReaders);
+                                  const parts  = [];
+                                  for (let i = 0; i < n; i++) {
+                                      const base  = i === 0 ? baseA : baseB;
+                                      const label = i === 0 ? labelA : labelB;
+                                      parts.push('$' + (base + sharedMod + modFor(i)).toFixed(2) + ' (' + label + ')');
+                                  }
+                                  el.textContent = parts.join(' + ');
+                                  el.className = 'text-sm font-semibold text-gray-900';
+                                  if (hidden) hidden.value = '';
+                                  return;
+                              }
 
                               if (!this.assignmentType) {
                                   el.textContent = '—';
@@ -82,7 +103,7 @@
                                   if (hidden) hidden.value = '';
                                   return;
                               }
-                              const total = parseFloat(base) + sharedMod + reqMod;
+                              const total = parseFloat(base) + sharedMod + modFor(0);
                               el.textContent = '$' + total.toFixed(2);
                               el.className = 'text-sm font-semibold text-gray-900';
                               if (hidden) hidden.value = total.toFixed(2);
@@ -99,14 +120,14 @@
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="sr"
                                     {{ $v('vendor', $assignment->vendor) === 'sr' ? 'checked' : '' }}
-                                    @change="vendor = 'sr'; updatePayDisplay()"
+                                    @change="vendor = 'sr'; requestedReaders = ['', '', '']; updatePayDisplay()"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 SR
                             </label>
                             <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                                 <input type="radio" name="vendor" value="wd"
                                     {{ $v('vendor', $assignment->vendor) === 'wd' ? 'checked' : '' }}
-                                    @change="vendor = 'wd'; updatePayDisplay()"
+                                    @change="vendor = 'wd'; numReaders = '1'; requestedReaders = ['', '', '']; updatePayDisplay()"
                                     class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
                                 WD
                             </label>
@@ -114,11 +135,23 @@
                         <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
                     </div>
 
-                    {{-- Assignment Type SR --}}
+                    {{-- # of Readers (SR only) --}}
                     <div x-show="vendor === 'sr'">
+                        <x-input-label for="num_readers" value="# of Readers" />
+                        <select id="num_readers" name="num_readers"
+                            @change="numReaders = $event.target.value; updatePayDisplay()"
+                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="1" {{ $v('num_readers', '1') === '1' ? 'selected' : '' }}>1R</option>
+                            <option value="2" {{ $v('num_readers', '1') === '2' ? 'selected' : '' }}>2R</option>
+                            <option value="3" {{ $v('num_readers', '1') === '3' ? 'selected' : '' }}>3R</option>
+                        </select>
+                    </div>
+
+                    {{-- Assignment Type SR (1R — all options) --}}
+                    <div x-show="vendor === 'sr' && numReaders === '1'">
                         <x-input-label for="assignment_type_sr" value="Assignment Type" />
                         <select id="assignment_type_sr" name="assignment_type"
-                            :disabled="vendor !== 'sr'"
+                            :disabled="vendor !== 'sr' || numReaders !== '1'"
                             @change="assignmentType = $event.target.value; updatePayDisplay()"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="">— Select type —</option>
@@ -130,6 +163,16 @@
                             <option value="book"             {{ $v('assignment_type', $assignment->assignment_type) === 'book'             ? 'selected' : '' }}>Book Coverage</option>
                         </select>
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
+                    </div>
+
+                    {{-- Assignment Type SR (2R/3R — locked to Script Coverage) --}}
+                    <div x-show="vendor === 'sr' && numReaders !== '1'">
+                        <x-input-label for="assignment_type_sr_multi" value="Assignment Type" />
+                        <select id="assignment_type_sr_multi" disabled
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm bg-gray-50 text-gray-500 cursor-not-allowed">
+                            <option value="script_coverage" selected>Script Coverage</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-400">Notes-Only coverage(s) auto-created for the additional reader(s).</p>
                     </div>
 
                     {{-- Assignment Type WD --}}
@@ -174,21 +217,65 @@
                         </div>
                     </div>
 
-                    {{-- Reader Request --}}
-                    <div>
-                        <x-input-label for="requested_reader_id" value="Reader Request" />
-                        <select id="requested_reader_id" name="requested_reader_id"
-                            @change="requestedReaderId = $event.target.value; updatePayDisplay()"
-                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="">None</option>
-                            @foreach ($readers as $reader)
-                                <option value="{{ $reader->id }}"
-                                    {{ $v('requested_reader_id', $assignment->requested_reader_id) == $reader->id ? 'selected' : '' }}>
-                                    {{ $reader->readerProfile?->initials ?? $reader->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('requested_reader_id')" class="mt-1" />
+                    {{-- Reader Request(s) --}}
+                    <div class="space-y-3">
+
+                        {{-- Slot 1 — always visible --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">
+                                <span x-text="numReaders !== '1' ? 'Reader Request 1' : 'Reader Request'"></span>
+                            </label>
+                            <select name="requested_reader_id"
+                                @change="requestedReaders[0] = $event.target.value; updatePayDisplay()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">None</option>
+                                @foreach ($readers as $reader)
+                                    <option value="{{ $reader->id }}"
+                                        :disabled="requestedReaders[1] === '{{ $reader->id }}' || requestedReaders[2] === '{{ $reader->id }}'"
+                                        {{ $v('requested_reader_id', $assignment->requested_reader_id) == $reader->id ? 'selected' : '' }}>
+                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('requested_reader_id')" class="mt-1" />
+                        </div>
+
+                        {{-- Slot 2 — visible for 2R and 3R --}}
+                        <div x-show="numReaders === '2' || numReaders === '3'">
+                            <x-input-label value="Reader Request 2" />
+                            <select name="requested_reader_id_2"
+                                :disabled="numReaders === '1'"
+                                @change="requestedReaders[1] = $event.target.value; updatePayDisplay()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">None</option>
+                                @foreach ($readers as $reader)
+                                    <option value="{{ $reader->id }}"
+                                        :disabled="requestedReaders[0] === '{{ $reader->id }}' || requestedReaders[2] === '{{ $reader->id }}'"
+                                        {{ old('requested_reader_id_2') == $reader->id ? 'selected' : '' }}>
+                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Slot 3 — visible for 3R only --}}
+                        <div x-show="numReaders === '3'">
+                            <x-input-label value="Reader Request 3" />
+                            <select name="requested_reader_id_3"
+                                :disabled="numReaders !== '3'"
+                                @change="requestedReaders[2] = $event.target.value; updatePayDisplay()"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="">None</option>
+                                @foreach ($readers as $reader)
+                                    <option value="{{ $reader->id }}"
+                                        :disabled="requestedReaders[0] === '{{ $reader->id }}' || requestedReaders[1] === '{{ $reader->id }}'"
+                                        {{ old('requested_reader_id_3') == $reader->id ? 'selected' : '' }}>
+                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                     </div>
 
                     {{-- Pay Rate --}}
@@ -198,7 +285,7 @@
                         <input type="hidden" id="pay_rate_hidden" name="pay_rate"
                             value="{{ $v('pay_rate', $assignment->pay_rate) }}" />
 
-                        <div x-show="overrideRate" class="mt-1">
+                        <div x-show="overrideRate && numReaders === '1'" class="mt-1">
                             <div class="flex items-center gap-1">
                                 <span class="text-gray-400 text-sm">$</span>
                                 <input type="number" id="pay_rate_override"
@@ -209,7 +296,7 @@
                             </div>
                         </div>
 
-                        <div x-show="!overrideRate" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
+                        <div x-show="!overrideRate || numReaders !== '1'" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
                             <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
                         </div>
 
@@ -225,7 +312,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-2 flex items-center gap-2">
+                        <div x-show="numReaders === '1'" class="mt-2 flex items-center gap-2">
                             <input type="checkbox" id="override_rate" x-model="overrideRate"
                                 @change="if (!overrideRate) updatePayDisplay()"
                                 class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
