@@ -87,21 +87,52 @@
                                     <td class="px-4 py-3 text-gray-500 text-xs">
                                         {{ $profile?->paypal_email ?? '—' }}
                                     </td>
-                                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                                    <td class="px-4 py-3 whitespace-nowrap text-right"
+                                        x-data="{ open: false, typed: '' }">
                                         <div class="flex items-center justify-end gap-2">
                                             <a href="{{ route('readers.edit', $reader) }}"
                                                class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
                                                 Edit
                                             </a>
-                                            <form method="POST" action="{{ route('readers.destroy', $reader) }}"
-                                                  onsubmit="return confirm('Delete {{ addslashes($profile?->displayName() ?? $reader->name) }}? This cannot be undone.')">
+                                            <form method="POST" action="{{ route('readers.destroy', $reader) }}" x-ref="deleteForm">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit"
+                                                <button type="button" @click="open = true; typed = ''"
                                                         class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
                                                     Delete
                                                 </button>
                                             </form>
+                                        </div>
+
+                                        {{-- Delete confirmation modal --}}
+                                        <div x-show="open" x-cloak
+                                             @keydown.escape.window="open = false"
+                                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                                            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6" @click.stop>
+                                                <h3 class="text-base font-semibold text-gray-900 mb-1">Delete Reader</h3>
+                                                <p class="text-sm text-gray-600 mb-4">
+                                                    This will permanently delete <strong>{{ $profile?->displayName() ?? $reader->name }}</strong>. This cannot be undone.
+                                                </p>
+                                                <p class="text-sm text-gray-700 mb-2">
+                                                    Type <span class="font-mono font-semibold text-red-600">DELETE READER</span> to confirm:
+                                                </p>
+                                                <input type="text" x-model="typed"
+                                                       placeholder="DELETE READER"
+                                                       @keydown.enter="if (typed === 'DELETE READER') $refs.deleteForm.submit()"
+                                                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400 mb-4" />
+                                                <div class="flex justify-end gap-3">
+                                                    <button type="button" @click="open = false; typed = ''"
+                                                            class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition">
+                                                        Cancel
+                                                    </button>
+                                                    <button type="button"
+                                                            :disabled="typed !== 'DELETE READER'"
+                                                            @click="$refs.deleteForm.submit()"
+                                                            class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                                                        Delete Reader
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
