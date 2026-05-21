@@ -172,6 +172,19 @@ class AssignmentController extends Controller
         return round($total, 2);
     }
 
+    public function show(Assignment $assignment)
+    {
+        $this->authorize('view', $assignment);
+
+        $fileId   = $assignment->drive_script_file_id;
+        $viewLink = $fileId ? "https://drive.google.com/file/d/{$fileId}/preview" : null;
+        $dlUrl    = ($fileId && auth()->user()->isAdminOrEditor())
+            ? "https://drive.google.com/uc?export=download&id={$fileId}"
+            : null;
+
+        return view('assignments.show', compact('assignment', 'viewLink', 'dlUrl'));
+    }
+
     public function edit(Assignment $assignment)
     {
         $this->authorize('update', $assignment);
