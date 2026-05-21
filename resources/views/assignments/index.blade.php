@@ -630,6 +630,9 @@
                                                     : null;
                                                 $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
                                                 $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                $viewUrl  = $assignment->drive_script_file_id
+                                                    ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
+                                                    : null;
                                                 $typeLabel = match($assignment->assignment_type) {
                                                     'script_coverage'   => 'Script Coverage',
                                                     'notes_only'        => 'Notes-Only',
@@ -645,13 +648,35 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3">
-                                                    <div class="font-medium text-gray-900 flex items-center gap-2">
-                                                        {{ $assignment->script_title }}
-                                                        @if($isRequestedForMe)
-                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700">For you</span>
-                                                        @endif
-                                                    </div>
+                                                <td class="px-3 py-3" x-data='{ open: false, url: @json($viewUrl) }'>
+                                                    @if($viewUrl)
+                                                        <button @click="open = true" type="button"
+                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug flex items-center gap-2">
+                                                            {{ $assignment->script_title }}
+                                                            @if($isRequestedForMe)
+                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700">For you</span>
+                                                            @endif
+                                                        </button>
+                                                        <div x-show="open" x-cloak
+                                                             @keydown.escape.window="open = false"
+                                                             class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
+                                                                <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                                <button @click="open = false" type="button"
+                                                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-4 px-1">×</button>
+                                                            </div>
+                                                            <iframe :src="open ? url : ''"
+                                                                    class="flex-1 w-full border-0"
+                                                                    allowfullscreen></iframe>
+                                                        </div>
+                                                    @else
+                                                        <div class="font-medium text-gray-900 flex items-center gap-2">
+                                                            {{ $assignment->script_title }}
+                                                            @if($isRequestedForMe)
+                                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700">For you</span>
+                                                            @endif
+                                                        </div>
+                                                    @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
