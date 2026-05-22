@@ -17,10 +17,21 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             {{-- Read-only assignment info --}}
+            @php
+                $wdTypeLabels = [
+                    'coverage'          => 'Coverage',
+                    'development_notes' => 'Development Notes',
+                ];
+                $typeDisplay  = $wdTypeLabels[$assignment->assignment_type] ?? ucfirst(str_replace('_', ' ', $assignment->assignment_type ?? '—'));
+                $writerDisplay = $existing?->writer_name ?? $assignment->writer_name;
+            @endphp
             <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                 <div><span class="text-indigo-500 font-medium block">Script</span>{{ $assignment->script_title }}</div>
-                <div><span class="text-indigo-500 font-medium block">Writer</span>{{ $assignment->writer_name }}</div>
+                <div><span class="text-indigo-500 font-medium block">Writer</span>{{ $writerDisplay }}</div>
                 <div><span class="text-indigo-500 font-medium block">Pages</span>{{ $assignment->page_count }}</div>
+                <div><span class="text-indigo-500 font-medium block">Rate</span>${{ number_format($assignment->pay_rate, 2) }}</div>
+                <div><span class="text-indigo-500 font-medium block">Type</span>{{ $typeDisplay }}</div>
+                <div><span class="text-indigo-500 font-medium block">Request?</span>{{ $assignment->requested_reader_id ? 'Yes' : 'No' }}</div>
                 <div><span class="text-indigo-500 font-medium block">Reader</span>{{ auth()->user()->readerProfile?->initials ?? '—' }}</div>
             </div>
 
@@ -43,22 +54,7 @@
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-5">
                     <h3 class="font-semibold text-gray-700 text-base border-b border-gray-100 pb-2">Assignment Details</h3>
 
-                    {{-- WD Assignment Type --}}
-                    <div>
-                        <x-input-label value="Assignment Type" />
-                        <div class="mt-2 flex gap-5">
-                            @foreach (['coverage' => 'Coverage', 'development_notes' => 'Development Notes'] as $val => $label)
-                                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 cursor-pointer">
-                                    <input type="radio" name="wd_assignment_type" value="{{ $val }}"
-                                        x-model="assignmentType"
-                                        class="text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                                        {{ old('wd_assignment_type', $existing?->wd_assignment_type ?? $assignment->assignment_type) === $val ? 'checked' : '' }} />
-                                    {{ $label }}
-                                </label>
-                            @endforeach
-                        </div>
-                        <x-input-error :messages="$errors->get('wd_assignment_type')" class="mt-1" />
-                    </div>
+                    <input type="hidden" name="wd_assignment_type" value="{{ old('wd_assignment_type', $existing?->wd_assignment_type ?? $assignment->assignment_type) }}" />
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
