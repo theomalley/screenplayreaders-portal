@@ -55,7 +55,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
-                                        {{ $latestDone ? \Carbon\Carbon::createFromTimestamp($latestDone)->format('M j, Y') : '—' }}
+                                        {{ $latestDone ? \Carbon\Carbon::createFromTimestamp($latestDone)->setTimezone('America/Los_Angeles')->format('M j, Y g:ia') : '—' }}
                                     </td>
 
                                     {{-- Script link --}}
