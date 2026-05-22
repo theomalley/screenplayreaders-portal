@@ -42,7 +42,7 @@ class AssignmentController extends Controller
         }
 
         // Reader: available pool (rush first, oldest first) + their own active assignments
-        $available = Assignment::available()
+        $available = Assignment::available($user->id)
             ->with(['requestedReader.readerProfile'])
             ->orderByRaw('rush DESC')
             ->orderBy('unassigned_at', 'asc')

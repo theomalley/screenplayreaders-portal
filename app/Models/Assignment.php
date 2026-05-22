@@ -88,10 +88,14 @@ class Assignment extends Model
 
     // --- Scopes ---
 
-    /** Assignments visible to readers in the available list */
-    public function scopeAvailable($query)
+    /** Assignments visible to a specific reader in the available list */
+    public function scopeAvailable($query, int $userId)
     {
-        return $query->where('status', self::STATUS_UNASSIGNED);
+        return $query->where('status', self::STATUS_UNASSIGNED)
+            ->where(function ($q) use ($userId) {
+                $q->whereNull('requested_reader_id')
+                  ->orWhere('requested_reader_id', $userId);
+            });
     }
 
     /** All assignments visible to admin/editor */
