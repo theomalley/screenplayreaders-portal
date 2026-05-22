@@ -383,7 +383,7 @@
                         <div>
                             <x-input-label for="notes" value="Notes" />
                             <textarea id="notes" name="notes" rows="3"
-                                placeholder="Internal notes (not visible to readers)"
+                                placeholder="Notes (visible to the assigned reader)"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">{{ $v('notes', $assignment->notes) }}</textarea>
                             <x-input-error :messages="$errors->get('notes')" class="mt-1" />
                         </div>
