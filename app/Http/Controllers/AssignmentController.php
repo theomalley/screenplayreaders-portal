@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\GoogleDriveService;
 use App\Support\FilenameGenerator;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -306,12 +307,28 @@ class AssignmentController extends Controller
         $this->authorize('view', $assignment);
 
         $fileId   = $assignment->drive_script_file_id;
-        $viewLink = $fileId ? "https://drive.google.com/file/d/{$fileId}/preview" : null;
+        $viewLink = $fileId ? route('assignments.streamScript', $assignment) : null;
         $dlUrl    = ($fileId && auth()->user()->isAdminOrEditor())
             ? "https://drive.google.com/uc?export=download&id={$fileId}"
             : null;
 
         return view('assignments.show', compact('assignment', 'viewLink', 'dlUrl'));
+    }
+
+    public function streamScript(Assignment $assignment, GoogleDriveService $drive)
+    {
+        $this->authorize('view', $assignment);
+
+        abort_unless($assignment->drive_script_file_id, 404);
+
+        $contents = $drive->downloadContents($assignment->drive_script_file_id);
+
+        return response($contents, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="script.pdf"',
+            'Cache-Control'       => 'private, no-store',
+            'X-Frame-Options'     => 'SAMEORIGIN',
+        ]);
     }
 
     public function edit(Assignment $assignment)

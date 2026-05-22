@@ -22,9 +22,10 @@ class AssignmentPolicy
         }
 
         if ($user->isReader()) {
-            // Readers see unassigned or their own accepted assignments
-            return $assignment->isAvailable()
-                || $assignment->assigned_reader_id === $user->id;
+            $openToMe = $assignment->isAvailable()
+                && (is_null($assignment->requested_reader_id) || $assignment->requested_reader_id === $user->id);
+
+            return $openToMe || $assignment->assigned_reader_id === $user->id;
         }
 
         return false;

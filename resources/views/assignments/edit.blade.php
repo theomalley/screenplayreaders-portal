@@ -437,7 +437,7 @@
             @if ($assignment->drive_script_file_id)
                 @php
                     $fileId  = $assignment->drive_script_file_id;
-                    $viewUrl = "https://drive.google.com/file/d/{$fileId}/preview";
+                    $viewUrl = route('assignments.streamScript', $assignment);
                     $dlUrl   = "https://drive.google.com/uc?export=download&id={$fileId}";
                 @endphp
                 <div class="mb-4">

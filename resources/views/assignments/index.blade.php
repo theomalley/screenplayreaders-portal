@@ -204,7 +204,7 @@
                                             : null;
 
                                         $viewUrl  = $assignment->drive_script_file_id
-                                            ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
+                                            ? route('assignments.streamScript', $assignment)
                                             : null;
                                         $rowClass = ($assignment->rush && $assignment->status === 'unassigned')
                                             ? 'border-l-4 border-amber-400'
@@ -527,7 +527,7 @@
                                                     ? 'border-l-4 request-pulse'
                                                     : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
                                                 $viewUrl  = $assignment->drive_script_file_id
-                                                    ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
+                                                    ? route('assignments.streamScript', $assignment)
                                                     : null;
                                                 $typeLabel = match($assignment->assignment_type) {
                                                     'script_coverage'   => 'Script Coverage',
@@ -672,7 +672,7 @@
                                                     ? 'border-l-4 request-pulse'
                                                     : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
                                                 $viewUrl  = $assignment->drive_script_file_id
-                                                    ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
+                                                    ? route('assignments.streamScript', $assignment)
                                                     : null;
                                                 $typeLabel = match($assignment->assignment_type) {
                                                     'script_coverage'   => 'Script Coverage',
@@ -863,7 +863,7 @@
                                                     ? 'border-l-4 request-pulse'
                                                     : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
                                                 $viewUrl  = $assignment->drive_script_file_id
-                                                    ? "https://drive.google.com/file/d/{$assignment->drive_script_file_id}/preview"
+                                                    ? route('assignments.streamScript', $assignment)
                                                     : null;
                                                 $typeLabel = match($assignment->assignment_type) {
                                                     'script_coverage'   => 'Script Coverage',

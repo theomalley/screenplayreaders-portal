@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-22 | Remove public Drive permissions on upload; add downloadContents for portal proxy.
 // v1.2 — 2026-05-21 | Add supportsAllDrives to all API calls — required for Shared Drive usage.
 // v1.1 — 2026-05-19 | Full Drive implementation — upload script, view/download links, file replace.
 //                     createCoverageDoc, exportDocToPdf, removeTitlePage stubbed for later phases.
@@ -47,8 +48,6 @@ class GoogleDriveService
             ]
         );
 
-        $this->setViewOnly($file->id);
-
         return $file->id;
     }
 
@@ -87,6 +86,20 @@ class GoogleDriveService
     public function downloadUrl(string $fileId): string
     {
         return "https://drive.google.com/uc?export=download&id={$fileId}";
+    }
+
+    /**
+     * Download a Drive file and return its raw bytes.
+     * Used by the portal script-proxy endpoint so the Drive file ID never reaches the reader's browser.
+     */
+    public function downloadContents(string $fileId): string
+    {
+        $response = $this->drive->files->get($fileId, [
+            'alt'               => 'media',
+            'supportsAllDrives' => true,
+        ]);
+
+        return $response->getBody()->getContents();
     }
 
     /**
