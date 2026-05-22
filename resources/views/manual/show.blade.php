@@ -32,6 +32,17 @@
                             Stylesheets and content are extracted automatically.
                             Pasting a plain HTML fragment also works.
                         </p>
+                        <details class="mb-3 text-xs">
+                            <summary class="cursor-pointer text-indigo-600 hover:text-indigo-800 font-medium select-none">Ratebook placeholders</summary>
+                            <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded font-mono text-gray-600 grid grid-cols-2 gap-x-6 gap-y-1">
+                                @foreach(\App\Models\Setting::ratesForForms() as $key => $value)
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-indigo-700">[[{{ $key }}]]</span>
+                                        <span class="text-gray-400">${{ number_format($value, 2) }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </details>
                         <textarea name="source_html" rows="24"
                                   class="w-full font-mono text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y"
                                   placeholder="Paste full page HTML source or an HTML fragment…">{{ $content }}</textarea>

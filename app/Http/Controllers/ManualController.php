@@ -23,7 +23,17 @@ class ManualController extends Controller
         $inlineStyles = Setting::getValue('reader_manual_inline_styles', '');
         $bodyClass    = Setting::getValue('reader_manual_body_class', '');
 
+        $content = $this->resolvePlaceholders($content);
+
         return view('manual.frame', compact('content', 'stylesheets', 'inlineStyles', 'bodyClass'));
+    }
+
+    private function resolvePlaceholders(string $content): string
+    {
+        foreach (Setting::ratesForForms() as $key => $value) {
+            $content = str_replace('[[' . $key . ']]', '$' . number_format($value, 2), $content);
+        }
+        return $content;
     }
 
     public function update(Request $request)
