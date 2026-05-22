@@ -452,6 +452,8 @@
                         {{-- Full-screen script preview modal --}}
                         <div x-show="open" x-cloak
                              @keydown.escape.window="open = false"
+                             tabindex="-1"
+                             x-effect="if (open) $nextTick(() => $el.focus())"
                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
                             <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
                                 <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? 'Script' }}</span>
