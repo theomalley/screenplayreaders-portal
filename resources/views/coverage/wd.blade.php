@@ -46,6 +46,12 @@
                 </div>
             @endif
 
+            {{-- DEV ONLY: remove before launch --}}
+            <button type="button" onclick="wdAutofill()"
+                class="w-full py-2 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-lg">
+                DEV: Autofill test data
+            </button>
+
             <form method="POST" action="{{ route('coverage.store', $assignment) }}"
                   x-data="wdCoverage()" x-cloak>
                 @csrf
@@ -238,6 +244,36 @@
     </div>
 
     <script>
+    // DEV ONLY — remove before launch
+    function wdAutofill() {
+        const short  = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
+        const medium = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.';
+
+        const fill = (el, val) => { if (el) { el.value = val; el.dispatchEvent(new Event('input', { bubbles: true })); } };
+
+        fill(document.getElementById('genre'),                    'Drama');
+        fill(document.getElementById('time_period'),              'Contemporary');
+        fill(document.getElementById('locations'),                'Los Angeles');
+        fill(document.getElementById('estimated_budget'),         'medium');
+        fill(document.getElementById('wd_form'),                  'Screenplay');
+        fill(document.getElementById('wd_mpaa_rating'),           'R');
+        fill(document.getElementById('wd_logline'),               'A struggling writer discovers a mysterious manuscript that begins rewriting itself.');
+        fill(document.getElementById('wd_synopsis'),              medium);
+        fill(document.getElementById('wd_script_recommendations'),'Chinatown, The Big Lebowski');
+
+        ['concept','plot','pacing','format','characters','dialogue','overall'].forEach(section => {
+            fill(document.querySelector(`textarea[name="wd_notes_${section}"]`), medium);
+            document.querySelector(`select[name="wd_score_${section}"]`).value = 'Good';
+        });
+
+        document.querySelector('select[name="wd_recommend_writer"]').value   = 'Consider';
+        document.querySelector('select[name="wd_recommend_material"]').value = 'Consider';
+
+        const qc = document.getElementById('quality_checked');
+        qc.checked = true;
+        qc.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     function wdCoverage() {
         return {
             assignmentType: '{{ old('wd_assignment_type', $existing?->wd_assignment_type ?? $assignment->assignment_type ?? 'coverage') }}',

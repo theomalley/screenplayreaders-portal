@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Assignment;
 use App\Models\CoverageSubmission;
 use Google\Client;
+use Illuminate\Support\Facades\Log;
 use Google\Service\Docs;
 use Google\Service\Docs\BatchUpdateDocumentRequest;
 use Google\Service\Docs\Request as DocsRequest;
@@ -60,13 +61,25 @@ class GoogleDocsService
         $filename   = $this->filename($assignment);
         $folderId   = config('services.google.drive_coverage_folder_id');
 
+        Log::info('GoogleDocsService: starting', [
+            'assignment_id'   => $assignment->id,
+            'vendor'          => $assignment->vendor,
+            'assignment_type' => $assignment->assignment_type,
+            'template_id'     => $templateId,
+            'folder_id'       => $folderId,
+            'filename'        => $filename,
+        ]);
+
         $docId = $this->copyTemplate($templateId, $filename, $folderId);
+        Log::info('GoogleDocsService: template copied', ['doc_id' => $docId]);
 
         $replacements = $assignment->vendor === 'wd'
             ? $this->wdReplacements($assignment, $submission)
             : $this->srReplacements($assignment, $submission);
 
+        Log::info('GoogleDocsService: filling placeholders', ['count' => count($replacements)]);
         $this->fillPlaceholders($docId, $replacements);
+        Log::info('GoogleDocsService: placeholders filled');
 
         return $docId;
     }
@@ -79,6 +92,8 @@ class GoogleDocsService
     {
         $folderId = config('services.google.drive_coverage_folder_id');
 
+        Log::info('GoogleDocsService: exporting PDF', ['doc_id' => $docId, 'folder_id' => $folderId]);
+
         $response = $this->drive->files->export(
             $docId,
             'application/pdf',
@@ -86,6 +101,7 @@ class GoogleDocsService
         );
 
         $bytes = $response->getBody()->getContents();
+        Log::info('GoogleDocsService: PDF exported', ['bytes' => strlen($bytes)]);
 
         $file = $this->drive->files->create(
             new DriveFile([
@@ -100,6 +116,8 @@ class GoogleDocsService
                 'supportsAllDrives' => true,
             ]
         );
+
+        Log::info('GoogleDocsService: PDF saved to Drive', ['pdf_id' => $file->id]);
 
         return $file->id;
     }

@@ -50,6 +50,12 @@
                 </div>
             @endif
 
+            {{-- DEV ONLY: remove before launch --}}
+            <button type="button" onclick="srAutofill()"
+                class="w-full py-2 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-lg">
+                DEV: Autofill test data
+            </button>
+
             <form method="POST" action="{{ route('coverage.store', $assignment) }}"
                   x-data="srCoverage()" x-cloak>
                 @csrf
@@ -293,6 +299,31 @@
     </div>
 
     <script>
+    // DEV ONLY — remove before launch
+    function srAutofill() {
+        const short  = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
+        const medium = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.';
+        const long   = medium + ' ' + medium + ' ' + medium;
+
+        const fill = (el, val) => { el.value = val; el.dispatchEvent(new Event('input', { bubbles: true })); };
+
+        fill(document.getElementById('genre'),            'Drama');
+        fill(document.getElementById('time_period'),      'Contemporary');
+        fill(document.getElementById('locations'),        'Los Angeles, New York');
+        fill(document.getElementById('estimated_budget'), 'medium');
+        fill(document.getElementById('sr_logline'),       'A struggling writer discovers a mysterious manuscript that begins rewriting itself, forcing him to confront the truth about his own identity before the final chapter consumes him.');
+        fill(document.getElementById('sr_synopsis'),      medium);
+        fill(document.getElementById('sr_notes'),         long);
+
+        document.querySelector('select[name="sr_bechdel"]').value  = 'Yes';
+        document.querySelector('select[name="sr_diversity"]').value = 'Diverse';
+        document.querySelector('input[name="sr_recommendation"][value="Consider"]').checked = true;
+
+        const qc = document.getElementById('quality_checked');
+        qc.checked = true;
+        qc.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     function srCoverage() {
         return {
             type: '{{ old('sr_assignment_type', $existing?->sr_assignment_type ?? $assignment->assignment_type ?? '') }}',
