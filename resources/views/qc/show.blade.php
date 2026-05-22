@@ -15,7 +15,7 @@
         </div>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-6" x-data="{ editOpen: false }">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
             {{-- Flash messages --}}
@@ -63,21 +63,20 @@
 
                 {{-- Edit in Google Docs --}}
                 @if($assignment->drive_coverage_doc_id)
-                    <a href="https://docs.google.com/document/d/{{ $assignment->drive_coverage_doc_id }}/edit"
-                        target="_blank"
+                    <button type="button" @click="editOpen = true"
                         class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
-                        Edit in Google Docs
-                    </a>
+                        Edit Coverage Doc
+                    </button>
                 @else
                     <span class="px-4 py-2 text-sm text-gray-400 bg-gray-50 border border-gray-200 rounded-md">No doc available</span>
                 @endif
 
-                {{-- Regenerate PDF --}}
+                {{-- Regenerate PDF (also submitted programmatically by the overlay) --}}
                 @if($assignment->drive_coverage_doc_id)
-                    <form method="POST" action="{{ route('qc.regenerate-pdf', $assignment) }}">
+                    <form id="regenerate-form" method="POST" action="{{ route('qc.regenerate-pdf', $assignment) }}">
                         @csrf
                         <button type="submit"
                             class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors">
@@ -134,5 +133,41 @@
             @endif
 
         </div>
+
+        {{-- Full-screen Google Docs editing overlay --}}
+        @if($assignment->drive_coverage_doc_id)
+            <div x-show="editOpen" x-cloak
+                class="fixed inset-0 z-50 flex flex-col bg-white">
+
+                {{-- Overlay header --}}
+                <div class="flex items-center justify-between px-5 py-3 bg-indigo-700 text-white shrink-0">
+                    <span class="font-semibold text-sm truncate pr-4">
+                        Editing: {{ $assignment->script_title }} — #{{ $assignment->order_number }}
+                    </span>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <button type="button"
+                            @click="editOpen = false"
+                            class="text-sm text-indigo-200 hover:text-white transition-colors">
+                            Cancel
+                        </button>
+                        <button type="button"
+                            @click="editOpen = false; document.getElementById('regenerate-form').submit()"
+                            class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold bg-green-500 hover:bg-green-400 text-white rounded-md transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Done Editing — Generate New PDF
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Docs iframe --}}
+                <iframe
+                    src="https://docs.google.com/document/d/{{ $assignment->drive_coverage_doc_id }}/edit"
+                    class="flex-1 w-full border-0">
+                </iframe>
+            </div>
+        @endif
+
     </div>
 </x-app-layout>
