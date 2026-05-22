@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-22 | Inline pay rate computation, per-slot try/catch, service token logging.
 // v1.2 — 2026-05-22 | Multi-reader support, service token mapping, reader request resolution,
 //                     nullable page_count, idempotency guard.
 // v1.1 — 2026-05-19 | Full implementation — validates webhook secret, creates assignment,
@@ -12,9 +13,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Jobs\UploadScriptToDrive;
 use App\Models\Assignment;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class IncomingAssignmentController extends Controller
 {
@@ -51,6 +54,13 @@ class IncomingAssignmentController extends Controller
             'script'           => 'required|file|max:5120',
         ]);
 
+        Log::info('IncomingAssignment: received', [
+            'order_number' => $data['order_number'],
+            'service'      => $data['service'],
+            'page_count'   => $data['page_count'] ?? null,
+            'rush'         => $data['rush'] ?? false,
+        ]);
+
         // Idempotency — if assignments already exist for this order, skip silently
         if (Assignment::where('order_number', $data['order_number'])->exists()) {
             return response()->json(['status' => 'already_exists'], 200);
@@ -73,20 +83,40 @@ class IncomingAssignmentController extends Controller
             }
         }
 
+        $rates     = Setting::ratesForForms();
+        $pageCount = (int) ($data['page_count'] ?? 0);
+        $rush      = (bool) ($data['rush'] ?? false);
+
         // Create one Assignment row per reader slot
         $assignments = [];
         foreach ($slots as $i => $type) {
-            $assignments[] = Assignment::create([
-                'order_number'        => $data['order_number'],
-                'vendor'              => 'sr',
-                'assignment_type'     => $type,
-                'script_title'        => $data['script_title'],
-                'writer_name'         => $data['writer_name'] ?? '',
-                'page_count'          => $data['page_count'] ?? null,
-                'rush'                => $data['rush'] ?? false,
-                'status'              => Assignment::STATUS_INCOMING,
-                'requested_reader_id' => $readerIds[$i] ?? null,
-            ]);
+            try {
+                $payRate = $this->computePayRate($rates, $type, $rush, $pageCount, $readerIds[$i] ?? null);
+
+                $assignments[] = Assignment::create([
+                    'order_number'        => $data['order_number'],
+                    'vendor'              => 'sr',
+                    'assignment_type'     => $type,
+                    'script_title'        => $data['script_title'],
+                    'writer_name'         => $data['writer_name'] ?? '',
+                    'page_count'          => $data['page_count'] ?? null,
+                    'rush'                => $rush,
+                    'pay_rate'            => $payRate,
+                    'status'              => Assignment::STATUS_INCOMING,
+                    'requested_reader_id' => $readerIds[$i] ?? null,
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('IncomingAssignment: slot create failed', [
+                    'order_number' => $data['order_number'],
+                    'slot'         => $i,
+                    'type'         => $type,
+                    'error'        => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (empty($assignments)) {
+            return response()->json(['error' => 'All assignment creates failed.'], 500);
         }
 
         // Stash the file and dispatch an async Drive upload (keyed to first assignment)
@@ -97,6 +127,35 @@ class IncomingAssignmentController extends Controller
             'order_number' => $data['order_number'],
             'assignments'  => count($assignments),
         ], 201);
+    }
+
+    private function computePayRate(array $rates, string $type, bool $rush, int $pageCount, ?int $requestedReaderId): float
+    {
+        $baseMap = [
+            'script_coverage' => $rates['rate_sr_script_coverage'],
+            'notes_only'      => $rates['rate_sr_notes_only'],
+            'deep_dive'       => $rates['rate_sr_deep_dive'],
+            'short'           => $rates['rate_sr_short'],
+            'budget'          => $rates['rate_sr_budget'],
+            'proofreading'    => $rates['rate_sr_proofreading'],
+            'formatting'      => 0.00,
+        ];
+
+        $total = (float) ($baseMap[$type] ?? 0);
+
+        if ($pageCount >= 121 && $pageCount <= 160) {
+            $total += (float) $rates['rate_sr_oversized_121_160'];
+        }
+
+        if ($rush) {
+            $total += (float) $rates['rate_sr_rush'];
+        }
+
+        if ($requestedReaderId) {
+            $total += (float) $rates['rate_sr_request'];
+        }
+
+        return round($total, 2);
     }
 
     private function authorised(Request $request): bool
