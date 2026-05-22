@@ -430,10 +430,14 @@ class AssignmentController extends Controller
         });
 
         if ($error) {
-            return back()->with('error', $error);
+            return request()->expectsJson()
+                ? response()->json(['message' => $error], 422)
+                : back()->with('error', $error);
         }
 
-        return back()->with('success', 'Assignment accepted.');
+        return request()->expectsJson()
+            ? response()->json(['success' => true])
+            : back()->with('success', 'Assignment accepted.');
     }
 
     public function destroy(Assignment $assignment)

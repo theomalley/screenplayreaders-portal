@@ -450,7 +450,8 @@
 
             {{-- ===== READER VIEW ===== --}}
             @else
-                <div x-data="{ tab: 'all' }">
+                <div x-data="{ tab: 'all' }"
+                     x-init="setInterval(() => { if (tab === 'all') location.reload() }, 15000)">
 
                     {{-- Tabs --}}
                     <div class="flex border-b border-gray-200 mb-4">
@@ -767,15 +768,31 @@
                                                         </div>
                                                     @endif
                                                 </td>
-                                                <td class="px-3 py-3 whitespace-nowrap text-right">
-                                                    <form method="POST" action="{{ route('assignments.accept', $assignment) }}">
-                                                        @csrf
-                                                        <button type="submit"
-                                                                onclick="this.disabled=true; this.form.submit();"
-                                                                class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-green-500 transition">
-                                                            Accept
-                                                        </button>
-                                                    </form>
+                                                <td class="px-3 py-3 whitespace-nowrap text-right"
+                                                    x-data="{ accepting: false }"
+                                                    x-ref="acceptCell{{ $assignment->id }}">
+                                                    <button type="button"
+                                                            :disabled="accepting"
+                                                            @click="accepting = true;
+                                                                fetch('{{ route('assignments.accept', $assignment) }}', {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                                        'Accept': 'application/json',
+                                                                    }
+                                                                }).then(r => {
+                                                                    if (r.ok || r.redirected) {
+                                                                        $el.closest('tr').remove();
+                                                                        location.reload();
+                                                                    } else {
+                                                                        accepting = false;
+                                                                        r.json().then(d => alert(d.message ?? 'This assignment is no longer available.')).catch(() => alert('This assignment is no longer available.'));
+                                                                    }
+                                                                }).catch(() => { accepting = false; alert('Request failed — please try again.'); })"
+                                                            :class="accepting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-500'"
+                                                            class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white transition">
+                                                        <span x-text="accepting ? 'Accepting…' : 'Accept'"></span>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         @endforeach
