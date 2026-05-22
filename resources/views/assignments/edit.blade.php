@@ -31,7 +31,7 @@
                           requestedReaders: ['{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}', '', ''],
                           overrideRate: true,
                           updatePayDisplay() {
-                              if (this.overrideRate && this.numReaders === '1') return;
+                              if (this.overrideRate) return;
                               const r = window._srRates;
                               const map = {
                                   sr: {
@@ -65,27 +65,7 @@
                                   sharedMod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
 
                               const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
-                              const modFor  = (i) => this.requestedReaders[i] ? reqRate : 0;
-
-                              if (this.numReaders !== '1') {
-                                  const typeA  = this.vendor === 'sr' ? 'script_coverage' : 'coverage';
-                                  const typeB  = this.vendor === 'sr' ? 'notes_only'       : 'development_notes';
-                                  const labelA = this.vendor === 'sr' ? 'SC'               : 'Coverage';
-                                  const labelB = this.vendor === 'sr' ? 'NO'               : 'Dev Notes';
-                                  const baseA  = parseFloat((map[this.vendor] || {})[typeA] || 0);
-                                  const baseB  = parseFloat((map[this.vendor] || {})[typeB] || 0);
-                                  const n      = parseInt(this.numReaders);
-                                  const parts  = [];
-                                  for (let i = 0; i < n; i++) {
-                                      const base  = i === 0 ? baseA : baseB;
-                                      const label = i === 0 ? labelA : labelB;
-                                      parts.push('$' + (base + sharedMod + modFor(i)).toFixed(2) + ' (' + label + ')');
-                                  }
-                                  el.textContent = parts.join(' + ');
-                                  el.className = 'text-sm font-semibold text-gray-900';
-                                  // do not clear hidden pay_rate — this assignment still needs a value
-                                  return;
-                              }
+                              const hasReq  = !!this.requestedReaders[0];
 
                               if (!this.assignmentType) {
                                   el.textContent = '—';
@@ -106,7 +86,7 @@
                                   if (hidden) hidden.value = '';
                                   return;
                               }
-                              const total = parseFloat(base) + sharedMod + modFor(0);
+                              const total = parseFloat(base) + sharedMod + (hasReq ? reqRate : 0);
                               el.textContent = '$' + total.toFixed(2);
                               el.className = 'text-sm font-semibold text-gray-900';
                               if (hidden) hidden.value = total.toFixed(2);
@@ -289,7 +269,7 @@
                         <input type="hidden" id="pay_rate_hidden" name="pay_rate"
                             value="{{ $v('pay_rate', $assignment->pay_rate) }}" />
 
-                        <div x-show="overrideRate && numReaders === '1'" class="mt-1">
+                        <div x-show="overrideRate" class="mt-1">
                             <div class="flex items-center gap-1">
                                 <span class="text-gray-400 text-sm">$</span>
                                 <input type="number" id="pay_rate_override"
@@ -300,7 +280,7 @@
                             </div>
                         </div>
 
-                        <div x-show="!overrideRate || numReaders !== '1'" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
+                        <div x-show="!overrideRate" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
                             <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
                         </div>
 
@@ -316,7 +296,7 @@
                             </div>
                         </div>
 
-                        <div x-show="numReaders === '1'" class="mt-2 flex items-center gap-2">
+                        <div class="mt-2 flex items-center gap-2">
                             <input type="checkbox" id="override_rate" x-model="overrideRate"
                                 @change="if (!overrideRate) updatePayDisplay()"
                                 class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
