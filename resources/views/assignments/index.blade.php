@@ -39,7 +39,9 @@
 
             {{-- ===== ADMIN / EDITOR VIEW ===== --}}
             @if ($canManage)
-            <script>setInterval(() => location.reload(), 30000);</script>
+            <script>setInterval(() => {
+                if (!document.querySelector('.fixed.inset-0.z-50:not([style*="display: none"])')) location.reload();
+            }, 30000);</script>
 
                 {{-- Reader list panel --}}
                 @if ($readers->isNotEmpty())
@@ -451,7 +453,9 @@
             {{-- ===== READER VIEW ===== --}}
             @else
                 <div x-data="{ tab: 'all' }"
-                     x-init="setInterval(() => { if (tab === 'all') location.reload() }, 15000)">
+                     x-init="setInterval(() => {
+                         if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\"display: none\"])')) location.reload();
+                     }, 15000)">
 
                     {{-- Tabs --}}
                     <div class="flex border-b border-gray-200 mb-4">
