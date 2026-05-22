@@ -85,7 +85,7 @@
                            :disabled="any"
                            @change="rush = $event.target.checked"
                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" />
-                    Rush assignments only
+                    Rush assignments
                 </label>
                 <label class="flex items-center gap-2 text-sm"
                        :class="any ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'">
