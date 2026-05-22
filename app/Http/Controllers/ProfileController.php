@@ -34,8 +34,11 @@ class ProfileController extends Controller
             $request->user()->readerProfile()->updateOrCreate(
                 ['user_id' => $request->user()->id],
                 [
-                    'phone'             => $validated['phone'] ?? null,
-                    'sms_notifications' => $request->boolean('sms_notifications'),
+                    'phone'                => $validated['phone'] ?? null,
+                    'sms_notifications'    => $request->boolean('sms_notifications'),
+                    'sms_notify_any'       => $request->boolean('sms_notify_any'),
+                    'sms_notify_rush'      => $request->boolean('sms_notify_rush'),
+                    'sms_notify_requests'  => $request->boolean('sms_notify_requests'),
                 ]
             );
         }

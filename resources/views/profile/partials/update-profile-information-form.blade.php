@@ -54,13 +54,37 @@
             <p class="mt-1 text-xs text-gray-500">Used for voice calls and optional SMS notifications.</p>
         </div>
 
-        <div class="flex items-start gap-3">
-            <input id="sms_notifications" name="sms_notifications" type="checkbox" value="1"
-                   class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-                   {{ auth()->user()->readerProfile?->sms_notifications ? 'checked' : '' }} />
-            <div>
-                <label for="sms_notifications" class="text-sm font-medium text-gray-700">Receive SMS notifications</label>
-                <p class="text-xs text-gray-500">Get a text message when new assignments are available.</p>
+        <div x-data="{ smsOn: {{ auth()->user()->readerProfile?->sms_notifications ? 'true' : 'false' }} }">
+            <div class="flex items-start gap-3">
+                <input id="sms_notifications" name="sms_notifications" type="checkbox" value="1"
+                       x-model="smsOn"
+                       class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                <div>
+                    <label for="sms_notifications" class="text-sm font-medium text-gray-700">Receive SMS notifications</label>
+                    <p class="text-xs text-gray-500">Get a text message when new assignments are available.</p>
+                </div>
+            </div>
+
+            <div x-show="smsOn" x-cloak class="mt-3 ml-7 space-y-2">
+                <p class="text-xs font-medium text-gray-600 mb-1">Notify me for:</p>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" name="sms_notify_any" value="1"
+                           {{ auth()->user()->readerProfile?->sms_notify_any ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                    Any new assignment
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" name="sms_notify_rush" value="1"
+                           {{ auth()->user()->readerProfile?->sms_notify_rush ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                    Rush assignments only
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" name="sms_notify_requests" value="1"
+                           {{ auth()->user()->readerProfile?->sms_notify_requests ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                    Reader requests (when I'm specifically requested)
+                </label>
             </div>
         </div>
         @endif

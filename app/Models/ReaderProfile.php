@@ -20,10 +20,16 @@ class ReaderProfile extends Model
         'paypal_email',
         'phone',
         'sms_notifications',
+        'sms_notify_any',
+        'sms_notify_rush',
+        'sms_notify_requests',
     ];
 
     protected $casts = [
-        'sms_notifications' => 'boolean',
+        'sms_notifications'  => 'boolean',
+        'sms_notify_any'     => 'boolean',
+        'sms_notify_rush'    => 'boolean',
+        'sms_notify_requests'=> 'boolean',
     ];
 
     public function user(): BelongsTo
