@@ -43,16 +43,13 @@
                         {{ __('Assignments') }}
                     </x-nav-link>
                     @if(auth()->user()?->canManageAssignments())
-                        <x-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
-                            {{ __('Readers') }}
-                        </x-nav-link>
                         <x-nav-link :href="route('qc.index')" :active="request()->routeIs('qc.*')">
                             {{ __('QC') }}
                         </x-nav-link>
 
-                        {{-- Admin dropdown (Archive, Ratebook, Reader Manual) --}}
+                        {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*');
+                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -67,6 +64,10 @@
                             </button>
                             <div x-show="adminOpen" x-cloak
                                  class="absolute top-full left-0 mt-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                                <a href="{{ route('readers.index') }}"
+                                    class="block px-4 py-2 text-sm {{ request()->routeIs('readers.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Readers
+                                </a>
                                 <a href="{{ route('archive.index') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('archive.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Archive
@@ -135,13 +136,13 @@
                 {{ __('Assignments') }}
             </x-responsive-nav-link>
             @if(auth()->user()?->canManageAssignments())
-                <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
-                    {{ __('Readers') }}
-                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('qc.index')" :active="request()->routeIs('qc.*')">
                     {{ __('QC') }}
                 </x-responsive-nav-link>
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Admin</div>
+                <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
+                    {{ __('Readers') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('archive.index')" :active="request()->routeIs('archive.*')">
                     {{ __('Archive') }}
                 </x-responsive-nav-link>
