@@ -43,6 +43,7 @@ class GoogleDocsService
     {
         $client = new Client();
         $client->useApplicationDefaultCredentials();
+        $client->setSubject(config('services.google.impersonate_user'));
         $client->addScope(Drive::DRIVE);
         $client->addScope(Docs::DOCUMENTS);
 

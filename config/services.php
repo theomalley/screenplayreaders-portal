@@ -40,6 +40,8 @@ return [
         'credentials_path'         => env('GOOGLE_APPLICATION_CREDENTIALS'),
         'drive_scripts_folder_id'  => env('GOOGLE_DRIVE_SCRIPTS_FOLDER_ID'),
         'drive_coverage_folder_id' => env('GOOGLE_DRIVE_COVERAGE_FOLDER_ID'),
+        // DWD: the Workspace user the service account impersonates for Drive/Docs calls
+        'impersonate_user'         => env('GOOGLE_IMPERSONATE_USER'),
     ],
 
     'portal' => [
