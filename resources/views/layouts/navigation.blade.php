@@ -50,9 +50,9 @@
                             {{ __('QC') }}
                         </x-nav-link>
 
-                        {{-- Admin dropdown --}}
+                        {{-- Admin dropdown (Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('archive.*') || request()->routeIs('ratebook.*');
+                            $adminActive = request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -75,12 +75,17 @@
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('ratebook.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Ratebook
                                 </a>
+                                <a href="{{ route('manual.show') }}"
+                                    class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Reader Manual
+                                </a>
                             </div>
                         </div>
+                    @else
+                        <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
+                            {{ __('Reader Manual') }}
+                        </x-nav-link>
                     @endif
-                    <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
-                        {{ __('Reader Manual') }}
-                    </x-nav-link>
                 </div>
             </div>
 
@@ -143,10 +148,14 @@
                 <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                     {{ __('Ratebook') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
+                    {{ __('Reader Manual') }}
+                </x-responsive-nav-link>
+            @else
+                <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
+                    {{ __('Reader Manual') }}
+                </x-responsive-nav-link>
             @endif
-            <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
-                {{ __('Reader Manual') }}
-            </x-responsive-nav-link>
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">
