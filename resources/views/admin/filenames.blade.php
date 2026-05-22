@@ -69,7 +69,7 @@
                                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>
-                                    <p class="text-xs text-gray-400 font-mono truncate">
+                                    <p class="text-xs text-gray-400 font-mono break-all">
                                         19192_20260601_Star-Wars_GLucas_<span class="text-indigo-600" x-text="{{ $row['model'] }} || '…'"></span>-KD.pdf
                                     </p>
                                 </div>
@@ -104,7 +104,7 @@
                                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>
-                                    <p class="text-xs text-gray-400 font-mono truncate">
+                                    <p class="text-xs text-gray-400 font-mono break-all">
                                         WD_20260601_Star-Wars_GLucas_<span class="text-indigo-600" x-text="{{ $row['model'] }} || '…'"></span>-KD.pdf
                                     </p>
                                 </div>
