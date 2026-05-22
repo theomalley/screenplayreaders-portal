@@ -155,7 +155,12 @@
                 {{-- ── Section 3: Scoresheet ────────────────────────────────────────────── --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-5">
                     <div class="flex items-center justify-between border-b border-gray-100 pb-2">
-                        <h3 class="font-semibold text-gray-700 text-base">Scoresheet <span class="text-gray-400 font-normal text-sm">(50–100)</span></h3>
+                        <h3 class="font-semibold text-gray-700 text-base flex items-baseline gap-3">
+                            Scoresheet <span class="text-gray-400 font-normal text-sm">(50–100)</span>
+                            <span class="text-base font-bold tabular-nums"
+                                :style="`color: ${scoreColor(averageScore())}`"
+                                x-text="'Avg: ' + averageScore()"></span>
+                        </h3>
                         <div class="flex items-center gap-2">
                             <x-input-label for="randomAnchor" value="Randomize around:" class="whitespace-nowrap" />
                             <x-text-input id="randomAnchor" type="number" class="w-20 text-sm"
@@ -357,6 +362,11 @@
                 target_audience:        {{ old('sr_score_target_audience',        $existing?->sr_score_target_audience        ?? 75) }},
                 content:                {{ old('sr_score_content',                $existing?->sr_score_content                ?? 75) }},
                 format:                 {{ old('sr_score_format',                 $existing?->sr_score_format                 ?? 75) }},
+            },
+
+            averageScore() {
+                const vals = Object.values(this.scores);
+                return Math.round(vals.reduce((sum, v) => sum + v, 0) / vals.length);
             },
 
             randomizeScores() {
