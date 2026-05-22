@@ -34,7 +34,7 @@
                         </p>
                         <textarea name="source_html" rows="24"
                                   class="w-full font-mono text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y"
-                                  placeholder="Paste full page HTML source or an HTML fragment…"></textarea>
+                                  placeholder="Paste full page HTML source or an HTML fragment…">{{ $content }}</textarea>
                         <div class="flex items-center justify-end gap-3 mt-3">
                             <button type="button" @click="editing = false"
                                     class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition">

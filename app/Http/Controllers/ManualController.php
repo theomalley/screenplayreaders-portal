@@ -11,8 +11,9 @@ class ManualController extends Controller
 {
     public function show()
     {
-        $hasContent = (bool) Setting::getValue('reader_manual_content');
-        return view('manual.show', compact('hasContent'));
+        $content    = Setting::getValue('reader_manual_content', '');
+        $hasContent = $content !== '';
+        return view('manual.show', compact('hasContent', 'content'));
     }
 
     public function frame()
