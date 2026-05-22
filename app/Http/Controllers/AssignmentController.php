@@ -24,6 +24,7 @@ class AssignmentController extends Controller
 
         if ($user->canManageAssignments()) {
             $assignments = Assignment::with(['assignedReader.readerProfile', 'requestedReader.readerProfile'])
+                ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->orderBy('created_at', 'asc')
                 ->get();
 
