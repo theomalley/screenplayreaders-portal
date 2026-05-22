@@ -379,6 +379,8 @@
                                             x-data="{
                                                 open: false,
                                                 hover: false,
+                                                tipX: 0,
+                                                tipY: 0,
                                                 note: @js($assignment->notes ?? ''),
                                                 saving: false,
                                                 saved: false,
@@ -399,8 +401,9 @@
                                                 }
                                             }">
                                             @if($assignment->notes)
-                                                <div class="relative inline-block"
-                                                     @mouseenter="hover = true" @mouseleave="hover = false">
+                                                <div class="inline-block"
+                                                     @mouseenter="hover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
+                                                     @mouseleave="hover = false">
                                                     <button @click="open = !open" type="button"
                                                             class="text-amber-500 hover:text-amber-600 transition">
                                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
@@ -408,7 +411,8 @@
                                                         </svg>
                                                     </button>
                                                     <div x-show="hover && !open" x-cloak
-                                                         class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
+                                                         :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
+                                                         class="z-50 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
                                                         <p x-text="note"></p>
                                                         <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
                                                     </div>
@@ -591,17 +595,19 @@
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                                 </td>
                                                 {{-- Notes (hover tooltip, read-only for readers) --}}
-                                                <td class="px-3 py-3" x-data="{ hover: false, note: @js($assignment->notes ?? '') }">
+                                                <td class="px-3 py-3" x-data="{ hover: false, tipX: 0, tipY: 0, note: @js($assignment->notes ?? '') }">
                                                     @if($assignment->notes)
-                                                        <div class="relative inline-block"
-                                                             @mouseenter="hover = true" @mouseleave="hover = false">
+                                                        <div class="inline-block"
+                                                             @mouseenter="hover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
+                                                             @mouseleave="hover = false">
                                                             <span class="text-amber-500">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                                                     <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
                                                                 </svg>
                                                             </span>
                                                             <div x-show="hover" x-cloak
-                                                                 class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
+                                                                 :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
+                                                                 class="z-50 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
                                                                 <p x-text="note"></p>
                                                                 <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
                                                             </div>
@@ -742,17 +748,19 @@
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
                                                 </td>
                                                 {{-- Notes (hover tooltip, read-only for readers) --}}
-                                                <td class="px-3 py-3" x-data="{ hover: false, note: @js($assignment->notes ?? '') }">
+                                                <td class="px-3 py-3" x-data="{ hover: false, tipX: 0, tipY: 0, note: @js($assignment->notes ?? '') }">
                                                     @if($assignment->notes)
-                                                        <div class="relative inline-block"
-                                                             @mouseenter="hover = true" @mouseleave="hover = false">
+                                                        <div class="inline-block"
+                                                             @mouseenter="hover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
+                                                             @mouseleave="hover = false">
                                                             <span class="text-amber-500">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                                                     <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
                                                                 </svg>
                                                             </span>
                                                             <div x-show="hover" x-cloak
-                                                                 class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
+                                                                 :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
+                                                                 class="z-50 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
                                                                 <p x-text="note"></p>
                                                                 <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
                                                             </div>
@@ -902,17 +910,19 @@
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                                 </td>
                                                 {{-- Notes (hover tooltip, read-only for readers) --}}
-                                                <td class="px-3 py-3" x-data="{ hover: false, note: @js($assignment->notes ?? '') }">
+                                                <td class="px-3 py-3" x-data="{ hover: false, tipX: 0, tipY: 0, note: @js($assignment->notes ?? '') }">
                                                     @if($assignment->notes)
-                                                        <div class="relative inline-block"
-                                                             @mouseenter="hover = true" @mouseleave="hover = false">
+                                                        <div class="inline-block"
+                                                             @mouseenter="hover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
+                                                             @mouseleave="hover = false">
                                                             <span class="text-amber-500">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                                                                     <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
                                                                 </svg>
                                                             </span>
                                                             <div x-show="hover" x-cloak
-                                                                 class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
+                                                                 :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
+                                                                 class="z-50 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
                                                                 <p x-text="note"></p>
                                                                 <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
                                                             </div>
