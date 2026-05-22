@@ -120,7 +120,12 @@ class IncomingAssignmentController extends Controller
         }
 
         // Stash the file and dispatch an async Drive upload (keyed to first assignment)
-        $storagePath = $request->file('script')->store('incoming-scripts');
+        // Explicitly use the local disk so the queue worker always finds the file at storage_path('app/...')
+        $storagePath = $request->file('script')->store('incoming-scripts', 'local');
+        if ($storagePath === false) {
+            Log::error('IncomingAssignment: file store failed', ['order_number' => $data['order_number']]);
+            return response()->json(['error' => 'File storage failed.'], 500);
+        }
         UploadScriptToDrive::dispatch($assignments[0]->id, $storagePath);
 
         return response()->json([

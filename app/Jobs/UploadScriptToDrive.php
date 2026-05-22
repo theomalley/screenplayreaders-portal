@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-22 | Explicit local-disk path resolution; pre-flight file-exists check.
 // v1.1 — 2026-05-22 | Use FilenameGenerator for Drive filename; update all sibling assignments;
 //                     pass order_number (not ID) to uploadScript.
 // v1.0 — 2026-05-19 | Queued job: upload a locally-stored script to Google Drive,
@@ -13,6 +14,7 @@ use App\Support\FilenameGenerator;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class UploadScriptToDrive implements ShouldQueue
 {
@@ -26,7 +28,15 @@ class UploadScriptToDrive implements ShouldQueue
     public function handle(GoogleDriveService $drive): void
     {
         $assignment = Assignment::findOrFail($this->assignmentId);
-        $fullPath   = storage_path('app/' . $this->storagePath);
+        $fullPath   = Storage::disk('local')->path($this->storagePath);
+
+        if (! file_exists($fullPath)) {
+            Log::error('UploadScriptToDrive: file not found', [
+                'assignment_id' => $this->assignmentId,
+                'path'          => $fullPath,
+            ]);
+            return;
+        }
 
         $fileName = FilenameGenerator::script($assignment);
         $fileId   = $drive->uploadScript($assignment->order_number, $fullPath, $fileName);
