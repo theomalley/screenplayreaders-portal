@@ -176,6 +176,49 @@
                     </table>
                 </div>
 
+                {{-- Editor Rates --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+                    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Editor Rates</h3>
+                    </div>
+                    <table class="min-w-full divide-y divide-gray-100 text-sm">
+                        <tbody class="divide-y divide-gray-100">
+                            <tr>
+                                <td class="px-5 py-3 text-gray-700 w-2/3">Editor Commission</td>
+                                <td class="px-5 py-3 text-right">
+                                    @if ($canEdit)
+                                        <div class="flex items-center justify-end gap-1">
+                                            <input type="number" name="rate_editor_commission" value="{{ number_format($rates['rate_editor_commission'], 2) }}"
+                                                min="0" max="100" step="0.01"
+                                                class="w-24 text-right border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                            <span class="text-gray-400 text-sm">%</span>
+                                        </div>
+                                        <x-input-error :messages="$errors->get('rate_editor_commission')" class="mt-1 text-right" />
+                                    @else
+                                        <span class="font-mono text-gray-800">{{ number_format($rates['rate_editor_commission'], 2) }}%</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-5 py-3 text-gray-700 w-2/3">Editor Weekly Flat</td>
+                                <td class="px-5 py-3 text-right">
+                                    @if ($canEdit)
+                                        <div class="flex items-center justify-end gap-1">
+                                            <span class="text-gray-400 text-sm">$</span>
+                                            <input type="number" name="rate_editor_weekly_flat" value="{{ number_format($rates['rate_editor_weekly_flat'], 2) }}"
+                                                min="0" max="9999.99" step="0.01"
+                                                class="w-24 text-right border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                        </div>
+                                        <x-input-error :messages="$errors->get('rate_editor_weekly_flat')" class="mt-1 text-right" />
+                                    @else
+                                        <span class="font-mono text-gray-800">${{ number_format($rates['rate_editor_weekly_flat'], 2) }}</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 @if ($canEdit)
                     <div class="flex justify-end">
                         <x-primary-button>Save Rates</x-primary-button>

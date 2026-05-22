@@ -49,7 +49,7 @@
 
                         {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*');
+                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -80,6 +80,13 @@
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
                                 </a>
+                                @if(auth()->user()?->isAdmin())
+                                    <div class="my-1 border-t border-gray-100"></div>
+                                    <a href="{{ route('admin.permissions') }}"
+                                        class="block px-4 py-2 text-sm {{ request()->routeIs('admin.permissions*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Permissions
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     @else
@@ -152,6 +159,11 @@
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                     {{ __('Reader Manual') }}
                 </x-responsive-nav-link>
+                @if(auth()->user()?->isAdmin())
+                    <x-responsive-nav-link :href="route('admin.permissions')" :active="request()->routeIs('admin.permissions*')">
+                        {{ __('Permissions') }}
+                    </x-responsive-nav-link>
+                @endif
             @else
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                     {{ __('Reader Manual') }}

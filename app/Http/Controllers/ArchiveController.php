@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Support\Permission;
 
 class ArchiveController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(Permission::check('archive'), 403);
 
         // Fetch all completed assignments and group by order number so multi-reader
         // orders (2R, 3R) appear as a single row with one coverage link per reader.

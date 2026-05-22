@@ -26,6 +26,8 @@ class Setting extends Model
         'rate_wd_oversized_121_160' => 15.00,
         'rate_wd_rush'              => 25.00,
         'rate_wd_request'           => 15.00,
+        'rate_editor_commission'    => 10.00,
+        'rate_editor_weekly_flat'   => 500.00,
     ];
 
     /**

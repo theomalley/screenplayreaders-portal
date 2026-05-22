@@ -4,6 +4,7 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QcController;
 use App\Http\Controllers\RatebookController;
@@ -64,6 +65,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/approve', [QcController::class, 'approve'])->name('qc.approve');
 
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+
+    Route::get('/admin/permissions', [PermissionsController::class, 'index'])->name('admin.permissions');
+    Route::post('/admin/permissions', [PermissionsController::class, 'update'])->name('admin.permissions.update');
 
     // --- Admin Drive connection test (dev utility — admin/editor only) ---
     Route::get('/admin/drive-test', function () {

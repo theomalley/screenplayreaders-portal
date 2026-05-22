@@ -6,13 +6,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Services\GoogleDocsService;
+use App\Support\Permission;
 use Illuminate\Support\Facades\Log;
 
 class QcController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(Permission::check('qc'), 403);
 
         $assignments = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
             ->where('status', Assignment::STATUS_QC)
@@ -24,7 +25,7 @@ class QcController extends Controller
 
     public function show(Assignment $assignment)
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(Permission::check('qc'), 403);
         abort_unless($assignment->status === Assignment::STATUS_QC, 404);
 
         $assignment->load(['assignedReader.readerProfile', 'coverageSubmission']);
@@ -34,7 +35,7 @@ class QcController extends Controller
 
     public function regeneratePdf(Assignment $assignment)
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(Permission::check('qc'), 403);
 
         if (!$assignment->drive_coverage_doc_id) {
             return back()->with('error', 'No Google Doc found for this assignment.');
@@ -61,7 +62,7 @@ class QcController extends Controller
 
     public function approve(Assignment $assignment)
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(Permission::check('qc'), 403);
         abort_unless($assignment->status === Assignment::STATUS_QC, 422);
 
         $assignment->update([

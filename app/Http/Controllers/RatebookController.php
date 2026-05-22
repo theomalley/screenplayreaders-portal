@@ -1,17 +1,18 @@
 <?php
 
-// v1.0 — 2026-05-17 | Ratebook: view rates (admin + editor), edit rates (admin only)
+// v1.1 — 2026-05-22 | Permission::check for access; editor commission/weekly flat rates added
 
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Support\Permission;
 use Illuminate\Http\Request;
 
 class RatebookController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(Permission::check('ratebook'), 403);
 
         $rates = Setting::ratesForForms();
 
@@ -20,13 +21,16 @@ class RatebookController extends Controller
 
     public function update(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(Permission::check('ratebook.edit'), 403);
 
-        $validated = $request->validate(
-            collect(Setting::RATE_DEFAULTS)->mapWithKeys(
-                fn ($default, $key) => [$key => ['required', 'numeric', 'min:0', 'max:9999.99']]
-            )->toArray()
-        );
+        $rules = collect(Setting::RATE_DEFAULTS)->mapWithKeys(function ($default, $key) {
+            if ($key === 'rate_editor_commission') {
+                return [$key => ['required', 'numeric', 'min:0', 'max:100']];
+            }
+            return [$key => ['required', 'numeric', 'min:0', 'max:9999.99']];
+        })->toArray();
+
+        $validated = $request->validate($rules);
 
         foreach ($validated as $key => $value) {
             Setting::setValue($key, $value);
