@@ -1,6 +1,6 @@
 <?php
 
-// v1.3 — 2026-05-22 | Remove public Drive permissions on upload; add downloadContents for portal proxy.
+// v1.3 — 2026-05-22 | Remove public Drive permissions on upload; add downloadContents for portal proxy; revokePublicAccess on replace.
 // v1.2 — 2026-05-21 | Add supportsAllDrives to all API calls — required for Shared Drive usage.
 // v1.1 — 2026-05-19 | Full Drive implementation — upload script, view/download links, file replace.
 //                     createCoverageDoc, exportDocToPdf, removeTitlePage stubbed for later phases.
@@ -52,8 +52,8 @@ class GoogleDriveService
     }
 
     /**
-     * Replace the content of an existing Drive file in place (same file ID, same sharing).
-     * Used when an admin removes a title page and re-uploads.
+     * Replace the content of an existing Drive file in place (same file ID).
+     * Also strips any public "anyone" permission left from a previous upload.
      */
     public function replaceFile(string $fileId, string $localPath, ?string $fileName = null): string
     {
@@ -67,6 +67,8 @@ class GoogleDriveService
                 'supportsAllDrives' => true,
             ]
         );
+
+        $this->revokePublicAccess($fileId);
 
         return $fileId;
     }
@@ -183,6 +185,26 @@ class GoogleDriveService
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Revoke any "anyone with link" permission from a Drive file.
+     * Called after replacing a file to strip public access that may have been set previously.
+     */
+    private function revokePublicAccess(string $fileId): void
+    {
+        $perms = $this->drive->permissions->listPermissions($fileId, [
+            'fields'            => 'permissions(id,type)',
+            'supportsAllDrives' => true,
+        ]);
+
+        foreach ($perms->getPermissions() as $perm) {
+            if ($perm->getType() === 'anyone') {
+                $this->drive->permissions->delete($fileId, $perm->getId(), [
+                    'supportsAllDrives' => true,
+                ]);
+            }
+        }
+    }
 
     /**
      * Set a file to "anyone with link = viewer" and prevent viewers from downloading or printing.
