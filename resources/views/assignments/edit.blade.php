@@ -111,7 +111,7 @@
                               el.className = 'text-sm font-semibold text-gray-900';
                               if (hidden) hidden.value = total.toFixed(2);
                           },
-                          init() { /* overrideRate starts true; pay_rate_hidden pre-set via value attr */ }
+                          init() { this.$nextTick(() => this.updatePayDisplay()); }
                       }">
                     @csrf
                     @method('PATCH')
