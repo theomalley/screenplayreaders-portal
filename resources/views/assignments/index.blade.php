@@ -769,11 +769,13 @@
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right"
-                                                    x-data="{ accepting: false }"
-                                                    x-ref="acceptCell{{ $assignment->id }}">
-                                                    <button type="button"
+                                                    x-data="{ accepting: false, error: '' }">
+                                                    <span x-show="error" x-cloak
+                                                          x-text="error"
+                                                          class="text-xs text-red-600 font-medium"></span>
+                                                    <button x-show="!error" type="button"
                                                             :disabled="accepting"
-                                                            @click="accepting = true;
+                                                            @click="accepting = true; error = '';
                                                                 fetch('{{ route('assignments.accept', $assignment) }}', {
                                                                     method: 'POST',
                                                                     headers: {
@@ -781,14 +783,13 @@
                                                                         'Accept': 'application/json',
                                                                     }
                                                                 }).then(r => {
-                                                                    if (r.ok || r.redirected) {
+                                                                    if (r.ok) {
                                                                         $el.closest('tr').remove();
                                                                         location.reload();
                                                                     } else {
-                                                                        accepting = false;
-                                                                        r.json().then(d => alert(d.message ?? 'This assignment is no longer available.')).catch(() => alert('This assignment is no longer available.'));
+                                                                        r.json().then(d => { accepting = false; error = d.message ?? 'No longer available.'; }).catch(() => { accepting = false; error = 'No longer available.'; });
                                                                     }
-                                                                }).catch(() => { accepting = false; alert('Request failed — please try again.'); })"
+                                                                }).catch(() => { accepting = false; error = 'Request failed — try again.'; })"
                                                             :class="accepting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-500'"
                                                             class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white transition">
                                                         <span x-text="accepting ? 'Accepting…' : 'Accept'"></span>
