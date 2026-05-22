@@ -4,6 +4,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QcController;
 use App\Http\Controllers\RatebookController;
 use App\Http\Controllers\ReaderProfileController;
 use App\Http\Controllers\SettingController;
@@ -55,6 +56,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');
+
+    Route::get('/qc', [QcController::class, 'index'])->name('qc.index');
+    Route::get('/qc/{assignment}', [QcController::class, 'show'])->name('qc.show');
+    Route::post('/qc/{assignment}/regenerate-pdf', [QcController::class, 'regeneratePdf'])->name('qc.regenerate-pdf');
+    Route::post('/qc/{assignment}/approve', [QcController::class, 'approve'])->name('qc.approve');
 
     // --- Admin Drive connection test (dev utility — admin/editor only) ---
     Route::get('/admin/drive-test', function () {

@@ -49,6 +49,9 @@
                         <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                             {{ __('Ratebook') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('qc.index')" :active="request()->routeIs('qc.*')">
+                            {{ __('QC') }}
+                        </x-nav-link>
                     @endif
                     <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                         {{ __('Reader Manual') }}
@@ -107,6 +110,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                     {{ __('Ratebook') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('qc.index')" :active="request()->routeIs('qc.*')">
+                    {{ __('QC') }}
                 </x-responsive-nav-link>
             @endif
             <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
