@@ -6,7 +6,7 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
-            @if($assignments->isEmpty())
+            @if($groups->isEmpty())
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-12 text-center text-gray-400 text-sm">
                     No completed assignments yet.
                 </div>
@@ -18,16 +18,19 @@
                                 <th class="px-4 py-3 text-left">Order</th>
                                 <th class="px-4 py-3 text-left">Script / Writer</th>
                                 <th class="px-4 py-3 text-left">Type</th>
-                                <th class="px-4 py-3 text-left">Reader</th>
-                                <th class="px-4 py-3 text-left">Submitted</th>
                                 <th class="px-4 py-3 text-left">Completed</th>
-                                <th class="px-4 py-3"></th>
+                                <th class="px-4 py-3 text-left">Script</th>
+                                <th class="px-4 py-3 text-left">Coverage</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            @foreach($assignments as $assignment)
+                            @foreach($groups as $orderNumber => $group)
                                 @php
-                                    $typeLabel = match($assignment->assignment_type) {
+                                    $first       = $group->first();
+                                    $latestDone  = $group->max(fn($a) => $a->completed_at?->timestamp ?? 0);
+                                    $scriptId    = $group->firstWhere(fn($a) => !empty($a->drive_script_file_id))?->drive_script_file_id;
+
+                                    $typeLabel = match($first->assignment_type) {
                                         'script_coverage'   => 'Script Coverage',
                                         'notes_only'        => 'Notes-Only',
                                         'deep_dive'         => 'Deep-Dive',
@@ -36,45 +39,84 @@
                                         'book'              => 'Book',
                                         'coverage'          => 'Coverage',
                                         'development_notes' => 'Dev Notes',
-                                        default             => $assignment->assignment_type ?? '—',
+                                        default             => $first->assignment_type ?? '—',
                                     };
-                                    if ($assignment->vendor === 'wd') {
+                                    if ($first->vendor === 'wd') {
                                         $typeLabel = 'WD ' . $typeLabel;
                                     }
                                 @endphp
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-gray-50 align-top">
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
-                                        {{ $assignment->order_number }}
+                                        {{ $orderNumber }}
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div class="font-medium text-gray-800">{{ $assignment->script_title }}</div>
-                                        <div class="text-gray-400 text-xs">{{ $assignment->writer_name }}</div>
+                                        <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
+                                        <div class="text-gray-400 text-xs">{{ $first->writer_name }}</div>
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
-                                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
-                                        {{ $assignment->assignedReader?->readerProfile?->initials ?? '—' }}
-                                    </td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
-                                        {{ $assignment->submitted_at?->format('M j, Y') ?? '—' }}
+                                        {{ $latestDone ? \Carbon\Carbon::createFromTimestamp($latestDone)->format('M j, Y') : '—' }}
                                     </td>
-                                    <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
-                                        {{ $assignment->completed_at?->format('M j, Y') ?? '—' }}
+
+                                    {{-- Script link --}}
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        @if($scriptId)
+                                            <a href="https://drive.google.com/file/d/{{ $scriptId }}/view"
+                                               target="_blank"
+                                               class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                Script
+                                            </a>
+                                        @else
+                                            <span class="text-gray-300 text-xs">—</span>
+                                        @endif
                                     </td>
-                                    <td class="px-4 py-3 text-right">
-                                        <a href="{{ route('assignments.show', $assignment) }}"
-                                            class="text-xs font-medium text-indigo-600 hover:text-indigo-800">
-                                            View →
-                                        </a>
+
+                                    {{-- Coverage links — one per completed reader --}}
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($group as $assignment)
+                                                @php
+                                                    $initials = $assignment->assignedReader?->readerProfile?->initials ?? '?';
+                                                    $pdfId    = $assignment->drive_coverage_pdf_id;
+                                                    $docId    = $assignment->drive_coverage_doc_id;
+                                                @endphp
+                                                @if($pdfId)
+                                                    <a href="https://drive.google.com/file/d/{{ $pdfId }}/view"
+                                                       target="_blank"
+                                                       title="{{ $initials }} — Coverage PDF"
+                                                       class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100">
+                                                        {{ $initials }}
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                        </svg>
+                                                    </a>
+                                                @elseif($docId)
+                                                    <a href="https://docs.google.com/document/d/{{ $docId }}/view"
+                                                       target="_blank"
+                                                       title="{{ $initials }} — Coverage Doc (no PDF)"
+                                                       class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                                                        {{ $initials }}
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                        </svg>
+                                                    </a>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400 border border-gray-200"
+                                                          title="{{ $initials }} — No coverage doc">
+                                                        {{ $initials }}
+                                                    </span>
+                                                @endif
+                                            @endforeach
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-
-                @if($assignments->hasPages())
-                    <div>{{ $assignments->links() }}</div>
-                @endif
             @endif
 
         </div>

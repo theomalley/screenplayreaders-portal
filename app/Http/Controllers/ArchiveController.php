@@ -10,11 +10,14 @@ class ArchiveController extends Controller
     {
         abort_unless(auth()->user()->canManageAssignments(), 403);
 
-        $assignments = Assignment::with(['assignedReader.readerProfile'])
+        // Fetch all completed assignments and group by order number so multi-reader
+        // orders (2R, 3R) appear as a single row with one coverage link per reader.
+        $groups = Assignment::with(['assignedReader.readerProfile'])
             ->where('status', Assignment::STATUS_COMPLETED)
-            ->orderByDesc('completed_at')
-            ->paginate(50);
+            ->get()
+            ->groupBy('order_number')
+            ->sortByDesc(fn($group) => $group->max(fn($a) => $a->completed_at?->timestamp ?? 0));
 
-        return view('archive.index', compact('assignments'));
+        return view('archive.index', compact('groups'));
     }
 }
