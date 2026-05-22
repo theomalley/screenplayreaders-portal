@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\ManualController;
@@ -61,6 +62,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/qc/{assignment}', [QcController::class, 'show'])->name('qc.show');
     Route::post('/qc/{assignment}/regenerate-pdf', [QcController::class, 'regeneratePdf'])->name('qc.regenerate-pdf');
     Route::post('/qc/{assignment}/approve', [QcController::class, 'approve'])->name('qc.approve');
+
+    Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
 
     // --- Admin Drive connection test (dev utility — admin/editor only) ---
     Route::get('/admin/drive-test', function () {
