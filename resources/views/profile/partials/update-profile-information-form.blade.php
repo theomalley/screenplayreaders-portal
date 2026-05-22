@@ -65,24 +65,35 @@
                 </div>
             </div>
 
-            <div x-show="smsOn" x-cloak class="mt-3 ml-7 space-y-2">
+            <div x-show="smsOn" x-cloak class="mt-3 ml-7 space-y-2"
+                 x-data="{
+                     any:      {{ auth()->user()->readerProfile?->sms_notify_any ? 'true' : 'false' }},
+                     rush:     {{ auth()->user()->readerProfile?->sms_notify_rush ? 'true' : 'false' }},
+                     requests: {{ auth()->user()->readerProfile?->sms_notify_requests ? 'true' : 'false' }}
+                 }">
                 <p class="text-xs font-medium text-gray-600 mb-1">Notify me for:</p>
                 <label class="flex items-center gap-2 text-sm text-gray-700">
                     <input type="checkbox" name="sms_notify_any" value="1"
-                           {{ auth()->user()->readerProfile?->sms_notify_any ? 'checked' : '' }}
+                           x-model="any"
                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                     Any new assignment
                 </label>
-                <label class="flex items-center gap-2 text-sm text-gray-700">
+                <label class="flex items-center gap-2 text-sm"
+                       :class="any ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'">
                     <input type="checkbox" name="sms_notify_rush" value="1"
-                           {{ auth()->user()->readerProfile?->sms_notify_rush ? 'checked' : '' }}
-                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                           :checked="any || rush"
+                           :disabled="any"
+                           @change="rush = $event.target.checked"
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                     Rush assignments only
                 </label>
-                <label class="flex items-center gap-2 text-sm text-gray-700">
+                <label class="flex items-center gap-2 text-sm"
+                       :class="any ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'">
                     <input type="checkbox" name="sms_notify_requests" value="1"
-                           {{ auth()->user()->readerProfile?->sms_notify_requests ? 'checked' : '' }}
-                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                           :checked="any || requests"
+                           :disabled="any"
+                           @change="requests = $event.target.checked"
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                     Reader requests (when I'm specifically requested)
                 </label>
             </div>
