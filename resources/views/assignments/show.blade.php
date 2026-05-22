@@ -37,11 +37,77 @@
 
             @if ($viewLink && $assignment->assigned_reader_id === auth()->id() || auth()->user()->isAdminOrEditor())
                 @if ($viewLink)
-                    <iframe src="{{ $viewLink }}"
-                            class="w-full"
-                            style="height: 80vh;"
-                            frameborder="0"
-                            allowfullscreen></iframe>
+                    <div x-data="{
+                            url: @js($viewLink),
+                            _pdf: null,
+                            currentPage: 1,
+                            totalPages: 0,
+                            loading: true,
+
+                            async init() {
+                                await this.$nextTick();
+                                await this.loadPdf();
+                            },
+
+                            async loadPdf() {
+                                this.loading = true;
+                                try {
+                                    this._pdf = await pdfjsLib.getDocument({ url: this.url, withCredentials: true }).promise;
+                                    this.totalPages = this._pdf.numPages;
+                                    await this.renderPage(1);
+                                } catch (e) {
+                                    console.error('PDF load error:', e);
+                                } finally {
+                                    this.loading = false;
+                                }
+                            },
+
+                            async renderPage(num) {
+                                if (!this._pdf) return;
+                                this.loading = true;
+                                try {
+                                    const page = await this._pdf.getPage(num);
+                                    const wrap = this.$refs.canvasWrap;
+                                    const maxW = Math.max(wrap.clientWidth - 48, 200);
+                                    const base = page.getViewport({ scale: 1 });
+                                    const scale = Math.min(maxW / base.width, 1.5);
+                                    const vp = page.getViewport({ scale });
+                                    const canvas = this.$refs.canvas;
+                                    canvas.width  = vp.width;
+                                    canvas.height = vp.height;
+                                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                                    this.currentPage = num;
+                                    wrap.scrollTop = 0;
+                                } finally {
+                                    this.loading = false;
+                                }
+                            },
+
+                            async prevPage() {
+                                if (this.currentPage > 1) await this.renderPage(this.currentPage - 1);
+                            },
+
+                            async nextPage() {
+                                if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1);
+                            },
+                        }"
+                        @keydown.arrow-right.window="nextPage()"
+                        @keydown.arrow-left.window="prevPage()">
+
+                        {{-- Page controls bar --}}
+                        <div x-show="totalPages > 0" class="flex items-center justify-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-100">
+                            <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
+                                    class="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
+                            <span class="text-sm text-gray-500 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
+                            <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
+                                    class="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40">Next ›</button>
+                        </div>
+
+                        <div x-ref="canvasWrap" class="flex flex-col items-center bg-gray-100 py-6 px-4" style="min-height:60vh">
+                            <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-10">Loading…</div>
+                            <canvas x-ref="canvas" class="shadow-lg"></canvas>
+                        </div>
+                    </div>
                 @else
                     <div class="px-5 py-10 text-center text-sm text-gray-400">
                         Script not yet uploaded.
@@ -117,3 +183,11 @@
 
     </div>
 </x-app-layout>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+</script>
+@endpush

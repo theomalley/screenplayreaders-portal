@@ -236,21 +236,35 @@
                                         </td>
 
                                         {{-- Title / Writer --}}
-                                        <td class="px-3 py-3" x-data='{ open: false, url: @json($viewUrl) }'>
+                                        <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
                                             @if($viewUrl)
-                                                <button @click="open = true" type="button"
+                                                <button @click="openViewer()" type="button"
                                                         class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
                                                 <div x-show="open" x-cloak
                                                      @keydown.escape.window="open = false"
+                                                     @keydown.arrow-right.window="if (open) nextPage()"
+                                                     @keydown.arrow-left.window="if (open) prevPage()"
+                                                     x-ref="modal"
+                                                     tabindex="-1"
                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                    <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
-                                                        <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                        <button @click="open = false" type="button"
-                                                                class="text-gray-400 hover:text-white text-2xl leading-none ml-4 px-1">×</button>
+                                                    <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
+                                                        <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                        <div class="flex items-center gap-3 shrink-0">
+                                                            <div x-show="totalPages > 0" class="flex items-center gap-2">
+                                                                <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
+                                                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
+                                                                <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
+                                                                <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
+                                                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                            </div>
+                                                            <button @click="open = false" type="button"
+                                                                    class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                        </div>
                                                     </div>
-                                                    <iframe :src="open ? url : ''"
-                                                            class="flex-1 w-full border-0"
-                                                            allowfullscreen></iframe>
+                                                    <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4">
+                                                        <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
+                                                        <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                    </div>
                                                 </div>
                                             @else
                                                 <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
@@ -547,23 +561,35 @@
                                             <tr class="hover:bg-gray-50 bg-indigo-50/30 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data='{ open: false, url: @json($viewUrl) }'>
+                                                <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
                                                     @if($viewUrl)
-                                                        <button @click="open = true" type="button"
+                                                        <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
+                                                             @keydown.arrow-right.window="if (open) nextPage()"
+                                                             @keydown.arrow-left.window="if (open) prevPage()"
+                                                             x-ref="modal"
                                                              tabindex="-1"
-                                                             x-effect="if (open) $nextTick(() => $el.focus())"
                                                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
-                                                                <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                                <button @click="open = false" type="button"
-                                                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-4 px-1">×</button>
+                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
+                                                                <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                                <div class="flex items-center gap-3 shrink-0">
+                                                                    <div x-show="totalPages > 0" class="flex items-center gap-2">
+                                                                        <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
+                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
+                                                                        <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
+                                                                        <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
+                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                                    </div>
+                                                                    <button @click="open = false" type="button"
+                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                </div>
                                                             </div>
-                                                            <iframe :src="open ? url : ''"
-                                                                    class="flex-1 w-full border-0"
-                                                                    allowfullscreen></iframe>
+                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4">
+                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
+                                                                <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                            </div>
                                                         </div>
                                                     @else
                                                         <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
@@ -692,9 +718,9 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data='{ open: false, url: @json($viewUrl) }'>
+                                                <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
                                                     @if($viewUrl)
-                                                        <button @click="open = true" type="button"
+                                                        <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug flex items-center gap-2">
                                                             {{ $assignment->script_title }}
                                                             @if($isRequestedForMe)
@@ -703,17 +729,29 @@
                                                         </button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
+                                                             @keydown.arrow-right.window="if (open) nextPage()"
+                                                             @keydown.arrow-left.window="if (open) prevPage()"
+                                                             x-ref="modal"
                                                              tabindex="-1"
-                                                             x-effect="if (open) $nextTick(() => $el.focus())"
                                                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
-                                                                <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                                <button @click="open = false" type="button"
-                                                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-4 px-1">×</button>
+                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
+                                                                <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                                <div class="flex items-center gap-3 shrink-0">
+                                                                    <div x-show="totalPages > 0" class="flex items-center gap-2">
+                                                                        <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
+                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
+                                                                        <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
+                                                                        <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
+                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                                    </div>
+                                                                    <button @click="open = false" type="button"
+                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                </div>
                                                             </div>
-                                                            <iframe :src="open ? url : ''"
-                                                                    class="flex-1 w-full border-0"
-                                                                    allowfullscreen></iframe>
+                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4">
+                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
+                                                                <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                            </div>
                                                         </div>
                                                     @else
                                                         <div class="font-medium text-gray-900 flex items-center gap-2">
@@ -883,23 +921,35 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data='{ open: false, url: @json($viewUrl) }'>
+                                                <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
                                                     @if($viewUrl)
-                                                        <button @click="open = true" type="button"
+                                                        <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
+                                                             @keydown.arrow-right.window="if (open) nextPage()"
+                                                             @keydown.arrow-left.window="if (open) prevPage()"
+                                                             x-ref="modal"
                                                              tabindex="-1"
-                                                             x-effect="if (open) $nextTick(() => $el.focus())"
                                                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
-                                                                <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                                <button @click="open = false" type="button"
-                                                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-4 px-1">×</button>
+                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
+                                                                <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                                <div class="flex items-center gap-3 shrink-0">
+                                                                    <div x-show="totalPages > 0" class="flex items-center gap-2">
+                                                                        <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
+                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
+                                                                        <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
+                                                                        <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
+                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                                    </div>
+                                                                    <button @click="open = false" type="button"
+                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                </div>
                                                             </div>
-                                                            <iframe :src="open ? url : ''"
-                                                                    class="flex-1 w-full border-0"
-                                                                    allowfullscreen></iframe>
+                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4">
+                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
+                                                                <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                            </div>
                                                         </div>
                                                     @else
                                                         <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
@@ -991,3 +1041,76 @@
         </div>
     </div>
 </x-app-layout>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+    window.pdfViewerData = function (url) {
+        return {
+            open: false,
+            url: url,
+            _pdf: null,
+            currentPage: 1,
+            totalPages: 0,
+            loading: false,
+
+            async openViewer() {
+                this.open = true;
+                await this.$nextTick();
+                this.$refs.modal.focus();
+                if (!this._pdf) {
+                    await this.loadPdf();
+                }
+            },
+
+            async loadPdf() {
+                this.loading = true;
+                try {
+                    this._pdf = await pdfjsLib.getDocument({
+                        url: this.url,
+                        withCredentials: true,
+                    }).promise;
+                    this.totalPages = this._pdf.numPages;
+                    await this.renderPage(1);
+                } catch (e) {
+                    console.error('PDF load error:', e);
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async renderPage(num) {
+                if (!this._pdf) return;
+                this.loading = true;
+                try {
+                    const page = await this._pdf.getPage(num);
+                    const wrap = this.$refs.canvasWrap;
+                    const maxW = Math.max(wrap.clientWidth - 48, 200);
+                    const base = page.getViewport({ scale: 1 });
+                    const scale = Math.min(maxW / base.width, 2.0);
+                    const vp = page.getViewport({ scale });
+                    const canvas = this.$refs.canvas;
+                    canvas.width  = vp.width;
+                    canvas.height = vp.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                    this.currentPage = num;
+                    wrap.scrollTop = 0;
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async prevPage() {
+                if (this.currentPage > 1) await this.renderPage(this.currentPage - 1);
+            },
+
+            async nextPage() {
+                if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1);
+            },
+        };
+    };
+</script>
+@endpush
