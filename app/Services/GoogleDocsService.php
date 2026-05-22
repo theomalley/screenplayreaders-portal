@@ -56,7 +56,7 @@ class GoogleDocsService
      */
     public function createFromSubmission(Assignment $assignment, CoverageSubmission $submission): string
     {
-        $assignment->loadMissing('assignedReader');
+        $assignment->loadMissing('assignedReader.readerProfile');
 
         $templateId = $this->templateId($assignment);
         $filename   = $this->filename($assignment);
@@ -213,7 +213,7 @@ class GoogleDocsService
             '{{sr_assignmenttype}}' => $typeLabel,
             '{{sr_title}}'          => $assignment->script_title,
             '{{sr_writer}}'         => $sub->writer_name ?? $assignment->writer_name,
-            '{{sr_reader}}'         => $assignment->assignedReader?->name ?? '',
+            '{{sr_reader}}'         => $assignment->assignedReader?->readerProfile?->initials ?? '',
             '{{date}}'              => now()->format('F j, Y'),
             '{{ordernumber}}'       => $assignment->order_number,
             '{{sr_pagecount}}'      => (string) $assignment->page_count,
