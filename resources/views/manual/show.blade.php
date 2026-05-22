@@ -11,8 +11,8 @@
         </div>
     </x-slot>
 
-    <div class="py-6" x-data="{ editing: false, html: @js($html) }" @manual-edit-open.window="editing = true">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="py-6" x-data="{ editing: false }" @manual-edit-open.window="editing = true">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
             @if (session('success'))
                 <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
@@ -26,10 +26,15 @@
                     <form method="POST" action="{{ route('manual.update') }}">
                         @csrf
                         @method('PATCH')
-                        <label class="block text-xs font-medium text-gray-600 mb-2">HTML Content</label>
-                        <textarea name="html" rows="20"
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Paste full page source or HTML fragment</label>
+                        <p class="text-xs text-gray-400 mb-2">
+                            On your WordPress page: View Source → Select All → paste here.
+                            Stylesheets and content are extracted automatically.
+                            Pasting a plain HTML fragment also works.
+                        </p>
+                        <textarea name="source_html" rows="24"
                                   class="w-full font-mono text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y"
-                                  placeholder="Paste or type HTML here…">{{ old('html', $html) }}</textarea>
+                                  placeholder="Paste full page HTML source or an HTML fragment…"></textarea>
                         <div class="flex items-center justify-end gap-3 mt-3">
                             <button type="button" @click="editing = false"
                                     class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition">
@@ -44,12 +49,22 @@
                 </div>
             @endif
 
-            {{-- Rendered content --}}
+            {{-- Preview --}}
             <div x-show="!editing">
-                @if($html)
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 prose max-w-none">
-                        {!! $html !!}
-                    </div>
+                @if($hasContent)
+                    <iframe id="manual-frame"
+                            src="{{ route('manual.frame') }}"
+                            class="w-full border-0 rounded-lg shadow-sm bg-white"
+                            style="min-height: 400px"
+                            scrolling="no">
+                    </iframe>
+                    <script>
+                        window.addEventListener('message', function (e) {
+                            if (e.data && e.data.manualHeight) {
+                                document.getElementById('manual-frame').style.height = e.data.manualHeight + 'px';
+                            }
+                        });
+                    </script>
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-gray-400 text-sm">
                         @if(auth()->user()->isAdmin())

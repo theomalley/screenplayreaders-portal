@@ -48,6 +48,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/readers/{user}', [ReaderProfileController::class, 'destroy'])->name('readers.destroy');
 
     Route::get('/manual', [ManualController::class, 'show'])->name('manual.show');
+    Route::get('/manual/frame', [ManualController::class, 'frame'])->name('manual.frame');
     Route::patch('/manual', [ManualController::class, 'update'])->name('manual.update');
 
     Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo');

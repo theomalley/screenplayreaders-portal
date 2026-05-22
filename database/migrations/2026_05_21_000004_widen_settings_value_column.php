@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->text('value')->default(null)->nullable()->change();
+            $table->mediumText('value')->nullable()->change();
         });
     }
 
