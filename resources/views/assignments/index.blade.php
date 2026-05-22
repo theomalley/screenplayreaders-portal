@@ -218,6 +218,9 @@
                                             'development_notes' => 'Dev Notes',
                                             default             => $assignment->assignment_type ?? '—',
                                         };
+                                        if ($assignment->vendor === 'wd') {
+                                            $typeLabel = 'WD ' . $typeLabel;
+                                        }
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                         {{-- Age --}}
@@ -520,6 +523,9 @@
                                                     'development_notes' => 'Dev Notes',
                                                     default             => $assignment->assignment_type ?? '—',
                                                 };
+                                                if ($assignment->vendor === 'wd') {
+                                                    $typeLabel = 'WD ' . $typeLabel;
+                                                }
                                             @endphp
                                             <tr class="hover:bg-gray-50 bg-indigo-50/30 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
@@ -657,6 +663,9 @@
                                                     'development_notes' => 'Dev Notes',
                                                     default             => $assignment->assignment_type ?? '—',
                                                 };
+                                                if ($assignment->vendor === 'wd') {
+                                                    $typeLabel = 'WD ' . $typeLabel;
+                                                }
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
@@ -823,6 +832,9 @@
                                                     'development_notes' => 'Dev Notes',
                                                     default             => $assignment->assignment_type ?? '—',
                                                 };
+                                                if ($assignment->vendor === 'wd') {
+                                                    $typeLabel = 'WD ' . $typeLabel;
+                                                }
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
