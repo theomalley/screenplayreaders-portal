@@ -49,7 +49,7 @@
 
                         {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.*');
+                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.permissions*') || request()->routeIs('admin.filenames*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -85,6 +85,10 @@
                                     <a href="{{ route('admin.permissions') }}"
                                         class="block px-4 py-2 text-sm {{ request()->routeIs('admin.permissions*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Permissions
+                                    </a>
+                                    <a href="{{ route('admin.filenames') }}"
+                                        class="block px-4 py-2 text-sm {{ request()->routeIs('admin.filenames*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Filenames
                                     </a>
                                 @endif
                             </div>
@@ -162,6 +166,9 @@
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('admin.permissions')" :active="request()->routeIs('admin.permissions*')">
                         {{ __('Permissions') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.filenames')" :active="request()->routeIs('admin.filenames*')">
+                        {{ __('Filenames') }}
                     </x-responsive-nav-link>
                 @endif
             @else

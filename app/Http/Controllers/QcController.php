@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Services\GoogleDocsService;
+use App\Support\FilenameGenerator;
 use App\Support\Permission;
 use Illuminate\Support\Facades\Log;
 
@@ -42,10 +43,12 @@ class QcController extends Controller
         }
 
         try {
-            $docs  = new GoogleDocsService();
-            $pdfId = $docs->exportToPdf(
+            $assignment->loadMissing('assignedReader.readerProfile');
+            $initials = $assignment->assignedReader?->readerProfile?->initials;
+            $docs     = new GoogleDocsService();
+            $pdfId    = $docs->exportToPdf(
                 $assignment->drive_coverage_doc_id,
-                "#{$assignment->order_number} - {$assignment->script_title}"
+                FilenameGenerator::coveragePdf($assignment, $initials)
             );
 
             $assignment->update(['drive_coverage_pdf_id' => $pdfId]);

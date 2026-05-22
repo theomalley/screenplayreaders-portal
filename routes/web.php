@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\CoverageSubmissionController;
+use App\Http\Controllers\FilenamesController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\ProfileController;
@@ -68,6 +69,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/admin/permissions', [PermissionsController::class, 'index'])->name('admin.permissions');
     Route::post('/admin/permissions', [PermissionsController::class, 'update'])->name('admin.permissions.update');
+
+    Route::get('/admin/filenames', [FilenamesController::class, 'index'])->name('admin.filenames');
+    Route::patch('/admin/filenames', [FilenamesController::class, 'update'])->name('admin.filenames.update');
 
     // --- Admin Drive connection test (dev utility — admin/editor only) ---
     Route::get('/admin/drive-test', function () {

@@ -303,6 +303,7 @@ class GoogleDocsService
 
     private function filename(Assignment $assignment): string
     {
-        return "#{$assignment->order_number} - {$assignment->script_title}";
+        $initials = $assignment->assignedReader?->readerProfile?->initials;
+        return \App\Support\FilenameGenerator::coverageDoc($assignment, $initials);
     }
 }

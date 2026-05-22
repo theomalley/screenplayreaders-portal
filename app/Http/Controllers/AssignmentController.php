@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\FilenameGenerator;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -136,7 +137,7 @@ class AssignmentController extends Controller
         if ($firstAssignment && $request->hasFile('script')) {
             $drive    = app(\App\Services\GoogleDriveService::class);
             $file     = $request->file('script');
-            $fileName = $file->getClientOriginalName();
+            $fileName = FilenameGenerator::script($firstAssignment);
             $fileId   = $drive->uploadScript($firstAssignment->order_number, $file->getPathname(), $fileName);
             Assignment::where('order_number', $firstAssignment->order_number)
                 ->update([
@@ -238,7 +239,7 @@ class AssignmentController extends Controller
         $drive    = app(\App\Services\GoogleDriveService::class);
         $file     = $request->file('script');
         $path     = $file->getPathname();
-        $fileName = $file->getClientOriginalName();
+        $fileName = FilenameGenerator::script($assignment);
 
         if ($assignment->drive_script_file_id) {
             $drive->replaceFile($assignment->drive_script_file_id, $path, $fileName);

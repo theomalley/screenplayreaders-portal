@@ -8,6 +8,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCoverageSubmissionRequest;
 use App\Models\Assignment;
 use App\Services\GoogleDocsService;
+use App\Support\FilenameGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -47,9 +48,11 @@ class CoverageSubmissionController extends Controller
         // Create the coverage Google Doc and draft PDF outside the transaction
         // so a Drive API failure doesn't roll back the submitted coverage.
         try {
-            $docs  = new GoogleDocsService();
-            $docId = $docs->createFromSubmission($assignment, $submission);
-            $pdfId = $docs->exportToPdf($docId, "#{$assignment->order_number} - {$assignment->script_title}");
+            $docs     = new GoogleDocsService();
+            $docId    = $docs->createFromSubmission($assignment, $submission);
+            $assignment->loadMissing('assignedReader.readerProfile');
+            $initials = $assignment->assignedReader?->readerProfile?->initials;
+            $pdfId    = $docs->exportToPdf($docId, FilenameGenerator::coveragePdf($assignment, $initials));
 
             $assignment->update([
                 'drive_coverage_doc_id' => $docId,
