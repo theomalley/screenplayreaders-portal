@@ -149,67 +149,70 @@
             });
         }
 
-        Alpine.data('pdfViewer', (url) => ({
-            open: false,
-            url: url,
-            currentPage: 1,
-            totalPages: 0,
-            loading: false,
+        Alpine.data('pdfViewer', (url) => {
+            let pdfDoc = null;
 
-            async openViewer() {
-                this.open = true;
-                await this.$nextTick();
-                this.$refs.modal.focus();
-                if (!this.$el._pdfDoc) await this.loadPdf();
-            },
+            return {
+                open: false,
+                url: url,
+                currentPage: 1,
+                totalPages: 0,
+                loading: false,
 
-            async loadPdf() {
-                this.loading = true;
-                try {
-                    await ensurePdfJs();
-                    // Store on the DOM element directly — Alpine's Proxy breaks PDF.js private fields
-                    this.$el._pdfDoc = await pdfjsLib.getDocument({
-                        url: this.url,
-                        withCredentials: true,
-                    }).promise;
-                    this.totalPages = this.$el._pdfDoc.numPages;
-                    await this.renderPage(1);
-                } catch (e) {
-                    console.error('PDF load error:', e);
-                } finally {
-                    this.loading = false;
-                }
-            },
+                async openViewer() {
+                    this.open = true;
+                    await this.$nextTick();
+                    this.$refs.modal.focus();
+                    if (!pdfDoc) await this.loadPdf();
+                },
 
-            async renderPage(num) {
-                if (!this.$el._pdfDoc) return;
-                this.loading = true;
-                try {
-                    const page = await this.$el._pdfDoc.getPage(num);
-                    const wrap = this.$refs.canvasWrap;
-                    const maxW = Math.max(wrap.clientWidth - 48, 200);
-                    const base = page.getViewport({ scale: 1 });
-                    const scale = Math.min(maxW / base.width, 2.0);
-                    const vp = page.getViewport({ scale });
-                    const canvas = this.$refs.canvas;
-                    canvas.width  = vp.width;
-                    canvas.height = vp.height;
-                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                    this.currentPage = num;
-                    if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;
-                } finally {
-                    this.loading = false;
-                }
-            },
+                async loadPdf() {
+                    this.loading = true;
+                    try {
+                        await ensurePdfJs();
+                        pdfDoc = await pdfjsLib.getDocument({
+                            url: this.url,
+                            withCredentials: true,
+                        }).promise;
+                        this.totalPages = pdfDoc.numPages;
+                        await this.renderPage(1);
+                    } catch (e) {
+                        console.error('PDF load error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
 
-            async prevPage() {
-                if (this.currentPage > 1) await this.renderPage(this.currentPage - 1);
-            },
+                async renderPage(num) {
+                    if (!pdfDoc) return;
+                    this.loading = true;
+                    try {
+                        const page = await pdfDoc.getPage(num);
+                        const wrap = this.$refs.canvasWrap;
+                        const maxW = Math.max(wrap.clientWidth - 48, 200);
+                        const base = page.getViewport({ scale: 1 });
+                        const scale = Math.min(maxW / base.width, 2.0);
+                        const vp = page.getViewport({ scale });
+                        const canvas = this.$refs.canvas;
+                        canvas.width  = vp.width;
+                        canvas.height = vp.height;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                        this.currentPage = num;
+                        if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
 
-            async nextPage() {
-                if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1);
-            },
-        }));
+                async prevPage() {
+                    if (this.currentPage > 1) await this.renderPage(this.currentPage - 1);
+                },
+
+                async nextPage() {
+                    if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1);
+                },
+            };
+        });
     });
     </script>
     @endpush
