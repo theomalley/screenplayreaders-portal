@@ -12,14 +12,15 @@
                 </div>
             @endif
 
+            {{-- Nav logo --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Portal Logo</h3>
-                <p class="text-xs text-gray-500 mb-4">Appears in the navigation bar and on the login screen.</p>
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Navigation Logo</h3>
+                <p class="text-xs text-gray-500 mb-4">Appears in the top-left of the portal navigation bar.</p>
 
                 <div class="mb-5">
                     @if($logoUrl)
-                        <img src="{{ $logoUrl }}" alt="Current logo"
-                             class="h-16 object-contain rounded border border-gray-200 p-2 bg-gray-50">
+                        <img src="{{ $logoUrl }}" alt="Current navigation logo"
+                             class="h-14 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
                     @else
                         <div class="flex items-center gap-3 text-sm text-gray-400">
                             <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
@@ -39,6 +40,40 @@
                                       file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
                                       hover:file:bg-gray-200 cursor-pointer">
                         <x-input-error class="mt-1" :messages="$errors->get('logo')" />
+                        <p class="mt-1 text-xs text-gray-400">PNG, JPG, SVG, or WebP · max 4 MB</p>
+                    </div>
+                    <x-primary-button>Upload</x-primary-button>
+                </form>
+            </div>
+
+            {{-- Login logo --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Login Screen Logo</h3>
+                <p class="text-xs text-gray-500 mb-4">Appears above the login form on the sign-in page.</p>
+
+                <div class="mb-5">
+                    @if($loginLogoUrl)
+                        <img src="{{ $loginLogoUrl }}" alt="Current login logo"
+                             class="h-20 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
+                    @else
+                        <div class="flex items-center gap-3 text-sm text-gray-400">
+                            <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
+                            <span>Default logo — no custom login logo uploaded yet.</span>
+                        </div>
+                    @endif
+                </div>
+
+                <form method="POST" action="{{ route('settings.login-logo') }}" enctype="multipart/form-data"
+                      class="flex items-end gap-3">
+                    @csrf
+                    <div class="flex-1">
+                        <x-input-label for="login_logo" :value="__('Upload new login logo')" />
+                        <input id="login_logo" name="login_logo" type="file" accept="image/*"
+                               class="mt-1 block w-full text-sm text-gray-500
+                                      file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
+                                      file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
+                                      hover:file:bg-gray-200 cursor-pointer">
+                        <x-input-error class="mt-1" :messages="$errors->get('login_logo')" />
                         <p class="mt-1 text-xs text-gray-400">PNG, JPG, SVG, or WebP · max 4 MB</p>
                     </div>
                     <x-primary-button>Upload</x-primary-button>

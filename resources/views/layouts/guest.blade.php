@@ -14,13 +14,13 @@
             <div>
                 <a href="/">
                     @php
-                        $metaFile = storage_path('app/portal-logo-path.txt');
-                        $logoUrl  = is_readable($metaFile) ? asset('storage/' . trim(file_get_contents($metaFile))) : null;
+                        $metaFile = storage_path('app/portal-login-logo-path.txt');
+                        $loginLogoUrl = is_readable($metaFile) ? asset('storage/' . trim(file_get_contents($metaFile))) : null;
                     @endphp
-                    @if($logoUrl)
-                        <img src="{{ $logoUrl }}" alt="" class="w-20 h-20 object-contain">
+                    @if($loginLogoUrl)
+                        <img src="{{ $loginLogoUrl }}" alt="" class="h-28 w-auto object-contain">
                     @else
-                        <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                        <x-application-logo class="w-28 h-28 fill-current text-gray-500" />
                     @endif
                 </a>
             </div>
