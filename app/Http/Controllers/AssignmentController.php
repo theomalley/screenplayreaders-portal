@@ -314,16 +314,16 @@ class AssignmentController extends Controller
         if ($user->isAdminOrEditor() && $assignment->drive_coverage_pdf_id) {
             $viewLink    = route('assignments.streamCoverage', $assignment);
             $viewerLabel = 'Coverage';
+            $dlUrl       = "https://drive.google.com/uc?export=download&id={$assignment->drive_coverage_pdf_id}";
+            $dlLabel     = 'Download Coverage';
         } else {
             $viewLink    = $fileId ? route('assignments.streamScript', $assignment) : null;
             $viewerLabel = 'Script';
+            $dlUrl       = ($fileId && $user->isAdminOrEditor()) ? "https://drive.google.com/uc?export=download&id={$fileId}" : null;
+            $dlLabel     = 'Download Script';
         }
 
-        $dlUrl = ($fileId && $user->isAdminOrEditor())
-            ? "https://drive.google.com/uc?export=download&id={$fileId}"
-            : null;
-
-        return view('assignments.show', compact('assignment', 'viewLink', 'viewerLabel', 'dlUrl'));
+        return view('assignments.show', compact('assignment', 'viewLink', 'viewerLabel', 'dlUrl', 'dlLabel'));
     }
 
     public function streamScript(Assignment $assignment, GoogleDriveService $drive)

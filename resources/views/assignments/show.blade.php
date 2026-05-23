@@ -70,7 +70,7 @@
                 <span class="text-sm font-medium text-gray-700">{{ $viewerLabel }}</span>
                 @if ($dlUrl)
                     <a href="{{ $dlUrl }}" target="_blank"
-                       class="text-xs text-indigo-600 hover:text-indigo-800">Download script (admin)</a>
+                       class="text-xs text-indigo-600 hover:text-indigo-800">{{ $dlLabel }}</a>
                 @endif
             </div>
 
