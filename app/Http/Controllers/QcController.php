@@ -171,13 +171,7 @@ class QcController extends Controller
             throw new \RuntimeException("No coverage PDFs available for order #{$orderNumber}.");
         }
 
-        $scriptTitle  = $assignments[0]->script_title;
-        $readerCount  = count($attachments);
-        $coverageWord = $readerCount === 1 ? 'coverage' : 'coverages';
-
-        $html = "Please find attached the {$coverageWord} for <strong>" . e($scriptTitle) . "</strong>. "
-              . ($readerCount > 1 ? "{$readerCount} readers' PDFs are included. " : '')
-              . "Let us know if you have any questions!";
+        $html = '(Insert saved reply — coverage PDF attached.)';
 
         (new HelpScoutService())->createDraftReply(
             $record->helpscout_conversation_id,
