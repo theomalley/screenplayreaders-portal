@@ -88,13 +88,19 @@ class HelpScoutService
             ->get(self::API_BASE . "/conversations/{$conversationId}");
 
         if (! $response->ok()) {
-            throw new \RuntimeException('HelpScout conversation lookup failed: ' . $response->body());
+            throw new \RuntimeException('HelpScout conversation lookup failed (' . $response->status() . '): ' . $response->body());
         }
 
-        $href = $response->json('_links.customer.href') ?? '';
+        $json = $response->json();
+        $href = $json['_links']['customer']['href'] ?? '';
         $id   = (int) basename($href);
 
         if (! $id) {
+            Log::error('HelpScout customer ID extraction failed', [
+                'conversation_id' => $conversationId,
+                'links_keys'      => array_keys($json['_links'] ?? []),
+                'href'            => $href,
+            ]);
             throw new \RuntimeException("Could not extract customer ID from conversation {$conversationId}.");
         }
 
