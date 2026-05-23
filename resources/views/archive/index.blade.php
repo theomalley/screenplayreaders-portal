@@ -51,7 +51,8 @@
                                            class="hover:text-indigo-600">{{ $orderNumber }}</a>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
+                                        <a href="{{ route('assignments.show', $first) }}"
+                                           class="font-medium text-gray-800 hover:text-indigo-600">{{ $first->script_title }}</a>
                                         <div class="text-gray-400 text-xs">{{ $first->writer_name }}</div>
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
