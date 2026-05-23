@@ -82,6 +82,21 @@ class HelpScoutService
         }
     }
 
+    public function findConversationIdByTicketNumber(string $ticketNumber): ?string
+    {
+        $token    = $this->getToken();
+        $response = Http::withToken($token)
+            ->get(self::API_BASE . '/conversations', ['number' => $ticketNumber]);
+
+        if (! $response->ok()) {
+            return null;
+        }
+
+        return $response->json('_embedded.conversations.0.id')
+            ? (string) $response->json('_embedded.conversations.0.id')
+            : null;
+    }
+
     private function getCustomerId(string $conversationId, string $token): int
     {
         $response = Http::withToken($token)

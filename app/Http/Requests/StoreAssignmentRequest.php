@@ -28,7 +28,8 @@ class StoreAssignmentRequest extends FormRequest
             'assigned_reader_id'    => ['nullable', 'exists:users,id'],
             'rush'                 => ['nullable', 'boolean'],
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
-            'notes'                => ['nullable', 'string', 'max:2000'],
+            'notes'                    => ['nullable', 'string', 'max:2000'],
+            'helpscout_ticket_number'  => ['nullable', 'string', 'max:20'],
             'script'               => ['nullable', 'file', 'mimes:pdf', 'max:51200'],
             'status'               => ['required', 'in:' . implode(',', [
                                           Assignment::STATUS_INCOMING,

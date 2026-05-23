@@ -388,6 +388,16 @@
                             <x-input-error :messages="$errors->get('notes')" class="mt-1" />
                         </div>
 
+                        <div>
+                            <x-input-label for="helpscout_ticket_number" value="HelpScout Ticket #" />
+                            <input type="text" id="helpscout_ticket_number" name="helpscout_ticket_number"
+                                value="{{ $v('helpscout_ticket_number', $assignment->helpscout_ticket_number) }}"
+                                placeholder="e.g. 9731"
+                                class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <p class="mt-1 text-xs text-gray-400">For manually created orders — the # shown at the top of the HelpScout ticket.</p>
+                            <x-input-error :messages="$errors->get('helpscout_ticket_number')" class="mt-1" />
+                        </div>
+
                     </div>
 
                 </form>

@@ -142,7 +142,22 @@ class QcController extends Controller
         $record = HelpScoutConversation::where('order_number', $orderNumber)->first();
 
         if (! $record) {
-            throw new \RuntimeException("No HelpScout conversation ID on record for order #{$orderNumber}.");
+            $ticketNumber = collect($assignments)->pluck('helpscout_ticket_number')->filter()->first();
+
+            if (! $ticketNumber) {
+                throw new \RuntimeException("No HelpScout conversation ID on record for order #{$orderNumber}.");
+            }
+
+            $conversationId = (new HelpScoutService())->findConversationIdByTicketNumber($ticketNumber);
+
+            if (! $conversationId) {
+                throw new \RuntimeException("Could not find HelpScout conversation for ticket #{$ticketNumber}.");
+            }
+
+            $record = HelpScoutConversation::updateOrCreate(
+                ['order_number'              => $orderNumber],
+                ['helpscout_conversation_id' => $conversationId]
+            );
         }
 
         $drive       = new GoogleDriveService();

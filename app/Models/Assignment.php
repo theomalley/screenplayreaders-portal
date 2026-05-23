@@ -31,6 +31,7 @@ class Assignment extends Model
         'rush',
         'pay_rate',
         'notes',
+        'helpscout_ticket_number',
         'status',
         'drive_script_file_id',
         'drive_script_filename',
