@@ -236,7 +236,7 @@
                                         </td>
 
                                         {{-- Title / Writer --}}
-                                        <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
+                                        <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                             @if($viewUrl)
                                                 <button @click="openViewer()" type="button"
                                                         class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
@@ -561,7 +561,7 @@
                                             <tr class="hover:bg-gray-50 bg-indigo-50/30 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
+                                                <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
@@ -718,7 +718,7 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
+                                                <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug flex items-center gap-2">
@@ -921,7 +921,7 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
+                                                <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
