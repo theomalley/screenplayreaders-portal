@@ -52,7 +52,7 @@ class CoverageSubmissionController extends Controller
             $docId    = $docs->createFromSubmission($assignment, $submission);
             $assignment->loadMissing('assignedReader.readerProfile');
             $initials = $assignment->assignedReader?->readerProfile?->initials;
-            $pdfId    = $docs->exportToPdf($docId, FilenameGenerator::coveragePdf($assignment, $initials));
+            $pdfId    = $docs->exportToPdf($docId, FilenameGenerator::coverageDoc($assignment, $initials));
 
             $assignment->update([
                 'drive_coverage_doc_id' => $docId,

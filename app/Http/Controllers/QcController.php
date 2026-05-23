@@ -52,7 +52,7 @@ class QcController extends Controller
             $docs     = new GoogleDocsService();
             $pdfId    = $docs->exportToPdf(
                 $assignment->drive_coverage_doc_id,
-                FilenameGenerator::coveragePdf($assignment, $initials)
+                FilenameGenerator::coverageDoc($assignment, $initials)
             );
 
             $assignment->update(['drive_coverage_pdf_id' => $pdfId]);
