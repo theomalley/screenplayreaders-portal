@@ -23,13 +23,21 @@ class ReaderProfile extends Model
         'sms_notify_any',
         'sms_notify_rush',
         'sms_notify_requests',
+        'email_notifications',
+        'email_notify_any',
+        'email_notify_rush',
+        'email_notify_requests',
     ];
 
     protected $casts = [
-        'sms_notifications'  => 'boolean',
-        'sms_notify_any'     => 'boolean',
-        'sms_notify_rush'    => 'boolean',
-        'sms_notify_requests'=> 'boolean',
+        'sms_notifications'    => 'boolean',
+        'sms_notify_any'       => 'boolean',
+        'sms_notify_rush'      => 'boolean',
+        'sms_notify_requests'  => 'boolean',
+        'email_notifications'  => 'boolean',
+        'email_notify_any'     => 'boolean',
+        'email_notify_rush'    => 'boolean',
+        'email_notify_requests'=> 'boolean',
     ];
 
     public function user(): BelongsTo
