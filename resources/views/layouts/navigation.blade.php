@@ -43,8 +43,14 @@
                         {{ __('Assignments') }}
                     </x-nav-link>
                     @if(auth()->user()?->canManageAssignments())
+                        @php $qcCount = \App\Models\Assignment::where('status', 'qc')->count(); @endphp
                         <x-nav-link :href="route('qc.index')" :active="request()->routeIs('qc.*')">
-                            {{ __('QC') }}
+                            <span class="inline-flex items-center gap-1.5">
+                                {{ __('QC') }}
+                                @if($qcCount > 0)
+                                    <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-bold leading-none">{{ $qcCount }}</span>
+                                @endif
+                            </span>
                         </x-nav-link>
 
                         {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
@@ -148,7 +154,12 @@
             </x-responsive-nav-link>
             @if(auth()->user()?->canManageAssignments())
                 <x-responsive-nav-link :href="route('qc.index')" :active="request()->routeIs('qc.*')">
-                    {{ __('QC') }}
+                    <span class="inline-flex items-center gap-1.5">
+                        {{ __('QC') }}
+                        @if($qcCount > 0)
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-bold leading-none">{{ $qcCount }}</span>
+                        @endif
+                    </span>
                 </x-responsive-nav-link>
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Admin</div>
                 <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
