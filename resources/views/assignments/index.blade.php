@@ -468,7 +468,7 @@
             @else
                 <div x-data="{ tab: 'all' }"
                      x-init="setInterval(() => {
-                         if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\"display: none\"])')) location.reload();
+                         if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')) location.reload();
                      }, 15000)">
 
                     {{-- Tabs --}}
@@ -1063,7 +1063,6 @@
             Alpine.data('pdfViewer', (url) => ({
                 open: false,
                 url: url,
-                _pdf: null,
                 currentPage: 1,
                 totalPages: 0,
                 loading: false,
@@ -1072,18 +1071,19 @@
                     this.open = true;
                     await this.$nextTick();
                     this.$refs.modal.focus();
-                    if (!this._pdf) await this.loadPdf();
+                    if (!this.$el._pdfDoc) await this.loadPdf();
                 },
 
                 async loadPdf() {
                     this.loading = true;
                     try {
                         await ensurePdfJs();
-                        this._pdf = await pdfjsLib.getDocument({
+                        // Store on the DOM element directly — Alpine's Proxy breaks PDF.js private fields
+                        this.$el._pdfDoc = await pdfjsLib.getDocument({
                             url: this.url,
                             withCredentials: true,
                         }).promise;
-                        this.totalPages = this._pdf.numPages;
+                        this.totalPages = this.$el._pdfDoc.numPages;
                         await this.renderPage(1);
                     } catch (e) {
                         console.error('PDF load error:', e);
@@ -1093,10 +1093,10 @@
                 },
 
                 async renderPage(num) {
-                    if (!this._pdf) return;
+                    if (!this.$el._pdfDoc) return;
                     this.loading = true;
                     try {
-                        const page = await this._pdf.getPage(num);
+                        const page = await this.$el._pdfDoc.getPage(num);
                         const wrap = this.$refs.canvasWrap;
                         const maxW = Math.max(wrap.clientWidth - 48, 200);
                         const base = page.getViewport({ scale: 1 });
