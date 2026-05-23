@@ -17,7 +17,7 @@
         </div>
     </x-slot>
 
-    <div class="py-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="py-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" x-data="{ editOpen: false }">
 
         @if (session('success'))
             <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
@@ -49,6 +49,21 @@
                        class="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded hover:bg-gray-700">
                         Edit Assignment
                     </a>
+
+                    @if ($assignment->drive_coverage_doc_id)
+                        <button type="button" @click="editOpen = true"
+                                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700">
+                            Edit Coverage Doc
+                        </button>
+
+                        <form id="regenerate-form" method="POST" action="{{ route('qc.regenerate-pdf', $assignment) }}">
+                            @csrf
+                            <button type="submit"
+                                    class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50">
+                                Generate New PDF
+                            </button>
+                        </form>
+                    @endif
 
                     @if ($assignment->status === \App\Models\Assignment::STATUS_COMPLETED && $assignment->drive_coverage_pdf_id)
                         <form method="POST" action="{{ route('qc.draft-now', $assignment) }}"
@@ -140,6 +155,30 @@
         @endif
 
     </div>
+
+    {{-- Full-screen Google Docs editing overlay --}}
+    @if ($assignment->drive_coverage_doc_id)
+        <div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex flex-col bg-white">
+            <div class="flex items-center justify-between px-5 py-3 bg-indigo-700 text-white shrink-0">
+                <span class="font-semibold text-sm truncate pr-4">
+                    Editing: {{ $assignment->script_title }} — #{{ $assignment->order_number }}
+                </span>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button type="button" @click="editOpen = false"
+                            class="text-sm text-indigo-200 hover:text-white transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button"
+                            @click="editOpen = false; document.getElementById('regenerate-form').submit()"
+                            class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold bg-green-500 hover:bg-green-400 text-white rounded-md transition-colors">
+                        Done Editing — Generate New PDF
+                    </button>
+                </div>
+            </div>
+            <iframe src="https://docs.google.com/document/d/{{ $assignment->drive_coverage_doc_id }}/edit"
+                    class="flex-1 w-full border-0"></iframe>
+        </div>
+    @endif
 
     @push('scripts')
     <script>
