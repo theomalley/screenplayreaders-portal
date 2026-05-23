@@ -236,7 +236,7 @@
                                         </td>
 
                                         {{-- Title / Writer --}}
-                                        <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
+                                        <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
                                             @if($viewUrl)
                                                 <button @click="openViewer()" type="button"
                                                         class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
@@ -561,7 +561,7 @@
                                             <tr class="hover:bg-gray-50 bg-indigo-50/30 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
+                                                <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
@@ -718,7 +718,7 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
+                                                <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug flex items-center gap-2">
@@ -921,7 +921,7 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3" x-data="pdfViewerData(@json($viewUrl))">
+                                                <td class="px-3 py-3" x-data="pdfViewer(@json($viewUrl))">
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
@@ -1041,76 +1041,3 @@
         </div>
     </div>
 </x-app-layout>
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-<script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-
-    window.pdfViewerData = function (url) {
-        return {
-            open: false,
-            url: url,
-            _pdf: null,
-            currentPage: 1,
-            totalPages: 0,
-            loading: false,
-
-            async openViewer() {
-                this.open = true;
-                await this.$nextTick();
-                this.$refs.modal.focus();
-                if (!this._pdf) {
-                    await this.loadPdf();
-                }
-            },
-
-            async loadPdf() {
-                this.loading = true;
-                try {
-                    this._pdf = await pdfjsLib.getDocument({
-                        url: this.url,
-                        withCredentials: true,
-                    }).promise;
-                    this.totalPages = this._pdf.numPages;
-                    await this.renderPage(1);
-                } catch (e) {
-                    console.error('PDF load error:', e);
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            async renderPage(num) {
-                if (!this._pdf) return;
-                this.loading = true;
-                try {
-                    const page = await this._pdf.getPage(num);
-                    const wrap = this.$refs.canvasWrap;
-                    const maxW = Math.max(wrap.clientWidth - 48, 200);
-                    const base = page.getViewport({ scale: 1 });
-                    const scale = Math.min(maxW / base.width, 2.0);
-                    const vp = page.getViewport({ scale });
-                    const canvas = this.$refs.canvas;
-                    canvas.width  = vp.width;
-                    canvas.height = vp.height;
-                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                    this.currentPage = num;
-                    wrap.scrollTop = 0;
-                } finally {
-                    this.loading = false;
-                }
-            },
-
-            async prevPage() {
-                if (this.currentPage > 1) await this.renderPage(this.currentPage - 1);
-            },
-
-            async nextPage() {
-                if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1);
-            },
-        };
-    };
-</script>
-@endpush
