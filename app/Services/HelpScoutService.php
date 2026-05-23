@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-23 | Upload attachments separately to thread after draft creation
 // v1.2 — 2026-05-23 | Fetch customer ID from conversation before drafting (required by /reply endpoint)
 // v1.1 — 2026-05-23 | Fix token URL (v2/oauth2/token) and reply endpoint (POST /reply not /threads)
 // v1.0 — 2026-05-23 | OAuth2 token + draft reply creation on existing conversations
@@ -51,10 +52,6 @@ class HelpScoutService
             'text'     => $html,
         ];
 
-        if (! empty($attachments)) {
-            $body['attachments'] = $attachments;
-        }
-
         $response = Http::withToken($token)
             ->post(self::API_BASE . "/conversations/{$conversationId}/reply", $body);
 
@@ -65,6 +62,23 @@ class HelpScoutService
                 'body'            => $response->body(),
             ]);
             throw new \RuntimeException('HelpScout draft creation failed (' . $response->status() . '): ' . $response->body());
+        }
+
+        $threadId = $response->header('Resource-Id');
+
+        foreach ($attachments as $attachment) {
+            $ar = Http::withToken($token)
+                ->post(self::API_BASE . "/conversations/{$conversationId}/threads/{$threadId}/attachments", $attachment);
+
+            if (! $ar->successful()) {
+                Log::error('HelpScout attachment upload failed', [
+                    'conversation_id' => $conversationId,
+                    'thread_id'       => $threadId,
+                    'file'            => $attachment['fileName'] ?? '',
+                    'status'          => $ar->status(),
+                    'body'            => $ar->body(),
+                ]);
+            }
         }
     }
 
