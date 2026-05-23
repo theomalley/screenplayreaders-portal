@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HelpScoutConversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class HelpScoutConversationController extends Controller
@@ -18,6 +19,8 @@ class HelpScoutConversationController extends Controller
         if (! $this->authorised($request)) {
             return response()->json(['error' => 'Unauthorised.'], 401);
         }
+
+        Log::error('HS endpoint payload', ['all' => $request->all(), 'raw' => $request->getContent()]);
 
         $validator = Validator::make($request->all(), [
             'order_number'    => 'required|string|max:64',
