@@ -9,29 +9,26 @@ use App\Http\Controllers\Controller;
 use App\Models\HelpScoutConversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class HelpScoutConversationController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        Log::info('HelpScout conversation endpoint hit', [
-            'method'        => $request->method(),
-            'url'           => $request->fullUrl(),
-            'has_bearer'    => ! empty($request->bearerToken()),
-            'content_type'  => $request->header('Content-Type'),
-            'all_headers'   => $request->headers->all(),
-            'body'          => $request->all(),
-        ]);
-
         if (! $this->authorised($request)) {
             return response()->json(['error' => 'Unauthorised.'], 401);
         }
 
-        $data = $request->validate([
-            'order_number'       => 'required|string|max:64',
-            'conversation_id'    => 'required|string|max:64',
+        $validator = Validator::make($request->all(), [
+            'order_number'    => 'required|string|max:64',
+            'conversation_id' => 'required|string|max:64',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed.', 'details' => $validator->errors()], 422);
+        }
+
+        $data = $validator->validated();
 
         HelpScoutConversation::updateOrCreate(
             ['order_number'            => $data['order_number']],
