@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-23 | Fix token URL (v2/oauth2/token) and reply endpoint (POST /reply not /threads)
 // v1.0 — 2026-05-23 | OAuth2 token + draft reply creation on existing conversations
 
 namespace App\Services;
@@ -42,7 +43,6 @@ class HelpScoutService
         $token = $this->getToken();
 
         $body = [
-            'type'  => 'reply',
             'draft' => true,
             'text'  => $html,
         ];
@@ -52,7 +52,7 @@ class HelpScoutService
         }
 
         $response = Http::withToken($token)
-            ->post(self::API_BASE . "/conversations/{$conversationId}/threads", $body);
+            ->post(self::API_BASE . "/conversations/{$conversationId}/reply", $body);
 
         if (! $response->successful()) {
             Log::error('HelpScout draft creation failed', [
