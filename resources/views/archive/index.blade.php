@@ -47,7 +47,8 @@
                                 @endphp
                                 <tr class="hover:bg-gray-50 align-top">
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
-                                        {{ $orderNumber }}
+                                        <a href="{{ route('assignments.show', $first) }}"
+                                           class="hover:text-indigo-600">{{ $orderNumber }}</a>
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
