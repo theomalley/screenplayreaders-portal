@@ -13,28 +13,29 @@
             @endif
 
             {{-- Nav logo --}}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div x-data="{ preview: null, existing: @js($logoUrl) }"
+                 class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Navigation Logo</h3>
                 <p class="text-xs text-gray-500 mb-4">Appears in the top-left of the portal navigation bar.</p>
 
                 <div class="mb-5">
-                    @if($logoUrl)
-                        <img src="{{ $logoUrl }}" alt="Current navigation logo"
-                             class="h-14 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
-                    @else
-                        <div class="flex items-center gap-3 text-sm text-gray-400">
-                            <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
-                            <span>Default logo — no custom logo uploaded yet.</span>
-                        </div>
-                    @endif
+                    <img x-show="preview || existing"
+                         :src="preview || existing"
+                         alt="Navigation logo preview"
+                         class="h-14 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
+                    <div x-show="!preview && !existing" class="flex items-center gap-3 text-sm text-gray-400">
+                        <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
+                        <span>Default logo — no custom logo uploaded yet.</span>
+                    </div>
                 </div>
 
                 <form method="POST" action="{{ route('settings.logo') }}" enctype="multipart/form-data"
                       class="flex items-end gap-3">
                     @csrf
                     <div class="flex-1">
-                        <x-input-label for="logo" :value="__('Upload new logo')" />
+                        <x-input-label for="logo" :value="__('Choose file')" />
                         <input id="logo" name="logo" type="file" accept="image/*"
+                               @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
                                class="mt-1 block w-full text-sm text-gray-500
                                       file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
                                       file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
@@ -47,28 +48,29 @@
             </div>
 
             {{-- Login logo --}}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div x-data="{ preview: null, existing: @js($loginLogoUrl) }"
+                 class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Login Screen Logo</h3>
                 <p class="text-xs text-gray-500 mb-4">Appears above the login form on the sign-in page.</p>
 
                 <div class="mb-5">
-                    @if($loginLogoUrl)
-                        <img src="{{ $loginLogoUrl }}" alt="Current login logo"
-                             class="h-20 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
-                    @else
-                        <div class="flex items-center gap-3 text-sm text-gray-400">
-                            <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
-                            <span>Default logo — no custom login logo uploaded yet.</span>
-                        </div>
-                    @endif
+                    <img x-show="preview || existing"
+                         :src="preview || existing"
+                         alt="Login logo preview"
+                         class="h-20 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
+                    <div x-show="!preview && !existing" class="flex items-center gap-3 text-sm text-gray-400">
+                        <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
+                        <span>Default logo — no custom login logo uploaded yet.</span>
+                    </div>
                 </div>
 
                 <form method="POST" action="{{ route('settings.login-logo') }}" enctype="multipart/form-data"
                       class="flex items-end gap-3">
                     @csrf
                     <div class="flex-1">
-                        <x-input-label for="login_logo" :value="__('Upload new login logo')" />
+                        <x-input-label for="login_logo" :value="__('Choose file')" />
                         <input id="login_logo" name="login_logo" type="file" accept="image/*"
+                               @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
                                class="mt-1 block w-full text-sm text-gray-500
                                       file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
                                       file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
