@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class HelpScoutService
 {
-    private const TOKEN_URL = 'https://api.helpscout.net/v2/auth/token';
+    private const TOKEN_URL = 'https://api.helpscout.net/v2/oauth2/token';
     private const API_BASE  = 'https://api.helpscout.net/v2';
 
     private function getToken(): string
