@@ -51,7 +51,7 @@
                                     class="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40">Next ›</button>
                         </div>
 
-                        <div x-ref="canvasWrap" class="flex flex-col items-center bg-gray-100 py-6 px-4" style="min-height:60vh">
+                        <div x-ref="canvasWrap" class="flex flex-col items-center bg-gray-100 py-6 px-4" style="min-height:60vh" @wheel="handleWheel($event)">
                             <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-10">Loading…</div>
                             <canvas x-ref="canvas" class="shadow-lg"></canvas>
                         </div>
@@ -151,6 +151,7 @@
 
         Alpine.data('pdfViewer', (url) => {
             let pdfDoc = null;
+            let wheelTimer = null;
 
             return {
                 open: false,
@@ -210,6 +211,28 @@
 
                 async nextPage() {
                     if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1);
+                },
+
+                handleWheel(e) {
+                    const wrap = this.$refs.canvasWrap;
+                    if (!wrap || this.loading) return;
+                    if (e.deltaY > 0) {
+                        const atBottom = wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10;
+                        if (atBottom && this.currentPage < this.totalPages) {
+                            e.preventDefault();
+                            if (wheelTimer) return;
+                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 600);
+                            this.nextPage();
+                        }
+                    } else if (e.deltaY < 0) {
+                        const atTop = wrap.scrollTop <= 10;
+                        if (atTop && this.currentPage > 1) {
+                            e.preventDefault();
+                            if (wheelTimer) return;
+                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 600);
+                            this.prevPage();
+                        }
+                    }
                 },
             };
         });
