@@ -55,7 +55,7 @@
 
                         {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.permissions*') || request()->routeIs('admin.filenames*');
+                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.permissions*') || request()->routeIs('admin.filenames*') || request()->routeIs('settings.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -85,6 +85,10 @@
                                 <a href="{{ route('manual.show') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
+                                </a>
+                                <a href="{{ route('settings.index') }}"
+                                    class="block px-4 py-2 text-sm {{ request()->routeIs('settings.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Settings
                                 </a>
                                 @if(auth()->user()?->isAdmin())
                                     <div class="my-1 border-t border-gray-100"></div>
@@ -173,6 +177,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                     {{ __('Reader Manual') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
+                    {{ __('Settings') }}
                 </x-responsive-nav-link>
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('admin.permissions')" :active="request()->routeIs('admin.permissions*')">

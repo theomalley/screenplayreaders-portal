@@ -56,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/manual/frame', [ManualController::class, 'frame'])->name('manual.frame');
     Route::patch('/manual', [ManualController::class, 'update'])->name('manual.update');
 
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo');
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');

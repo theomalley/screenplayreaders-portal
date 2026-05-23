@@ -1,15 +1,28 @@
 <?php
 
+// v1.1 — 2026-05-23 | Add settings index page; redirect to settings after upload
 // v1.0 — 2026-05-17 | Portal-wide settings: logo upload
 
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 class SettingController extends Controller
 {
-    public function uploadLogo(Request $request)
+    public function index(): View
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $metaFile = storage_path('app/portal-logo-path.txt');
+        $logoUrl  = is_readable($metaFile) ? asset('storage/' . trim(file_get_contents($metaFile))) : null;
+
+        return view('settings.index', compact('logoUrl'));
+    }
+
+    public function uploadLogo(Request $request): RedirectResponse
     {
         abort_unless(auth()->user()->canManageAssignments(), 403);
 
@@ -29,6 +42,6 @@ class SettingController extends Controller
         Storage::disk('public')->putFileAs('portal', $request->file('logo'), 'portal-logo.' . $ext);
         file_put_contents($metaFile, $filename);
 
-        return back();
+        return redirect()->route('settings.index')->with('success', 'Logo updated.');
     }
 }

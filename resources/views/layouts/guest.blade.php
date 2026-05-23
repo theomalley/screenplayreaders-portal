@@ -13,7 +13,15 @@
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
             <div>
                 <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    @php
+                        $metaFile = storage_path('app/portal-logo-path.txt');
+                        $logoUrl  = is_readable($metaFile) ? asset('storage/' . trim(file_get_contents($metaFile))) : null;
+                    @endphp
+                    @if($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="" class="w-20 h-20 object-contain">
+                    @else
+                        <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    @endif
                 </a>
             </div>
 
