@@ -171,7 +171,7 @@ class QcController extends Controller
             throw new \RuntimeException("No coverage PDFs available for order #{$orderNumber}.");
         }
 
-        $html = '(Insert saved reply — coverage PDF attached.)';
+        $html = 'Insert Saved Reply';
 
         (new HelpScoutService())->createDraftReply(
             $record->helpscout_conversation_id,

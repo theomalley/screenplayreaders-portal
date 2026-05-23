@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-23 | coverage stream endpoint; show coverage PDF in viewer for admins.
 // v1.3 — 2026-05-21 | script upload, page deletion, assignment show view.
 // v1.2 — 2026-05-18 | multi-reader assignments; per-slot reader request dropdowns.
 
@@ -306,13 +307,23 @@ class AssignmentController extends Controller
     {
         $this->authorize('view', $assignment);
 
-        $fileId   = $assignment->drive_script_file_id;
-        $viewLink = $fileId ? route('assignments.streamScript', $assignment) : null;
-        $dlUrl    = ($fileId && auth()->user()->isAdminOrEditor())
+        $user   = auth()->user();
+        $fileId = $assignment->drive_script_file_id;
+
+        // Admins see the coverage PDF in the viewer when one exists; readers see the script.
+        if ($user->isAdminOrEditor() && $assignment->drive_coverage_pdf_id) {
+            $viewLink    = route('assignments.streamCoverage', $assignment);
+            $viewerLabel = 'Coverage';
+        } else {
+            $viewLink    = $fileId ? route('assignments.streamScript', $assignment) : null;
+            $viewerLabel = 'Script';
+        }
+
+        $dlUrl = ($fileId && $user->isAdminOrEditor())
             ? "https://drive.google.com/uc?export=download&id={$fileId}"
             : null;
 
-        return view('assignments.show', compact('assignment', 'viewLink', 'dlUrl'));
+        return view('assignments.show', compact('assignment', 'viewLink', 'viewerLabel', 'dlUrl'));
     }
 
     public function streamScript(Assignment $assignment, GoogleDriveService $drive)
@@ -326,6 +337,21 @@ class AssignmentController extends Controller
         return response($contents, 200, [
             'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'inline; filename="script.pdf"',
+            'Cache-Control'       => 'private, no-store',
+            'X-Frame-Options'     => 'SAMEORIGIN',
+        ]);
+    }
+
+    public function streamCoverage(Assignment $assignment, GoogleDriveService $drive)
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless($assignment->drive_coverage_pdf_id, 404);
+
+        $contents = $drive->downloadContents($assignment->drive_coverage_pdf_id);
+
+        return response($contents, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="coverage.pdf"',
             'Cache-Control'       => 'private, no-store',
             'X-Frame-Options'     => 'SAMEORIGIN',
         ]);

@@ -25,13 +25,52 @@
             </div>
         @endif
 
-        {{-- Script viewer --}}
+        {{-- Assignment details + admin actions --}}
+        <div class="bg-white rounded-lg shadow px-5 py-4 text-sm text-gray-700 space-y-2 mb-6">
+            <div class="grid grid-cols-2 gap-x-6 gap-y-2">
+                <div><span class="font-medium">Order #</span> {{ $assignment->order_number }}</div>
+                <div><span class="font-medium">Status</span> {{ ucfirst(str_replace('_', ' ', $assignment->status)) }}</div>
+                <div><span class="font-medium">Type</span> {{ ucfirst(str_replace('_', ' ', $assignment->assignment_type)) }}</div>
+                <div><span class="font-medium">Vendor</span> {{ strtoupper($assignment->vendor) }}</div>
+                @if (auth()->user()->isAdminOrEditor())
+                    <div><span class="font-medium">Pay rate</span> ${{ number_format($assignment->pay_rate, 2) }}</div>
+                @endif
+            </div>
+            @if ($assignment->notes)
+                <div class="pt-2 border-t border-gray-100">
+                    <span class="font-medium">Notes</span>
+                    <p class="mt-1 text-gray-600">{{ $assignment->notes }}</p>
+                </div>
+            @endif
+
+            @if (auth()->user()->isAdminOrEditor())
+                <div class="pt-3 border-t border-gray-100 flex gap-3 flex-wrap">
+                    <a href="{{ route('assignments.edit', $assignment) }}"
+                       class="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded hover:bg-gray-700">
+                        Edit Assignment
+                    </a>
+
+                    @if ($assignment->status === \App\Models\Assignment::STATUS_COMPLETED && $assignment->drive_coverage_pdf_id)
+                        <form method="POST" action="{{ route('qc.draft-now', $assignment) }}"
+                              onsubmit="return confirm('Create a HelpScout GoBack draft for this coverage?')">
+                            @csrf
+                            <button type="submit"
+                                    class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700">
+                                Create HelpScout GoBack Draft
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            @endif
+        </div>
+
+        {{-- PDF viewer --}}
         <div class="bg-white rounded-lg shadow mb-6 overflow-hidden">
             <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Script</span>
+                <span class="text-sm font-medium text-gray-700">{{ $viewerLabel }}</span>
                 @if ($dlUrl)
                     <a href="{{ $dlUrl }}" target="_blank"
-                       class="text-xs text-indigo-600 hover:text-indigo-800">Download (admin)</a>
+                       class="text-xs text-indigo-600 hover:text-indigo-800">Download script (admin)</a>
                 @endif
             </div>
 
@@ -68,28 +107,9 @@
             @endif
         </div>
 
-        {{-- Assignment details --}}
-        <div class="bg-white rounded-lg shadow px-5 py-4 text-sm text-gray-700 space-y-2">
-            <div class="grid grid-cols-2 gap-x-6 gap-y-2">
-                <div><span class="font-medium">Order #</span> {{ $assignment->order_number }}</div>
-                <div><span class="font-medium">Status</span> {{ ucfirst(str_replace('_', ' ', $assignment->status)) }}</div>
-                <div><span class="font-medium">Type</span> {{ ucfirst(str_replace('_', ' ', $assignment->assignment_type)) }}</div>
-                <div><span class="font-medium">Vendor</span> {{ strtoupper($assignment->vendor) }}</div>
-                @if (auth()->user()->isAdminOrEditor())
-                    <div><span class="font-medium">Pay rate</span> ${{ number_format($assignment->pay_rate, 2) }}</div>
-                @endif
-            </div>
-            @if ($assignment->notes)
-                <div class="pt-2 border-t border-gray-100">
-                    <span class="font-medium">Notes</span>
-                    <p class="mt-1 text-gray-600">{{ $assignment->notes }}</p>
-                </div>
-            @endif
-        </div>
-
         {{-- Reader actions --}}
         @if (auth()->user()->isReader())
-            <div class="mt-4 flex gap-3">
+            <div class="flex gap-3">
                 @can('accept', $assignment)
                     <form method="POST" action="{{ route('assignments.accept', $assignment) }}">
                         @csrf
@@ -116,27 +136,6 @@
                         Submit Coverage
                     </a>
                 @endcan
-            </div>
-        @endif
-
-        {{-- Admin actions --}}
-        @if (auth()->user()->isAdminOrEditor())
-            <div class="mt-4 flex gap-3 flex-wrap">
-                <a href="{{ route('assignments.edit', $assignment) }}"
-                   class="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded hover:bg-gray-700">
-                    Edit Assignment
-                </a>
-
-                @if ($assignment->status === \App\Models\Assignment::STATUS_COMPLETED && $assignment->drive_coverage_pdf_id)
-                    <form method="POST" action="{{ route('qc.draft-now', $assignment) }}"
-                          onsubmit="return confirm('Create a HelpScout draft reply now for this coverage only?')">
-                        @csrf
-                        <button type="submit"
-                                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700">
-                            Draft in HelpScout Now
-                        </button>
-                    </form>
-                @endif
             </div>
         @endif
 
