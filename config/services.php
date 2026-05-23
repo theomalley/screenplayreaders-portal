@@ -48,4 +48,9 @@ return [
         'webhook_secret' => env('PORTAL_WEBHOOK_SECRET'),
     ],
 
+    'helpscout' => [
+        'client_id'     => env('HELPSCOUT_CLIENT_ID'),
+        'client_secret' => env('HELPSCOUT_CLIENT_SECRET'),
+    ],
+
 ];

@@ -67,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/qc/{assignment}', [QcController::class, 'show'])->name('qc.show');
     Route::post('/qc/{assignment}/regenerate-pdf', [QcController::class, 'regeneratePdf'])->name('qc.regenerate-pdf');
     Route::post('/qc/{assignment}/approve', [QcController::class, 'approve'])->name('qc.approve');
+    Route::post('/qc/{assignment}/draft-now', [QcController::class, 'draftNow'])->name('qc.draft-now');
 
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
 

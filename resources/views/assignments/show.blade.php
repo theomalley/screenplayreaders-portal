@@ -121,11 +121,22 @@
 
         {{-- Admin actions --}}
         @if (auth()->user()->isAdminOrEditor())
-            <div class="mt-4 flex gap-3">
+            <div class="mt-4 flex gap-3 flex-wrap">
                 <a href="{{ route('assignments.edit', $assignment) }}"
                    class="px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded hover:bg-gray-700">
                     Edit Assignment
                 </a>
+
+                @if ($assignment->status === \App\Models\Assignment::STATUS_COMPLETED && $assignment->drive_coverage_pdf_id)
+                    <form method="POST" action="{{ route('qc.draft-now', $assignment) }}"
+                          onsubmit="return confirm('Create a HelpScout draft reply now for this coverage only?')">
+                        @csrf
+                        <button type="submit"
+                                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700">
+                            Draft in HelpScout Now
+                        </button>
+                    </form>
+                @endif
             </div>
         @endif
 
