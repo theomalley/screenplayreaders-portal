@@ -92,15 +92,10 @@ class HelpScoutService
         }
 
         $json = $response->json();
-        $href = $json['_links']['customer']['href'] ?? '';
+        $href = $json['_links']['primaryCustomer']['href'] ?? '';
         $id   = (int) basename($href);
 
         if (! $id) {
-            Log::error('HelpScout customer ID extraction failed', [
-                'conversation_id' => $conversationId,
-                'links_keys'      => array_keys($json['_links'] ?? []),
-                'href'            => $href,
-            ]);
             throw new \RuntimeException("Could not extract customer ID from conversation {$conversationId}.");
         }
 
