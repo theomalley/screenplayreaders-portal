@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-23 | Fetch customer ID from conversation before drafting (required by /reply endpoint)
 // v1.1 — 2026-05-23 | Fix token URL (v2/oauth2/token) and reply endpoint (POST /reply not /threads)
 // v1.0 — 2026-05-23 | OAuth2 token + draft reply creation on existing conversations
 
@@ -42,9 +43,12 @@ class HelpScoutService
     {
         $token = $this->getToken();
 
+        $customerId = $this->getCustomerId($conversationId, $token);
+
         $body = [
-            'draft' => true,
-            'text'  => $html,
+            'customer' => ['id' => $customerId],
+            'draft'    => true,
+            'text'     => $html,
         ];
 
         if (! empty($attachments)) {
@@ -62,5 +66,24 @@ class HelpScoutService
             ]);
             throw new \RuntimeException('HelpScout draft creation failed (' . $response->status() . '): ' . $response->body());
         }
+    }
+
+    private function getCustomerId(string $conversationId, string $token): int
+    {
+        $response = Http::withToken($token)
+            ->get(self::API_BASE . "/conversations/{$conversationId}");
+
+        if (! $response->ok()) {
+            throw new \RuntimeException('HelpScout conversation lookup failed: ' . $response->body());
+        }
+
+        $href = $response->json('_links.customer.href') ?? '';
+        $id   = (int) basename($href);
+
+        if (! $id) {
+            throw new \RuntimeException("Could not extract customer ID from conversation {$conversationId}.");
+        }
+
+        return $id;
     }
 }
