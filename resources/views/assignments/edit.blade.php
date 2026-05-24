@@ -465,10 +465,42 @@
                              tabindex="-1"
                              x-effect="if (open) $nextTick(() => $el.focus())"
                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0">
-                                <span class="text-sm text-gray-200 font-medium truncate">{{ $assignment->drive_script_filename ?? 'Script' }}</span>
-                                <button @click="open = false" type="button"
-                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-4 px-1">×</button>
+                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? 'Script' }}</span>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                                          onsubmit="return confirm('Remove title page (page 1)?')">
+                                        @csrf
+                                        <input type="hidden" name="pages" value="1">
+                                        <button type="submit"
+                                                class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                            Remove title page
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                                          onsubmit="return confirm('Remove last page?')">
+                                        @csrf
+                                        <input type="hidden" name="pages" value="last">
+                                        <button type="submit"
+                                                class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                            Remove last page
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                                          class="flex items-center gap-1"
+                                          x-data="{ pg: '' }"
+                                          @submit.prevent="if (pg.trim()) { if (confirm('Remove page ' + pg + '?')) $el.submit(); }">
+                                        @csrf
+                                        <input type="text" name="pages" x-model="pg" placeholder="pg #"
+                                               class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
+                                        <button type="submit"
+                                                class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
+                                            Remove
+                                        </button>
+                                    </form>
+                                    <button @click="open = false" type="button"
+                                            class="text-gray-400 hover:text-white text-2xl leading-none ml-2 px-1">×</button>
+                                </div>
                             </div>
                             <iframe :src="open ? @js($viewUrl) : ''"
                                     class="flex-1 w-full border-0"

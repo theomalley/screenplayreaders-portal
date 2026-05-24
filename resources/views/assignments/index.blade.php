@@ -236,39 +236,55 @@
                                         </td>
 
                                         {{-- Title / Writer --}}
-                                        <td class="px-3 py-3" x-data="pdfScrollViewer(@js($viewUrl))">
+                                        <td class="px-3 py-3" x-data="{ open: false }">
                                             @if($viewUrl)
-                                                <button @click="openViewer()" type="button"
+                                                <button @click="open = true" type="button"
                                                         class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
                                                 <div x-show="open" x-cloak
                                                      @keydown.escape.window="open = false"
-                                                     x-ref="modal"
                                                      tabindex="-1"
+                                                     x-effect="if (open) $nextTick(() => $el.focus())"
                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                    <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
+                                                    <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
                                                         <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                        <div class="flex items-center gap-3 shrink-0">
-                                                            <span x-show="loading" class="text-xs text-gray-400">Loading…</span>
-                                                            <span x-show="totalPages > 0" class="text-xs text-gray-400 tabular-nums" x-text="'p. ' + currentPage + ' / ' + totalPages"></span>
+                                                        <div class="flex items-center gap-2 shrink-0">
                                                             <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
-                                                                  x-show="totalPages > 0"
-                                                                  @submit="return confirm('Remove page ' + currentPage + ' from the script?')">
+                                                                  onsubmit="return confirm('Remove title page (page 1)?')">
                                                                 @csrf
-                                                                <input type="hidden" name="pages" :value="currentPage" />
+                                                                <input type="hidden" name="pages" value="1">
                                                                 <button type="submit"
                                                                         class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
-                                                                    Remove p.<span x-text="currentPage"></span>
+                                                                    Remove title page
+                                                                </button>
+                                                            </form>
+                                                            <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                                                                  onsubmit="return confirm('Remove last page?')">
+                                                                @csrf
+                                                                <input type="hidden" name="pages" value="last">
+                                                                <button type="submit"
+                                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                                                    Remove last page
+                                                                </button>
+                                                            </form>
+                                                            <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                                                                  class="flex items-center gap-1"
+                                                                  x-data="{ pg: '' }"
+                                                                  @submit.prevent="if (pg.trim()) { if (confirm('Remove page ' + pg + '?')) $el.submit(); }">
+                                                                @csrf
+                                                                <input type="text" name="pages" x-model="pg" placeholder="pg #"
+                                                                       class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
+                                                                <button type="submit"
+                                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
+                                                                    Remove
                                                                 </button>
                                                             </form>
                                                             <button @click="open = false" type="button"
                                                                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                         </div>
                                                     </div>
-                                                    <div x-ref="canvasWrap"
-                                                         class="flex-1 overflow-y-scroll bg-gray-800 py-4 px-6"
-                                                         @scroll.passive="updateCurrentPage()">
-                                                        <div x-show="loading" class="text-gray-400 text-sm text-center py-10">Loading…</div>
-                                                    </div>
+                                                    <iframe :src="open ? @js($viewUrl) : ''"
+                                                            class="flex-1 w-full border-0"
+                                                            allowfullscreen></iframe>
                                                 </div>
                                             @else
                                                 <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
@@ -1142,100 +1158,6 @@
                 };
             });
 
-            Alpine.data('pdfScrollViewer', (url) => {
-                let pdfDoc   = null;
-                let observer = null;
-
-                return {
-                    open:        false,
-                    url:         url,
-                    currentPage: 0,
-                    totalPages:  0,
-                    loading:     false,
-
-                    async openViewer() {
-                        this.open = true;
-                        await this.$nextTick();
-                        this.$refs.modal.focus();
-                        if (!pdfDoc) await this.loadPdf();
-                    },
-
-                    async loadPdf() {
-                        this.loading = true;
-                        try {
-                            await ensurePdfJs();
-                            pdfDoc = await pdfjsLib.getDocument({ url: this.url, withCredentials: true }).promise;
-                            this.totalPages = pdfDoc.numPages;
-                            await this.$nextTick();
-                            const wrap = this.$refs.canvasWrap;
-                            wrap.innerHTML = '';
-
-                            const firstPage = await pdfDoc.getPage(1);
-                            const maxW      = Math.max(wrap.clientWidth - 48, 300);
-                            const baseVp    = firstPage.getViewport({ scale: 1 });
-                            const scale     = Math.min(maxW / baseVp.width, 2.0);
-                            const vp0       = firstPage.getViewport({ scale });
-
-                            const canvases = [];
-                            for (let i = 1; i <= this.totalPages; i++) {
-                                const row    = document.createElement('div');
-                                row.className = 'flex justify-center pb-4';
-                                const canvas = document.createElement('canvas');
-                                canvas.setAttribute('data-page', String(i));
-                                canvas.className = 'shadow-2xl bg-white';
-                                canvas.width  = vp0.width;
-                                canvas.height = vp0.height;
-                                row.appendChild(canvas);
-                                wrap.appendChild(row);
-                                canvases.push(canvas);
-                            }
-
-                            this.currentPage = 1;
-                            this.loading     = false;
-
-                            if (observer) observer.disconnect();
-                            observer = new IntersectionObserver((entries) => {
-                                entries.forEach(entry => {
-                                    if (entry.isIntersecting && !entry.target._rendered) {
-                                        entry.target._rendered = true;
-                                        this.renderCanvas(entry.target);
-                                    }
-                                });
-                            }, { root: wrap, rootMargin: '600px 0px' });
-                            canvases.forEach(c => observer.observe(c));
-                        } catch (e) {
-                            console.error('PDF load error:', e);
-                            this.loading = false;
-                        }
-                    },
-
-                    async renderCanvas(canvas) {
-                        if (!pdfDoc) return;
-                        const num   = parseInt(canvas.getAttribute('data-page'), 10);
-                        const page  = await pdfDoc.getPage(num);
-                        const wrap  = this.$refs.canvasWrap;
-                        const maxW  = Math.max(wrap.clientWidth - 48, 300);
-                        const base  = page.getViewport({ scale: 1 });
-                        const scale = Math.min(maxW / base.width, 2.0);
-                        const vp    = page.getViewport({ scale });
-                        canvas.width  = vp.width;
-                        canvas.height = vp.height;
-                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                    },
-
-                    updateCurrentPage() {
-                        const wrap = this.$refs.canvasWrap;
-                        if (!wrap) return;
-                        const mid = wrap.scrollTop + wrap.clientHeight / 2;
-                        let best = null, bestDist = Infinity;
-                        wrap.querySelectorAll('[data-page]').forEach(c => {
-                            const dist = Math.abs((c.offsetTop + c.offsetHeight / 2) - mid);
-                            if (dist < bestDist) { bestDist = dist; best = c; }
-                        });
-                        if (best) this.currentPage = parseInt(best.getAttribute('data-page'), 10);
-                    },
-                };
-            });
         });
         </script>
         @endpush
