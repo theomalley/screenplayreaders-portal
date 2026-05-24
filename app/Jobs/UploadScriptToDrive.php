@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-24 | DOCX→PDF conversion via Drive import/export before upload.
 // v1.2 — 2026-05-22 | Explicit local-disk path resolution; pre-flight file-exists check.
 // v1.1 — 2026-05-22 | Use FilenameGenerator for Drive filename; update all sibling assignments;
 //                     pass order_number (not ID) to uploadScript.
@@ -38,21 +39,37 @@ class UploadScriptToDrive implements ShouldQueue
             return;
         }
 
-        $fileName = FilenameGenerator::script($assignment);
-        $fileId   = $drive->uploadScript($assignment->order_number, $fullPath, $fileName);
+        $uploadPath  = $fullPath;
+        $convertedPdf = null;
 
-        // Update all assignments sharing this order_number (multi-reader orders)
-        Assignment::where('order_number', $assignment->order_number)->update([
-            'drive_script_file_id'  => $fileId,
-            'drive_script_filename' => $fileName,
-        ]);
+        if (str_ends_with(strtolower($this->storagePath), '.docx')) {
+            Log::info('UploadScriptToDrive: converting DOCX to PDF via Drive', [
+                'order_number' => $assignment->order_number,
+            ]);
+            $convertedPdf = $drive->convertDocxToPdf($fullPath);
+            $uploadPath   = $convertedPdf;
+        }
 
-        Log::info('UploadScriptToDrive: complete', [
-            'order_number' => $assignment->order_number,
-            'file_id'      => $fileId,
-            'filename'     => $fileName,
-        ]);
+        try {
+            $fileName = FilenameGenerator::script($assignment);
+            $fileId   = $drive->uploadScript($assignment->order_number, $uploadPath, $fileName);
 
-        @unlink($fullPath);
+            // Update all assignments sharing this order_number (multi-reader orders)
+            Assignment::where('order_number', $assignment->order_number)->update([
+                'drive_script_file_id'  => $fileId,
+                'drive_script_filename' => $fileName,
+            ]);
+
+            Log::info('UploadScriptToDrive: complete', [
+                'order_number' => $assignment->order_number,
+                'file_id'      => $fileId,
+                'filename'     => $fileName,
+            ]);
+        } finally {
+            @unlink($fullPath);
+            if ($convertedPdf) {
+                @unlink($convertedPdf);
+            }
+        }
     }
 }

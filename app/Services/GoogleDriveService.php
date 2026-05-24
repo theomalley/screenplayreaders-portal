@@ -198,6 +198,43 @@ class GoogleDriveService
         throw new \RuntimeException('exportDocToPdf not yet implemented.');
     }
 
+    /**
+     * Convert a local DOCX file to PDF using Drive's import/export API.
+     * Uploads the DOCX as a Google Doc (Drive auto-converts), exports as PDF bytes,
+     * deletes the temporary Google Doc, then writes the PDF to a local temp file.
+     * Returns the absolute path to the temp PDF (caller must unlink when done).
+     */
+    public function convertDocxToPdf(string $localDocxPath): string
+    {
+        $doc = $this->drive->files->create(
+            new DriveFile([
+                'name'     => 'sr_tmp_' . uniqid(),
+                'mimeType' => 'application/vnd.google-apps.document',
+            ]),
+            [
+                'data'              => file_get_contents($localDocxPath),
+                'mimeType'          => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'uploadType'        => 'multipart',
+                'fields'            => 'id',
+                'supportsAllDrives' => true,
+            ]
+        );
+
+        $docId = $doc->id;
+
+        try {
+            $response = $this->drive->files->export($docId, 'application/pdf', ['alt' => 'media']);
+            $pdfBytes = $response->getBody()->getContents();
+        } finally {
+            $this->drive->files->delete($docId, ['supportsAllDrives' => true]);
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'sr_docx_') . '.pdf';
+        file_put_contents($tmp, $pdfBytes);
+
+        return $tmp;
+    }
+
     // -------------------------------------------------------------------------
 
     /**
