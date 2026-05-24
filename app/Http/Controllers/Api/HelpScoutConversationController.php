@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-24 | Trim whitespace from incoming values; accept integer IDs (coerce to string).
 // v1.0 — 2026-05-23 | Zapier-facing endpoint: store order_number → HelpScout conversation ID.
 //                     Called by the sr-orders Zapier zap immediately after the HS ticket is created.
 
@@ -19,7 +20,14 @@ class HelpScoutConversationController extends Controller
             return response()->json(['error' => 'Unauthorised.'], 401);
         }
 
-        $validator = Validator::make($request->all(), [
+        // Coerce to string and trim — guards against Zapier sending integers or
+        // field names with trailing whitespace when Unflatten is enabled.
+        $input = [
+            'order_number'    => trim((string) $request->input('order_number', '')),
+            'conversation_id' => trim((string) $request->input('conversation_id', '')),
+        ];
+
+        $validator = Validator::make($input, [
             'order_number'    => 'required|string|max:64',
             'conversation_id' => 'required|string|max:64',
         ]);
