@@ -1,11 +1,13 @@
 <?php
 
+// v1.3 — 2026-05-24 | Coverage submission success page: admin-editable custom HTML
 // v1.2 — 2026-05-23 | Separate login logo upload; nav logo no longer clickable
 // v1.1 — 2026-05-23 | Add settings index page; redirect to settings after upload
 // v1.0 — 2026-05-17 | Portal-wide settings: logo upload
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -70,5 +72,23 @@ class SettingController extends Controller
         file_put_contents($metaFile, $filename);
 
         return redirect()->route('settings.index')->with('success', 'Login logo updated.');
+    }
+
+    public function editCoverageSuccess(): View
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $content = Setting::getValue('coverage_success_html', '');
+        return view('settings.coverage-success', compact('content'));
+    }
+
+    public function updateCoverageSuccess(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate(['content' => ['nullable', 'string']]);
+        Setting::setValue('coverage_success_html', trim($request->input('content', '')));
+
+        return back()->with('success', 'Coverage submission page updated.');
     }
 }

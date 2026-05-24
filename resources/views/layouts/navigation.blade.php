@@ -78,6 +78,10 @@
                                         class="block px-4 py-2 text-sm {{ request()->routeIs('admin.filenames*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Filenames
                                     </a>
+                                    <a href="{{ route('settings.coverage-success') }}"
+                                        class="block px-4 py-2 text-sm {{ request()->routeIs('settings.coverage-success*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Coverage Success Page
+                                    </a>
                                 @endif
                             </div>
                         </div>
@@ -171,6 +175,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.filenames')" :active="request()->routeIs('admin.filenames*')">
                         {{ __('Filenames') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('settings.coverage-success')" :active="request()->routeIs('settings.coverage-success*')">
+                        {{ __('Coverage Success Page') }}
                     </x-responsive-nav-link>
                 @endif
             @else

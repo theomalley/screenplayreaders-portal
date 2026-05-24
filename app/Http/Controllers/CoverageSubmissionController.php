@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-24 | Submit button spinner; redirect to dedicated submitted page with custom HTML
 // v1.1 — 2026-05-22 | Fire GoogleDocsService after submission to create coverage doc + draft PDF
 // v1.0 — 2026-05-17 | Coverage form show + store for SR and WD vendors
 
@@ -11,6 +12,7 @@ use App\Services\GoogleDocsService;
 use App\Support\FilenameGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class CoverageSubmissionController extends Controller
 {
@@ -65,7 +67,12 @@ class CoverageSubmissionController extends Controller
             ]);
         }
 
-        return redirect()->route('assignments.index')
-            ->with('success', 'Coverage submitted for QC.');
+        return redirect()->route('coverage.submitted')
+            ->with('submitted_title', $assignment->script_title);
+    }
+
+    public function submitted(): View
+    {
+        return view('coverage.submitted');
     }
 }
