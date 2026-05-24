@@ -236,34 +236,27 @@
                                         </td>
 
                                         {{-- Title / Writer --}}
-                                        <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
+                                        <td class="px-3 py-3" x-data="pdfScrollViewer(@js($viewUrl))">
                                             @if($viewUrl)
                                                 <button @click="openViewer()" type="button"
                                                         class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
                                                 <div x-show="open" x-cloak
                                                      @keydown.escape.window="open = false"
-                                                     @keydown.arrow-right.window="if (open) nextPage()"
-                                                     @keydown.arrow-left.window="if (open) prevPage()"
                                                      x-ref="modal"
                                                      tabindex="-1"
                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
                                                     <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
                                                         <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
                                                         <div class="flex items-center gap-3 shrink-0">
-                                                            <div x-show="totalPages > 0" class="flex items-center gap-2">
-                                                                <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
-                                                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
-                                                                <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
-                                                                <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
-                                                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
-                                                            </div>
+                                                            <span x-show="loading" class="text-xs text-gray-400">Loading…</span>
+                                                            <span x-show="totalPages > 0" class="text-xs text-gray-400 tabular-nums" x-text="'p. ' + currentPage + ' / ' + totalPages"></span>
                                                             <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
                                                                   x-show="totalPages > 0"
                                                                   @submit="return confirm('Remove page ' + currentPage + ' from the script?')">
                                                                 @csrf
                                                                 <input type="hidden" name="pages" :value="currentPage" />
-                                                                <button type="submit" :disabled="loading"
-                                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white disabled:opacity-40 whitespace-nowrap">
+                                                                <button type="submit"
+                                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
                                                                     Remove p.<span x-text="currentPage"></span>
                                                                 </button>
                                                             </form>
@@ -271,9 +264,10 @@
                                                                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                         </div>
                                                     </div>
-                                                    <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4" @wheel="handleWheel($event)">
-                                                        <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
-                                                        <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                    <div x-ref="canvasWrap"
+                                                         class="flex-1 overflow-y-scroll bg-gray-800 py-4 px-6"
+                                                         @scroll.passive="updateCurrentPage()">
+                                                        <div x-show="loading" class="text-gray-400 text-sm text-center py-10">Loading…</div>
                                                     </div>
                                                 </div>
                                             @else
@@ -1144,6 +1138,101 @@
                             wheelTimer = setTimeout(() => { wheelTimer = null; }, 200);
                             this.prevPage();
                         }
+                    },
+                };
+            });
+
+            Alpine.data('pdfScrollViewer', (url) => {
+                let pdfDoc   = null;
+                let observer = null;
+
+                return {
+                    open:        false,
+                    url:         url,
+                    currentPage: 0,
+                    totalPages:  0,
+                    loading:     false,
+
+                    async openViewer() {
+                        this.open = true;
+                        await this.$nextTick();
+                        this.$refs.modal.focus();
+                        if (!pdfDoc) await this.loadPdf();
+                    },
+
+                    async loadPdf() {
+                        this.loading = true;
+                        try {
+                            await ensurePdfJs();
+                            pdfDoc = await pdfjsLib.getDocument({ url: this.url, withCredentials: true }).promise;
+                            this.totalPages = pdfDoc.numPages;
+                            await this.$nextTick();
+                            const wrap = this.$refs.canvasWrap;
+                            wrap.innerHTML = '';
+
+                            const firstPage = await pdfDoc.getPage(1);
+                            const maxW      = Math.max(wrap.clientWidth - 48, 300);
+                            const baseVp    = firstPage.getViewport({ scale: 1 });
+                            const scale     = Math.min(maxW / baseVp.width, 2.0);
+                            const vp0       = firstPage.getViewport({ scale });
+
+                            const canvases = [];
+                            for (let i = 1; i <= this.totalPages; i++) {
+                                const row    = document.createElement('div');
+                                row.className = 'flex justify-center pb-4';
+                                const canvas = document.createElement('canvas');
+                                canvas.setAttribute('data-page', String(i));
+                                canvas.className = 'shadow-2xl bg-white';
+                                canvas.width  = vp0.width;
+                                canvas.height = vp0.height;
+                                row.appendChild(canvas);
+                                wrap.appendChild(row);
+                                canvases.push(canvas);
+                            }
+
+                            this.currentPage = 1;
+                            this.loading     = false;
+
+                            if (observer) observer.disconnect();
+                            observer = new IntersectionObserver((entries) => {
+                                entries.forEach(entry => {
+                                    if (entry.isIntersecting && !entry.target._rendered) {
+                                        entry.target._rendered = true;
+                                        this.renderCanvas(entry.target);
+                                    }
+                                });
+                            }, { root: wrap, rootMargin: '600px 0px' });
+                            canvases.forEach(c => observer.observe(c));
+                        } catch (e) {
+                            console.error('PDF load error:', e);
+                            this.loading = false;
+                        }
+                    },
+
+                    async renderCanvas(canvas) {
+                        if (!pdfDoc) return;
+                        const num   = parseInt(canvas.getAttribute('data-page'), 10);
+                        const page  = await pdfDoc.getPage(num);
+                        const wrap  = this.$refs.canvasWrap;
+                        const maxW  = Math.max(wrap.clientWidth - 48, 300);
+                        const base  = page.getViewport({ scale: 1 });
+                        const scale = Math.min(maxW / base.width, 2.0);
+                        const vp    = page.getViewport({ scale });
+                        canvas.width  = vp.width;
+                        canvas.height = vp.height;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                    },
+
+                    updateCurrentPage() {
+                        const wrap = this.$refs.canvasWrap;
+                        if (!wrap) return;
+                        const mid = wrap.scrollTop + wrap.clientHeight / 2;
+                        let best = null, bestDist = Infinity;
+                        wrap.querySelectorAll('[data-page]').forEach(c => {
+                            const dist = Math.abs((c.offsetTop + c.offsetHeight / 2) - mid);
+                            if (dist < bestDist) { bestDist = dist; best = c; }
+                        });
+                        if (best) this.currentPage = parseInt(best.getAttribute('data-page'), 10);
                     },
                 };
             });
