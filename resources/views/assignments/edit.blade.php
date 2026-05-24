@@ -390,11 +390,18 @@
                             <select id="assigned_reader_id" name="assigned_reader_id"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                 <option value="">None</option>
-                                @foreach ($readers as $reader)
-                                    <option value="{{ $reader->id }}"
-                                        {{ $v('assigned_reader_id', $assignment->assigned_reader_id) == $reader->id ? 'selected' : '' }}>
-                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
-                                        — {{ $reader->readerProfile?->displayName() ?? $reader->name }}
+                                @foreach ($assignableUsers as $aUser)
+                                    @php
+                                        $aInitials = $aUser->readerProfile?->initials
+                                            ?? $aUser->editorProfile?->initials
+                                            ?? strtoupper(substr($aUser->name, 0, 2));
+                                        $aName = $aUser->readerProfile?->displayName()
+                                            ?? $aUser->editorProfile?->displayName()
+                                            ?? $aUser->name;
+                                    @endphp
+                                    <option value="{{ $aUser->id }}"
+                                        {{ $v('assigned_reader_id', $assignment->assigned_reader_id) == $aUser->id ? 'selected' : '' }}>
+                                        {{ $aInitials }} — {{ $aName }}
                                     </option>
                                 @endforeach
                             </select>

@@ -375,10 +375,10 @@
                                                     <select
                                                         @change="if ($event.target.value) { $refs.rInput.value = $event.target.value; $event.target.closest('form').submit(); }"
                                                         class="text-xs rounded border border-gray-200 bg-white py-0.5 pl-2 pr-5 cursor-pointer focus:ring-indigo-400">
-                                                        <option value="">→ reader</option>
-                                                        @foreach ($readers as $reader)
-                                                            <option value="{{ $reader->id }}">
-                                                                {{ $reader->readerProfile?->initials ?? strtoupper(substr($reader->name, 0, 2)) }}
+                                                        <option value="">→ assign to</option>
+                                                        @foreach ($assignableUsers as $aUser)
+                                                            <option value="{{ $aUser->id }}">
+                                                                {{ $aUser->readerProfile?->initials ?? $aUser->editorProfile?->initials ?? strtoupper(substr($aUser->name, 0, 2)) }}
                                                             </option>
                                                         @endforeach
                                                     </select>

@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-24 | assignableUsers() helper; role-gated assignment; editors assign self+readers only.
 // v1.4 — 2026-05-23 | coverage stream endpoint; show coverage PDF in viewer for admins.
 // v1.3 — 2026-05-21 | script upload, page deletion, assignment show view.
 // v1.2 — 2026-05-18 | multi-reader assignments; per-slot reader request dropdowns.
@@ -49,6 +50,7 @@ class AssignmentController extends Controller
                 'assignments'      => $assignments,
                 'formatting'       => $formatting,
                 'readers'          => $readers,
+                'assignableUsers'  => $this->assignableUsers(),
                 'capacityOverride' => (int) Setting::getValue('capacity_override', 0),
             ]);
         }
@@ -385,13 +387,11 @@ class AssignmentController extends Controller
     {
         $this->authorize('update', $assignment);
 
-        $rates   = Setting::ratesForForms();
-        $readers = User::where('role', 'reader')
-            ->with('readerProfile')
-            ->orderBy('name')
-            ->get();
+        $rates           = Setting::ratesForForms();
+        $readers         = User::where('role', 'reader')->with('readerProfile')->orderBy('name')->get();
+        $assignableUsers = $this->assignableUsers();
 
-        return view('assignments.edit', compact('assignment', 'rates', 'readers'));
+        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers'));
     }
 
     public function update(UpdateAssignmentRequest $request, Assignment $assignment)
@@ -420,6 +420,10 @@ class AssignmentController extends Controller
         if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
             $data['assigned_reader_id'] = null;
             $data['accepted_at']        = null;
+        }
+
+        if (!empty($data['assigned_reader_id'])) {
+            abort_unless($this->canAssign((int) $data['assigned_reader_id']), 403);
         }
 
         $assignment->update($data);
@@ -455,6 +459,7 @@ class AssignmentController extends Controller
         }
 
         if ($request->status === Assignment::STATUS_ASSIGNED && $request->filled('assigned_reader_id')) {
+            abort_unless($this->canAssign((int) $request->assigned_reader_id), 403);
             $data['assigned_reader_id'] = $request->assigned_reader_id;
             $data['accepted_at']        = now();
         }
@@ -534,6 +539,42 @@ class AssignmentController extends Controller
         $assignment->delete();
 
         return redirect()->route('assignments.index')->with('success', 'Assignment deleted.');
+    }
+
+    private function assignableUsers(): \Illuminate\Database\Eloquent\Collection
+    {
+        $user = auth()->user();
+
+        if ($user->isAdmin()) {
+            return User::whereIn('role', ['admin', 'editor', 'reader'])
+                ->with(['readerProfile', 'editorProfile'])
+                ->orderBy('name')
+                ->get();
+        }
+
+        // Editor: readers + self
+        return User::where(function ($q) use ($user) {
+            $q->where('role', 'reader')->orWhere('id', $user->id);
+        })
+            ->with(['readerProfile', 'editorProfile'])
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function canAssign(int $userId): bool
+    {
+        $user   = auth()->user();
+        $target = User::find($userId);
+        if (!$target) return false;
+
+        if ($user->isAdmin()) return true;
+
+        // Editor: can assign readers or self
+        if ($user->isEditor()) {
+            return $target->isReader() || $target->id === $user->id;
+        }
+
+        return false;
     }
 
     public function updateNotes(Request $request, Assignment $assignment)
