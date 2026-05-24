@@ -39,6 +39,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Total</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Capacity</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PayPal</th>
                                 <th class="px-4 py-3"></th>
                             </tr>
@@ -82,6 +83,18 @@
                                         {{ $active }}/{{ $max ?: '—' }}
                                         @if ($atCap)
                                             <span class="ml-1 text-[10px] font-bold text-amber-600 uppercase">Full</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @php $avail = $profile?->availability ?? 'available'; @endphp
+                                        <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
+                                            <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
+                                            {{ ucfirst($avail) }}
+                                        </span>
+                                        @if ($profile?->availability_message)
+                                            <div class="mt-0.5 text-[11px] text-gray-400 max-w-[160px] truncate" title="{{ $profile->availability_message }}">
+                                                {{ $profile->availability_message }}
+                                            </div>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-gray-500 text-xs">

@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-24 | Add availability + availability_message to store/update
 // v1.1 — 2026-05-18 | Full CRUD: index, create, store, edit, update, destroy
 
 namespace App\Http\Controllers;
@@ -49,6 +50,8 @@ class ReaderProfileController extends Controller
             'last_name'                  => ['required', 'string', 'max:100'],
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
+            'availability'               => ['required', 'in:available,unavailable'],
+            'availability_message'       => ['nullable', 'string', 'max:500'],
         ]);
 
         $user = User::create([
@@ -64,6 +67,8 @@ class ReaderProfileController extends Controller
             'last_name'                  => $data['last_name'],
             'max_concurrent_assignments' => $data['max_concurrent_assignments'],
             'paypal_email'               => $data['paypal_email'] ?? null,
+            'availability'               => $data['availability'],
+            'availability_message'       => $data['availability_message'] ?? null,
         ]);
 
         return redirect()->route('readers.index')->with('success', 'Reader created.');
@@ -94,6 +99,8 @@ class ReaderProfileController extends Controller
             'photo'                      => ['nullable', 'image', 'max:4096'],
             'email'                      => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password'                   => ['nullable', 'string', 'min:8', 'confirmed'],
+            'availability'               => ['required', 'in:available,unavailable'],
+            'availability_message'       => ['nullable', 'string', 'max:500'],
         ]);
 
         if ($request->hasFile('photo')) {

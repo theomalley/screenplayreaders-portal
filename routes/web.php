@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\FilenamesController;
 use App\Http\Controllers\ManualController;
@@ -25,6 +26,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/availability', [AvailabilityController::class, 'edit'])->name('availability.edit');
+    Route::patch('/availability', [AvailabilityController::class, 'update'])->name('availability.update');
 
     Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
     Route::get('assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');

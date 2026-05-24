@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-24 | Add availability + availability_message fields
 // v1.0 — 2026-05-16 | Initial scaffold: reader profile linked 1:1 to users
 
 namespace App\Models;
@@ -27,6 +28,8 @@ class ReaderProfile extends Model
         'email_notify_any',
         'email_notify_rush',
         'email_notify_requests',
+        'availability',
+        'availability_message',
     ];
 
     protected $casts = [

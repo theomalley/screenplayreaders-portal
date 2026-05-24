@@ -122,6 +122,39 @@
                         </div>
                     </div>
 
+                    {{-- Availability --}}
+                    <div class="pt-4 border-t border-gray-100 space-y-4">
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Availability</p>
+
+                        <div>
+                            <x-input-label value="Status" />
+                            <div class="mt-2 flex gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="availability" value="available"
+                                           {{ old('availability', 'available') === 'available' ? 'checked' : '' }}
+                                           class="text-green-600 focus:ring-green-500" />
+                                    <span class="text-sm font-medium text-green-700">Available</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="availability" value="unavailable"
+                                           {{ old('availability', 'available') === 'unavailable' ? 'checked' : '' }}
+                                           class="text-red-600 focus:ring-red-500" />
+                                    <span class="text-sm font-medium text-red-700">Unavailable</span>
+                                </label>
+                            </div>
+                            <x-input-error :messages="$errors->get('availability')" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="availability_message" value="Availability Note" />
+                            <textarea id="availability_message" name="availability_message"
+                                      rows="2"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="Optional">{{ old('availability_message') }}</textarea>
+                            <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
                         <a href="{{ route('readers.index') }}"
                            class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
