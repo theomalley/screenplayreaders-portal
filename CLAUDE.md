@@ -543,6 +543,7 @@ TOKEN=$(openssl rand -hex 16)
 echo "<?php opcache_reset();" > public/opcache-${TOKEN}.php
 curl -sf "https://portal.screenplayreaders.com/opcache-${TOKEN}.php" || true
 rm -f public/opcache-${TOKEN}.php
+$FORGE_PHP artisan queue:restart
 ```
 
 ### One-time setup commands (run once in Forge → Site → Quick Commands)
