@@ -1,5 +1,6 @@
 <?php
 
+// v1.4.1 — 2026-05-24 | Force redeploy with formatting upload fixes.
 // v1.4 — 2026-05-24 | Preserve original file extension in stored filename so UploadScriptToDrive
 //                     gets the correct ext — store() guesses MIME-based ext (e.g. zip for .fadein).
 // v1.3 — 2026-05-22 | Inline pay rate computation, per-slot try/catch, service token logging.
