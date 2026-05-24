@@ -1,6 +1,6 @@
 <?php
 
-// v1.4 — 2026-05-24 | Skip DOCX→PDF conversion for formatting/proofreading — formatter needs editable file.
+// v1.4 — 2026-05-24 | Formatting keeps original file format; proofreading converts to PDF like other services.
 // v1.3 — 2026-05-24 | DOCX→PDF conversion via Drive import/export before upload.
 // v1.2 — 2026-05-22 | Explicit local-disk path resolution; pre-flight file-exists check.
 // v1.1 — 2026-05-22 | Use FilenameGenerator for Drive filename; update all sibling assignments;
@@ -40,25 +40,30 @@ class UploadScriptToDrive implements ShouldQueue
             return;
         }
 
+        $origExt      = strtolower(pathinfo($this->storagePath, PATHINFO_EXTENSION));
         $uploadPath   = $fullPath;
         $convertedPdf = null;
 
-        $isDocx              = str_ends_with(strtolower($this->storagePath), '.docx');
-        $isFormattingOrder   = in_array($assignment->assignment_type, ['formatting', 'proofreading']);
-
-        if ($isDocx && ! $isFormattingOrder) {
-            Log::info('UploadScriptToDrive: converting DOCX to PDF via Drive', [
-                'order_number' => $assignment->order_number,
-            ]);
-            $convertedPdf = $drive->convertDocxToPdf($fullPath);
-            $uploadPath   = $convertedPdf;
+        if ($assignment->assignment_type === 'formatting') {
+            // Formatting work happens outside the portal — keep the original file format.
+            $fileName = FilenameGenerator::base($assignment) . '.' . $origExt;
+            $mimeType = $this->mimeForExt($origExt);
+        } else {
+            // All other services (including proofreading) need a PDF.
+            if ($origExt === 'docx') {
+                Log::info('UploadScriptToDrive: converting DOCX to PDF via Drive', [
+                    'order_number' => $assignment->order_number,
+                ]);
+                $convertedPdf = $drive->convertDocxToPdf($fullPath);
+                $uploadPath   = $convertedPdf;
+            }
+            $fileName = FilenameGenerator::script($assignment);
+            $mimeType = 'application/pdf';
         }
 
         try {
-            $fileName = FilenameGenerator::script($assignment);
-            $fileId   = $drive->uploadScript($assignment->order_number, $uploadPath, $fileName);
+            $fileId = $drive->uploadScript($assignment->order_number, $uploadPath, $fileName, $mimeType);
 
-            // Update all assignments sharing this order_number (multi-reader orders)
             Assignment::where('order_number', $assignment->order_number)->update([
                 'drive_script_file_id'  => $fileId,
                 'drive_script_filename' => $fileName,
@@ -75,5 +80,17 @@ class UploadScriptToDrive implements ShouldQueue
                 @unlink($convertedPdf);
             }
         }
+    }
+
+    private function mimeForExt(string $ext): string
+    {
+        return match($ext) {
+            'pdf'      => 'application/pdf',
+            'docx'     => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'fdx'      => 'application/xml',
+            'fadein'   => 'application/zip',
+            'fountain' => 'text/plain',
+            default    => 'application/octet-stream',
+        };
     }
 }
