@@ -7,6 +7,11 @@
 
         <title>{{ config('app.name', 'Screenplay Readers Portal') }}</title>
 
+        @php $faviconMeta = storage_path('app/portal-favicon-path.txt'); @endphp
+        @if(is_readable($faviconMeta))
+            <link rel="icon" href="{{ asset('storage/' . trim(file_get_contents($faviconMeta))) }}">
+        @endif
+
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased bg-gray-100">

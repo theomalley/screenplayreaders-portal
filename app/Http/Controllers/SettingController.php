@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-05-24 | Add favicon upload.
 // v1.5 — 2026-05-24 | Use MIME-derived extension for logo uploads; add image type allowlist.
 // v1.4 — 2026-05-24 | Global capacity override setting.
 // v1.3 — 2026-05-24 | Coverage submission success page: admin-editable custom HTML
@@ -29,7 +30,10 @@ class SettingController extends Controller
 
         $capacityOverride = (int) Setting::getValue('capacity_override', 0);
 
-        return view('settings.index', compact('logoUrl', 'loginLogoUrl', 'capacityOverride'));
+        $faviconMetaFile = storage_path('app/portal-favicon-path.txt');
+        $faviconUrl      = is_readable($faviconMetaFile) ? asset('storage/' . trim(file_get_contents($faviconMetaFile))) : null;
+
+        return view('settings.index', compact('logoUrl', 'loginLogoUrl', 'capacityOverride', 'faviconUrl'));
     }
 
     public function uploadLogo(Request $request): RedirectResponse
@@ -76,6 +80,29 @@ class SettingController extends Controller
         file_put_contents($metaFile, $filename);
 
         return redirect()->route('settings.index')->with('success', 'Login logo updated.');
+    }
+
+    public function uploadFavicon(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $request->validate(['favicon' => 'required|file|mimes:png,ico,svg,webp|max:512']);
+
+        $metaFile = storage_path('app/portal-favicon-path.txt');
+
+        if (is_readable($metaFile)) {
+            $old = trim(file_get_contents($metaFile));
+            if ($old) {
+                Storage::disk('public')->delete($old);
+            }
+        }
+
+        $ext      = $request->file('favicon')->extension();
+        $filename = 'portal/portal-favicon.' . $ext;
+        Storage::disk('public')->putFileAs('portal', $request->file('favicon'), 'portal-favicon.' . $ext);
+        file_put_contents($metaFile, $filename);
+
+        return redirect()->route('settings.index')->with('success', 'Favicon updated.');
     }
 
     public function updateCapacityOverride(Request $request): RedirectResponse

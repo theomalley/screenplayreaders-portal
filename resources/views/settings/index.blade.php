@@ -82,6 +82,38 @@
                 </form>
             </div>
 
+            {{-- Favicon --}}
+            <div x-data="{ preview: null, existing: @js($faviconUrl) }"
+                 class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Favicon</h3>
+                <p class="text-xs text-gray-500 mb-4">Browser tab icon for the portal. PNG recommended (32×32 or 64×64).</p>
+
+                <div class="mb-5">
+                    <img x-show="preview || existing"
+                         :src="preview || existing"
+                         alt="Favicon preview"
+                         class="w-8 h-8 object-contain rounded border border-gray-200 bg-gray-50">
+                    <p x-show="!preview && !existing" class="text-sm text-gray-400">No favicon uploaded yet — browser will use its default.</p>
+                </div>
+
+                <form method="POST" action="{{ route('settings.favicon') }}" enctype="multipart/form-data"
+                      class="flex items-end gap-3">
+                    @csrf
+                    <div class="flex-1">
+                        <x-input-label for="favicon" :value="__('Choose file')" />
+                        <input id="favicon" name="favicon" type="file" accept="image/png,image/x-icon,image/svg+xml,image/webp"
+                               @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
+                               class="mt-1 block w-full text-sm text-gray-500
+                                      file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
+                                      file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
+                                      hover:file:bg-gray-200 cursor-pointer">
+                        <x-input-error class="mt-1" :messages="$errors->get('favicon')" />
+                        <p class="mt-1 text-xs text-gray-400">PNG, ICO, SVG, or WebP · max 512 KB</p>
+                    </div>
+                    <x-primary-button>Upload</x-primary-button>
+                </form>
+            </div>
+
             {{-- Reader Capacity Override --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Reader Capacity Override</h3>
