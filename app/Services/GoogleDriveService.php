@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-24 | Add deleteFile for assignment cleanup on destroy.
 // v1.3 — 2026-05-22 | Remove public Drive permissions on upload; add downloadContents for portal proxy; revokePublicAccess on replace.
 // v1.2 — 2026-05-21 | Add supportsAllDrives to all API calls — required for Shared Drive usage.
 // v1.1 — 2026-05-19 | Full Drive implementation — upload script, view/download links, file replace.
@@ -162,6 +163,19 @@ class GoogleDriveService
     /**
      * Strip the first page from a Drive PDF, re-upload in place, return same file ID.
      */
+    /**
+     * Permanently delete a file or Google Doc from Drive.
+     * Safe to call with a null/empty ID — does nothing.
+     */
+    public function deleteFile(?string $fileId): void
+    {
+        if (! $fileId) {
+            return;
+        }
+
+        $this->drive->files->delete($fileId, ['supportsAllDrives' => true]);
+    }
+
     public function removeTitlePage(string $fileId): string
     {
         return $this->deletePages($fileId, [1]);

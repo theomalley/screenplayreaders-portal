@@ -502,6 +502,25 @@ class AssignmentController extends Controller
     {
         $this->authorize('delete', $assignment);
 
+        $drive   = new GoogleDriveService();
+        $fileIds = array_filter([
+            $assignment->drive_script_file_id,
+            $assignment->drive_coverage_doc_id,
+            $assignment->drive_coverage_pdf_id,
+        ]);
+
+        foreach ($fileIds as $fileId) {
+            try {
+                $drive->deleteFile($fileId);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Drive file deletion failed on assignment destroy', [
+                    'assignment_id' => $assignment->id,
+                    'file_id'       => $fileId,
+                    'error'         => $e->getMessage(),
+                ]);
+            }
+        }
+
         $assignment->delete();
 
         return redirect()->route('assignments.index')->with('success', 'Assignment deleted.');
