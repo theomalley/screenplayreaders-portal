@@ -26,9 +26,17 @@ class AssignmentController extends Controller
         $user = auth()->user();
 
         if ($user->canManageAssignments()) {
+            $formattingTypes = ['formatting', 'proofreading'];
+
             $assignments = Assignment::with(['assignedReader.readerProfile', 'requestedReader.readerProfile'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
+                ->whereNotIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'asc')
+                ->get();
+
+            $formatting = Assignment::where('status', '!=', Assignment::STATUS_COMPLETED)
+                ->whereIn('assignment_type', $formattingTypes)
+                ->orderBy('created_at', 'desc')
                 ->get();
 
             $readers = User::where('role', 'reader')
@@ -39,6 +47,7 @@ class AssignmentController extends Controller
             return view('assignments.index', [
                 'canManage'   => true,
                 'assignments' => $assignments,
+                'formatting'  => $formatting,
                 'readers'     => $readers,
             ]);
         }

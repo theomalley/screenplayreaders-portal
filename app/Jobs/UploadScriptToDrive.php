@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-24 | Skip DOCX→PDF conversion for formatting/proofreading — formatter needs editable file.
 // v1.3 — 2026-05-24 | DOCX→PDF conversion via Drive import/export before upload.
 // v1.2 — 2026-05-22 | Explicit local-disk path resolution; pre-flight file-exists check.
 // v1.1 — 2026-05-22 | Use FilenameGenerator for Drive filename; update all sibling assignments;
@@ -39,10 +40,13 @@ class UploadScriptToDrive implements ShouldQueue
             return;
         }
 
-        $uploadPath  = $fullPath;
+        $uploadPath   = $fullPath;
         $convertedPdf = null;
 
-        if (str_ends_with(strtolower($this->storagePath), '.docx')) {
+        $isDocx              = str_ends_with(strtolower($this->storagePath), '.docx');
+        $isFormattingOrder   = in_array($assignment->assignment_type, ['formatting', 'proofreading']);
+
+        if ($isDocx && ! $isFormattingOrder) {
             Log::info('UploadScriptToDrive: converting DOCX to PDF via Drive', [
                 'order_number' => $assignment->order_number,
             ]);

@@ -484,6 +484,60 @@
                     </div>
                 @endif
 
+            {{-- ===== FORMATTING / PROOFREADING SECTION (admin only) ===== --}}
+            @if ($formatting->isNotEmpty())
+                <div class="mt-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Formatting / Proofreading</h3>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                @foreach ($formatting as $assignment)
+                                    @php
+                                        $diff        = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                        $ageStr      = $diff
+                                            ? ($diff->days >= 1
+                                                ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                            : '—';
+                                        $ageTitle    = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $typeLabel   = $assignment->assignment_type === 'formatting' ? 'Formatting' : 'Proofreading';
+                                        $downloadUrl = $assignment->drive_script_file_id
+                                            ? 'https://drive.google.com/uc?export=download&id=' . $assignment->drive_script_file_id
+                                            : null;
+                                    @endphp
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
+                                        <td class="px-3 py-3">
+                                            @if ($downloadUrl)
+                                                <a href="{{ $downloadUrl }}"
+                                                   class="font-medium text-gray-900 hover:text-indigo-600">{{ $assignment->script_title }}</a>
+                                            @else
+                                                <span class="font-medium text-gray-400" title="File upload pending">{{ $assignment->script_title }}</span>
+                                            @endif
+                                            <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                        </td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap">
+                                            <span class="text-xs text-gray-400">Standard</span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
             {{-- ===== READER VIEW ===== --}}
             @else
                 <div x-data="{ tab: 'all' }"
