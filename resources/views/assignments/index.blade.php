@@ -52,7 +52,7 @@
                                     $rProfile  = $reader->readerProfile;
                                     $rInitials = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                                     $rActive   = $reader->assignments->count();
-                                    $rMax      = $rProfile?->max_concurrent_assignments ?? 0;
+                                    $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
                                     $rFull     = $rMax > 0 && $rActive >= $rMax;
                                     $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                                 @endphp
@@ -90,7 +90,7 @@
                                 $rProfile  = $reader->readerProfile;
                                 $rInitials = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                                 $rActive   = $reader->assignments->count();
-                                $rMax      = $rProfile?->max_concurrent_assignments ?? 0;
+                                $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
                                 $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                             @endphp
                             <div x-show="activeReader === {{ $reader->id }}" x-cloak

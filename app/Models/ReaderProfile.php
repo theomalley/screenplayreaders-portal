@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-24 | isAtCapacity() respects global capacity_override setting.
 // v1.2 — 2026-05-24 | Add upload_warning field (customer-facing per-reader message on upload form)
 // v1.1 — 2026-05-24 | Add availability + availability_message fields
 // v1.0 — 2026-05-16 | Initial scaffold: reader profile linked 1:1 to users
@@ -9,6 +10,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Setting;
 
 class ReaderProfile extends Model
 {
@@ -59,9 +61,12 @@ class ReaderProfile extends Model
 
     public function isAtCapacity(): bool
     {
+        $override = (int) Setting::getValue('capacity_override', 0);
+        $max = $override > 0 ? $override : (int) $this->max_concurrent_assignments;
+
         return $this->user->assignments()
                           ->where('status', Assignment::STATUS_ASSIGNED)
-                          ->count() >= $this->max_concurrent_assignments;
+                          ->count() >= $max;
     }
 
     public function displayName(): string

@@ -45,10 +45,11 @@ class AssignmentController extends Controller
                 ->get();
 
             return view('assignments.index', [
-                'canManage'   => true,
-                'assignments' => $assignments,
-                'formatting'  => $formatting,
-                'readers'     => $readers,
+                'canManage'        => true,
+                'assignments'      => $assignments,
+                'formatting'       => $formatting,
+                'readers'          => $readers,
+                'capacityOverride' => (int) Setting::getValue('capacity_override', 0),
             ]);
         }
 

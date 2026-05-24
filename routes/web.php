@@ -67,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/login-logo', [SettingController::class, 'uploadLoginLogo'])->name('settings.login-logo');
     Route::get('/settings/coverage-success', [SettingController::class, 'editCoverageSuccess'])->name('settings.coverage-success');
     Route::patch('/settings/coverage-success', [SettingController::class, 'updateCoverageSuccess'])->name('settings.coverage-success.update');
+    Route::patch('/settings/capacity-override', [SettingController::class, 'updateCapacityOverride'])->name('settings.capacity-override');
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');

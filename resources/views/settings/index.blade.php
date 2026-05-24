@@ -82,6 +82,45 @@
                 </form>
             </div>
 
+            {{-- Reader Capacity Override --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Reader Capacity Override</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Set a single concurrent-assignment cap that applies to <strong>all readers</strong>, overriding their individual limits.
+                    Leave blank (or set to 0) to use each reader's own setting.
+                </p>
+
+                @if ($capacityOverride > 0)
+                    <div class="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Override active — all readers capped at <strong class="mx-0.5">{{ $capacityOverride }}</strong> assignment{{ $capacityOverride === 1 ? '' : 's' }}.
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('settings.capacity-override') }}" class="flex items-end gap-3">
+                    @csrf
+                    @method('PATCH')
+                    <div>
+                        <x-input-label for="capacity_override" value="Max concurrent assignments (all readers)" />
+                        <input type="number" id="capacity_override" name="capacity_override"
+                               min="0" max="99" step="1"
+                               value="{{ $capacityOverride > 0 ? $capacityOverride : '' }}"
+                               placeholder="e.g. 3"
+                               class="mt-1 block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error class="mt-1" :messages="$errors->get('capacity_override')" />
+                    </div>
+                    <x-primary-button>Save</x-primary-button>
+                    @if ($capacityOverride > 0)
+                        <button type="submit" name="capacity_override" value="0"
+                                class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                            Clear override
+                        </button>
+                    @endif
+                </form>
+            </div>
+
         </div>
     </div>
 </x-app-layout>
