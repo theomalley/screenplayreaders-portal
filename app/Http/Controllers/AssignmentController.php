@@ -310,7 +310,18 @@ class AssignmentController extends Controller
         $user   = auth()->user();
         $fileId = $assignment->drive_script_file_id;
 
-        // Admins see the coverage PDF in the viewer when one exists; readers see the script.
+        // Admins viewing a completed order get the N-up coverage layout.
+        $isMultiReader = false;
+        $siblings      = collect();
+        if ($user->isAdminOrEditor() && $assignment->status === Assignment::STATUS_COMPLETED) {
+            $siblings = Assignment::where('order_number', $assignment->order_number)
+                ->with(['assignedReader.readerProfile'])
+                ->orderBy('id')
+                ->get();
+            $isMultiReader = $siblings->count() > 1;
+        }
+
+        // Single-viewer fallback vars (used when isMultiReader is false).
         if ($user->isAdminOrEditor() && $assignment->drive_coverage_pdf_id) {
             $viewLink    = route('assignments.streamCoverage', $assignment);
             $viewerLabel = 'Coverage';
@@ -323,7 +334,10 @@ class AssignmentController extends Controller
             $dlLabel     = 'Download Script';
         }
 
-        return view('assignments.show', compact('assignment', 'viewLink', 'viewerLabel', 'dlUrl', 'dlLabel'));
+        return view('assignments.show', compact(
+            'assignment', 'viewLink', 'viewerLabel', 'dlUrl', 'dlLabel',
+            'isMultiReader', 'siblings'
+        ));
     }
 
     public function streamScript(Assignment $assignment, GoogleDriveService $drive)

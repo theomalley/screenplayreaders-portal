@@ -78,17 +78,6 @@
                                         @endif
                                     </td>
 
-                                    {{-- GoBack draft status --}}
-                                    <td class="px-4 py-3 text-center">
-                                        @if($draftSent)
-                                            <svg class="w-5 h-5 text-green-500 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="HelpScout draft created">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                        @else
-                                            <span class="text-gray-300 text-xs">—</span>
-                                        @endif
-                                    </td>
-
                                     {{-- Coverage links — one per completed reader --}}
                                     <td class="px-4 py-3">
                                         <div class="flex flex-wrap gap-2">
@@ -126,6 +115,17 @@
                                                 @endif
                                             @endforeach
                                         </div>
+                                    </td>
+
+                                    {{-- GoBack draft status --}}
+                                    <td class="px-4 py-3 text-center">
+                                        @if($draftSent)
+                                            <svg class="w-5 h-5 text-green-500 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="HelpScout draft created">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        @else
+                                            <span class="text-gray-300 text-xs">—</span>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

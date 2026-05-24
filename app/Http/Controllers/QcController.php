@@ -1,5 +1,7 @@
 <?php
 
+// v1.3 — 2026-05-24 | draftAll: create draft with all available coverage PDFs for an order
+//                     (used from assignment show page for early sends on multi-reader orders).
 // v1.2 — 2026-05-24 | Auto-draft fires when all sibling docs exist (generates missing PDFs inline);
 //                     draftNow no longer requires PDF pre-existing; helpscout_draft_sent_at stamped
 //                     on all siblings after successful draft; error messages surfaced to flash.
@@ -161,6 +163,51 @@ class QcController extends Controller
         }
     }
 
+    /**
+     * Create a HelpScout draft with all available coverage PDFs for the order.
+     * Generates any missing PDFs inline. Used from the assignment show page so admins
+     * can send partial coverage (e.g. one of two readers) without waiting for all readers.
+     */
+    public function draftAll(Assignment $assignment)
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $siblings = Assignment::where('order_number', $assignment->order_number)
+            ->with(['assignedReader.readerProfile'])
+            ->whereNotNull('drive_coverage_doc_id')
+            ->get();
+
+        if ($siblings->isEmpty()) {
+            return back()->with('error', 'No coverage docs found for this order.');
+        }
+
+        foreach ($siblings as $sibling) {
+            if (! $sibling->drive_coverage_pdf_id) {
+                try {
+                    $pdfId = $this->generatePdfForAssignment($sibling);
+                    $sibling->update(['drive_coverage_pdf_id' => $pdfId]);
+                    $sibling->refresh();
+                } catch (\Throwable $e) {
+                    Log::error('draftAll PDF generation failed', [
+                        'assignment_id' => $sibling->id,
+                        'error'         => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        try {
+            $this->buildHelpScoutDraft($siblings->all());
+            return back()->with('success', 'HelpScout draft created with all available coverage PDFs.');
+        } catch (\Throwable $e) {
+            Log::error('HelpScout draftAll failed', [
+                'order_number' => $assignment->order_number,
+                'error'        => $e->getMessage(),
+            ]);
+            return back()->with('error', 'HelpScout draft could not be created: ' . $e->getMessage());
+        }
+    }
+
     // -------------------------------------------------------------------------
 
     private function generatePdfForAssignment(Assignment $assignment): string
@@ -238,10 +285,9 @@ class QcController extends Controller
             $attachments
         );
 
-        $sentAt = now();
-        foreach ($assignments as $a) {
-            $a->update(['helpscout_draft_sent_at' => $sentAt]);
-        }
+        // Stamp all siblings for this order so the archive GoBack column shows ✓
+        Assignment::where('order_number', $orderNumber)
+            ->update(['helpscout_draft_sent_at' => now()]);
 
         Log::info('HelpScout draft created', [
             'order_number'    => $orderNumber,
