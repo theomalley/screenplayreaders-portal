@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-05-24 | Consolidate permissions, filenames, coverage-success into settings index.
 // v1.6 — 2026-05-24 | Add favicon upload.
 // v1.5 — 2026-05-24 | Use MIME-derived extension for logo uploads; add image type allowlist.
 // v1.4 — 2026-05-24 | Global capacity override setting.
@@ -11,6 +12,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Support\FilenameGenerator;
+use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +36,16 @@ class SettingController extends Controller
         $faviconMetaFile = storage_path('app/portal-favicon-path.txt');
         $faviconUrl      = is_readable($faviconMetaFile) ? asset('storage/' . trim(file_get_contents($faviconMetaFile))) : null;
 
-        return view('settings.index', compact('logoUrl', 'loginLogoUrl', 'capacityOverride', 'faviconUrl'));
+        $isAdmin              = auth()->user()->isAdmin();
+        $permissionsGrid      = $isAdmin ? Permission::all() : null;
+        $filenameSuffixes     = $isAdmin ? FilenameGenerator::allSuffixes() : null;
+        $coverageSuccessHtml  = $isAdmin ? Setting::getValue('coverage_success_html', '') : null;
+
+        return view('settings.index', compact(
+            'logoUrl', 'loginLogoUrl', 'faviconUrl',
+            'capacityOverride',
+            'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
+        ));
     }
 
     public function uploadLogo(Request $request): RedirectResponse
