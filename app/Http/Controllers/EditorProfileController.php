@@ -1,5 +1,6 @@
 <?php
 
+// v1.0.1 — 2026-05-24 | Force redeploy with editor_profiles migration.
 // v1.0 — 2026-05-24 | CRUD for editor accounts and profiles — admin only.
 
 namespace App\Http\Controllers;
