@@ -262,9 +262,8 @@ class QcController extends Controller
             }
 
             $a->loadMissing('assignedReader.readerProfile');
-            $initials = $a->assignedReader?->readerProfile?->initials ?? 'coverage';
-            $filename = $a->script_title . ' - ' . $initials . '.pdf';
-            $filename = preg_replace('/[^\w\s\-.]/', '', $filename);
+            $initials = $a->assignedReader?->readerProfile?->initials ?? null;
+            $filename = FilenameGenerator::coveragePdf($a, $initials);
 
             $bytes = $drive->downloadContents($a->drive_coverage_pdf_id);
 
