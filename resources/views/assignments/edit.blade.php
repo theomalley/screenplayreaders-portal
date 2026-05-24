@@ -31,7 +31,6 @@
                           requestedReaders: ['{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}', '', ''],
                           overrideRate: true,
                           updatePayDisplay() {
-                              if (this.overrideRate) return;
                               const r = window._srRates;
                               const map = {
                                   sr: {
@@ -46,13 +45,53 @@
                                       development_notes: r.rate_wd_development_notes,
                                   },
                               };
+                              const typeLabels = {
+                                  script_coverage:   'Script Coverage',
+                                  notes_only:        'Notes-Only',
+                                  deep_dive:         'Deep-Dive Dev Notes',
+                                  short:             'Short Coverage',
+                                  budget:            'Budget Coverage',
+                                  coverage:          'WD Coverage',
+                                  development_notes: 'WD Dev Notes',
+                              };
                               const oversized121 = { sr: r.rate_sr_oversized_121_160, wd: r.rate_wd_oversized_121_160 };
-                              const el     = document.getElementById('pay_rate_display');
-                              const hidden = document.getElementById('pay_rate_hidden');
+                              const el        = document.getElementById('pay_rate_display');
+                              const hidden    = document.getElementById('pay_rate_hidden');
+                              const breakdown = document.getElementById('pay_rate_breakdown');
+                              if (breakdown) breakdown.textContent = '';
+
+                              const pages   = parseInt(this.pageCount, 10);
+                              const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
+                              const hasReq  = !!this.requestedReaders[0];
+
+                              // Build breakdown parts (always, regardless of override mode)
+                              if (this.assignmentType && !(this.vendor === 'sr' && this.assignmentType === 'book')) {
+                                  const base = (map[this.vendor] || {})[this.assignmentType];
+                                  if (base !== undefined && breakdown) {
+                                      const parts = [typeLabels[this.assignmentType] + ' $' + parseFloat(base).toFixed(2)];
+                                      if (!isNaN(pages)) {
+                                          if (pages >= 121 && pages <= 160) {
+                                              const fee = parseFloat(oversized121[this.vendor] || 0);
+                                              if (fee) parts.push('Oversized 121–160pp $' + fee.toFixed(2));
+                                          } else if (pages >= 161) {
+                                              const fee = parseFloat(this.customOversizedFee);
+                                              if (!isNaN(fee) && fee > 0) parts.push('Oversized 161+pp $' + fee.toFixed(2));
+                                          }
+                                      }
+                                      if (this.rush) {
+                                          const fee = parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
+                                          if (fee) parts.push('Rush $' + fee.toFixed(2));
+                                      }
+                                      if (hasReq && reqRate) parts.push('Reader Request $' + reqRate.toFixed(2));
+                                      if (parts.length > 1) breakdown.textContent = parts.join(' + ');
+                                  }
+                              }
+
+                              // Update display and hidden value only when not in override mode
+                              if (this.overrideRate) return;
                               if (!el) return;
 
                               let sharedMod = 0;
-                              const pages = parseInt(this.pageCount, 10);
                               if (!isNaN(pages)) {
                                   if (pages >= 121 && pages <= 160) {
                                       sharedMod += parseFloat(oversized121[this.vendor] || 0);
@@ -63,9 +102,6 @@
                               }
                               if (this.rush)
                                   sharedMod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
-
-                              const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
-                              const hasReq  = !!this.requestedReaders[0];
 
                               if (!this.assignmentType) {
                                   el.textContent = '—';
@@ -302,6 +338,7 @@
                                 class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
                             <label for="override_rate" class="text-xs text-gray-500 cursor-pointer select-none">Override pay rate</label>
                         </div>
+                        <p id="pay_rate_breakdown" class="mt-1.5 text-xs text-gray-400 leading-snug"></p>
                     </div>
 
                     {{-- Assignment Details --}}
