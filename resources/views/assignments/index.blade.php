@@ -1135,24 +1135,14 @@
                     },
 
                     handleWheel(e) {
-                        const wrap = this.$refs.canvasWrap;
-                        if (!wrap || this.loading) return;
-                        if (e.deltaY > 0) {
-                            const atBottom = wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10;
-                            if (atBottom && this.currentPage < this.totalPages) {
-                                e.preventDefault();
-                                if (wheelTimer) return;
-                                wheelTimer = setTimeout(() => { wheelTimer = null; }, 600);
-                                this.nextPage();
-                            }
-                        } else if (e.deltaY < 0) {
-                            const atTop = wrap.scrollTop <= 10;
-                            if (atTop && this.currentPage > 1) {
-                                e.preventDefault();
-                                if (wheelTimer) return;
-                                wheelTimer = setTimeout(() => { wheelTimer = null; }, 600);
-                                this.prevPage();
-                            }
+                        e.preventDefault();
+                        if (this.loading || wheelTimer) return;
+                        if (e.deltaY > 0 && this.currentPage < this.totalPages) {
+                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 200);
+                            this.nextPage();
+                        } else if (e.deltaY < 0 && this.currentPage > 1) {
+                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 200);
+                            this.prevPage();
                         }
                     },
                 };
