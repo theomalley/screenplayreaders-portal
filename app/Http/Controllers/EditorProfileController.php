@@ -1,5 +1,6 @@
 <?php
 
+// v1.0.2 — 2026-05-24 | Add MIME allowlist to photo upload.
 // v1.0.1 — 2026-05-24 | Force redeploy with editor_profiles migration.
 // v1.0 — 2026-05-24 | CRUD for editor accounts and profiles — admin only.
 
@@ -95,7 +96,7 @@ class EditorProfileController extends Controller
             'first_name'           => ['required', 'string', 'max:100'],
             'last_name'            => ['required', 'string', 'max:100'],
             'paypal_email'         => ['nullable', 'email', 'max:255'],
-            'photo'                => ['nullable', 'image', 'max:4096'],
+            'photo'                => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'email'                => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password'             => ['nullable', 'string', 'min:8', 'confirmed'],
             'availability'         => ['required', 'in:available,unavailable'],

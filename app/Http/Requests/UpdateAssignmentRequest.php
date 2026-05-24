@@ -28,7 +28,7 @@ class UpdateAssignmentRequest extends FormRequest
         return [
             'order_number'         => ['required', 'string', 'max:50'],
             'vendor'               => ['required', 'in:sr,wd'],
-            'assignment_type'      => ['nullable', 'string'],
+            'assignment_type'      => ['nullable', 'in:script_coverage,notes_only,deep_dive,short,budget,book,coverage,development_notes,formatting,proofreading'],
             'script_title'    => ['required', 'string', 'max:255'],
             'writer_name'     => ['required', 'string', 'max:255'],
             'page_count'      => ['required', 'integer', 'min:1', 'max:9999'],

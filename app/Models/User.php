@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-24 | Remove dead isWriter() and isProducer() role helpers.
 // v1.2 — 2026-05-24 | Add last_seen_at tracking and isOnline() helper.
 // v1.1 — 2026-05-24 | Add editorProfile() relationship.
 // v1.0 — 2026-05-16 | Initial scaffold: role enum, reader profile + assignment relationships
@@ -57,8 +58,6 @@ class User extends Authenticatable
     public function isAdmin(): bool          { return $this->role === 'admin'; }
     public function isEditor(): bool         { return $this->role === 'editor'; }
     public function isReader(): bool         { return $this->role === 'reader'; }
-    public function isWriter(): bool         { return $this->role === 'writer'; }
-    public function isProducer(): bool       { return $this->role === 'producer'; }
     public function isAdminOrEditor(): bool  { return $this->hasAnyRole(['admin', 'editor']); }
 
     // Admin and editor have the same assignment-management privileges

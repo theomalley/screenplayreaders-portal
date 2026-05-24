@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-24 | Add MIME allowlist to photo upload; delete photo file on reader destroy.
 // v1.2 — 2026-05-24 | Add availability + availability_message to store/update
 // v1.1 — 2026-05-18 | Full CRUD: index, create, store, edit, update, destroy
 
@@ -97,7 +98,7 @@ class ReaderProfileController extends Controller
             'last_name'                  => ['required', 'string', 'max:100'],
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
-            'photo'                      => ['nullable', 'image', 'max:4096'],
+            'photo'                      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'email'                      => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password'                   => ['nullable', 'string', 'min:8', 'confirmed'],
             'availability'               => ['required', 'in:available,unavailable'],
@@ -139,6 +140,10 @@ class ReaderProfileController extends Controller
 
         if ($user->assignments()->where('status', Assignment::STATUS_ASSIGNED)->exists()) {
             return back()->with('error', 'Cannot delete a reader with active assignments.');
+        }
+
+        if ($user->readerProfile?->photo) {
+            Storage::disk('public')->delete($user->readerProfile->photo);
         }
 
         $user->delete();

@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-24 | Use MIME-derived extension for logo uploads; add image type allowlist.
 // v1.4 — 2026-05-24 | Global capacity override setting.
 // v1.3 — 2026-05-24 | Coverage submission success page: admin-editable custom HTML
 // v1.2 — 2026-05-23 | Separate login logo upload; nav logo no longer clickable
@@ -35,7 +36,7 @@ class SettingController extends Controller
     {
         abort_unless(auth()->user()->canManageAssignments(), 403);
 
-        $request->validate(['logo' => 'required|image|max:4096']);
+        $request->validate(['logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:4096']);
 
         $metaFile = storage_path('app/portal-logo-path.txt');
 
@@ -46,7 +47,7 @@ class SettingController extends Controller
             }
         }
 
-        $ext = strtolower($request->file('logo')->getClientOriginalExtension());
+        $ext      = $request->file('logo')->extension();
         $filename = 'portal/portal-logo.' . $ext;
         Storage::disk('public')->putFileAs('portal', $request->file('logo'), 'portal-logo.' . $ext);
         file_put_contents($metaFile, $filename);
@@ -58,7 +59,7 @@ class SettingController extends Controller
     {
         abort_unless(auth()->user()->canManageAssignments(), 403);
 
-        $request->validate(['login_logo' => 'required|image|max:4096']);
+        $request->validate(['login_logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:4096']);
 
         $metaFile = storage_path('app/portal-login-logo-path.txt');
 
@@ -69,7 +70,7 @@ class SettingController extends Controller
             }
         }
 
-        $ext = strtolower($request->file('login_logo')->getClientOriginalExtension());
+        $ext      = $request->file('login_logo')->extension();
         $filename = 'portal/portal-login-logo.' . $ext;
         Storage::disk('public')->putFileAs('portal', $request->file('login_logo'), 'portal-login-logo.' . $ext);
         file_put_contents($metaFile, $filename);

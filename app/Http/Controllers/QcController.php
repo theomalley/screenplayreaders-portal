@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-24 | Standardize draftAll() auth to Permission::check('qc').
 // v1.3 — 2026-05-24 | draftAll: create draft with all available coverage PDFs for an order
 //                     (used from assignment show page for early sends on multi-reader orders).
 // v1.2 — 2026-05-24 | Auto-draft fires when all sibling docs exist (generates missing PDFs inline);
@@ -170,7 +171,7 @@ class QcController extends Controller
      */
     public function draftAll(Assignment $assignment)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless(Permission::check('qc'), 403);
 
         $siblings = Assignment::where('order_number', $assignment->order_number)
             ->with(['assignedReader.readerProfile'])

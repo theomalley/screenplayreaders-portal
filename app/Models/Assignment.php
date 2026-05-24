@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-24 | Remove dead isVisibleToReaders() and scopeForAdmin().
 // v1.3 — 2026-05-24 | Add helpscout_draft_sent_at to fillable and casts
 // v1.2 — 2026-05-17 | Replace author_first_initial/author_last_name with writer_name
 
@@ -12,14 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Assignment extends Model
 {
     // Status constants — use these everywhere instead of raw strings
-    const STATUS_INCOMING   = 'incoming';
-    const STATUS_UNASSIGNED = 'unassigned';
-    const STATUS_ASSIGNED   = 'assigned';
-    const STATUS_COMPLETED  = 'completed';
-    const STATUS_QC         = 'qc';
-    const STATUS_CANCELLED       = 'cancelled';
-    const STATUS_ON_HOLD_CUSTOMER = 'on_hold_customer';
-    const STATUS_ON_HOLD_SR      = 'on_hold_sr';
+    public const STATUS_INCOMING        = 'incoming';
+    public const STATUS_UNASSIGNED      = 'unassigned';
+    public const STATUS_ASSIGNED        = 'assigned';
+    public const STATUS_COMPLETED       = 'completed';
+    public const STATUS_QC              = 'qc';
+    public const STATUS_CANCELLED       = 'cancelled';
+    public const STATUS_ON_HOLD_CUSTOMER = 'on_hold_customer';
+    public const STATUS_ON_HOLD_SR      = 'on_hold_sr';
 
     protected $fillable = [
         'order_number',
@@ -63,11 +64,6 @@ class Assignment extends Model
 
     // --- Status helpers ---
 
-    public function isVisibleToReaders(): bool
-    {
-        return $this->status === self::STATUS_UNASSIGNED;
-    }
-
     public function isAvailable(): bool
     {
         return $this->status === self::STATUS_UNASSIGNED;
@@ -100,12 +96,6 @@ class Assignment extends Model
                 $q->whereNull('requested_reader_id')
                   ->orWhere('requested_reader_id', $userId);
             });
-    }
-
-    /** All assignments visible to admin/editor */
-    public function scopeForAdmin($query)
-    {
-        return $query->whereNotIn('status', [self::STATUS_INCOMING]);
     }
 
     /** A reader's own active assignments */
