@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-24 | Add helpscout_draft_sent_at to fillable and casts
 // v1.2 — 2026-05-17 | Replace author_first_initial/author_last_name with writer_name
 
 namespace App\Models;
@@ -43,6 +44,7 @@ class Assignment extends Model
         'accepted_at',
         'submitted_at',
         'completed_at',
+        'helpscout_draft_sent_at',
     ];
 
     protected function casts(): array
@@ -54,7 +56,8 @@ class Assignment extends Model
             'unassigned_at'  => 'datetime',
             'accepted_at'    => 'datetime',
             'submitted_at'   => 'datetime',
-            'completed_at'   => 'datetime',
+            'completed_at'              => 'datetime',
+            'helpscout_draft_sent_at'   => 'datetime',
         ];
     }
 

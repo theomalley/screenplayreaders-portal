@@ -24,6 +24,16 @@
                 {{ session('success') }}
             </div>
         @endif
+        @if (session('error'))
+            <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
+                {{ session('error') }}
+            </div>
+        @endif
+        @if (session('warning'))
+            <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm">
+                {{ session('warning') }}
+            </div>
+        @endif
 
         {{-- Assignment details + admin actions --}}
         <div class="bg-white rounded-lg shadow px-5 py-4 text-sm text-gray-700 space-y-2 mb-6">

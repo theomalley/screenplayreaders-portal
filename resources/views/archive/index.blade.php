@@ -21,6 +21,7 @@
                                 <th class="px-4 py-3 text-left">Completed</th>
                                 <th class="px-4 py-3 text-left">Script</th>
                                 <th class="px-4 py-3 text-left">Coverage</th>
+                                <th class="px-4 py-3 text-center">GoBack</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -29,6 +30,7 @@
                                     $first       = $group->first();
                                     $latestDone  = $group->max(fn($a) => $a->completed_at?->timestamp ?? 0);
                                     $scriptId    = $group->firstWhere(fn($a) => !empty($a->drive_script_file_id))?->drive_script_file_id;
+                                    $draftSent   = $group->some(fn($a) => !empty($a->helpscout_draft_sent_at));
 
                                     $typeLabel = match($first->assignment_type) {
                                         'script_coverage'   => 'Script Coverage',
@@ -71,6 +73,17 @@
                                                 </svg>
                                                 Script
                                             </a>
+                                        @else
+                                            <span class="text-gray-300 text-xs">—</span>
+                                        @endif
+                                    </td>
+
+                                    {{-- GoBack draft status --}}
+                                    <td class="px-4 py-3 text-center">
+                                        @if($draftSent)
+                                            <svg class="w-5 h-5 text-green-500 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="HelpScout draft created">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                            </svg>
                                         @else
                                             <span class="text-gray-300 text-xs">—</span>
                                         @endif
