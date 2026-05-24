@@ -56,6 +56,15 @@
                                         <a href="{{ route('assignments.show', $first) }}"
                                            class="font-medium text-gray-800 hover:text-indigo-600">{{ $first->script_title }}</a>
                                         <div class="text-gray-400 text-xs">{{ $first->writer_name }}</div>
+                                        @if($scriptId)
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <a href="{{ route('assignments.streamScript', $first) }}" target="_blank"
+                                                   class="text-xs text-indigo-500 hover:text-indigo-700">View Script</a>
+                                                <span class="text-gray-300 text-xs">·</span>
+                                                <a href="https://drive.google.com/uc?export=download&id={{ $scriptId }}" target="_blank"
+                                                   class="text-xs text-indigo-500 hover:text-indigo-700">Download</a>
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">

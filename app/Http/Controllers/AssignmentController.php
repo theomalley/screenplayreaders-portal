@@ -229,7 +229,7 @@ class AssignmentController extends Controller
             ? 'Page ' . $pages[0] . ' removed.'
             : count($pages) . ' pages removed.';
 
-        return redirect()->route('assignments.edit', $assignment)->with('success', $label);
+        return redirect()->back()->with('success', $label);
     }
 
     public function uploadScript(Request $request, Assignment $assignment)

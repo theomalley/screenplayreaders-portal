@@ -33,6 +33,9 @@
                         <tbody class="divide-y divide-gray-100">
                             @foreach($assignments as $assignment)
                                 @php
+                                    $viewUrl   = $assignment->drive_script_file_id
+                                        ? route('assignments.streamScript', $assignment)
+                                        : null;
                                     $typeLabel = match($assignment->assignment_type) {
                                         'script_coverage' => 'Script Coverage',
                                         'notes_only'      => 'Notes-Only',
@@ -52,8 +55,39 @@
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
                                         {{ $assignment->order_number }}
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <div class="font-medium text-gray-800">{{ $assignment->script_title }}</div>
+                                    <td class="px-4 py-3" x-data="pdfViewer(@js($viewUrl))">
+                                        @if($viewUrl)
+                                            <button @click="openViewer()" type="button"
+                                                    class="font-medium text-gray-800 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                            <div x-show="open" x-cloak
+                                                 @keydown.escape.window="open = false"
+                                                 @keydown.arrow-right.window="if (open) nextPage()"
+                                                 @keydown.arrow-left.window="if (open) prevPage()"
+                                                 x-ref="modal"
+                                                 tabindex="-1"
+                                                 class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
+                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                    <div class="flex items-center gap-3 shrink-0">
+                                                        <div x-show="totalPages > 0" class="flex items-center gap-2">
+                                                            <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
+                                                                    class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
+                                                            <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
+                                                            <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
+                                                                    class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                        </div>
+                                                        <button @click="open = false" type="button"
+                                                                class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                    </div>
+                                                </div>
+                                                <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4" @wheel="handleWheel($event)">
+                                                    <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
+                                                    <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="font-medium text-gray-800">{{ $assignment->script_title }}</div>
+                                        @endif
                                         <div class="text-gray-400 text-xs">{{ $assignment->writer_name }}</div>
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
@@ -91,4 +125,102 @@
 
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('alpine:init', () => {
+        async function ensurePdfJs() {
+            if (window.pdfjsLib) return;
+            await new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+                s.onload = () => {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+                    resolve();
+                };
+                s.onerror = () => reject(new Error('PDF.js failed to load'));
+                document.head.appendChild(s);
+            });
+        }
+
+        Alpine.data('pdfViewer', (url) => {
+            let pdfDoc = null;
+            let wheelTimer = null;
+            return {
+                open: false,
+                url: url,
+                currentPage: 1,
+                totalPages: 0,
+                loading: false,
+
+                async openViewer() {
+                    this.open = true;
+                    await this.$nextTick();
+                    this.$refs.modal.focus();
+                    if (!pdfDoc) await this.loadPdf();
+                },
+
+                async loadPdf() {
+                    this.loading = true;
+                    try {
+                        await ensurePdfJs();
+                        pdfDoc = await pdfjsLib.getDocument({ url: this.url, withCredentials: true }).promise;
+                        this.totalPages = pdfDoc.numPages;
+                        await this.renderPage(1);
+                    } catch (e) {
+                        console.error('PDF load error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async renderPage(num) {
+                    if (!pdfDoc) return;
+                    this.loading = true;
+                    try {
+                        const page = await pdfDoc.getPage(num);
+                        const wrap = this.$refs.canvasWrap;
+                        const maxW = Math.max(wrap.clientWidth - 48, 200);
+                        const base = page.getViewport({ scale: 1 });
+                        const scale = Math.min(maxW / base.width, 2.0);
+                        const vp = page.getViewport({ scale });
+                        const canvas = this.$refs.canvas;
+                        canvas.width  = vp.width;
+                        canvas.height = vp.height;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                        this.currentPage = num;
+                        if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async prevPage() { if (this.currentPage > 1) await this.renderPage(this.currentPage - 1); },
+                async nextPage() { if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1); },
+
+                handleWheel(e) {
+                    const wrap = this.$refs.canvasWrap;
+                    if (!wrap || this.loading) return;
+                    if (e.deltaY > 0) {
+                        if (wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 10 && this.currentPage < this.totalPages) {
+                            e.preventDefault();
+                            if (wheelTimer) return;
+                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 600);
+                            this.nextPage();
+                        }
+                    } else if (e.deltaY < 0) {
+                        if (wrap.scrollTop <= 10 && this.currentPage > 1) {
+                            e.preventDefault();
+                            if (wheelTimer) return;
+                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 600);
+                            this.prevPage();
+                        }
+                    }
+                },
+            };
+        });
+    });
+    </script>
+    @endpush
 </x-app-layout>

@@ -257,6 +257,16 @@
                                                                 <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
                                                                         class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
                                                             </div>
+                                                            <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
+                                                                  x-show="totalPages > 0"
+                                                                  @submit="return confirm('Remove page ' + currentPage + ' from the script?')">
+                                                                @csrf
+                                                                <input type="hidden" name="pages" :value="currentPage" />
+                                                                <button type="submit" :disabled="loading"
+                                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white disabled:opacity-40 whitespace-nowrap">
+                                                                    Remove p.<span x-text="currentPage"></span>
+                                                                </button>
+                                                            </form>
                                                             <button @click="open = false" type="button"
                                                                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                         </div>
