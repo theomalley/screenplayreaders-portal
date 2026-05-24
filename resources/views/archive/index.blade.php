@@ -92,30 +92,108 @@
                                         <div class="flex flex-wrap gap-2">
                                             @foreach($group as $assignment)
                                                 @php
-                                                    $initials = $assignment->assignedReader?->readerProfile?->initials ?? '?';
-                                                    $pdfId    = $assignment->drive_coverage_pdf_id;
-                                                    $docId    = $assignment->drive_coverage_doc_id;
+                                                    $initials            = $assignment->assignedReader?->readerProfile?->initials ?? '?';
+                                                    $pdfId               = $assignment->drive_coverage_pdf_id;
+                                                    $docId               = $assignment->drive_coverage_doc_id;
+                                                    $coverageStreamUrl   = $pdfId ? route('assignments.streamCoverage', $assignment) : null;
+                                                    $coverageDownloadUrl = $pdfId ? "https://drive.google.com/uc?export=download&id={$pdfId}" : null;
                                                 @endphp
-                                                @if($pdfId)
-                                                    <a href="https://drive.google.com/file/d/{{ $pdfId }}/view"
-                                                       target="_blank"
-                                                       title="{{ $initials }} — Coverage PDF"
-                                                       class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100">
-                                                        {{ $initials }}
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                                        </svg>
-                                                    </a>
-                                                @elseif($docId)
-                                                    <a href="https://docs.google.com/document/d/{{ $docId }}/view"
-                                                       target="_blank"
-                                                       title="{{ $initials }} — Coverage Doc (no PDF)"
-                                                       class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
-                                                        {{ $initials }}
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                                        </svg>
-                                                    </a>
+                                                @if($pdfId || $docId)
+                                                    <div x-data="{ pdfOpen: false, editOpen: false }">
+
+                                                        {{-- Badge button --}}
+                                                        <button @click="pdfOpen = true" type="button"
+                                                                title="{{ $initials }} — {{ $pdfId ? 'Coverage PDF' : 'Coverage Doc (no PDF yet)' }}"
+                                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border hover:opacity-80 {{ $pdfId ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200' }}">
+                                                            {{ $initials }}
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                            </svg>
+                                                        </button>
+
+                                                        {{-- Coverage PDF modal --}}
+                                                        <div x-show="pdfOpen" x-cloak
+                                                             @keydown.escape.window="editOpen ? (editOpen = false) : (pdfOpen = false)"
+                                                             tabindex="-1"
+                                                             x-effect="if (pdfOpen && !editOpen) $nextTick(() => $el.focus())"
+                                                             class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                                                <span class="text-sm text-gray-200 font-medium truncate min-w-0">
+                                                                    {{ $first->script_title }} — {{ $initials }}
+                                                                </span>
+                                                                <div class="flex items-center gap-2 shrink-0">
+                                                                    @if($docId)
+                                                                        <button @click="editOpen = true" type="button"
+                                                                                class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-medium whitespace-nowrap">
+                                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                                            </svg>
+                                                                            Edit Doc
+                                                                        </button>
+                                                                        <form x-ref="regenForm" method="POST" action="{{ route('qc.regenerate-pdf', $assignment) }}">
+                                                                            @csrf
+                                                                            <button type="submit"
+                                                                                    class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-medium whitespace-nowrap">
+                                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                                                                </svg>
+                                                                                Regen PDF
+                                                                            </button>
+                                                                        </form>
+                                                                    @endif
+                                                                    @if($pdfId)
+                                                                        <a href="{{ $coverageDownloadUrl }}" target="_blank"
+                                                                           class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-medium whitespace-nowrap">
+                                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                                            </svg>
+                                                                            Download
+                                                                        </a>
+                                                                    @endif
+                                                                    <button @click="pdfOpen = false" type="button"
+                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                </div>
+                                                            </div>
+                                                            @if($pdfId)
+                                                                <iframe :src="pdfOpen ? @js($coverageStreamUrl) : ''"
+                                                                        class="flex-1 w-full border-0"
+                                                                        allowfullscreen></iframe>
+                                                            @else
+                                                                <div class="flex-1 flex items-center justify-center flex-col gap-2 text-center px-4">
+                                                                    <p class="text-gray-400 text-sm">No PDF generated yet.</p>
+                                                                    <p class="text-gray-500 text-xs">Edit the doc, then click <strong class="text-gray-300">Regen PDF</strong> to generate one.</p>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+
+                                                        {{-- Google Docs editing overlay (above PDF modal) --}}
+                                                        @if($docId)
+                                                            <div x-show="editOpen" x-cloak
+                                                                 class="fixed inset-0 z-[60] flex flex-col bg-white">
+                                                                <div class="flex items-center justify-between px-5 py-3 bg-indigo-700 text-white shrink-0 gap-3 flex-wrap">
+                                                                    <span class="font-semibold text-sm truncate min-w-0">
+                                                                        Editing: {{ $first->script_title }} — {{ $initials }}
+                                                                    </span>
+                                                                    <div class="flex items-center gap-3 shrink-0">
+                                                                        <button @click="editOpen = false" type="button"
+                                                                                class="text-sm text-indigo-200 hover:text-white transition-colors">
+                                                                            Cancel
+                                                                        </button>
+                                                                        <button @click="editOpen = false; $refs.regenForm.submit()" type="button"
+                                                                                class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold bg-green-500 hover:bg-green-400 text-white rounded-md transition-colors">
+                                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                                            </svg>
+                                                                            Done Editing — Generate New PDF
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                <iframe src="https://docs.google.com/document/d/{{ $docId }}/edit"
+                                                                        class="flex-1 w-full border-0"></iframe>
+                                                            </div>
+                                                        @endif
+
+                                                    </div>
                                                 @else
                                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400 border border-gray-200"
                                                           title="{{ $initials }} — No coverage doc">
