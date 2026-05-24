@@ -497,6 +497,7 @@
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
+                                    <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -529,6 +530,19 @@
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             <span class="text-xs text-gray-400">Standard</span>
+                                        </td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-right">
+                                            @can('delete', $assignment)
+                                                <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
+                                                      onsubmit="return confirm('Delete this assignment? This cannot be undone.')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @endforeach
