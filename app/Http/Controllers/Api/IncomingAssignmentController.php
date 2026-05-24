@@ -1,5 +1,7 @@
 <?php
 
+// v1.4 — 2026-05-24 | Preserve original file extension in stored filename so UploadScriptToDrive
+//                     gets the correct ext — store() guesses MIME-based ext (e.g. zip for .fadein).
 // v1.3 — 2026-05-22 | Inline pay rate computation, per-slot try/catch, service token logging.
 // v1.2 — 2026-05-22 | Multi-reader support, service token mapping, reader request resolution,
 //                     nullable page_count, idempotency guard.
@@ -18,6 +20,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class IncomingAssignmentController extends Controller
 {
@@ -119,9 +122,12 @@ class IncomingAssignmentController extends Controller
             return response()->json(['error' => 'All assignment creates failed.'], 500);
         }
 
-        // Stash the file and dispatch an async Drive upload (keyed to first assignment)
-        // Explicitly use the local disk so the queue worker always finds the file at storage_path('app/...')
-        $storagePath = $request->file('script')->store('incoming-scripts', 'local');
+        // Stash the file and dispatch an async Drive upload (keyed to first assignment).
+        // Use storeAs() with the client's original extension — store() uses guessExtension()
+        // which returns the MIME-based ext (e.g. 'zip' for .fadein) not the actual filename ext.
+        $clientExt   = strtolower($request->file('script')->getClientOriginalExtension());
+        $storageName = Str::random(40) . ($clientExt !== '' ? '.' . $clientExt : '');
+        $storagePath = $request->file('script')->storeAs('incoming-scripts', $storageName, 'local');
         if ($storagePath === false) {
             Log::error('IncomingAssignment: file store failed', ['order_number' => $data['order_number']]);
             return response()->json(['error' => 'File storage failed.'], 500);
