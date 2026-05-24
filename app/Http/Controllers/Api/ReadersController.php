@@ -20,7 +20,7 @@ class ReadersController extends Controller
         }
 
         $readers = User::where('role', 'reader')
-            ->with('readerProfile:user_id,initials,availability,availability_message')
+            ->with('readerProfile')
             ->get()
             ->filter(fn ($u) => $u->readerProfile !== null)
             ->map(fn ($u) => [
