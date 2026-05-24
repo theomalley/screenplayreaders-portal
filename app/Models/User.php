@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-24 | Add editorProfile() relationship.
 // v1.0 — 2026-05-16 | Initial scaffold: role enum, reader profile + assignment relationships
 
 namespace App\Models;
@@ -66,6 +67,11 @@ class User extends Authenticatable
     public function readerProfile(): HasOne
     {
         return $this->hasOne(ReaderProfile::class);
+    }
+
+    public function editorProfile(): HasOne
+    {
+        return $this->hasOne(EditorProfile::class);
     }
 
     /** Assignments this user has accepted as reader */

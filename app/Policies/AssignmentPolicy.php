@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-24 | submitCoverage allows admin/editor when they are the assigned user.
 // v1.0 — 2026-05-16 | Role-based access for assignments. All authz flows through here — no inline checks in controllers.
 
 namespace App\Policies;
@@ -60,12 +61,12 @@ class AssignmentPolicy
             && $assignment->assigned_reader_id === $user->id;
     }
 
-    /** Reader submitting coverage */
+    /** Reader or assigned admin/editor submitting coverage */
     public function submitCoverage(User $user, Assignment $assignment): bool
     {
-        return $user->isReader()
-            && $assignment->status === Assignment::STATUS_ASSIGNED
-            && $assignment->assigned_reader_id === $user->id;
+        return $assignment->status === Assignment::STATUS_ASSIGNED
+            && $assignment->assigned_reader_id === $user->id
+            && $user->hasAnyRole(['reader', 'admin', 'editor']);
     }
 
     /** Admin/editor QC and delivery actions */

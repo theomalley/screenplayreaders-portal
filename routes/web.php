@@ -10,6 +10,7 @@ use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QcController;
 use App\Http\Controllers\RatebookController;
+use App\Http\Controllers\EditorProfileController;
 use App\Http\Controllers\ReaderProfileController;
 use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
@@ -80,6 +81,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/draft-all', [QcController::class, 'draftAll'])->name('qc.draft-all');
 
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+
+    Route::get('/admin/editors', [EditorProfileController::class, 'index'])->name('admin.editors.index');
+    Route::get('/admin/editors/create', [EditorProfileController::class, 'create'])->name('admin.editors.create');
+    Route::post('/admin/editors', [EditorProfileController::class, 'store'])->name('admin.editors.store');
+    Route::get('/admin/editors/{user}/edit', [EditorProfileController::class, 'edit'])->name('admin.editors.edit');
+    Route::patch('/admin/editors/{user}', [EditorProfileController::class, 'update'])->name('admin.editors.update');
+    Route::delete('/admin/editors/{user}', [EditorProfileController::class, 'destroy'])->name('admin.editors.destroy');
 
     Route::get('/admin/permissions', [PermissionsController::class, 'index'])->name('admin.permissions');
     Route::post('/admin/permissions', [PermissionsController::class, 'update'])->name('admin.permissions.update');
