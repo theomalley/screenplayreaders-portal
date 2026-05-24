@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-24 | Add last_seen_at tracking and isOnline() helper.
 // v1.1 — 2026-05-24 | Add editorProfile() relationship.
 // v1.0 — 2026-05-16 | Initial scaffold: role enum, reader profile + assignment relationships
 
@@ -22,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'last_seen_at',
     ];
 
     protected $hidden = [
@@ -33,7 +35,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'last_seen_at'      => 'datetime',
+            'password'          => 'hashed',
         ];
     }
 
@@ -48,6 +51,8 @@ class User extends Authenticatable
     {
         return in_array($this->role, $roles, true);
     }
+
+    public function isOnline(): bool         { return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(5)); }
 
     public function isAdmin(): bool          { return $this->role === 'admin'; }
     public function isEditor(): bool         { return $this->role === 'editor'; }

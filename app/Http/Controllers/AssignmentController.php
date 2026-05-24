@@ -40,6 +40,11 @@ class AssignmentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
+            $editors = User::where('role', 'editor')
+                ->with(['editorProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
+                ->orderBy('name')
+                ->get();
+
             $readers = User::where('role', 'reader')
                 ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
                 ->orderBy('name')
@@ -49,6 +54,7 @@ class AssignmentController extends Controller
                 'canManage'        => true,
                 'assignments'      => $assignments,
                 'formatting'       => $formatting,
+                'editors'          => $editors,
                 'readers'          => $readers,
                 'assignableUsers'  => $this->assignableUsers(),
                 'capacityOverride' => (int) Setting::getValue('capacity_override', 0),

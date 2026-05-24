@@ -43,10 +43,53 @@
                 if (!document.querySelector('.fixed.inset-0.z-50:not([style*="display: none"])')) location.reload();
             }, 30000);</script>
 
-                {{-- Reader list panel --}}
-                @if ($readers->isNotEmpty())
-                    <div class="mb-5" x-data="{ activeReader: null }">
+                {{-- Staff panel: editors first, then readers --}}
+                @if ($editors->isNotEmpty() || $readers->isNotEmpty())
+                    <div class="mb-5" x-data="{ activeStaff: null }">
                         <div class="flex items-center gap-2 flex-wrap">
+
+                            {{-- Editors --}}
+                            @foreach ($editors as $editor)
+                                @php
+                                    $eProfile   = $editor->editorProfile;
+                                    $eInitials  = $eProfile?->initials ?? strtoupper(substr($editor->name, 0, 2));
+                                    $eActive    = $editor->assignments->count();
+                                    $ePhotoUrl  = $eProfile?->photo ? asset('storage/' . $eProfile->photo) : null;
+                                    $eOnline    = $editor->isOnline();
+                                @endphp
+                                <div class="flex flex-col items-center gap-0.5">
+                                    <button type="button"
+                                        @click="activeStaff = activeStaff === 'e{{ $editor->id }}' ? null : 'e{{ $editor->id }}'"
+                                        :class="activeStaff === 'e{{ $editor->id }}' ? 'ring-2 ring-offset-1 ring-indigo-400' : ''"
+                                        class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                                        title="{{ $eProfile?->displayName() ?? $editor->name }} (Editor){{ $eOnline ? ' · Online' : '' }} — {{ $eActive }} active"
+                                    >
+                                        @if ($ePhotoUrl)
+                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="w-full h-full object-cover" />
+                                            </span>
+                                        @else
+                                            {{ $eInitials }}
+                                        @endif
+                                        @if ($eActive > 0)
+                                            <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-indigo-500 text-white">
+                                                {{ $eActive }}
+                                            </span>
+                                        @endif
+                                        @if ($eOnline)
+                                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                                        @endif
+                                    </button>
+                                    <span class="text-[9px] text-indigo-400 font-mono leading-none">{{ $eInitials }}</span>
+                                </div>
+                            @endforeach
+
+                            {{-- Divider between editors and readers --}}
+                            @if ($editors->isNotEmpty() && $readers->isNotEmpty())
+                                <div class="w-px h-8 bg-gray-200 mx-1 self-center"></div>
+                            @endif
+
+                            {{-- Readers --}}
                             @foreach ($readers as $reader)
                                 @php
                                     $rProfile  = $reader->readerProfile;
@@ -55,15 +98,15 @@
                                     $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
                                     $rFull     = $rMax > 0 && $rActive >= $rMax;
                                     $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
+                                    $rOnline   = $reader->isOnline();
                                 @endphp
                                 <div class="flex flex-col items-center gap-0.5">
-                                    <button
-                                        type="button"
-                                        @click="activeReader = activeReader === {{ $reader->id }} ? null : {{ $reader->id }}"
-                                        :class="activeReader === {{ $reader->id }} ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
+                                    <button type="button"
+                                        @click="activeStaff = activeStaff === 'r{{ $reader->id }}' ? null : 'r{{ $reader->id }}'"
+                                        :class="activeStaff === 'r{{ $reader->id }}' ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
                                         class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer
                                             {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}"
-                                        title="{{ $rProfile?->displayName() ?? $reader->name }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
+                                        title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
                                     >
                                         @if ($rPhotoUrl)
                                             <span class="absolute inset-0 rounded-full overflow-hidden">
@@ -78,13 +121,75 @@
                                                 {{ $rActive }}
                                             </span>
                                         @endif
+                                        @if ($rOnline)
+                                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                                        @endif
                                     </button>
                                     <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rInitials }}</span>
                                 </div>
                             @endforeach
                         </div>
 
-                        {{-- Detail panel for the selected reader --}}
+                        {{-- Detail panels --}}
+                        @foreach ($editors as $editor)
+                            @php
+                                $eProfile  = $editor->editorProfile;
+                                $eInitials = $eProfile?->initials ?? strtoupper(substr($editor->name, 0, 2));
+                                $eActive   = $editor->assignments->count();
+                                $ePhotoUrl = $eProfile?->photo ? asset('storage/' . $eProfile->photo) : null;
+                                $eOnline   = $editor->isOnline();
+                            @endphp
+                            <div x-show="activeStaff === 'e{{ $editor->id }}'" x-cloak
+                                 x-transition:enter="transition ease-out duration-150"
+                                 x-transition:enter-start="opacity-0 -translate-y-1"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="mt-3 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div class="flex items-start gap-4">
+                                    <div class="relative w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-mono font-semibold text-indigo-700 shrink-0 overflow-hidden">
+                                        @if ($ePhotoUrl)
+                                            <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                        @else
+                                            {{ $eInitials }}
+                                        @endif
+                                        @if ($eOnline)
+                                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
+                                        @endif
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-baseline gap-3 flex-wrap">
+                                            <span class="font-semibold text-gray-900">{{ $eProfile?->displayName() ?? $editor->name }}</span>
+                                            <span class="text-xs text-indigo-500 font-medium">Editor</span>
+                                            @if ($eOnline)
+                                                <span class="text-xs text-green-600 font-medium">● Online</span>
+                                            @endif
+                                            <span class="text-xs text-gray-400">{{ $eActive }} active assignment{{ $eActive === 1 ? '' : 's' }}</span>
+                                            @if ($eProfile?->paypal_email)
+                                                <span class="text-xs text-gray-400">PayPal: {{ $eProfile->paypal_email }}</span>
+                                            @endif
+                                            <a href="{{ route('admin.editors.edit', $editor) }}"
+                                               class="text-xs text-indigo-500 hover:text-indigo-700 underline ml-auto">Edit Profile</a>
+                                        </div>
+                                        @if ($editor->assignments->isNotEmpty())
+                                            <ul class="mt-2 space-y-1">
+                                                @foreach ($editor->assignments as $ra)
+                                                    <li class="flex items-center gap-2 text-sm text-gray-700">
+                                                        @if ($ra->rush)
+                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span>
+                                                        @endif
+                                                        <span class="font-medium">{{ $ra->script_title }}</span>
+                                                        <span class="text-gray-400">{{ $ra->writer_name }}</span>
+                                                        <span class="text-gray-400">&middot; {{ $ra->page_count }} pages</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            <p class="mt-1 text-sm text-gray-400">No active assignments.</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+
                         @foreach ($readers as $reader)
                             @php
                                 $rProfile  = $reader->readerProfile;
@@ -92,23 +197,30 @@
                                 $rActive   = $reader->assignments->count();
                                 $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
                                 $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
+                                $rOnline   = $reader->isOnline();
                             @endphp
-                            <div x-show="activeReader === {{ $reader->id }}" x-cloak
+                            <div x-show="activeStaff === 'r{{ $reader->id }}'" x-cloak
                                  x-transition:enter="transition ease-out duration-150"
                                  x-transition:enter-start="opacity-0 -translate-y-1"
                                  x-transition:enter-end="opacity-100 translate-y-0"
                                  class="mt-3 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                 <div class="flex items-start gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-mono font-semibold text-gray-700 shrink-0 overflow-hidden relative">
+                                    <div class="relative w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-mono font-semibold text-gray-700 shrink-0 overflow-hidden">
                                         @if ($rPhotoUrl)
                                             <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="absolute inset-0 w-full h-full object-cover" />
                                         @else
                                             {{ $rInitials }}
                                         @endif
+                                        @if ($rOnline)
+                                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
+                                        @endif
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <div class="flex items-baseline gap-3">
+                                        <div class="flex items-baseline gap-3 flex-wrap">
                                             <span class="font-semibold text-gray-900">{{ $rProfile?->displayName() ?? $reader->name }}</span>
+                                            @if ($rOnline)
+                                                <span class="text-xs text-green-600 font-medium">● Online</span>
+                                            @endif
                                             <span class="text-xs text-gray-400">{{ $rActive }} / {{ $rMax ?: '—' }} assignment{{ $rMax === 1 ? '' : 's' }}</span>
                                             @if ($rProfile?->paypal_email)
                                                 <span class="text-xs text-gray-400">PayPal: {{ $rProfile->paypal_email }}</span>
