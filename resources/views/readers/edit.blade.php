@@ -145,6 +145,16 @@
                             <p class="mt-1 text-xs text-gray-400">Visible to admin and editor only — not shown to customers.</p>
                             <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
                         </div>
+
+                        <div>
+                            <x-input-label for="upload_warning" value="Upload Form Warning" />
+                            <textarea id="upload_warning" name="upload_warning"
+                                      rows="3"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="Optional — shown to customers on the upload form when they select this reader.">{{ old('upload_warning', $profile?->upload_warning) }}</textarea>
+                            <p class="mt-1 text-xs text-gray-400">Shown as an orange warning box on the customer upload form when this reader is selected. Leave blank for no warning.</p>
+                            <x-input-error :messages="$errors->get('upload_warning')" class="mt-1" />
+                        </div>
                     </div>
 
                     {{-- Account --}}

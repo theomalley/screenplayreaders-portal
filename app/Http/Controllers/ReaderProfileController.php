@@ -52,6 +52,7 @@ class ReaderProfileController extends Controller
             'paypal_email'               => ['nullable', 'email', 'max:255'],
             'availability'               => ['required', 'in:available,unavailable'],
             'availability_message'       => ['nullable', 'string', 'max:500'],
+            'upload_warning'             => ['nullable', 'string', 'max:1000'],
         ]);
 
         $user = User::create([
@@ -101,6 +102,7 @@ class ReaderProfileController extends Controller
             'password'                   => ['nullable', 'string', 'min:8', 'confirmed'],
             'availability'               => ['required', 'in:available,unavailable'],
             'availability_message'       => ['nullable', 'string', 'max:500'],
+            'upload_warning'             => ['nullable', 'string', 'max:1000'],
         ]);
 
         if ($request->hasFile('photo')) {

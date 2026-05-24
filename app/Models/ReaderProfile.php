@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-24 | Add upload_warning field (customer-facing per-reader message on upload form)
 // v1.1 — 2026-05-24 | Add availability + availability_message fields
 // v1.0 — 2026-05-16 | Initial scaffold: reader profile linked 1:1 to users
 
@@ -30,6 +31,7 @@ class ReaderProfile extends Model
         'email_notify_requests',
         'availability',
         'availability_message',
+        'upload_warning',
     ];
 
     protected $casts = [

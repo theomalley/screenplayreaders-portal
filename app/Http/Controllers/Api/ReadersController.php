@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-24 | Add upload_warning to response for per-reader customer-facing warning on upload form.
 // v1.0 — 2026-05-24 | Returns reader availability list for WordPress upload form.
 //                     Called by sr-upload-system.php on a 5-minute transient cache.
 //                     Authenticated via Bearer token (same PORTAL_WEBHOOK_SECRET).
@@ -24,9 +25,10 @@ class ReadersController extends Controller
             ->get()
             ->filter(fn ($u) => $u->readerProfile !== null)
             ->map(fn ($u) => [
-                'initials'    => $u->readerProfile->initials,
-                'availability'=> $u->readerProfile->availability ?? 'available',
-                'message'     => $u->readerProfile->availability_message,
+                'initials'       => $u->readerProfile->initials,
+                'availability'   => $u->readerProfile->availability ?? 'available',
+                'message'        => $u->readerProfile->availability_message,
+                'upload_warning' => $u->readerProfile->upload_warning,
             ])
             ->sortBy('initials')
             ->values();

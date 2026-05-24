@@ -150,8 +150,18 @@
                             <textarea id="availability_message" name="availability_message"
                                       rows="2"
                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                      placeholder="Optional">{{ old('availability_message') }}</textarea>
+                                      placeholder="Optional — internal note, not shown to customers">{{ old('availability_message') }}</textarea>
                             <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="upload_warning" value="Upload Form Warning" />
+                            <textarea id="upload_warning" name="upload_warning"
+                                      rows="3"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="Optional — shown to customers on the upload form when they select this reader">{{ old('upload_warning') }}</textarea>
+                            <p class="mt-1 text-xs text-gray-400">Leave blank for no warning.</p>
+                            <x-input-error :messages="$errors->get('upload_warning')" class="mt-1" />
                         </div>
                     </div>
 
