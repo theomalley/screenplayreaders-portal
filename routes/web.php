@@ -51,6 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'show'])->name('coverage.show');
     Route::post('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'store'])->name('coverage.store');
     Route::get('coverage/submitted', [CoverageSubmissionController::class, 'submitted'])->name('coverage.submitted');
+    Route::get('assignments/{assignment}/coverage-preview', [CoverageSubmissionController::class, 'coveragePreview'])->name('coverage.preview');
 
     Route::get('/readers', [ReaderProfileController::class, 'index'])->name('readers.index');
     Route::get('/readers/create', [ReaderProfileController::class, 'create'])->name('readers.create');

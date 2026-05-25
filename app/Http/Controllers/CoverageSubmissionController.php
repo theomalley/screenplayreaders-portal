@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-25 | Add coverage preview endpoint (text-only HTML view for admins/editors and reader's own)
 // v1.2 — 2026-05-24 | Submit button spinner; redirect to dedicated submitted page with custom HTML
 // v1.1 — 2026-05-22 | Fire GoogleDocsService after submission to create coverage doc + draft PDF
 // v1.0 — 2026-05-17 | Coverage form show + store for SR and WD vendors
@@ -74,5 +75,18 @@ class CoverageSubmissionController extends Controller
     public function submitted(): View
     {
         return view('coverage.submitted');
+    }
+
+    public function coveragePreview(Assignment $assignment): View
+    {
+        $user = auth()->user();
+        abort_unless(
+            $user->canManageAssignments() || $assignment->assigned_reader_id === $user->id,
+            403
+        );
+        $submission = $assignment->coverageSubmission;
+        abort_if(!$submission, 404);
+
+        return view('coverage.preview', compact('assignment', 'submission'));
     }
 }

@@ -70,7 +70,7 @@ class AssignmentController extends Controller
             ->get();
 
         $mine = Assignment::forReader($user->id)
-            ->with(['requestedReader.readerProfile'])
+            ->with(['requestedReader.readerProfile', 'coverageSubmission'])
             ->orderBy('accepted_at', 'desc')
             ->get();
 

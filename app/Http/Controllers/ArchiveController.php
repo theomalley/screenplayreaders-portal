@@ -13,7 +13,7 @@ class ArchiveController extends Controller
 
         // Fetch all completed assignments and group by order number so multi-reader
         // orders (2R, 3R) appear as a single row with one coverage link per reader.
-        $groups = Assignment::with(['assignedReader.readerProfile'])
+        $groups = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
             ->where('status', Assignment::STATUS_COMPLETED)
             ->get()
             ->groupBy('order_number')

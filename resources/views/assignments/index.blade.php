@@ -1166,43 +1166,32 @@
                                                 <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                     <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                     <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                    <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
-                                                        @if($viewUrl)
-                                                            <button @click="openViewer()" type="button"
-                                                                    class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
-                                                            <div x-show="open" x-cloak
-                                                                 @keydown.escape.window="open = false"
-                                                                 @keydown.arrow-right.window="if (open) nextPage()"
-                                                                 @keydown.arrow-left.window="if (open) prevPage()"
-                                                                 x-ref="modal"
-                                                                 tabindex="-1"
-                                                                 class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
-                                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                                    <div class="flex items-center gap-3 shrink-0">
-                                                                        <div x-show="totalPages > 0" class="flex items-center gap-2">
-                                                                            <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
-                                                                                    class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
-                                                                            <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
-                                                                            <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
-                                                                                    class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
-                                                                        </div>
-                                                                        <button @click="open = false" type="button"
-                                                                                class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
-                                                                    </div>
-                                                                </div>
-                                                                <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4" @wheel="handleWheel($event)">
-                                                                    <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
-                                                                    <canvas x-ref="canvas" class="shadow-2xl"></canvas>
-                                                                </div>
-                                                            </div>
-                                                        @else
-                                                            <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
-                                                        @endif
+                                                    <td class="px-3 py-3">
+                                                        <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
                                                         <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                     </td>
                                                     <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
-                                                    <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
+                                                    <td class="px-3 py-3 whitespace-nowrap text-xs" x-data="{ textOpen: false }">
+                                                        @if($assignment->coverageSubmission)
+                                                            <button @click="textOpen = true" type="button"
+                                                                    class="text-indigo-600 hover:text-indigo-800 hover:underline text-left">{{ $typeLabel }}</button>
+                                                            <div x-show="textOpen" x-cloak
+                                                                 @keydown.escape.window="textOpen = false"
+                                                                 class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">
+                                                                        {{ $assignment->script_title }} — Coverage
+                                                                    </span>
+                                                                    <button @click="textOpen = false" type="button"
+                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                </div>
+                                                                <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
+                                                                        class="flex-1 w-full border-0 bg-white"></iframe>
+                                                            </div>
+                                                        @else
+                                                            <span class="text-gray-600">{{ $typeLabel }}</span>
+                                                        @endif
+                                                    </td>
                                                     <td class="px-3 py-3 whitespace-nowrap">
                                                         @if($assignment->rush)
                                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Rush</span>

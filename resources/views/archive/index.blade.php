@@ -120,7 +120,7 @@
                                                     $coverageDownloadUrl = $pdfId ? "https://drive.google.com/uc?export=download&id={$pdfId}" : null;
                                                 @endphp
                                                 @if($pdfId || $docId)
-                                                    <div x-data="{ pdfOpen: false, editOpen: false }">
+                                                    <div x-data="{ pdfOpen: false, editOpen: false, textOpen: false }">
 
                                                         {{-- Badge button --}}
                                                         <button @click="pdfOpen = true" type="button"
@@ -131,6 +131,10 @@
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                                             </svg>
                                                         </button>
+                                                        @if($assignment->coverageSubmission)
+                                                            <button @click="textOpen = true" type="button"
+                                                                    class="text-[10px] text-indigo-500 hover:text-indigo-700 underline leading-none">txt</button>
+                                                        @endif
 
                                                         {{-- Coverage PDF modal --}}
                                                         <div x-show="pdfOpen" x-cloak
@@ -214,12 +218,52 @@
                                                             </div>
                                                         @endif
 
+                                                        {{-- Coverage text modal --}}
+                                                        @if($assignment->coverageSubmission)
+                                                            <div x-show="textOpen" x-cloak
+                                                                 @keydown.escape.window="textOpen = false"
+                                                                 class="fixed inset-0 z-[70] flex flex-col bg-black/80">
+                                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">
+                                                                        {{ $first->script_title }} — {{ $initials }} — Coverage Text
+                                                                    </span>
+                                                                    <button @click="textOpen = false" type="button"
+                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                </div>
+                                                                <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
+                                                                        class="flex-1 w-full border-0 bg-white"></iframe>
+                                                            </div>
+                                                        @endif
+
                                                     </div>
                                                 @else
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400 border border-gray-200"
-                                                          title="{{ $initials }} — No coverage doc">
-                                                        {{ $initials }}
-                                                    </span>
+                                                    @if($assignment->coverageSubmission)
+                                                        <div x-data="{ textOpen: false }">
+                                                            <button @click="textOpen = true" type="button"
+                                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border bg-indigo-50 text-indigo-600 border-indigo-200 hover:opacity-80">
+                                                                {{ $initials }}
+                                                                <span class="text-[9px]">txt</span>
+                                                            </button>
+                                                            <div x-show="textOpen" x-cloak
+                                                                 @keydown.escape.window="textOpen = false"
+                                                                 class="fixed inset-0 z-[70] flex flex-col bg-black/80">
+                                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">
+                                                                        {{ $first->script_title }} — {{ $initials }} — Coverage Text
+                                                                    </span>
+                                                                    <button @click="textOpen = false" type="button"
+                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                </div>
+                                                                <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
+                                                                        class="flex-1 w-full border-0 bg-white"></iframe>
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400 border border-gray-200"
+                                                              title="{{ $initials }} — No coverage doc">
+                                                            {{ $initials }}
+                                                        </span>
+                                                    @endif
                                                 @endif
                                             @endforeach
                                         </div>
