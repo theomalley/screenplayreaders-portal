@@ -262,6 +262,7 @@
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">HS #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
@@ -345,6 +346,17 @@
                                         {{-- Order # --}}
                                         <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">
                                             {{ $assignment->order_number }}
+                                        </td>
+
+                                        {{-- HS # --}}
+                                        <td class="px-3 py-3 whitespace-nowrap font-mono">
+                                            @if($assignment->helpscout_ticket_number)
+                                                <a href="https://secure.helpscout.net/conversation/{{ $assignment->helpscout_ticket_number }}/"
+                                                   target="_blank" rel="noopener noreferrer"
+                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $assignment->helpscout_ticket_number }}</a>
+                                            @else
+                                                <span class="text-gray-300">—</span>
+                                            @endif
                                         </td>
 
                                         {{-- Title / Writer --}}
@@ -606,6 +618,7 @@
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">HS #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
@@ -630,6 +643,15 @@
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                         <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap font-mono">
+                                            @if($assignment->helpscout_ticket_number)
+                                                <a href="https://secure.helpscout.net/conversation/{{ $assignment->helpscout_ticket_number }}/"
+                                                   target="_blank" rel="noopener noreferrer"
+                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $assignment->helpscout_ticket_number }}</a>
+                                            @else
+                                                <span class="text-gray-300">—</span>
+                                            @endif
+                                        </td>
                                         <td class="px-3 py-3">
                                             @if ($downloadUrl)
                                                 <a href="{{ $downloadUrl }}"
