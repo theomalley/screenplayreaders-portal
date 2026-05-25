@@ -284,15 +284,15 @@
             assignmentType: '{{ old('wd_assignment_type', $existing?->wd_assignment_type ?? $assignment->assignment_type ?? 'coverage') }}',
             qualityChecked: {{ old('quality_checked') ? 'true' : 'false' }},
             submitting: false,
-            synopsis: '',
+            synopsis: @js(old('wd_synopsis', $existing?->wd_synopsis ?? '')),
             notes: {
-                concept: '',
-                plot: '',
-                pacing: '',
-                format: '',
-                characters: '',
-                dialogue: '',
-                overall: '',
+                concept:    @js(old('wd_notes_concept',    $existing?->wd_notes_concept    ?? '')),
+                plot:       @js(old('wd_notes_plot',       $existing?->wd_notes_plot       ?? '')),
+                pacing:     @js(old('wd_notes_pacing',     $existing?->wd_notes_pacing     ?? '')),
+                format:     @js(old('wd_notes_format',     $existing?->wd_notes_format     ?? '')),
+                characters: @js(old('wd_notes_characters', $existing?->wd_notes_characters ?? '')),
+                dialogue:   @js(old('wd_notes_dialogue',   $existing?->wd_notes_dialogue   ?? '')),
+                overall:    @js(old('wd_notes_overall',    $existing?->wd_notes_overall    ?? '')),
             },
 
             wordCount(text) {

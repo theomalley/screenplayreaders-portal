@@ -340,9 +340,9 @@
             pageCount: {{ old('page_count', $assignment->page_count) }},
             qualityChecked: {{ old('quality_checked') ? 'true' : 'false' }},
             submitting: false,
-            logline: '',
-            synopsis: '',
-            notes: '',
+            logline: @js(old('sr_logline', $existing?->sr_logline ?? '')),
+            synopsis: @js(old('sr_synopsis', $existing?->sr_synopsis ?? '')),
+            notes: @js(old('sr_notes', $existing?->sr_notes ?? '')),
             randomAnchor: 75,
 
             scores: {
