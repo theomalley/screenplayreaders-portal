@@ -10,6 +10,9 @@ use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QcController;
 use App\Http\Controllers\RatebookController;
+use App\Http\Controllers\ReaderPayController;
+use App\Http\Controllers\RevenueController;
+use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\EditorProfileController;
 use App\Http\Controllers\ReaderProfileController;
 use App\Http\Controllers\SettingController;
@@ -85,6 +88,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/draft-all', [QcController::class, 'draftAll'])->name('qc.draft-all');
 
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+
+    Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
+    Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
+    Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');
+    Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
 
     Route::get('/admin/editors', [EditorProfileController::class, 'index'])->name('admin.editors.index');
     Route::get('/admin/editors/create', [EditorProfileController::class, 'create'])->name('admin.editors.create');

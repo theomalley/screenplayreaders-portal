@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-05-25 | Add reader_paid_at to fillable and casts
 // v1.6 — 2026-05-25 | Add needs_attention status + notes field; scopeForReader includes needs_attention
 // v1.5 — 2026-05-25 | Add helpscoutConversation relationship (auto-populated by Zapier via order_number).
 // v1.4 — 2026-05-24 | Remove dead isVisibleToReaders() and scopeForAdmin().
@@ -49,6 +50,7 @@ class Assignment extends Model
         'accepted_at',
         'submitted_at',
         'completed_at',
+        'reader_paid_at',
         'helpscout_draft_sent_at',
     ];
 
@@ -62,6 +64,7 @@ class Assignment extends Model
             'accepted_at'    => 'datetime',
             'submitted_at'   => 'datetime',
             'completed_at'              => 'datetime',
+            'reader_paid_at'            => 'datetime',
             'helpscout_draft_sent_at'   => 'datetime',
         ];
     }
