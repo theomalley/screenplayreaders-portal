@@ -16,11 +16,10 @@
                         <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
                             <tr>
                                 <th class="px-4 py-3 text-left">Order</th>
-                                <th class="px-4 py-3 text-left">Script / Writer</th>
+                                <th class="px-4 py-3 text-left">Title / Writer</th>
                                 <th class="px-4 py-3 text-left">Type</th>
                                 <th class="px-4 py-3 text-left">Completed</th>
                                 <th class="px-4 py-3 text-left">Turnaround</th>
-                                <th class="px-4 py-3 text-left">Script</th>
                                 <th class="px-4 py-3 text-left">Coverage</th>
                                 <th class="px-4 py-3 text-center">GoBack</th>
                             </tr>
@@ -66,19 +65,63 @@
                                         <a href="{{ route('assignments.show', $first) }}"
                                            class="hover:text-indigo-600">{{ $orderNumber }}</a>
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <a href="{{ route('assignments.show', $first) }}"
-                                           class="font-medium text-gray-800 hover:text-indigo-600">{{ $first->script_title }}</a>
-                                        <div class="text-gray-400 text-xs">{{ $first->writer_name }}</div>
-                                        @if($scriptId)
-                                            <div class="flex items-center gap-2 mt-1">
-                                                <a href="{{ route('assignments.streamScript', $first) }}" target="_blank"
-                                                   class="text-xs text-indigo-500 hover:text-indigo-700">View Script</a>
-                                                <span class="text-gray-300 text-xs">·</span>
-                                                <a href="https://drive.google.com/uc?export=download&id={{ $scriptId }}" target="_blank"
-                                                   class="text-xs text-indigo-500 hover:text-indigo-700">Download</a>
+                                    @php $viewUrl = $scriptId ? route('assignments.streamScript', $first) : null; @endphp
+                                    <td class="px-4 py-3" x-data="{ open: false }">
+                                        @if($viewUrl)
+                                            <button @click="open = true" type="button"
+                                                    class="font-medium text-gray-800 hover:text-indigo-600 text-left leading-snug">{{ $first->script_title }}</button>
+                                            <div x-show="open" x-cloak
+                                                 @keydown.escape.window="open = false"
+                                                 tabindex="-1"
+                                                 x-effect="if (open) $nextTick(() => $el.focus())"
+                                                 class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $first->drive_script_filename ?? $first->script_title }}</span>
+                                                    <div class="flex items-center gap-2 shrink-0">
+                                                        <form method="POST" action="{{ route('assignments.removePages', $first) }}"
+                                                              onsubmit="return confirm('Remove title page (page 1)?')">
+                                                            @csrf
+                                                            <input type="hidden" name="pages" value="1">
+                                                            <button type="submit"
+                                                                    class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                                                Remove title page
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" action="{{ route('assignments.removePages', $first) }}"
+                                                              onsubmit="return confirm('Remove last page?')">
+                                                            @csrf
+                                                            <input type="hidden" name="pages" value="last">
+                                                            <button type="submit"
+                                                                    class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                                                Remove last page
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" action="{{ route('assignments.removePages', $first) }}"
+                                                              class="flex items-center gap-1"
+                                                              x-data="{ pg: '' }"
+                                                              @submit.prevent="if (pg.trim()) { if (confirm('Remove page ' + pg + '?')) $el.submit(); }">
+                                                            @csrf
+                                                            <input type="text" name="pages" x-model="pg" placeholder="pg #"
+                                                                   class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
+                                                            <button type="submit"
+                                                                    class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
+                                                                Remove
+                                                            </button>
+                                                        </form>
+                                                        <button @click="open = false" type="button"
+                                                                class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                    </div>
+                                                </div>
+                                                <iframe :src="open ? @js($viewUrl) : ''"
+                                                        class="flex-1 w-full border-0"
+                                                        allowfullscreen></iframe>
                                             </div>
+                                        @else
+                                            <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
                                         @endif
+                                        <div class="text-gray-400 text-xs">{{ $first->writer_name }}</div>
+                                        <a href="{{ route('assignments.show', $first) }}"
+                                           class="text-xs text-indigo-500 hover:text-indigo-700 mt-0.5 inline-block">Details →</a>
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
@@ -89,22 +132,6 @@
                                             <span class="text-gray-700" title="{{ $taTitle }}">{{ $taStr }}</span>
                                         @else
                                             <span class="text-gray-300">—</span>
-                                        @endif
-                                    </td>
-
-                                    {{-- Script link --}}
-                                    <td class="px-4 py-3 whitespace-nowrap">
-                                        @if($scriptId)
-                                            <a href="https://drive.google.com/file/d/{{ $scriptId }}/view"
-                                               target="_blank"
-                                               class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                </svg>
-                                                Script
-                                            </a>
-                                        @else
-                                            <span class="text-gray-300 text-xs">—</span>
                                         @endif
                                     </td>
 
