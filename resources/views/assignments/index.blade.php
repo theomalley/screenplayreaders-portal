@@ -913,30 +913,35 @@
 
                     {{-- ---- My Assignments tab ---- --}}
                     <div x-show="tab === 'mine'">
+                        @php
+                            $mineCurrent   = $mine->filter(fn($a) => in_array($a->status, ['assigned', 'qc']));
+                            $mineCompleted = $mine->filter(fn($a) => $a->status === 'completed');
+                        @endphp
                         @if($mine->isEmpty())
                             <div class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-400 text-sm">
                                 You haven't accepted any assignments yet.
                             </div>
                         @else
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-                                            <th class="px-3 py-3"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-100">
-                                        @foreach($mine as $assignment)
+                            @if($mineCurrent->isNotEmpty())
+                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                                <th class="px-3 py-3"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-100">
+                                            @foreach($mineCurrent as $assignment)
                                             @php
                                                 $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
                                                 $ageStr   = $diff
@@ -1089,10 +1094,161 @@
                                                     </div>
                                                 </td>
                                             </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+
+                            @if($mineCompleted->isNotEmpty())
+                                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-6 mb-2 px-1">Completed</h3>
+                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                                <th class="px-3 py-3"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-100">
+                                            @foreach($mineCompleted as $assignment)
+                                                @php
+                                                    $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                                    $ageStr   = $diff
+                                                        ? ($diff->days >= 1
+                                                            ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                            : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                                        : '—';
+                                                    $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                                    $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
+                                                    $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
+                                                        ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
+                                                        : null;
+                                                    $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
+                                                    $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                    $viewUrl  = $assignment->drive_script_file_id
+                                                        ? route('assignments.streamScript', $assignment)
+                                                        : null;
+                                                    $typeLabel = match($assignment->assignment_type) {
+                                                        'script_coverage'   => 'Script Coverage',
+                                                        'notes_only'        => 'Notes-Only',
+                                                        'deep_dive'         => 'Deep-Dive',
+                                                        'short'             => 'Short',
+                                                        'budget'            => 'Budget',
+                                                        'book'              => 'Book',
+                                                        'coverage'          => 'Coverage',
+                                                        'development_notes' => 'Dev Notes',
+                                                        default             => $assignment->assignment_type ?? '—',
+                                                    };
+                                                    if ($assignment->vendor === 'wd') {
+                                                        $typeLabel = 'WD ' . $typeLabel;
+                                                    }
+                                                @endphp
+                                                <tr class="hover:bg-gray-50 {{ $rowClass }}">
+                                                    <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                                    <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
+                                                    <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
+                                                        @if($viewUrl)
+                                                            <button @click="openViewer()" type="button"
+                                                                    class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                                            <div x-show="open" x-cloak
+                                                                 @keydown.escape.window="open = false"
+                                                                 @keydown.arrow-right.window="if (open) nextPage()"
+                                                                 @keydown.arrow-left.window="if (open) prevPage()"
+                                                                 x-ref="modal"
+                                                                 tabindex="-1"
+                                                                 class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
+                                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                                    <div class="flex items-center gap-3 shrink-0">
+                                                                        <div x-show="totalPages > 0" class="flex items-center gap-2">
+                                                                            <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
+                                                                                    class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
+                                                                            <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
+                                                                            <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
+                                                                                    class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                                        </div>
+                                                                        <button @click="open = false" type="button"
+                                                                                class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                                    </div>
+                                                                </div>
+                                                                <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4" @wheel="handleWheel($event)">
+                                                                    <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
+                                                                    <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                                </div>
+                                                            </div>
+                                                        @else
+                                                            <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                        @endif
+                                                        <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                                    </td>
+                                                    <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
+                                                    <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
+                                                    <td class="px-3 py-3 whitespace-nowrap">
+                                                        @if($assignment->rush)
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Rush</span>
+                                                        @else
+                                                            <span class="text-xs text-gray-400">Standard</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">${{ number_format($assignment->pay_rate, 2) }}</td>
+                                                    <td class="px-3 py-3 whitespace-nowrap">
+                                                        @if($reqInitials)
+                                                            <div class="flex flex-col items-center gap-0.5">
+                                                                <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-mono font-semibold">
+                                                                    @if($reqPhotoUrl)
+                                                                        <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                            <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                                        </span>
+                                                                    @else
+                                                                        {{ $reqInitials }}
+                                                                    @endif
+                                                                </span>
+                                                                <span class="text-[9px] text-purple-400 font-mono leading-none">{{ $reqInitials }}</span>
+                                                            </div>
+                                                        @else
+                                                            <span class="text-gray-300">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="px-3 py-3 whitespace-nowrap">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
+                                                    </td>
+                                                    {{-- Notes (hover tooltip, read-only for readers) --}}
+                                                    <td class="px-3 py-3" x-data="{ hover: false, tipX: 0, tipY: 0, note: @js($assignment->notes ?? '') }">
+                                                        @if($assignment->notes)
+                                                            <div class="inline-block"
+                                                                 @mouseenter="hover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
+                                                                 @mouseleave="hover = false">
+                                                                <span class="text-amber-500">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                </span>
+                                                                <div x-show="hover" x-cloak
+                                                                     :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
+                                                                     class="z-50 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
+                                                                    <p x-text="note"></p>
+                                                                    <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
+                                                                </div>
+                                                            </div>
+                                                        @endif
+                                                    </td>
+                                                    <td class="px-3 py-3"></td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
                         @endif
                     </div>
 
