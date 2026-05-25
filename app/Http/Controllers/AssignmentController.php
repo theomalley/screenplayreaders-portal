@@ -74,10 +74,15 @@ class AssignmentController extends Controller
             ->orderBy('accepted_at', 'desc')
             ->get();
 
+        $profile        = $user->readerProfile;
+        $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
+        $readerMax      = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
+
         return view('assignments.index', [
-            'canManage' => false,
-            'available' => $available,
-            'mine'      => $mine,
+            'canManage'  => false,
+            'available'  => $available,
+            'mine'       => $mine,
+            'readerMax'  => $readerMax,
         ]);
     }
 

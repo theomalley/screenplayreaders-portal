@@ -693,6 +693,12 @@
 
             {{-- ===== READER VIEW ===== --}}
             @else
+                @if($readerMax > 0)
+                    <div class="mb-4 text-sm text-gray-500">
+                        <span class="font-medium text-gray-700">Current Maximum Assignments:</span> {{ $readerMax }}
+                    </div>
+                @endif
+
                 <div x-data="{ tab: 'all' }"
                      x-init="setInterval(() => {
                          if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')) location.reload();
