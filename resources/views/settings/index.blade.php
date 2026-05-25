@@ -153,6 +153,27 @@
                 </form>
             </div>
 
+            {{-- Session Timeout --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Session Timeout</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    How long a user can be idle before being automatically logged out. Minimum 5 minutes, maximum 1440 (24 hours).
+                </p>
+                <form method="POST" action="{{ route('settings.session-timeout') }}" class="flex items-end gap-3">
+                    @csrf
+                    @method('PATCH')
+                    <div>
+                        <x-input-label for="session_timeout_minutes" value="Timeout (minutes)" />
+                        <input type="number" id="session_timeout_minutes" name="session_timeout_minutes"
+                               min="5" max="1440" step="1"
+                               value="{{ $sessionTimeout }}"
+                               class="mt-1 block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error class="mt-1" :messages="$errors->get('session_timeout_minutes')" />
+                    </div>
+                    <x-primary-button>Save</x-primary-button>
+                </form>
+            </div>
+
             {{-- Admin-only sections --}}
             @if ($isAdmin)
 

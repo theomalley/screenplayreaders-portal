@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-05-25 | Session timeout setting.
 // v1.7 — 2026-05-24 | Consolidate permissions, filenames, coverage-success into settings index.
 // v1.6 — 2026-05-24 | Add favicon upload.
 // v1.5 — 2026-05-24 | Use MIME-derived extension for logo uploads; add image type allowlist.
@@ -31,7 +32,8 @@ class SettingController extends Controller
         $loginMetaFile = storage_path('app/portal-login-logo-path.txt');
         $loginLogoUrl  = is_readable($loginMetaFile) ? asset('storage/' . trim(file_get_contents($loginMetaFile))) : null;
 
-        $capacityOverride = (int) Setting::getValue('capacity_override', 0);
+        $capacityOverride    = (int) Setting::getValue('capacity_override', 0);
+        $sessionTimeout      = (int) Setting::getValue('session_timeout_minutes', 120);
 
         $faviconMetaFile = storage_path('app/portal-favicon-path.txt');
         $faviconUrl      = is_readable($faviconMetaFile) ? asset('storage/' . trim(file_get_contents($faviconMetaFile))) : null;
@@ -43,7 +45,7 @@ class SettingController extends Controller
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
-            'capacityOverride',
+            'capacityOverride', 'sessionTimeout',
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
         ));
     }
@@ -129,6 +131,18 @@ class SettingController extends Controller
         return redirect()->route('settings.index')->with('success', $value > 0
             ? "Capacity override set to {$value} assignment" . ($value === 1 ? '' : 's') . ' for all readers.'
             : 'Capacity override cleared — individual reader limits apply.');
+    }
+
+    public function updateSessionTimeout(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $request->validate(['session_timeout_minutes' => 'required|integer|min:5|max:1440']);
+
+        $value = (int) $request->input('session_timeout_minutes');
+        Setting::setValue('session_timeout_minutes', $value);
+
+        return redirect()->route('settings.index')->with('success', "Session timeout set to {$value} minute" . ($value === 1 ? '' : 's') . '.');
     }
 
     public function editCoverageSuccess(): View
