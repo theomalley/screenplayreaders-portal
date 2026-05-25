@@ -262,7 +262,6 @@
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">HS #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
@@ -344,19 +343,14 @@
                                         </td>
 
                                         {{-- Order # --}}
-                                        <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">
-                                            {{ $assignment->order_number }}
-                                        </td>
-
-                                        {{-- HS # --}}
                                         @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
                                         <td class="px-3 py-3 whitespace-nowrap font-mono">
                                             @if($hsId)
                                                 <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
                                                    target="_blank" rel="noopener noreferrer"
-                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $hsId }}</a>
+                                                   class="text-gray-700 hover:text-indigo-600 hover:underline">{{ $assignment->order_number }}</a>
                                             @else
-                                                <span class="text-gray-300">—</span>
+                                                {{ $assignment->order_number }}
                                             @endif
                                         </td>
 
@@ -619,7 +613,6 @@
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">HS #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
@@ -643,15 +636,14 @@
                                     @endphp
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
-                                        <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
                                         @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
                                         <td class="px-3 py-3 whitespace-nowrap font-mono">
                                             @if($hsId)
                                                 <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
                                                    target="_blank" rel="noopener noreferrer"
-                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $hsId }}</a>
+                                                   class="text-gray-700 hover:text-indigo-600 hover:underline">{{ $assignment->order_number }}</a>
                                             @else
-                                                <span class="text-gray-300">—</span>
+                                                {{ $assignment->order_number }}
                                             @endif
                                         </td>
                                         <td class="px-3 py-3">
