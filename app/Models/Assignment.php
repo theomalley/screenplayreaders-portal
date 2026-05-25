@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-05-25 | Add needs_attention status + notes field; scopeForReader includes needs_attention
 // v1.5 — 2026-05-25 | Add helpscoutConversation relationship (auto-populated by Zapier via order_number).
 // v1.4 — 2026-05-24 | Remove dead isVisibleToReaders() and scopeForAdmin().
 // v1.3 — 2026-05-24 | Add helpscout_draft_sent_at to fillable and casts
@@ -20,8 +21,9 @@ class Assignment extends Model
     public const STATUS_COMPLETED       = 'completed';
     public const STATUS_QC              = 'qc';
     public const STATUS_CANCELLED       = 'cancelled';
-    public const STATUS_ON_HOLD_CUSTOMER = 'on_hold_customer';
-    public const STATUS_ON_HOLD_SR      = 'on_hold_sr';
+    public const STATUS_ON_HOLD_CUSTOMER  = 'on_hold_customer';
+    public const STATUS_ON_HOLD_SR       = 'on_hold_sr';
+    public const STATUS_NEEDS_ATTENTION  = 'needs_attention';
 
     protected $fillable = [
         'order_number',
@@ -34,6 +36,7 @@ class Assignment extends Model
         'rush',
         'pay_rate',
         'notes',
+        'needs_attention_notes',
         'helpscout_ticket_number',
         'status',
         'drive_script_file_id',
@@ -108,6 +111,11 @@ class Assignment extends Model
     public function scopeForReader($query, int $userId)
     {
         return $query->where('assigned_reader_id', $userId)
-                     ->whereIn('status', [self::STATUS_ASSIGNED, self::STATUS_COMPLETED, self::STATUS_QC]);
+                     ->whereIn('status', [
+                         self::STATUS_ASSIGNED,
+                         self::STATUS_COMPLETED,
+                         self::STATUS_QC,
+                         self::STATUS_NEEDS_ATTENTION,
+                     ]);
     }
 }

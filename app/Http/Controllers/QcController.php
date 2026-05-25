@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-25 | Add sendBack() — returns assignment to reader as needs_attention with optional notes
 // v1.4 — 2026-05-24 | Standardize draftAll() auth to Permission::check('qc').
 // v1.3 — 2026-05-24 | draftAll: create draft with all available coverage PDFs for an order
 //                     (used from assignment show page for early sends on multi-reader orders).
@@ -207,6 +208,22 @@ class QcController extends Controller
             ]);
             return back()->with('error', 'HelpScout draft could not be created: ' . $e->getMessage());
         }
+    }
+
+    public function sendBack(Assignment $assignment)
+    {
+        abort_unless(Permission::check('qc'), 403);
+        abort_unless($assignment->status === Assignment::STATUS_QC, 422);
+
+        $notes = trim(request()->input('notes', ''));
+
+        $assignment->update([
+            'status'                => Assignment::STATUS_NEEDS_ATTENTION,
+            'needs_attention_notes' => $notes ?: null,
+        ]);
+
+        return redirect()->route('qc.index')
+            ->with('success', "#{$assignment->order_number} — {$assignment->script_title} sent back to reader.");
     }
 
     // -------------------------------------------------------------------------

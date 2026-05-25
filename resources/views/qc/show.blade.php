@@ -15,7 +15,7 @@
         </div>
     </x-slot>
 
-    <div class="py-6" x-data="{ editOpen: false }">
+    <div class="py-6" x-data="{ editOpen: false, sendBackOpen: false }">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
             {{-- Flash messages --}}
@@ -90,6 +90,15 @@
 
                 <div class="flex-1"></div>
 
+                {{-- Send Back to Reader --}}
+                <button type="button" @click="sendBackOpen = true"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                    </svg>
+                    Send Back to Reader
+                </button>
+
                 {{-- Approve --}}
                 <form method="POST" action="{{ route('qc.approve', $assignment) }}"
                     onsubmit="return confirm('Approve #{{ $assignment->order_number }} and mark as complete?')">
@@ -102,6 +111,30 @@
                         Approve
                     </button>
                 </form>
+            </div>
+
+            {{-- Send Back modal --}}
+            <div x-show="sendBackOpen" x-cloak @keydown.escape.window="sendBackOpen = false"
+                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1">Send Back to Reader</h3>
+                    <p class="text-sm text-gray-500 mb-4">The reader will see this assignment under "Needs Attention" and can revise and resubmit their coverage.</p>
+                    <form method="POST" action="{{ route('qc.send-back', $assignment) }}">
+                        @csrf
+                        <textarea name="notes" rows="6" placeholder="Optional notes for the reader…"
+                                  class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400"></textarea>
+                        <div class="flex items-center justify-end gap-3 mt-4">
+                            <button type="button" @click="sendBackOpen = false"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    class="px-5 py-2 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors">
+                                Send Back
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             {{-- PDF preview --}}

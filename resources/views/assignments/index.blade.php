@@ -294,22 +294,24 @@
                                         $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
 
                                         $statusColor = match($assignment->status) {
-                                            'unassigned' => 'bg-amber-100 text-amber-800',
-                                            'assigned'   => 'bg-green-100 text-green-800',
-                                            'completed'  => 'bg-green-100 text-green-800',
-                                            'qc'         => 'bg-blue-100 text-blue-800',
-                                            'incoming'   => 'bg-gray-100 text-gray-700',
-                                            'cancelled'         => 'bg-red-100 text-red-700',
-                                            'on_hold_customer'  => 'bg-red-100 text-red-700',
-                                            'on_hold_sr'        => 'bg-red-100 text-red-700',
-                                            default      => 'bg-gray-100 text-gray-700',
+                                            'unassigned'       => 'bg-amber-100 text-amber-800',
+                                            'assigned'         => 'bg-green-100 text-green-800',
+                                            'completed'        => 'bg-green-100 text-green-800',
+                                            'qc'               => 'bg-blue-100 text-blue-800',
+                                            'incoming'         => 'bg-gray-100 text-gray-700',
+                                            'cancelled'        => 'bg-red-100 text-red-700',
+                                            'on_hold_customer' => 'bg-red-100 text-red-700',
+                                            'on_hold_sr'       => 'bg-red-100 text-red-700',
+                                            'needs_attention'  => 'bg-orange-100 text-orange-800',
+                                            default            => 'bg-gray-100 text-gray-700',
                                         };
 
                                         $statusLabel = match($assignment->status) {
                                             'on_hold_customer' => 'On Hold – Customer',
-                                            'on_hold_sr'      => 'On Hold – SR',
-                                            'qc'      => 'QC',
-                                            default   => ucfirst($assignment->status),
+                                            'on_hold_sr'       => 'On Hold – SR',
+                                            'qc'               => 'QC',
+                                            'needs_attention'  => 'Needs Attention',
+                                            default            => ucfirst($assignment->status),
                                         };
 
                                         $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
@@ -485,14 +487,15 @@
                                                     "
                                                     class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
                                                     @foreach ([
-                                                        'incoming'   => 'Pending',
-                                                        'unassigned' => 'Available',
-                                                        'assigned'   => 'Assigned',
-                                                        'completed'  => 'Completed',
-                                                        'qc'         => 'QC',
+                                                        'incoming'        => 'Pending',
+                                                        'unassigned'      => 'Available',
+                                                        'assigned'        => 'Assigned',
+                                                        'completed'       => 'Completed',
+                                                        'qc'              => 'QC',
+                                                        'needs_attention' => 'Needs Attention',
                                                         'on_hold_customer' => 'On Hold – Customer',
                                                         'on_hold_sr'      => 'On Hold – SR',
-                                                        'cancelled'  => 'Cancelled',
+                                                        'cancelled'       => 'Cancelled',
                                                     ] as $value => $label)
                                                         <option value="{{ $value }}" {{ $assignment->status === $value ? 'selected' : '' }}>
                                                             {{ $label }}
@@ -693,6 +696,16 @@
 
             {{-- ===== READER VIEW ===== --}}
             @else
+                @php $needsAttentionCount = $mine->where('status', 'needs_attention')->count(); @endphp
+                @if($needsAttentionCount > 0)
+                    <div class="mb-4 flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-300 rounded-lg text-sm text-orange-800">
+                        <svg class="w-5 h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <span><strong>You have {{ $needsAttentionCount === 1 ? 'an assignment' : $needsAttentionCount . ' assignments' }} that need{{ $needsAttentionCount === 1 ? 's' : '' }} attention.</strong> Check the Needs Attention tab below.</span>
+                    </div>
+                @endif
+
                 @if($readerMax > 0)
                     <div class="mb-4 text-sm text-gray-500">
                         <span class="font-medium text-gray-700">Current Maximum Assignments:</span> {{ $readerMax }}
@@ -715,10 +728,19 @@
                                 :class="tab === 'mine' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                                 class="px-4 py-2 text-sm transition flex items-center gap-1.5">
                             My Assignments
-                            @if($mine->isNotEmpty())
-                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">{{ $mine->count() }}</span>
+                            @php $mineActiveCount = $mine->whereIn('status', ['assigned', 'qc', 'completed'])->count(); @endphp
+                            @if($mineActiveCount > 0)
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">{{ $mineActiveCount }}</span>
                             @endif
                         </button>
+                        @if($needsAttentionCount > 0)
+                            <button @click="tab = 'attention'"
+                                    :class="tab === 'attention' ? 'border-b-2 border-orange-600 text-orange-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                                    class="px-4 py-2 text-sm transition flex items-center gap-1.5">
+                                Needs Attention
+                                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">{{ $needsAttentionCount }}</span>
+                            </button>
+                        @endif
                     </div>
 
                     {{-- ---- Available Assignments tab ---- --}}
@@ -901,6 +923,7 @@
                         @php
                             $mineCurrent   = $mine->filter(fn($a) => in_array($a->status, ['assigned', 'qc']));
                             $mineCompleted = $mine->filter(fn($a) => $a->status === 'completed');
+                            $mineForTab    = $mineCurrent->merge($mineCompleted);
                         @endphp
                         @if($mine->isEmpty())
                             <div class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-400 text-sm">
@@ -1187,6 +1210,80 @@
                             @endif
                         @endif
                     </div>
+
+                    {{-- ---- Needs Attention tab ---- --}}
+                    @if($needsAttentionCount > 0)
+                    <div x-show="tab === 'attention'">
+                        @php $mineAttention = $mine->where('status', 'needs_attention'); @endphp
+                        <div class="bg-white rounded-lg shadow-sm border border-orange-200 overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-orange-50">
+                                    <tr>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider">Title / Writer</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Pages</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider">Notes from Admin</th>
+                                        <th class="px-3 py-3"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    @foreach($mineAttention as $assignment)
+                                        @php
+                                            $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                            $ageStr   = $diff
+                                                ? ($diff->days >= 1
+                                                    ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                    : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                                : '—';
+                                            $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                            $typeLabel = match($assignment->assignment_type) {
+                                                'script_coverage'   => 'Script Coverage',
+                                                'notes_only'        => 'Notes-Only',
+                                                'deep_dive'         => 'Deep-Dive',
+                                                'short'             => 'Short',
+                                                'budget'            => 'Budget',
+                                                'book'              => 'Book',
+                                                'coverage'          => 'Coverage',
+                                                'development_notes' => 'Dev Notes',
+                                                default             => $assignment->assignment_type ?? '—',
+                                            };
+                                            if ($assignment->vendor === 'wd') {
+                                                $typeLabel = 'WD ' . $typeLabel;
+                                            }
+                                        @endphp
+                                        <tr class="hover:bg-orange-50 border-l-4 border-orange-400">
+                                            <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                            <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
+                                            <td class="px-3 py-3">
+                                                <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                            </td>
+                                            <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
+                                            <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
+                                            <td class="px-3 py-3 text-sm text-gray-700 max-w-xs">
+                                                @if($assignment->needs_attention_notes)
+                                                    <p class="whitespace-pre-line">{{ $assignment->needs_attention_notes }}</p>
+                                                @else
+                                                    <span class="text-gray-400 italic">No notes provided.</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-3 py-3 whitespace-nowrap text-right">
+                                                @can('submitCoverage', $assignment)
+                                                    <a href="{{ route('coverage.show', $assignment) }}"
+                                                       class="inline-flex items-center px-2.5 py-1 bg-orange-500 border border-transparent rounded text-xs font-semibold text-white hover:bg-orange-600 transition whitespace-nowrap">
+                                                        Fix Coverage
+                                                    </a>
+                                                @endcan
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @endif
 
                 </div>
             @endif

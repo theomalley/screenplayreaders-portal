@@ -64,7 +64,7 @@ class AssignmentPolicy
     /** Reader or assigned admin/editor submitting coverage */
     public function submitCoverage(User $user, Assignment $assignment): bool
     {
-        return $assignment->status === Assignment::STATUS_ASSIGNED
+        return in_array($assignment->status, [Assignment::STATUS_ASSIGNED, Assignment::STATUS_NEEDS_ATTENTION], true)
             && $assignment->assigned_reader_id === $user->id
             && $user->hasAnyRole(['reader', 'admin', 'editor']);
     }
