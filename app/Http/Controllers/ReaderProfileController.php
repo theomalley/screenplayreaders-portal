@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-25 | Add requests_bypass_capacity to store/update.
 // v1.3 — 2026-05-24 | Add MIME allowlist to photo upload; delete photo file on reader destroy.
 // v1.2 — 2026-05-24 | Add availability + availability_message to store/update
 // v1.1 — 2026-05-18 | Full CRUD: index, create, store, edit, update, destroy
@@ -56,6 +57,8 @@ class ReaderProfileController extends Controller
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
+
         $user = User::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
@@ -67,10 +70,11 @@ class ReaderProfileController extends Controller
             'initials'                   => $data['initials'],
             'first_name'                 => $data['first_name'],
             'last_name'                  => $data['last_name'],
-            'max_concurrent_assignments' => $data['max_concurrent_assignments'],
-            'paypal_email'               => $data['paypal_email'] ?? null,
-            'availability'               => $data['availability'],
-            'availability_message'       => $data['availability_message'] ?? null,
+            'max_concurrent_assignments'  => $data['max_concurrent_assignments'],
+            'requests_bypass_capacity'    => $data['requests_bypass_capacity'],
+            'paypal_email'                => $data['paypal_email'] ?? null,
+            'availability'                => $data['availability'],
+            'availability_message'        => $data['availability_message'] ?? null,
         ]);
 
         return redirect()->route('readers.index')->with('success', 'Reader created.');
@@ -124,6 +128,8 @@ class ReaderProfileController extends Controller
             $userUpdate['password'] = Hash::make($data['password']);
         }
         $user->update($userUpdate);
+
+        $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
 
         $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],

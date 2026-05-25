@@ -497,7 +497,8 @@ class AssignmentController extends Controller
             }
 
             $profile = $user->readerProfile;
-            if ($profile && $profile->isAtCapacity()) {
+            $isRequestedForMe = $fresh->requested_reader_id === $user->id;
+            if ($profile && $profile->isAtCapacity(isRequestedAssignment: $isRequestedForMe)) {
                 $error = 'You have reached your maximum concurrent assignments.';
                 return;
             }

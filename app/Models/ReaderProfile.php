@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-25 | Add requests_bypass_capacity flag; isAtCapacity() accepts $isRequestedAssignment param.
 // v1.3 — 2026-05-24 | isAtCapacity() respects global capacity_override setting.
 // v1.2 — 2026-05-24 | Add upload_warning field (customer-facing per-reader message on upload form)
 // v1.1 — 2026-05-24 | Add availability + availability_message fields
@@ -21,6 +22,7 @@ class ReaderProfile extends Model
         'last_name',
         'photo',
         'max_concurrent_assignments',
+        'requests_bypass_capacity',
         'paypal_email',
         'phone',
         'sms_notifications',
@@ -37,6 +39,7 @@ class ReaderProfile extends Model
     ];
 
     protected $casts = [
+        'requests_bypass_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',
         'sms_notify_rush'      => 'boolean',
@@ -59,8 +62,12 @@ class ReaderProfile extends Model
                           ->whereIn('status', [Assignment::STATUS_ASSIGNED]);
     }
 
-    public function isAtCapacity(): bool
+    public function isAtCapacity(bool $isRequestedAssignment = false): bool
     {
+        if ($isRequestedAssignment && $this->requests_bypass_capacity) {
+            return false;
+        }
+
         $override = (int) Setting::getValue('capacity_override', 0);
         $max = $override > 0 ? $override : (int) $this->max_concurrent_assignments;
 

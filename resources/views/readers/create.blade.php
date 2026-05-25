@@ -110,6 +110,12 @@
                                     value="{{ old('max_concurrent_assignments', 3) }}"
                                     min="0" max="20" required />
                                 <x-input-error :messages="$errors->get('max_concurrent_assignments')" class="mt-1" />
+                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                    <input type="checkbox" name="requests_bypass_capacity" value="1"
+                                        {{ old('requests_bypass_capacity') ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <span class="text-sm text-gray-600">Requests don't count toward capacity</span>
+                                </label>
                             </div>
                             <div>
                                 <x-input-label for="paypal_email" value="PayPal Email" />
