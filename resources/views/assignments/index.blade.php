@@ -285,6 +285,14 @@
                                             : '—';
                                         $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
 
+                                        $accDiff  = $assignment->accepted_at ? now()->diff($assignment->accepted_at) : null;
+                                        $accStr   = $accDiff
+                                            ? ($accDiff->days >= 1
+                                                ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
+                                                : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
+                                            : null;
+                                        $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+
                                         $statusColor = match($assignment->status) {
                                             'unassigned' => 'bg-amber-100 text-amber-800',
                                             'assigned'   => 'bg-green-100 text-green-800',
@@ -340,6 +348,9 @@
                                         {{-- Age --}}
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">
                                             {{ $ageStr }}
+                                            @if($accStr)
+                                                <div class="text-xs text-gray-400 tabular-nums" title="Accepted {{ $accTitle }}">↳ {{ $accStr }}</div>
+                                            @endif
                                         </td>
 
                                         {{-- Order # --}}
