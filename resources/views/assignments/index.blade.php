@@ -922,7 +922,11 @@
                                 You haven't accepted any assignments yet.
                             </div>
                         @else
-                            @if($mineCurrent->isNotEmpty())
+                            @if($mineCurrent->isEmpty())
+                                <div class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400 text-sm">
+                                    No active assignments right now.
+                                </div>
+                            @else
                                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead class="bg-gray-50">
