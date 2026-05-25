@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-25 | Add editor_paid_at and line_items_json
 // v1.0 — 2026-05-25 | Initial — WooCommerce order financials synced from theme via webhook
 
 namespace App\Models;
@@ -24,8 +25,10 @@ class OrderRevenue extends Model
         'coupon_code',
         'customer_email',
         'services_purchased',
+        'line_items_json',
         'staff_member',
         'skip_commission',
+        'editor_paid_at',
     ];
 
     protected function casts(): array
@@ -41,6 +44,7 @@ class OrderRevenue extends Model
             'cog_total'         => 'decimal:2',
             'net_revenue'       => 'decimal:2',
             'skip_commission'   => 'boolean',
+            'editor_paid_at'    => 'datetime',
         ];
     }
 }

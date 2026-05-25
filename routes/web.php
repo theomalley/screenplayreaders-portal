@@ -4,6 +4,9 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CoverageSubmissionController;
+use App\Http\Controllers\EditorPayController;
+use App\Http\Controllers\EditorPaymentsController;
+use App\Http\Controllers\EditorProfileController;
 use App\Http\Controllers\FilenamesController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PaymentsController;
@@ -12,11 +15,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QcController;
 use App\Http\Controllers\RatebookController;
 use App\Http\Controllers\ReaderPayController;
-use App\Http\Controllers\RevenueController;
-use App\Http\Controllers\StatisticsController;
-use App\Http\Controllers\EditorProfileController;
 use App\Http\Controllers\ReaderProfileController;
+use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\StatisticsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -104,7 +106,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/editors', [EditorProfileController::class, 'store'])->name('admin.editors.store');
     Route::get('/admin/editors/{user}/edit', [EditorProfileController::class, 'edit'])->name('admin.editors.edit');
     Route::patch('/admin/editors/{user}', [EditorProfileController::class, 'update'])->name('admin.editors.update');
+    Route::patch('/admin/editors/{user}/commissions', [EditorProfileController::class, 'saveCommissions'])->name('admin.editors.commissions');
     Route::delete('/admin/editors/{user}', [EditorProfileController::class, 'destroy'])->name('admin.editors.destroy');
+
+    Route::get('/editor-pay', [EditorPayController::class, 'index'])->name('editor-pay.index');
+    Route::post('/editor-pay/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');
+    Route::post('/editor-pay/adjustment', [EditorPayController::class, 'addAdjustment'])->name('editor-pay.add-adjustment');
+    Route::delete('/editor-pay/adjustment/{adjustment}', [EditorPayController::class, 'deleteAdjustment'])->name('editor-pay.delete-adjustment');
+
+    Route::get('/editor-payments', [EditorPaymentsController::class, 'index'])->name('editor-payments.index');
 
     Route::get('/admin/permissions', [PermissionsController::class, 'index'])->name('admin.permissions');
     Route::post('/admin/permissions', [PermissionsController::class, 'update'])->name('admin.permissions.update');

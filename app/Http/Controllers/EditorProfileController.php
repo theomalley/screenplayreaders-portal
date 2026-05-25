@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-25 | Add saveCommissions() for per-product commission config
 // v1.0.2 — 2026-05-24 | Add MIME allowlist to photo upload.
 // v1.0.1 — 2026-05-24 | Force redeploy with editor_profiles migration.
 // v1.0 — 2026-05-24 | CRUD for editor accounts and profiles — admin only.
@@ -7,6 +8,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\EditorProductCommission;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -129,6 +131,37 @@ class EditorProfileController extends Controller
         );
 
         return redirect()->route('admin.editors.index')->with('success', 'Editor profile updated.');
+    }
+
+    public function saveCommissions(Request $request, User $user)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($user->isEditor(), 404);
+
+        $profile = $user->editorProfile;
+        if (! $profile) {
+            return back()->with('error', 'Editor profile not found.');
+        }
+
+        $submittedCommissions = $request->input('commissions', []);
+
+        foreach (EditorProductCommission::PRODUCTS as $productId => $product) {
+            $enabled      = isset($submittedCommissions[$productId]['enabled']);
+            $rawAmount    = $submittedCommissions[$productId]['amount'] ?? '';
+            $customAmount = ($rawAmount !== '' && is_numeric($rawAmount)) ? (float) $rawAmount : null;
+
+            EditorProductCommission::updateOrCreate(
+                ['editor_profile_id' => $profile->id, 'woo_product_id' => $productId],
+                [
+                    'product_label'      => $product['label'],
+                    'commission_enabled' => $enabled,
+                    'custom_amount'      => $customAmount,
+                ]
+            );
+        }
+
+        return redirect()->route('admin.editors.edit', $user)
+            ->with('success', 'Commission config saved.');
     }
 
     public function destroy(User $user)

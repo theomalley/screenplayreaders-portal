@@ -11,7 +11,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <form id="update-form" method="POST" action="{{ route('admin.editors.update', $user) }}" class="p-6 space-y-5"
                       enctype="multipart/form-data">
@@ -195,6 +195,66 @@
                     </div>
                 </div>
             </div>
+        {{-- ── COMMISSION CONFIG ── --}}
+        @php
+            $commissionConfig = $profile?->productCommissionsKeyed() ?? collect();
+            $globalRate = (float) \App\Models\Setting::getValue('rate_editor_commission', 10.0);
+        @endphp
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 bg-gray-50 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Commission Config</h3>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    Toggle which products earn commission and set custom flat amounts per occurrence.
+                    Leave amount blank to use the global rate ({{ $globalRate }}% of eligible precommission share).
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.editors.commissions', $user) }}">
+                @csrf
+                @method('PATCH')
+                <table class="min-w-full divide-y divide-gray-100 text-sm">
+                    <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        <tr>
+                            <th class="px-5 py-2 text-left">Product / Service</th>
+                            <th class="px-4 py-2 text-center">Earns Commission</th>
+                            <th class="px-4 py-2 text-right">Custom Flat Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach(\App\Models\EditorProductCommission::PRODUCTS as $productId => $product)
+                        @php
+                            $existing = $commissionConfig->get($productId);
+                            $enabled  = $existing ? $existing->commission_enabled : $product['commission'];
+                            $custom   = $existing?->custom_amount;
+                        @endphp
+                        <tr class="hover:bg-gray-50 {{ !$enabled ? 'opacity-50' : '' }}">
+                            <td class="px-5 py-2 text-gray-700">{{ $product['label'] }}</td>
+                            <td class="px-4 py-2 text-center">
+                                <input type="checkbox"
+                                    name="commissions[{{ $productId }}][enabled]"
+                                    value="1"
+                                    {{ $enabled ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            </td>
+                            <td class="px-4 py-2 text-right">
+                                <div class="flex items-center justify-end gap-1">
+                                    <span class="text-gray-400 text-xs">$</span>
+                                    <input type="number" step="0.01" min="0"
+                                        name="commissions[{{ $productId }}][amount]"
+                                        value="{{ $custom !== null ? number_format((float)$custom, 2) : '' }}"
+                                        placeholder="global %"
+                                        class="w-24 text-right text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                <div class="flex justify-end px-5 py-4 border-t border-gray-100">
+                    <x-primary-button>Save Commission Config</x-primary-button>
+                </div>
+            </form>
+        </div>
+
         </div>
     </div>
 </x-app-layout>

@@ -33,7 +33,7 @@
 
                         {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('revenue.*') || request()->routeIs('statistics.*') || request()->routeIs('reader-pay.*');
+                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('revenue.*') || request()->routeIs('statistics.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -87,6 +87,10 @@
                                         class="block px-4 py-2 text-sm {{ request()->routeIs('reader-pay.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Reader Pay
                                     </a>
+                                    <a href="{{ route('editor-pay.index') }}"
+                                        class="block px-4 py-2 text-sm {{ request()->routeIs('editor-pay.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Editor Pay
+                                    </a>
                                 @endif
                             </div>
                         </div>
@@ -97,6 +101,10 @@
                         @if(auth()->user()?->isReader())
                             <x-nav-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
                                 {{ __('Payments') }}
+                            </x-nav-link>
+                        @elseif(auth()->user()?->isEditor())
+                            <x-nav-link :href="route('editor-payments.index')" :active="request()->routeIs('editor-payments.*')">
+                                {{ __('My Payments') }}
                             </x-nav-link>
                         @endif
                     @endif
@@ -192,6 +200,9 @@
                     <x-responsive-nav-link :href="route('reader-pay.index')" :active="request()->routeIs('reader-pay.*')">
                         {{ __('Reader Pay') }}
                     </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('editor-pay.index')" :active="request()->routeIs('editor-pay.*')">
+                        {{ __('Editor Pay') }}
+                    </x-responsive-nav-link>
                 @endif
             @else
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
@@ -200,6 +211,10 @@
                 @if(auth()->user()?->isReader())
                     <x-responsive-nav-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
                         {{ __('Payments') }}
+                    </x-responsive-nav-link>
+                @elseif(auth()->user()?->isEditor())
+                    <x-responsive-nav-link :href="route('editor-payments.index')" :active="request()->routeIs('editor-payments.*')">
+                        {{ __('My Payments') }}
                     </x-responsive-nav-link>
                 @endif
             @endif
