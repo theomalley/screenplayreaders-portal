@@ -80,6 +80,45 @@
                 <span>Budget: <span class="font-medium text-gray-700">{{ $s->estimated_budget }}</span></span>
             @endif
         </div>
+
+        {{-- Timing --}}
+        @php
+            $tz = 'America/Los_Angeles';
+            $acceptedStr  = $assignment->accepted_at  ? $assignment->accepted_at->setTimezone($tz)->format('M j, Y g:ia')  : null;
+            $completedStr = $assignment->completed_at ? $assignment->completed_at->setTimezone($tz)->format('M j, Y g:ia') : null;
+
+            if ($assignment->created_at && $assignment->completed_at) {
+                $td  = $assignment->created_at->diff($assignment->completed_at);
+                $totalTaStr = $td->days >= 1
+                    ? ($td->days . 'd ' . $td->h . 'h')
+                    : ($td->h >= 1 ? ($td->h . 'h ' . $td->i . 'm') : ($td->i . 'm'));
+            } else {
+                $totalTaStr = null;
+            }
+
+            if ($assignment->accepted_at && $assignment->submitted_at) {
+                $rd  = $assignment->accepted_at->diff($assignment->submitted_at);
+                $readerTaStr = $rd->days >= 1
+                    ? ($rd->days . 'd ' . $rd->h . 'h')
+                    : ($rd->h >= 1 ? ($rd->h . 'h ' . $rd->i . 'm') : ($rd->i . 'm'));
+            } else {
+                $readerTaStr = null;
+            }
+        @endphp
+        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
+            @if($acceptedStr)
+                <span>Accepted: <span class="font-medium text-gray-700">{{ $acceptedStr }}</span></span>
+            @endif
+            @if($completedStr)
+                <span>Completed: <span class="font-medium text-gray-700">{{ $completedStr }}</span></span>
+            @endif
+            @if($totalTaStr)
+                <span>Total turnaround: <span class="font-medium text-gray-700">{{ $totalTaStr }}</span></span>
+            @endif
+            @if($readerTaStr)
+                <span>Reader turnaround: <span class="font-medium text-gray-700">{{ $readerTaStr }}</span></span>
+            @endif
+        </div>
     </div>
 
     @if($vendor !== 'wd')
