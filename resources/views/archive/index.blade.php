@@ -19,6 +19,7 @@
                                 <th class="px-4 py-3 text-left">Script / Writer</th>
                                 <th class="px-4 py-3 text-left">Type</th>
                                 <th class="px-4 py-3 text-left">Completed</th>
+                                <th class="px-4 py-3 text-left">Turnaround</th>
                                 <th class="px-4 py-3 text-left">Script</th>
                                 <th class="px-4 py-3 text-left">Coverage</th>
                                 <th class="px-4 py-3 text-center">GoBack</th>
@@ -31,6 +32,19 @@
                                     $latestDone  = $group->max(fn($a) => $a->completed_at?->timestamp ?? 0);
                                     $scriptId    = $group->firstWhere(fn($a) => !empty($a->drive_script_file_id))?->drive_script_file_id;
                                     $draftSent   = $group->some(fn($a) => !empty($a->helpscout_draft_sent_at));
+
+                                    $hsSentAt    = $group->filter(fn($a) => !empty($a->helpscout_draft_sent_at))->first()?->helpscout_draft_sent_at;
+                                    $minCreated  = $group->min(fn($a) => $a->created_at?->timestamp ?? PHP_INT_MAX);
+                                    if ($hsSentAt && $minCreated !== PHP_INT_MAX) {
+                                        $taDiff  = \Carbon\Carbon::createFromTimestamp($minCreated)->diff($hsSentAt);
+                                        $taStr   = $taDiff->days >= 1
+                                            ? ($taDiff->days . 'd ' . $taDiff->h . 'h')
+                                            : ($taDiff->h >= 1 ? ($taDiff->h . 'h ' . $taDiff->i . 'm') : (max(0, $taDiff->i) . 'm'));
+                                        $taTitle = \Carbon\Carbon::createFromTimestamp($minCreated)->format('M j g:ia') . ' → ' . $hsSentAt->format('M j g:ia');
+                                    } else {
+                                        $taStr   = null;
+                                        $taTitle = null;
+                                    }
 
                                     $typeLabel = match($first->assignment_type) {
                                         'script_coverage'   => 'Script Coverage',
@@ -69,6 +83,13 @@
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
                                         {{ $latestDone ? \Carbon\Carbon::createFromTimestamp($latestDone)->setTimezone('America/Los_Angeles')->format('M j, Y g:ia') : '—' }}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap tabular-nums">
+                                        @if($taStr)
+                                            <span class="text-gray-700" title="{{ $taTitle }}">{{ $taStr }}</span>
+                                        @else
+                                            <span class="text-gray-300">—</span>
+                                        @endif
                                     </td>
 
                                     {{-- Script link --}}
