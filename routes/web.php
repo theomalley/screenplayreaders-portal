@@ -6,6 +6,7 @@ use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\FilenamesController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QcController;
@@ -93,6 +94,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');
     Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
+    Route::post('/reader-pay/{reader}/adjustment', [ReaderPayController::class, 'addAdjustment'])->name('reader-pay.add-adjustment');
+    Route::delete('/reader-pay/adjustment/{adjustment}', [ReaderPayController::class, 'deleteAdjustment'])->name('reader-pay.delete-adjustment');
+
+    Route::get('/payments', [PaymentsController::class, 'index'])->name('payments.index');
 
     Route::get('/admin/editors', [EditorProfileController::class, 'index'])->name('admin.editors.index');
     Route::get('/admin/editors/create', [EditorProfileController::class, 'create'])->name('admin.editors.create');
