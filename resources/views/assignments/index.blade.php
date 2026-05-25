@@ -349,11 +349,12 @@
                                         </td>
 
                                         {{-- HS # --}}
+                                        @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
                                         <td class="px-3 py-3 whitespace-nowrap font-mono">
-                                            @if($assignment->helpscout_ticket_number)
-                                                <a href="https://secure.helpscout.net/conversation/{{ $assignment->helpscout_ticket_number }}/"
+                                            @if($hsId)
+                                                <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
                                                    target="_blank" rel="noopener noreferrer"
-                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $assignment->helpscout_ticket_number }}</a>
+                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $hsId }}</a>
                                             @else
                                                 <span class="text-gray-300">—</span>
                                             @endif
@@ -643,11 +644,12 @@
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                         <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
+                                        @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
                                         <td class="px-3 py-3 whitespace-nowrap font-mono">
-                                            @if($assignment->helpscout_ticket_number)
-                                                <a href="https://secure.helpscout.net/conversation/{{ $assignment->helpscout_ticket_number }}/"
+                                            @if($hsId)
+                                                <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
                                                    target="_blank" rel="noopener noreferrer"
-                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $assignment->helpscout_ticket_number }}</a>
+                                                   class="text-indigo-600 hover:text-indigo-800 hover:underline">{{ $hsId }}</a>
                                             @else
                                                 <span class="text-gray-300">—</span>
                                             @endif

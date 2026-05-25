@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-25 | Add helpscoutConversation relationship (auto-populated by Zapier via order_number).
 // v1.4 — 2026-05-24 | Remove dead isVisibleToReaders() and scopeForAdmin().
 // v1.3 — 2026-05-24 | Add helpscout_draft_sent_at to fillable and casts
 // v1.2 — 2026-05-17 | Replace author_first_initial/author_last_name with writer_name
@@ -84,6 +85,11 @@ class Assignment extends Model
     public function coverageSubmission(): HasOne
     {
         return $this->hasOne(CoverageSubmission::class);
+    }
+
+    public function helpscoutConversation(): HasOne
+    {
+        return $this->hasOne(HelpScoutConversation::class, 'order_number', 'order_number');
     }
 
     // --- Scopes ---

@@ -29,13 +29,14 @@ class AssignmentController extends Controller
         if ($user->canManageAssignments()) {
             $formattingTypes = ['formatting', 'proofreading'];
 
-            $assignments = Assignment::with(['assignedReader.readerProfile', 'requestedReader.readerProfile'])
+            $assignments = Assignment::with(['assignedReader.readerProfile', 'requestedReader.readerProfile', 'helpscoutConversation'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->whereNotIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'asc')
                 ->get();
 
-            $formatting = Assignment::where('status', '!=', Assignment::STATUS_COMPLETED)
+            $formatting = Assignment::with(['helpscoutConversation'])
+                ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->whereIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'desc')
                 ->get();
