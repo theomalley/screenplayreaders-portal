@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-26 | Add pending_invoice_items_behavior=include and log amount_cents to debug $0 invoice
 // v1.2 — 2026-05-26 | Accept array of line items in createAndSendInvoice() for batch invoicing
 // v1.1 — 2026-05-26 | Add invoice creation and customer management for client invoicing module
 // v1.0 — 2026-05-26 | Shell — Stripe secret/publishable key config
@@ -7,6 +8,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class StripeService
@@ -54,6 +56,11 @@ class StripeService
     ): array {
         // 1. Create one pending invoice item per line
         foreach ($lineItems as $item) {
+            Log::debug('StripeService: creating invoice item', [
+                'customer'    => $stripeCustomerId,
+                'amount_cents'=> $item['amount_cents'],
+                'description' => $item['description'],
+            ]);
             $this->post('/invoiceitems', [
                 'customer'    => $stripeCustomerId,
                 'amount'      => $item['amount_cents'],
@@ -62,11 +69,12 @@ class StripeService
             ]);
         }
 
-        // 2. Create the invoice
+        // 2. Create the invoice — include=pending ensures items created above are collected
         $invoiceParams = [
-            'customer'          => $stripeCustomerId,
-            'collection_method' => 'send_invoice',
-            'days_until_due'    => 30,
+            'customer'                        => $stripeCustomerId,
+            'collection_method'               => 'send_invoice',
+            'days_until_due'                  => 30,
+            'pending_invoice_items_behavior'  => 'include',
         ];
 
         if ($dueDateTimestamp) {
