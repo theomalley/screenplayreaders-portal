@@ -748,6 +748,64 @@
                 </div>
             @endif
 
+                {{-- Archive search results — only visible when a search term is active --}}
+                @if ($archivedAll->isNotEmpty())
+                <div x-show="search" x-cloak class="mt-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Archive</h3>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Reader</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                @foreach ($archivedAll as $arc)
+                                    @php
+                                        $arcType = match($arc->assignment_type) {
+                                            'script_coverage'   => 'Script Coverage',
+                                            'notes_only'        => 'Notes-Only',
+                                            'deep_dive'         => 'Deep-Dive',
+                                            'short'             => 'Short',
+                                            'budget'            => 'Budget',
+                                            'book'              => 'Book',
+                                            'coverage'          => 'Coverage',
+                                            'development_notes' => 'Dev Notes',
+                                            'formatting'        => 'Formatting',
+                                            'proofreading'      => 'Proofreading',
+                                            default             => $arc->assignment_type ?? '—',
+                                        };
+                                        if ($arc->vendor === 'wd') $arcType = 'WD ' . $arcType;
+                                        $arcReader  = $arc->assignedReader?->readerProfile?->displayName() ?? $arc->assignedReader?->name ?? '—';
+                                        $arcSearch  = strtolower(implode(' ', array_filter([
+                                            $arc->order_number, $arc->script_title, $arc->writer_name, $arcReader,
+                                        ])));
+                                    @endphp
+                                    <tr class="hover:bg-gray-50"
+                                        x-show="'{{ $arcSearch }}'.includes(search.toLowerCase())"
+                                        data-search="{{ $arcSearch }}">
+                                        <td class="px-3 py-2 whitespace-nowrap font-mono text-gray-700">
+                                            <a href="{{ route('assignments.show', $arc) }}" class="hover:text-indigo-600">{{ $arc->order_number }}</a>
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <div class="font-medium text-gray-900">{{ $arc->script_title }}</div>
+                                            <div class="text-xs text-gray-500">{{ $arc->writer_name }}</div>
+                                        </td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-gray-600 text-xs">{{ $arcType }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-gray-600 text-xs">{{ $arcReader }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-gray-500 text-xs">{{ $arc->completed_at?->format('M j, Y') ?? '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+
                 </div> {{-- /x-data search wrapper --}}
 
             {{-- ===== READER VIEW ===== --}}

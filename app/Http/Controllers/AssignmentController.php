@@ -91,6 +91,11 @@ class AssignmentController extends Controller
                 ];
             }
 
+            $archivedAll = Assignment::with(['assignedReader.readerProfile'])
+                ->where('status', Assignment::STATUS_COMPLETED)
+                ->orderBy('completed_at', 'desc')
+                ->get();
+
             return view('assignments.index', [
                 'canManage'        => true,
                 'assignments'      => $assignments,
@@ -100,6 +105,7 @@ class AssignmentController extends Controller
                 'assignableUsers'  => $this->assignableUsers(),
                 'capacityOverride' => (int) Setting::getValue('capacity_override', 0),
                 'readerWeekStats'  => $readerWeekStats,
+                'archivedAll'      => $archivedAll,
             ]);
         }
 
