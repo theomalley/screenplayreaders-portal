@@ -81,7 +81,19 @@ class WooCommerceService
             throw new RuntimeException($message);
         }
 
-        return $response->json();
+        $refund = $response->json();
+
+        // WooCommerce creates the refund record even if the gateway silently rejects it.
+        // refunded_payment === false means the record exists in WC but no money moved.
+        if (array_key_exists('refunded_payment', $refund) && $refund['refunded_payment'] === false) {
+            throw new RuntimeException(
+                'The refund was recorded in WooCommerce but the payment gateway did not process it — ' .
+                'no money has been returned. Check the order notes in WooCommerce admin for details, ' .
+                'and refund manually through the gateway if needed.'
+            );
+        }
+
+        return $refund;
     }
 
     /**
