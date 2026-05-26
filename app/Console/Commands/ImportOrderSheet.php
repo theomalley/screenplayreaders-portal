@@ -78,10 +78,13 @@ class ImportOrderSheet extends Command
         while (($raw = fgetcsv($handle)) !== false) {
             $row++;
 
+            // Pad to header length so trailing empty columns aren't dropped
+            $raw = array_pad($raw, count($headers), '');
+
             // Build associative array from this row using normalized headers
             $csv = [];
             foreach ($headers as $i => $h) {
-                $csv[$h] = isset($raw[$i]) ? trim($raw[$i]) : '';
+                $csv[$h] = trim($raw[$i]);
             }
 
             // Map to DB columns
