@@ -17,6 +17,7 @@
                         'failed'     => 'bg-red-100 text-red-700',
                     ];
                     $statusColor = $statusColors[$order['status']] ?? 'bg-gray-100 text-gray-600';
+                    $billingEmail = $order['billing']['email'] ?? 'the customer';
                 @endphp
                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusColor }}">
                     {{ ucfirst($order['status']) }}
@@ -222,9 +223,9 @@
                             <h3 class="text-sm font-semibold text-gray-700">Email</h3>
                         </div>
                         <div class="px-4 py-4">
-                            <p class="text-xs text-gray-500 mb-3">Resend the customer invoice / receipt email to <strong>{{ $order['billing']['email'] ?? 'the customer' }}</strong>.</p>
+                            <p class="text-xs text-gray-500 mb-3">Resend the customer invoice / receipt email to <strong>{{ $billingEmail }}</strong>.</p>
                             <form method="POST" action="{{ route('woo-orders.resend-email', $order['id']) }}"
-                                  onsubmit="return confirm('Resend receipt email to {{ $order[\'billing\'][\'email\'] ?? \'customer\' }}?')">
+                                  onsubmit="return confirm('Resend receipt email to {{ $billingEmail }}?')">
                                 @csrf
                                 <x-secondary-button type="submit" class="w-full justify-center text-sm">
                                     Resend Receipt Email
