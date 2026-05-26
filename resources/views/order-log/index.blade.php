@@ -73,7 +73,6 @@
                                 <th class="px-3 py-2 text-right">Net Rev.</th>
                                 <th class="px-3 py-2 text-left">Payment</th>
                                 <th class="px-3 py-2 text-left">Coupon</th>
-                                <th class="px-3 py-2 text-left">Staff</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
@@ -136,7 +135,6 @@
                                 </td>
                                 <td class="px-3 py-2 text-gray-500 capitalize">{{ $o->payment_method ?: '—' }}</td>
                                 <td class="px-3 py-2 text-gray-500 font-mono">{{ $o->coupon_code ?: '—' }}</td>
-                                <td class="px-3 py-2 text-gray-500">{{ $o->staff_member ?: '—' }}</td>
                             </tr>
                             @empty
                             <tr>
