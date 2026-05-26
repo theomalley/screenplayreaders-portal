@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-26 | Wire up real Google Docs invoice template; rework buildPdfPlaceholders() to match actual template tokens
 // v1.4 — 2026-05-26 | Let logToOrderRevenue exceptions propagate so errors surface to the user
 // v1.3 — 2026-05-26 | Log invoices to order_revenues on payment, not on send; expose as public method
 // v1.2 — 2026-05-26 | Log sent invoices to order_revenues for Order Log + Revenue visibility
@@ -19,8 +20,7 @@ use RuntimeException;
 
 class InvoiceService
 {
-    // Stub template ID — swap in your actual Google Docs invoice template Drive file ID.
-    private const INVOICE_TEMPLATE_ID = 'REPLACE_WITH_GOOGLE_DOCS_INVOICE_TEMPLATE_ID';
+    private const INVOICE_TEMPLATE_ID = '19RKODVuz9wC_1eGhhtTmb0eAwBZlz7Z4LTKJQYuCzZM';
 
     public function __construct(
         private readonly StripeService      $stripe,
@@ -102,11 +102,6 @@ class InvoiceService
             'amount_cents' => (int) round((float) $item->amount * 100),
         ])->all();
 
-        // Build compiled description for PDF template (numbered list)
-        $compiledDescription = $lineItems->values()->map(
-            fn ($item, $i) => ($i + 1) . '. ' . $item->description . ' — $' . number_format((float) $item->amount, 2)
-        )->implode("\n");
-
         // Use the first line item's assignment for Help Scout, if available
         $primaryAssignment = $lineItems->first()?->assignment;
 
@@ -116,7 +111,7 @@ class InvoiceService
             if ($invoice->invoice_type === 'stripe') {
                 $this->sendBatchStripe($invoice, $client, $stripeLineItems, $primaryAssignment);
             } else {
-                $this->sendBatchPdf($invoice, $client, $compiledDescription, $primaryAssignment);
+                $this->sendBatchPdf($invoice, $client, $primaryAssignment);
             }
         } catch (\Throwable $e) {
             Log::error('InvoiceService::send failed', [
@@ -267,7 +262,8 @@ class InvoiceService
     {
         $srAddress    = Setting::getValue('sr_invoice_address', '');
         $emailBody    = Setting::getValue('invoice_email_body', '');
-        $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $invoice->description);
+        $lineItemsData = [['description' => $invoice->description, 'amount' => (float) $invoice->amount]];
+        $placeholders  = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $lineItemsData);
 
         $folderId = config('services.google.drive_coverage_folder_id');
         $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
@@ -288,11 +284,15 @@ class InvoiceService
     // Batch PDF send path
     // -------------------------------------------------------------------------
 
-    private function sendBatchPdf(Invoice $invoice, Client $client, string $compiledDescription, ?Assignment $primaryAssignment): void
+    private function sendBatchPdf(Invoice $invoice, Client $client, ?Assignment $primaryAssignment): void
     {
         $srAddress    = Setting::getValue('sr_invoice_address', '');
         $emailBody    = Setting::getValue('invoice_email_body', '');
-        $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $compiledDescription);
+        $lineItemsData = $invoice->lineItems()->get()->map(fn ($item) => [
+            'description' => $item->description,
+            'amount'      => (float) $item->amount,
+        ])->values()->all();
+        $placeholders  = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $lineItemsData);
 
         $folderId = config('services.google.drive_coverage_folder_id');
         $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
@@ -309,19 +309,39 @@ class InvoiceService
         $invoice->update(['status' => 'sent']);
     }
 
-    private function buildPdfPlaceholders(Invoice $invoice, Client $client, string $srAddress, string $description): array
+    /**
+     * Build the find-replace map keyed by the actual Google Docs template tokens.
+     * $lineItemsData is an array of ['description' => string, 'amount' => float].
+     * Up to 8 line-item slots are filled; unused slots are blanked.
+     */
+    private function buildPdfPlaceholders(Invoice $invoice, Client $client, string $srAddress, array $lineItemsData): array
     {
-        return [
-            '{{SR_ADDRESS}}'     => $srAddress,
-            '{{CLIENT_NAME}}'    => $client->name,
-            '{{CLIENT_ADDRESS}}' => $client->billingAddress(),
-            '{{CLIENT_EMAIL}}'   => $client->email ?? '',
-            '{{INVOICE_NUMBER}}' => $invoice->invoice_number,
-            '{{INVOICE_DATE}}'   => now()->format('F j, Y'),
-            '{{DUE_DATE}}'       => $invoice->due_date ? $invoice->due_date->format('F j, Y') : 'Upon Receipt',
-            '{{DESCRIPTION}}'    => $description,
-            '{{AMOUNT}}'         => '$' . number_format((float) $invoice->amount, 2),
+        $addrLine1 = trim(implode(', ', array_filter([$client->address_line1, $client->address_line2])));
+        $addrLine2 = trim(implode(', ', array_filter([$client->city, $client->state, $client->postcode, $client->country])));
+
+        $placeholders = [
+            '{{SR_ADDRESS}}'   => $srAddress,
+            '{{INVOICENUMBER}}'=> $invoice->invoice_number,
+            '{{DATE}}'         => now()->format('F j, Y'),
+            '{{name}}'         => $client->name,
+            '{{company}}'      => '',
+            '{{addressline1}}' => $addrLine1,
+            '{{addressline2}}' => $addrLine2,
+            '{{notes}}'        => $invoice->notes ?? '',
+            '{{TOTAL}}'        => number_format((float) $invoice->amount, 2),
+            '{{URL}}'          => '',
         ];
+
+        for ($i = 1; $i <= 8; $i++) {
+            $item = $lineItemsData[$i - 1] ?? null;
+            $placeholders["{{service{$i}}}"]    = $item ? $item['description'] : '';
+            $placeholders["{{title{$i}}}"]      = '';
+            $placeholders["{{price{$i}}}"]      = $item ? number_format($item['amount'], 2) : '';
+            $placeholders["{{qty{$i}}}"]        = $item ? '1' : '';
+            $placeholders["{{FINALPRICE{$i}}}"] = $item ? number_format($item['amount'], 2) : '';
+        }
+
+        return $placeholders;
     }
 
     // -------------------------------------------------------------------------
