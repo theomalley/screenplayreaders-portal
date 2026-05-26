@@ -20,6 +20,8 @@ use App\Http\Controllers\ReaderProfileController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\WooOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -80,6 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/coverage-success', [SettingController::class, 'updateCoverageSuccess'])->name('settings.coverage-success.update');
     Route::patch('/settings/capacity-override', [SettingController::class, 'updateCapacityOverride'])->name('settings.capacity-override');
     Route::patch('/settings/session-timeout', [SettingController::class, 'updateSessionTimeout'])->name('settings.session-timeout');
+    Route::patch('/settings/invoice', [SettingController::class, 'updateInvoiceSettings'])->name('settings.invoice');
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');
@@ -100,6 +103,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/order-log/{orderLog}/edit', [OrderLogController::class, 'edit'])->name('order-log.edit');
     Route::patch('/order-log/{orderLog}', [OrderLogController::class, 'update'])->name('order-log.update');
     Route::delete('/order-log/{orderLog}', [OrderLogController::class, 'destroy'])->name('order-log.destroy');
+
+    // Clients + Invoicing
+    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+    Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+    Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
+    Route::get('/clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
+    Route::patch('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
+    Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+
+    Route::get('/invoicing', [InvoiceController::class, 'index'])->name('invoicing.index');
+    Route::post('/invoicing', [InvoiceController::class, 'store'])->name('invoicing.store');
+    Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
+    Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
 
     Route::get('/woo-orders', [WooOrderController::class, 'index'])->name('woo-orders.index');
     Route::get('/woo-orders/{id}', [WooOrderController::class, 'show'])->name('woo-orders.show')->whereNumber('id');

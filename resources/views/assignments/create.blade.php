@@ -105,9 +105,51 @@
                               el.className = 'text-sm font-semibold text-gray-900';
                               if (hidden) hidden.value = total.toFixed(2);
                           },
-                          init() { this.updatePayDisplay(); }
+                          init() { this.updatePayDisplay(); },
+                          createInvoice: {{ old('create_invoice') ? 'true' : 'false' }},
+                          invoiceClientId: '{{ old('invoice_client_id', '') }}'
                       }">
                     @csrf
+
+                    {{-- Invoice --}}
+                    @if(\App\Models\Client::count() > 0)
+                    <div class="pb-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <input type="hidden" name="create_invoice" value="0">
+                            <input type="checkbox" id="create_invoice" name="create_invoice" value="1"
+                                   x-model="createInvoice"
+                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                            <label for="create_invoice" class="text-sm font-medium text-gray-700 cursor-pointer">Invoice</label>
+                        </div>
+                        <div x-show="createInvoice" x-cloak class="mt-3 grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="invoice_client_id" value="Client" />
+                                <select id="invoice_client_id" name="invoice_client_id"
+                                    x-model="invoiceClientId"
+                                    class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">— Select client —</option>
+                                    @foreach(\App\Models\Client::orderBy('name')->get() as $client)
+                                        <option value="{{ $client->id }}" {{ old('invoice_client_id') == $client->id ? 'selected' : '' }}>
+                                            {{ $client->name }} ({{ $client->invoice_type === 'stripe' ? 'Stripe' : 'PDF' }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('invoice_client_id')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="invoice_amount" value="Invoice Amount ($)" />
+                                <div class="mt-1 relative">
+                                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">$</span>
+                                    <x-text-input id="invoice_amount" name="invoice_amount" type="number"
+                                        step="0.01" min="0.01"
+                                        class="block w-full pl-7"
+                                        value="{{ old('invoice_amount') }}" />
+                                </div>
+                                <x-input-error :messages="$errors->get('invoice_amount')" class="mt-1" />
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                     {{-- Vendor: SR is default --}}
                     <div>

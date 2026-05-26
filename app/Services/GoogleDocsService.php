@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-26 | Add createInvoiceDoc() and exportDocToPdfBytes() for invoice generation
 // v1.0 — 2026-05-22 | Create coverage Google Docs from templates; export to PDF.
 
 namespace App\Services;
@@ -121,6 +122,27 @@ class GoogleDocsService
         Log::info('GoogleDocsService: PDF saved to Drive', ['pdf_id' => $file->id]);
 
         return $file->id;
+    }
+
+    /**
+     * Copy an invoice template, fill placeholders, return the new Doc ID.
+     * Used by InvoiceService for the PDF invoice path.
+     */
+    public function createInvoiceDoc(string $templateId, string $filename, string $folderId, array $placeholders): string
+    {
+        $docId = $this->copyTemplate($templateId, $filename, $folderId);
+        $this->fillPlaceholders($docId, $placeholders);
+        return $docId;
+    }
+
+    /**
+     * Export a Google Doc to PDF and return the raw bytes (without saving to Drive).
+     * Used by InvoiceService to attach the PDF to a Help Scout draft.
+     */
+    public function exportDocToPdfBytes(string $docId): string
+    {
+        $response = $this->drive->files->export($docId, 'application/pdf', ['alt' => 'media']);
+        return $response->getBody()->getContents();
     }
 
     // -------------------------------------------------------------------------

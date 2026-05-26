@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-05-26 | Add sr_invoice_address and invoice_email_body settings for client invoicing.
 // v1.8 — 2026-05-25 | Session timeout setting.
 // v1.7 — 2026-05-24 | Consolidate permissions, filenames, coverage-success into settings index.
 // v1.6 — 2026-05-24 | Add favicon upload.
@@ -42,11 +43,14 @@ class SettingController extends Controller
         $permissionsGrid      = $isAdmin ? Permission::all() : null;
         $filenameSuffixes     = $isAdmin ? FilenameGenerator::allSuffixes() : null;
         $coverageSuccessHtml  = $isAdmin ? Setting::getValue('coverage_success_html', '') : null;
+        $srInvoiceAddress     = Setting::getValue('sr_invoice_address', '');
+        $invoiceEmailBody     = Setting::getValue('invoice_email_body', '');
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
             'capacityOverride', 'sessionTimeout',
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
+            'srInvoiceAddress', 'invoiceEmailBody',
         ));
     }
 
@@ -143,6 +147,21 @@ class SettingController extends Controller
         Setting::setValue('session_timeout_minutes', $value);
 
         return redirect()->route('settings.index')->with('success', "Session timeout set to {$value} minute" . ($value === 1 ? '' : 's') . '.');
+    }
+
+    public function updateInvoiceSettings(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $request->validate([
+            'sr_invoice_address' => 'nullable|string|max:1000',
+            'invoice_email_body' => 'nullable|string',
+        ]);
+
+        Setting::setValue('sr_invoice_address', trim($request->input('sr_invoice_address', '')));
+        Setting::setValue('invoice_email_body', trim($request->input('invoice_email_body', '')));
+
+        return back()->with('success', 'Invoice settings saved.');
     }
 
     public function editCoverageSuccess(): View

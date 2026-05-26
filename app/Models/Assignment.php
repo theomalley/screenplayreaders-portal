@@ -1,6 +1,6 @@
 <?php
 
-// v1.7 — 2026-05-25 | Add reader_paid_at to fillable and casts
+// v1.8 — 2026-05-26 | Add client_id relationship for invoicing
 // v1.6 — 2026-05-25 | Add needs_attention status + notes field; scopeForReader includes needs_attention
 // v1.5 — 2026-05-25 | Add helpscoutConversation relationship (auto-populated by Zapier via order_number).
 // v1.4 — 2026-05-24 | Remove dead isVisibleToReaders() and scopeForAdmin().
@@ -11,6 +11,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Assignment extends Model
@@ -52,6 +53,7 @@ class Assignment extends Model
         'completed_at',
         'reader_paid_at',
         'helpscout_draft_sent_at',
+        'client_id',
     ];
 
     protected function casts(): array
@@ -96,6 +98,16 @@ class Assignment extends Model
     public function helpscoutConversation(): HasOne
     {
         return $this->hasOne(HelpScoutConversation::class, 'order_number', 'order_number');
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     // --- Scopes ---

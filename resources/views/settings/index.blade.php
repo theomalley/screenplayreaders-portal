@@ -352,5 +352,39 @@
             @endif
 
         </div>
+            {{-- Invoice Settings --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Invoice Settings</h3>
+                <p class="text-xs text-gray-500 mb-4">Used when generating client invoices. The SR address can be overridden per-client.</p>
+
+                <form method="POST" action="{{ route('settings.invoice') }}" class="space-y-4">
+                    @csrf
+                    @method('PATCH')
+
+                    <div>
+                        <x-input-label for="sr_invoice_address" value="Screenplay Readers Address (default for invoices)" />
+                        <textarea id="sr_invoice_address" name="sr_invoice_address" rows="4"
+                            class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="e.g. Screenplay Readers&#10;123 Main St&#10;Los Angeles, CA 90001"
+                        >{{ old('sr_invoice_address', $srInvoiceAddress) }}</textarea>
+                        <p class="mt-1 text-xs text-gray-400">Appears as the sender address on PDF invoices.</p>
+                    </div>
+
+                    <div>
+                        <x-input-label for="invoice_email_body" value="PDF Invoice Email Body (Help Scout draft)" />
+                        <textarea id="invoice_email_body" name="invoice_email_body" rows="6"
+                            class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="Hi,&#10;&#10;Please find your invoice attached…"
+                        >{{ old('invoice_email_body', $invoiceEmailBody) }}</textarea>
+                        <p class="mt-1 text-xs text-gray-400">Used as the body of the Help Scout draft reply when sending PDF invoices. Plain text or HTML.</p>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <x-primary-button>Save Invoice Settings</x-primary-button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
     </div>
 </x-app-layout>

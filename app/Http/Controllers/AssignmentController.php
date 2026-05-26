@@ -1,6 +1,6 @@
 <?php
 
-// v1.5 — 2026-05-24 | assignableUsers() helper; role-gated assignment; editors assign self+readers only.
+// v1.6 — 2026-05-26 | Invoice checkbox on create/edit forms; triggers InvoiceService on save.
 // v1.4 — 2026-05-23 | coverage stream endpoint; show coverage PDF in viewer for admins.
 // v1.3 — 2026-05-21 | script upload, page deletion, assignment show view.
 // v1.2 — 2026-05-18 | multi-reader assignments; per-slot reader request dropdowns.
@@ -10,8 +10,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAssignmentRequest;
 use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
+use App\Models\Client;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\InvoiceService;
 use App\Services\GoogleDriveService;
 use App\Support\FilenameGenerator;
 use Illuminate\Http\Request;
@@ -172,7 +174,13 @@ class AssignmentController extends Controller
                 ]);
         }
 
+        $invoiceMsg = '';
+        if ($firstAssignment && $request->boolean('create_invoice') && $request->filled('invoice_client_id')) {
+            $invoiceMsg = $this->maybeGenerateInvoice($request, $firstAssignment);
+        }
+
         $label = $numReaders === 1 ? 'Assignment created.' : "{$numReaders} assignments created.";
+        $label .= $invoiceMsg;
         return redirect()->route('assignments.index')->with('success', $label);
     }
 
@@ -399,6 +407,8 @@ class AssignmentController extends Controller
     {
         $this->authorize('update', $assignment);
 
+        $assignment->loadMissing('invoices');
+
         $rates           = Setting::ratesForForms();
         $readers         = User::where('role', 'reader')->with('readerProfile')->orderBy('name')->get();
         $assignableUsers = $this->assignableUsers();
@@ -446,7 +456,12 @@ class AssignmentController extends Controller
                 ->update(['created_at' => $newCreatedAt->format('Y-m-d H:i:s')]);
         }
 
-        return redirect()->route('assignments.index')->with('success', 'Assignment updated.');
+        $invoiceMsg = '';
+        if ($request->boolean('create_invoice') && $request->filled('invoice_client_id')) {
+            $invoiceMsg = $this->maybeGenerateInvoice($request, $assignment);
+        }
+
+        return redirect()->route('assignments.index')->with('success', 'Assignment updated.' . $invoiceMsg);
     }
 
     public function updateStatus(Request $request, Assignment $assignment)
@@ -612,5 +627,63 @@ class AssignmentController extends Controller
         ]);
 
         return back()->with('success', 'Assignment returned to the pool.');
+    }
+
+    private function maybeGenerateInvoice(Request $request, Assignment $assignment): string
+    {
+        $clientId = (int) $request->input('invoice_client_id');
+        $amount   = (float) $request->input('invoice_amount', 0);
+
+        if (! $clientId || $amount <= 0) {
+            return '';
+        }
+
+        $client = Client::find($clientId);
+        if (! $client) {
+            return '';
+        }
+
+        // Link client to assignment
+        $assignment->update(['client_id' => $clientId]);
+        $assignment->refresh();
+        $assignment->load('invoices');
+
+        // Don't double-invoice
+        if ($assignment->invoices->isNotEmpty()) {
+            return '';
+        }
+
+        try {
+            $invoice = app(InvoiceService::class)->generate(
+                client:     $client,
+                description: $this->buildInvoiceDescription($assignment),
+                amount:     $amount,
+                assignment: $assignment,
+            );
+            return " Invoice #{$invoice->invoice_number} generated.";
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Assignment invoice generation failed', [
+                'assignment_id' => $assignment->id,
+                'error'         => $e->getMessage(),
+            ]);
+            return " (Invoice generation failed: {$e->getMessage()})";
+        }
+    }
+
+    private function buildInvoiceDescription(Assignment $assignment): string
+    {
+        $typeLabel = match ($assignment->assignment_type ?? '') {
+            'notes_only' => 'Notes-Only Coverage',
+            'deep_dive'  => 'Development Notes',
+            'budget'     => 'Budget Coverage',
+            'short'      => 'Short Coverage',
+            default      => 'Script Coverage',
+        };
+
+        if ($assignment->vendor === 'wd') {
+            $typeLabel = "Writer's Digest Coverage";
+        }
+
+        return "{$typeLabel} — {$assignment->script_title} (Order #{$assignment->order_number})";
     }
 }

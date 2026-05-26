@@ -35,6 +35,12 @@
                         <x-nav-link :href="route('woo-orders.index')" :active="request()->routeIs('woo-orders.*')">
                             {{ __('Orders') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
+                            {{ __('Clients') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('invoicing.index')" :active="request()->routeIs('invoicing.*')">
+                            {{ __('Invoicing') }}
+                        </x-nav-link>
 
                         {{-- Admin-only top-level tabs --}}
                         @if(auth()->user()?->isAdmin())
@@ -183,6 +189,12 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('woo-orders.index')" :active="request()->routeIs('woo-orders.*')">
                     {{ __('Orders') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
+                    {{ __('Clients') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('invoicing.index')" :active="request()->routeIs('invoicing.*')">
+                    {{ __('Invoicing') }}
                 </x-responsive-nav-link>
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">
