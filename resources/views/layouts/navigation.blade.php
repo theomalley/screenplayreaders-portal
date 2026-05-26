@@ -72,10 +72,6 @@
                             </button>
                             <div x-show="adminOpen" x-cloak
                                  class="absolute top-full left-0 mt-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
-                                <a href="{{ route('readers.index') }}"
-                                    class="block px-4 py-2 text-sm {{ request()->routeIs('readers.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Readers
-                                </a>
                                 <a href="{{ route('archive.index') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('archive.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Archive
@@ -97,6 +93,10 @@
                                     <a href="{{ route('admin.editors.index') }}"
                                         class="block px-4 py-2 text-sm {{ request()->routeIs('admin.editors*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Editors
+                                    </a>
+                                    <a href="{{ route('readers.index') }}"
+                                        class="block px-4 py-2 text-sm {{ request()->routeIs('readers.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Readers
                                     </a>
                                     <div class="my-1 border-t border-gray-100"></div>
                                     <a href="{{ route('reader-pay.index') }}"
@@ -208,9 +208,6 @@
                     </x-responsive-nav-link>
                 @endif
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Admin</div>
-                <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
-                    {{ __('Readers') }}
-                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('archive.index')" :active="request()->routeIs('archive.*')">
                     {{ __('Archive') }}
                 </x-responsive-nav-link>
@@ -226,6 +223,9 @@
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('admin.editors.index')" :active="request()->routeIs('admin.editors*')">
                         {{ __('Editors') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
+                        {{ __('Readers') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('reader-pay.index')" :active="request()->routeIs('reader-pay.*')">
                         {{ __('Reader Pay') }}
