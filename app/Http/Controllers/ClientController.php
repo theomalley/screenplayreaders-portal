@@ -47,31 +47,19 @@ class ClientController extends Controller
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
-        $client->load(['invoices.assignment']);
-
-        // For batch clients, find the open accumulating draft separately
+        // For batch clients, find the open accumulating draft
         $batchDraft = null;
         if ($client->batch_invoicing) {
             $batchDraft = $client->invoices()
                 ->where('status', 'draft')
                 ->whereNull('stripe_invoice_id')
                 ->whereNull('google_doc_id')
+                ->with('lineItems.assignment')
                 ->latest()
                 ->first();
-
-            if ($batchDraft) {
-                $batchDraft->load('lineItems.assignment');
-            }
         }
 
-        $batchDraftId = $batchDraft?->id;
-
-        $outstanding = $client->invoices->filter(
-            fn ($inv) => $inv->isOutstanding() && $inv->id !== $batchDraftId
-        );
-        $paid = $client->invoices->filter->isPaid();
-
-        return view('clients.show', compact('client', 'outstanding', 'paid', 'batchDraft'));
+        return view('clients.show', compact('client', 'batchDraft'));
     }
 
     public function edit(Client $client)

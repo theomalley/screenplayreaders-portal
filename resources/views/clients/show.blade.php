@@ -122,29 +122,11 @@
                 </div>
             @endif
 
-            {{-- Outstanding invoices --}}
-            <div class="bg-white shadow-sm sm:rounded-lg">
-                <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-gray-700">Outstanding Invoices</h3>
-                    <a href="{{ route('invoicing.index') }}?client={{ $client->id }}"
-                       class="text-xs text-indigo-600 hover:underline">+ New Invoice</a>
-                </div>
-                @if($outstanding->isEmpty())
-                    <div class="px-4 py-6 text-center text-sm text-gray-400">No outstanding invoices.</div>
-                @else
-                    @include('clients._invoice_table', ['invoices' => $outstanding, 'showPaid' => false])
-                @endif
+            {{-- Invoices link --}}
+            <div class="bg-white shadow-sm sm:rounded-lg px-4 py-3 flex items-center justify-between text-sm">
+                <span class="text-gray-500">All invoices for this client</span>
+                <a href="{{ route('invoicing.index') }}" class="text-indigo-600 hover:underline text-xs">View in Invoicing →</a>
             </div>
-
-            {{-- Paid invoices --}}
-            @if($paid->isNotEmpty())
-                <div class="bg-white shadow-sm sm:rounded-lg">
-                    <div class="px-4 py-3 border-b border-gray-100">
-                        <h3 class="text-sm font-semibold text-gray-700">Paid Invoices</h3>
-                    </div>
-                    @include('clients._invoice_table', ['invoices' => $paid, 'showPaid' => true])
-                </div>
-            @endif
 
         </div>
     </div>

@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-26 | Split index (all invoices) from create (standalone form)
 // v1.1 — 2026-05-26 | Add send() for batch draft invoices
 // v1.0 — 2026-05-26 | Invoice creation, status management, and standalone invoicing tab
 
@@ -16,15 +17,35 @@ class InvoiceController extends Controller
     public function __construct(private readonly InvoiceService $invoiceService) {}
 
     /**
-     * Invoicing tab — select client and create a standalone invoice.
+     * Invoicing tab — all outstanding and paid invoices across all clients.
      */
     public function index()
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
+        $outstanding = Invoice::with('client')
+            ->whereIn('status', ['draft', 'sent'])
+            ->orderByDesc('issued_at')
+            ->get();
+
+        $paid = Invoice::with('client')
+            ->where('status', 'paid')
+            ->orderByDesc('paid_at')
+            ->get();
+
+        return view('invoicing.index', compact('outstanding', 'paid'));
+    }
+
+    /**
+     * Show the standalone create-invoice form.
+     */
+    public function create()
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+
         $clients = Client::orderBy('name')->get();
 
-        return view('invoicing.index', compact('clients'));
+        return view('invoicing.create', compact('clients'));
     }
 
     /**
@@ -57,7 +78,7 @@ class InvoiceController extends Controller
             return back()->withErrors(['invoice' => $e->getMessage()])->withInput();
         }
 
-        return redirect()->route('clients.show', $client)
+        return redirect()->route('invoicing.index')
             ->with('success', "Invoice #{$invoice->invoice_number} created and sent.");
     }
 
@@ -107,7 +128,8 @@ class InvoiceController extends Controller
             'paid_at' => now(),
         ]);
 
-        return back()->with('success', "Invoice #{$invoice->invoice_number} marked as paid.");
+        return redirect()->route('invoicing.index')
+            ->with('success', "Invoice #{$invoice->invoice_number} marked as paid.");
     }
 
     /**
@@ -127,7 +149,7 @@ class InvoiceController extends Controller
             return back()->withErrors(['invoice' => $e->getMessage()]);
         }
 
-        return redirect()->route('clients.show', $invoice->client_id)
+        return redirect()->route('invoicing.index')
             ->with('success', "Invoice #{$invoice->invoice_number} sent.");
     }
 

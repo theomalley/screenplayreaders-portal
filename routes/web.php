@@ -114,6 +114,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
 
     Route::get('/invoicing', [InvoiceController::class, 'index'])->name('invoicing.index');
+    Route::get('/invoicing/create', [InvoiceController::class, 'create'])->name('invoicing.create');
     Route::post('/invoicing', [InvoiceController::class, 'store'])->name('invoicing.store');
     Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
     Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
