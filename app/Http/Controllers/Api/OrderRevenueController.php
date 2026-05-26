@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-26 | Cast numeric NOT-NULL fields to float to reject null from callers
 // v1.2 — 2026-05-25 | Accept customer/order detail fields for Order Log
 // v1.1 — 2026-05-25 | Accept line_items_json; recalculate cog_commission using portal config
 // v1.0 — 2026-05-25 | WooCommerce webhook endpoint — receives order financials
@@ -28,13 +29,13 @@ class OrderRevenueController extends Controller
             'woocommerce_order_id'=> $request->input('woocommerce_order_id'),
             'ordered_at'          => $request->input('ordered_at'),
             'order_total'         => $request->input('order_total'),
-            'discount_amount'     => $request->input('discount_amount', 0),
-            'cog_reader'          => $request->input('cog_reader', 0),
-            'cog_processing'      => $request->input('cog_processing', 0),
-            'cog_precommission'   => $request->input('cog_precommission', 0),
-            'cog_commission'      => $request->input('cog_commission', 0),
-            'cog_total'           => $request->input('cog_total', 0),
-            'net_revenue'         => $request->input('net_revenue', 0),
+            'discount_amount'     => (float) ($request->input('discount_amount') ?? 0),
+            'cog_reader'          => (float) ($request->input('cog_reader') ?? 0),
+            'cog_processing'      => (float) ($request->input('cog_processing') ?? 0),
+            'cog_precommission'   => (float) ($request->input('cog_precommission') ?? 0),
+            'cog_commission'      => (float) ($request->input('cog_commission') ?? 0),
+            'cog_total'           => (float) ($request->input('cog_total') ?? 0),
+            'net_revenue'         => (float) ($request->input('net_revenue') ?? 0),
             'payment_method'      => trim((string) $request->input('payment_method', '')),
             'coupon_code'         => trim((string) $request->input('coupon_code', '')),
             'customer_email'      => trim((string) $request->input('customer_email', '')),
