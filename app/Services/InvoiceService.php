@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-26 | Log invoices to order_revenues on payment, not on send; expose as public method
 // v1.2 — 2026-05-26 | Log sent invoices to order_revenues for Order Log + Revenue visibility
 // v1.1 — 2026-05-26 | Add batch invoicing path — addToBatchInvoice(), send()
 // v1.0 — 2026-05-26 | Invoice generation orchestrator — PDF (Google Docs) and Stripe paths
@@ -78,8 +79,6 @@ class InvoiceService
             throw $e;
         }
 
-        $this->logToOrderRevenue($invoice->fresh(), $description);
-
         return $invoice->fresh();
     }
 
@@ -126,7 +125,6 @@ class InvoiceService
             throw $e;
         }
 
-        $this->logToOrderRevenue($invoice->fresh(), $compiledDescription);
     }
 
     // -------------------------------------------------------------------------
@@ -329,17 +327,25 @@ class InvoiceService
     // Order Log + Revenue integration
     // -------------------------------------------------------------------------
 
-    private function logToOrderRevenue(Invoice $invoice, string $description): void
+    public function logToOrderRevenue(Invoice $invoice): void
     {
         $client = $invoice->client;
         $code   = strtoupper($client->code ?? 'INV');
+
+        // Build description from line items (batch) or invoice description (single)
+        $lineItems = $invoice->lineItems()->get();
+        $description = $lineItems->isNotEmpty()
+            ? $lineItems->values()->map(
+                fn ($item, $i) => ($i + 1) . '. ' . $item->description . ' — $' . number_format((float) $item->amount, 2)
+              )->implode("\n")
+            : $invoice->description;
 
         try {
             OrderRevenue::updateOrCreate(
                 ['order_number' => "INV-{$code}-{$invoice->invoice_number}"],
                 [
                     'invoice_number'     => $invoice->invoice_number,
-                    'ordered_at'         => $invoice->issued_at ?? now(),
+                    'ordered_at'         => $invoice->paid_at ?? $invoice->issued_at ?? now(),
                     'order_total'        => $invoice->amount,
                     'discount_amount'    => 0,
                     'cog_reader'         => 0,

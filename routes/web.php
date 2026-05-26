@@ -119,6 +119,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
     Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
     Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+    Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
 
     Route::get('/woo-orders', [WooOrderController::class, 'index'])->name('woo-orders.index');
     Route::get('/woo-orders/{id}', [WooOrderController::class, 'show'])->name('woo-orders.show')->whereNumber('id');

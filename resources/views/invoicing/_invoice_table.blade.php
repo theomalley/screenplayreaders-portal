@@ -50,7 +50,14 @@ $statusColors = [
                     </span>
                 </td>
                 <td class="px-4 py-2 text-right text-xs space-x-2 whitespace-nowrap">
-                    @if(! $showPaid && $invoice->status !== 'void')
+                    @if($invoice->status === 'paid')
+                        <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="inline"
+                              onsubmit="return confirm('Permanently delete invoice #{{ $invoice->invoice_number }} and remove it from the order log?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-500 hover:underline">Delete</button>
+                        </form>
+                    @elseif($invoice->status !== 'void')
                         @if($invoice->status === 'draft')
                             <form method="POST" action="{{ route('invoices.send', $invoice) }}" class="inline"
                                   onsubmit="return confirm('Send invoice #{{ $invoice->invoice_number }} to {{ $invoice->client->name }} now?')">

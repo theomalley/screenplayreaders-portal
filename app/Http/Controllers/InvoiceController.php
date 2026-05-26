@@ -9,6 +9,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\OrderRevenue;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 
@@ -128,8 +129,32 @@ class InvoiceController extends Controller
             'paid_at' => now(),
         ]);
 
+        $this->invoiceService->logToOrderRevenue($invoice->fresh());
+
         return redirect()->route('invoicing.index')
             ->with('success', "Invoice #{$invoice->invoice_number} marked as paid.");
+    }
+
+    /**
+     * Delete a paid invoice and remove it from the order log.
+     */
+    public function destroy(Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+
+        if ($invoice->status !== 'paid') {
+            return back()->withErrors(['invoice' => 'Only paid invoices can be deleted.']);
+        }
+
+        $client        = $invoice->client;
+        $code          = strtoupper($client->code ?? 'INV');
+        $invoiceNumber = $invoice->invoice_number;
+
+        OrderRevenue::where('order_number', "INV-{$code}-{$invoiceNumber}")->delete();
+        $invoice->delete();
+
+        return redirect()->route('invoicing.index')
+            ->with('success', "Invoice #{$invoiceNumber} deleted.");
     }
 
     /**
@@ -162,7 +187,6 @@ class InvoiceController extends Controller
 
         if ($invoice->stripe_invoice_id) {
             try {
-                app(InvoiceService::class);
                 (new \App\Services\StripeService())->voidInvoice($invoice->stripe_invoice_id);
             } catch (\Throwable $e) {
                 return back()->withErrors(['invoice' => 'Stripe void failed: ' . $e->getMessage()]);
