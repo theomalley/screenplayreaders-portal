@@ -93,12 +93,30 @@
 
                         {{-- Admin-only top-level tabs --}}
                         @if(auth()->user()?->isAdmin())
-                            <x-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">
-                                {{ __('Revenue') }}
-                            </x-nav-link>
-                            <x-nav-link :href="route('statistics.index')" :active="request()->routeIs('statistics.*')">
-                                {{ __('Statistics') }}
-                            </x-nav-link>
+                            @php $revenueActive = request()->routeIs('revenue.*') || request()->routeIs('statistics.*'); @endphp
+                            <div class="relative flex items-center"
+                                 x-data="{ revenueOpen: false }"
+                                 @mouseenter="revenueOpen = true"
+                                 @mouseleave="revenueOpen = false">
+                                <button type="button"
+                                    class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out {{ $revenueActive ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                    Revenue
+                                    <svg class="w-3 h-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <div x-show="revenueOpen" x-cloak
+                                     class="absolute top-full left-0 mt-0 w-36 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                                    <a href="{{ route('revenue.index') }}"
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('revenue.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Revenue
+                                    </a>
+                                    <a href="{{ route('statistics.index') }}"
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('statistics.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Statistics
+                                    </a>
+                                </div>
+                            </div>
                         @endif
 
                         {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
@@ -258,6 +276,7 @@
                         {{ __('Statistics') }}
                     </x-responsive-nav-link>
                 @endif
+
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Admin</div>
                 <x-responsive-nav-link :href="route('archive.index')" :active="request()->routeIs('archive.*')">
                     {{ __('Archive') }}
