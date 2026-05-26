@@ -103,7 +103,14 @@
                                     {{ $o->ordered_at?->format('Y-m-d') ?? '—' }}
                                 </td>
                                 <td class="px-3 py-2 text-gray-500 font-mono">{{ $o->invoice_number ?: '—' }}</td>
-                                <td class="px-3 py-2 text-gray-600 font-mono">{{ $o->order_number }}</td>
+                                <td class="px-3 py-2 font-mono">
+                                    @if(str_starts_with($o->order_number, 'INV-'))
+                                        <span class="text-indigo-700">{{ $o->order_number }}</span>
+                                        <span class="ml-1 inline-flex px-1 py-0.5 rounded text-[9px] font-semibold bg-indigo-100 text-indigo-600 uppercase tracking-wide">invoice</span>
+                                    @else
+                                        <span class="text-gray-600">{{ $o->order_number }}</span>
+                                    @endif
+                                </td>
                                 <td class="px-3 py-2 text-gray-700 max-w-[140px] truncate">{{ $o->customer_name ?: '—' }}</td>
                                 <td class="px-3 py-2 text-gray-500 max-w-[160px] truncate">{{ $o->customer_email ?: '—' }}</td>
                                 <td class="px-3 py-2 text-gray-500">{{ $o->customer_phone ?: '—' }}</td>

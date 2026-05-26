@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-26 | Log sent invoices to order_revenues for Order Log + Revenue visibility
 // v1.1 — 2026-05-26 | Add batch invoicing path — addToBatchInvoice(), send()
 // v1.0 — 2026-05-26 | Invoice generation orchestrator — PDF (Google Docs) and Stripe paths
 
@@ -9,6 +10,7 @@ use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\InvoiceLineItem;
+use App\Models\OrderRevenue;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -76,6 +78,8 @@ class InvoiceService
             throw $e;
         }
 
+        $this->logToOrderRevenue($invoice->fresh(), $description);
+
         return $invoice->fresh();
     }
 
@@ -121,6 +125,8 @@ class InvoiceService
             ]);
             throw $e;
         }
+
+        $this->logToOrderRevenue($invoice->fresh(), $compiledDescription);
     }
 
     // -------------------------------------------------------------------------
@@ -317,6 +323,44 @@ class InvoiceService
             '{{DESCRIPTION}}'    => $description,
             '{{AMOUNT}}'         => '$' . number_format((float) $invoice->amount, 2),
         ];
+    }
+
+    // -------------------------------------------------------------------------
+    // Order Log + Revenue integration
+    // -------------------------------------------------------------------------
+
+    private function logToOrderRevenue(Invoice $invoice, string $description): void
+    {
+        $client = $invoice->client;
+        $code   = strtoupper($client->code ?? 'INV');
+
+        try {
+            OrderRevenue::updateOrCreate(
+                ['order_number' => "INV-{$code}-{$invoice->invoice_number}"],
+                [
+                    'invoice_number'     => $invoice->invoice_number,
+                    'ordered_at'         => $invoice->issued_at ?? now(),
+                    'order_total'        => $invoice->amount,
+                    'discount_amount'    => 0,
+                    'cog_reader'         => 0,
+                    'cog_processing'     => 0,
+                    'cog_precommission'  => 0,
+                    'cog_commission'     => 0,
+                    'cog_total'          => 0,
+                    'net_revenue'        => $invoice->amount,
+                    'customer_name'      => $client->name,
+                    'customer_email'     => $client->email ?? '',
+                    'services_purchased' => $description,
+                    'payment_method'     => 'invoice',
+                    'skip_commission'    => true,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('InvoiceService: failed to log invoice to order_revenues', [
+                'invoice_id' => $invoice->id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
     }
 
     private function postPdfHelpScoutDraft(
