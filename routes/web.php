@@ -8,6 +8,7 @@ use App\Http\Controllers\EditorPayController;
 use App\Http\Controllers\EditorPaymentsController;
 use App\Http\Controllers\EditorProfileController;
 use App\Http\Controllers\FilenamesController;
+use App\Http\Controllers\OrderLogController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\PermissionsController;
@@ -91,6 +92,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/draft-all', [QcController::class, 'draftAll'])->name('qc.draft-all');
 
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+
+    Route::get('/order-log', [OrderLogController::class, 'index'])->name('order-log.index');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');

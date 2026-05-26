@@ -31,9 +31,22 @@
                             </span>
                         </x-nav-link>
 
+                        {{-- Admin-only top-level tabs --}}
+                        @if(auth()->user()?->isAdmin())
+                            <x-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">
+                                {{ __('Revenue') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('statistics.index')" :active="request()->routeIs('statistics.*')">
+                                {{ __('Statistics') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('order-log.index')" :active="request()->routeIs('order-log.*')">
+                                {{ __('Order Log') }}
+                            </x-nav-link>
+                        @endif
+
                         {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('revenue.*') || request()->routeIs('statistics.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*');
+                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -75,14 +88,6 @@
                                         Editors
                                     </a>
                                     <div class="my-1 border-t border-gray-100"></div>
-                                    <a href="{{ route('revenue.index') }}"
-                                        class="block px-4 py-2 text-sm {{ request()->routeIs('revenue.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                        Revenue
-                                    </a>
-                                    <a href="{{ route('statistics.index') }}"
-                                        class="block px-4 py-2 text-sm {{ request()->routeIs('statistics.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                        Statistics
-                                    </a>
                                     <a href="{{ route('reader-pay.index') }}"
                                         class="block px-4 py-2 text-sm {{ request()->routeIs('reader-pay.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Reader Pay
@@ -171,6 +176,17 @@
                         @endif
                     </span>
                 </x-responsive-nav-link>
+                @if(auth()->user()?->isAdmin())
+                    <x-responsive-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">
+                        {{ __('Revenue') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('statistics.index')" :active="request()->routeIs('statistics.*')">
+                        {{ __('Statistics') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('order-log.index')" :active="request()->routeIs('order-log.*')">
+                        {{ __('Order Log') }}
+                    </x-responsive-nav-link>
+                @endif
                 <div class="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Admin</div>
                 <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
                     {{ __('Readers') }}
@@ -190,12 +206,6 @@
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('admin.editors.index')" :active="request()->routeIs('admin.editors*')">
                         {{ __('Editors') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">
-                        {{ __('Revenue') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('statistics.index')" :active="request()->routeIs('statistics.*')">
-                        {{ __('Statistics') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('reader-pay.index')" :active="request()->routeIs('reader-pay.*')">
                         {{ __('Reader Pay') }}

@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-25 | Accept customer/order detail fields for Order Log
 // v1.1 — 2026-05-25 | Accept line_items_json; recalculate cog_commission using portal config
 // v1.0 — 2026-05-25 | WooCommerce webhook endpoint — receives order financials
 
@@ -37,6 +38,14 @@ class OrderRevenueController extends Controller
             'payment_method'      => trim((string) $request->input('payment_method', '')),
             'coupon_code'         => trim((string) $request->input('coupon_code', '')),
             'customer_email'      => trim((string) $request->input('customer_email', '')),
+            'customer_name'       => trim((string) $request->input('customer_name', '')),
+            'customer_phone'      => trim((string) $request->input('customer_phone', '')),
+            'customer_address'    => trim((string) $request->input('customer_address', '')),
+            'script_title'        => trim((string) $request->input('script_title', '')),
+            'sku'                 => trim((string) $request->input('sku', '')),
+            'ticket_summary'      => trim((string) $request->input('ticket_summary', '')),
+            'order_quantity'      => $request->input('order_quantity'),
+            'invoice_number'      => trim((string) $request->input('invoice_number', '')),
             'services_purchased'  => $request->input('services_purchased'),
             'line_items_json'     => $request->input('line_items_json'),
             'staff_member'        => trim((string) $request->input('staff_member', '')),
@@ -58,6 +67,14 @@ class OrderRevenueController extends Controller
             'payment_method'      => 'nullable|string|max:64',
             'coupon_code'         => 'nullable|string|max:128',
             'customer_email'      => 'nullable|email|max:255',
+            'customer_name'       => 'nullable|string|max:255',
+            'customer_phone'      => 'nullable|string|max:50',
+            'customer_address'    => 'nullable|string',
+            'script_title'        => 'nullable|string|max:500',
+            'sku'                 => 'nullable|string|max:255',
+            'ticket_summary'      => 'nullable|string|max:500',
+            'order_quantity'      => 'nullable|integer|min:0',
+            'invoice_number'      => 'nullable|string|max:100',
             'services_purchased'  => 'nullable|string',
             'line_items_json'     => 'nullable|string',
             'staff_member'        => 'nullable|string|max:128',
@@ -70,7 +87,9 @@ class OrderRevenueController extends Controller
 
         $data = $validator->validated();
 
-        foreach (['payment_method', 'coupon_code', 'customer_email', 'staff_member'] as $field) {
+        foreach (['payment_method', 'coupon_code', 'customer_email', 'staff_member',
+                  'customer_name', 'customer_phone', 'customer_address', 'script_title',
+                  'sku', 'ticket_summary', 'invoice_number'] as $field) {
             if (isset($data[$field]) && $data[$field] === '') {
                 $data[$field] = null;
             }

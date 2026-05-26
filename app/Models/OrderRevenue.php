@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-25 | Add customer/order detail columns for Order Log
 // v1.1 — 2026-05-25 | Add editor_paid_at and line_items_json
 // v1.0 — 2026-05-25 | Initial — WooCommerce order financials synced from theme via webhook
 
@@ -24,6 +25,14 @@ class OrderRevenue extends Model
         'payment_method',
         'coupon_code',
         'customer_email',
+        'customer_name',
+        'customer_phone',
+        'customer_address',
+        'script_title',
+        'sku',
+        'ticket_summary',
+        'order_quantity',
+        'invoice_number',
         'services_purchased',
         'line_items_json',
         'staff_member',
