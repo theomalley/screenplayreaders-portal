@@ -63,7 +63,6 @@
                                 <th class="px-3 py-2 text-left">Address</th>
                                 <th class="px-3 py-2 text-left">Script Title</th>
                                 <th class="px-3 py-2 text-left">Services</th>
-                                <th class="px-3 py-2 text-left">SKU</th>
                                 <th class="px-3 py-2 text-center">Qty</th>
                                 <th class="px-3 py-2 text-right">Total</th>
                                 <th class="px-3 py-2 text-right">Discount</th>
@@ -117,8 +116,7 @@
                                 <td class="px-3 py-2 text-gray-600 max-w-[200px] truncate" title="{{ $o->ticket_summary ?: $o->services_purchased }}">
                                     {{ $o->ticket_summary ?: $o->services_purchased ?: '—' }}
                                 </td>
-                                <td class="px-3 py-2 text-gray-500 font-mono">{{ $o->sku ?: '—' }}</td>
-                                <td class="px-3 py-2 text-center text-gray-600">{{ $o->order_quantity ?? '—' }}</td>
+                                <td class="px-3 py-2 text-center text-gray-600 font-mono">{{ $o->order_quantity ?: '—' }}</td>
                                 <td class="px-3 py-2 text-right font-medium text-gray-800">${{ number_format($o->order_total, 2) }}</td>
                                 <td class="px-3 py-2 text-right text-{{ (float)$o->discount_amount > 0 ? 'amber-600' : 'gray-400' }}">
                                     {{ (float)$o->discount_amount > 0 ? '-$' . number_format($o->discount_amount, 2) : '—' }}

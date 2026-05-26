@@ -62,8 +62,9 @@
                         </div>
                         <div>
                             <x-input-label for="order_quantity" value="Quantity" />
-                            <x-text-input id="order_quantity" name="order_quantity" type="number" min="0"
-                                class="mt-1 block w-full"
+                            <x-text-input id="order_quantity" name="order_quantity" type="text"
+                                class="mt-1 block w-full font-mono"
+                                placeholder="e.g. 1 or 1,1"
                                 value="{{ old('order_quantity', $order?->order_quantity) }}" />
                             <x-input-error :messages="$errors->get('order_quantity')" class="mt-1" />
                         </div>

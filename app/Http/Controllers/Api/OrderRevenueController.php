@@ -73,7 +73,7 @@ class OrderRevenueController extends Controller
             'script_title'        => 'nullable|string|max:500',
             'sku'                 => 'nullable|string|max:255',
             'ticket_summary'      => 'nullable|string|max:500',
-            'order_quantity'      => 'nullable|integer|min:0',
+            'order_quantity'      => 'nullable|string|max:100',
             'invoice_number'      => 'nullable|string|max:100',
             'services_purchased'  => 'nullable|string',
             'line_items_json'     => 'nullable|string',

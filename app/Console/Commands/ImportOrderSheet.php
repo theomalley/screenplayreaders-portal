@@ -121,11 +121,9 @@ class ImportOrderSheet extends Command
                 $data[$col] = $this->parseMoney($data[$col] ?? null) ?? 0.0;
             }
 
-            // Parse quantity
-            if (isset($data['order_quantity'])) {
-                $data['order_quantity'] = is_numeric($data['order_quantity'])
-                    ? (int) $data['order_quantity']
-                    : null;
+            // Keep quantity as a raw string — WC sends comma-separated values for multi-product orders (e.g. "1,1")
+            if (isset($data['order_quantity']) && $data['order_quantity'] === '') {
+                $data['order_quantity'] = null;
             }
 
             // Null out empty strings after all parsing

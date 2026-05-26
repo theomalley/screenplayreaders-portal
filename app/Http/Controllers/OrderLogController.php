@@ -123,7 +123,7 @@ class OrderLogController extends Controller
             'services_purchased' => ['nullable', 'string'],
             'ticket_summary'   => ['nullable', 'string', 'max:500'],
             'sku'              => ['nullable', 'string', 'max:255'],
-            'order_quantity'   => ['nullable', 'integer', 'min:0'],
+            'order_quantity'   => ['nullable', 'string', 'max:100'],
             'order_total'      => ['required', 'numeric'],
             'discount_amount'  => ['nullable', 'numeric'],
             'cog_reader'       => ['nullable', 'numeric'],
