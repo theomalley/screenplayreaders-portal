@@ -272,6 +272,22 @@
                     </div>
                 @endif
 
+                <div x-data="{ search: '' }">
+
+                {{-- Search --}}
+                <div class="mb-3 flex items-center gap-2">
+                    <div class="relative flex-1 max-w-sm">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/>
+                        </svg>
+                        <input type="text" x-model="search"
+                               placeholder="Search order #, title, writer, reader…"
+                               class="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white" />
+                        <button x-show="search" @click="search = ''"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                    </div>
+                </div>
+
                 @if ($assignments->isEmpty())
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-gray-500">
                         No assignments yet.
@@ -366,8 +382,18 @@
                                         if ($assignment->vendor === 'wd') {
                                             $typeLabel = 'WD ' . $typeLabel;
                                         }
+                                        $searchStr = strtolower(implode(' ', array_filter([
+                                            $assignment->order_number,
+                                            $assignment->script_title,
+                                            $assignment->writer_name,
+                                            $assignment->assignedReader?->readerProfile?->displayName(),
+                                            $assignment->assignedReader?->readerProfile?->initials,
+                                            $assignment->assignedReader?->name,
+                                        ])));
                                     @endphp
-                                    <tr class="hover:bg-gray-50 {{ $rowClass }}">
+                                    <tr class="hover:bg-gray-50 {{ $rowClass }}"
+                                        x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
+                                        data-search="{{ $searchStr }}">
                                         {{-- Age --}}
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">
                                             {{ $ageStr }}
@@ -668,8 +694,15 @@
                                         $downloadUrl = $assignment->drive_script_file_id
                                             ? 'https://drive.google.com/uc?export=download&id=' . $assignment->drive_script_file_id
                                             : null;
+                                        $searchStr = strtolower(implode(' ', array_filter([
+                                            $assignment->order_number,
+                                            $assignment->script_title,
+                                            $assignment->writer_name,
+                                        ])));
                                     @endphp
-                                    <tr class="hover:bg-gray-50">
+                                    <tr class="hover:bg-gray-50"
+                                        x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
+                                        data-search="{{ $searchStr }}">
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                         @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
                                         <td class="px-3 py-3 whitespace-nowrap font-mono">
@@ -714,6 +747,8 @@
                     </div>
                 </div>
             @endif
+
+                </div> {{-- /x-data search wrapper --}}
 
             {{-- ===== READER VIEW ===== --}}
             @else
