@@ -31,6 +31,11 @@
                             </span>
                         </x-nav-link>
 
+                        {{-- Admin + Editor top-level tabs --}}
+                        <x-nav-link :href="route('woo-orders.index')" :active="request()->routeIs('woo-orders.*')">
+                            {{ __('Orders') }}
+                        </x-nav-link>
+
                         {{-- Admin-only top-level tabs --}}
                         @if(auth()->user()?->isAdmin())
                             <x-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">
@@ -175,6 +180,9 @@
                             <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-bold leading-none">{{ $qcCount }}</span>
                         @endif
                     </span>
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('woo-orders.index')" :active="request()->routeIs('woo-orders.*')">
+                    {{ __('Orders') }}
                 </x-responsive-nav-link>
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">

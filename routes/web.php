@@ -20,6 +20,7 @@ use App\Http\Controllers\ReaderProfileController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\WooOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -99,6 +100,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/order-log/{orderLog}/edit', [OrderLogController::class, 'edit'])->name('order-log.edit');
     Route::patch('/order-log/{orderLog}', [OrderLogController::class, 'update'])->name('order-log.update');
     Route::delete('/order-log/{orderLog}', [OrderLogController::class, 'destroy'])->name('order-log.destroy');
+
+    Route::get('/woo-orders', [WooOrderController::class, 'index'])->name('woo-orders.index');
+    Route::get('/woo-orders/{id}', [WooOrderController::class, 'show'])->name('woo-orders.show')->whereNumber('id');
+    Route::post('/woo-orders/{id}/refund', [WooOrderController::class, 'refund'])->name('woo-orders.refund')->whereNumber('id');
+    Route::post('/woo-orders/{id}/resend-email', [WooOrderController::class, 'resendEmail'])->name('woo-orders.resend-email')->whereNumber('id');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');

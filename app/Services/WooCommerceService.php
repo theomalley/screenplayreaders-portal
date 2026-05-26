@@ -1,0 +1,112 @@
+<?php
+
+// v1.0 — 2026-05-26 | WooCommerce REST API client — order list, detail, refund, resend email
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use RuntimeException;
+
+class WooCommerceService
+{
+    private string $baseUrl;
+    private string $consumerKey;
+    private string $consumerSecret;
+    private string $portalSecret;
+
+    public function __construct()
+    {
+        $this->baseUrl        = rtrim((string) config('services.woocommerce.store_url'), '/');
+        $this->consumerKey    = (string) config('services.woocommerce.consumer_key');
+        $this->consumerSecret = (string) config('services.woocommerce.consumer_secret');
+        $this->portalSecret   = (string) config('services.woocommerce.portal_secret');
+    }
+
+    /**
+     * List orders. Returns ['orders' => [...], 'total' => int, 'total_pages' => int].
+     * Accepts any params the WC REST API supports: search, status, page, per_page, after, before.
+     */
+    public function getOrders(array $params = []): array
+    {
+        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
+            ->get($this->baseUrl . '/wp-json/wc/v3/orders', array_merge(['per_page' => 25, 'orderby' => 'date', 'order' => 'desc'], $params));
+
+        if ($response->failed()) {
+            throw new RuntimeException('WooCommerce API error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown error'));
+        }
+
+        return [
+            'orders'      => $response->json() ?? [],
+            'total'       => (int) $response->header('X-WP-Total'),
+            'total_pages' => (int) $response->header('X-WP-TotalPages'),
+        ];
+    }
+
+    /**
+     * Fetch a single order by WooCommerce order ID.
+     * Throws ModelNotFoundException on 404, RuntimeException on other failures.
+     */
+    public function getOrder(int $id): array
+    {
+        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
+            ->get($this->baseUrl . "/wp-json/wc/v3/orders/{$id}");
+
+        if ($response->status() === 404) {
+            throw new ModelNotFoundException("Order {$id} not found.");
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException('WooCommerce API error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown error'));
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Create a refund on an order. Delegates the actual gateway refund to WooCommerce
+     * (api_refund: true), so Stripe/PayPal credentials never need to leave the WP site.
+     */
+    public function createRefund(int $orderId, float $amount, string $reason = ''): array
+    {
+        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
+            ->post($this->baseUrl . "/wp-json/wc/v3/orders/{$orderId}/refunds", [
+                'amount'     => number_format($amount, 2, '.', ''),
+                'reason'     => $reason,
+                'api_refund' => true,
+            ]);
+
+        if ($response->failed()) {
+            $message = $response->json('message') ?? 'Refund failed — the payment gateway may have rejected it.';
+            throw new RuntimeException($message);
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Trigger the Customer Invoice email for an order via the custom sr/v1 REST endpoint
+     * registered in woo_tweaks.php. Authenticated with WC_PORTAL_SECRET shared secret.
+     */
+    public function resendEmail(int $orderId): void
+    {
+        $response = Http::withHeaders(['X-SR-Portal-Secret' => $this->portalSecret])
+            ->post($this->baseUrl . "/wp-json/sr/v1/orders/{$orderId}/resend-email");
+
+        if ($response->failed()) {
+            throw new RuntimeException('Failed to resend email (' . $response->status() . ').');
+        }
+    }
+
+    /**
+     * Calculate the amount still refundable on an order (total minus already-refunded).
+     * WC refund totals are stored as negative numbers, so we sum their absolute values.
+     */
+    public static function refundableAmount(array $order): float
+    {
+        $total    = (float) ($order['total'] ?? 0);
+        $refunded = array_sum(array_map(fn($r) => abs((float) ($r['total'] ?? 0)), $order['refunds'] ?? []));
+
+        return max(0.0, round($total - $refunded, 2));
+    }
+}

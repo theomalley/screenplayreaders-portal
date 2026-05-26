@@ -53,4 +53,17 @@ return [
         'client_secret' => env('HELPSCOUT_CLIENT_SECRET'),
     ],
 
+    'woocommerce' => [
+        'store_url'       => env('WC_STORE_URL'),
+        'consumer_key'    => env('WC_CONSUMER_KEY'),
+        'consumer_secret' => env('WC_CONSUMER_SECRET'),
+        // Shared secret for the custom sr/v1 REST endpoints on the WP site
+        'portal_secret'   => env('WC_PORTAL_SECRET'),
+    ],
+
+    'stripe' => [
+        'secret_key'      => env('STRIPE_SECRET_KEY'),
+        'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
+    ],
+
 ];
