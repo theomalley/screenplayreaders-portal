@@ -13,7 +13,7 @@
                 <form method="GET" action="{{ route('order-log.index') }}" class="flex items-center gap-2">
                     <input type="hidden" name="period" value="{{ $period }}">
                     <input type="text" name="q" value="{{ $q }}"
-                           placeholder="Order #, name, email…"
+                           placeholder="Order #, invoice #, name, email…"
                            class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 w-52" />
                     <x-primary-button class="py-1.5 px-3 text-xs">Search</x-primary-button>
                     @if($q)
