@@ -335,11 +335,15 @@ class InvoiceService
 
         // Build description from line items (batch) or invoice description (single)
         $lineItems = $invoice->lineItems()->get();
-        $description = $lineItems->isNotEmpty()
-            ? $lineItems->values()->map(
+        if ($lineItems->count() > 1) {
+            $description = $lineItems->values()->map(
                 fn ($item, $i) => ($i + 1) . '. ' . $item->description . ' — $' . number_format((float) $item->amount, 2)
-              )->implode("\n")
-            : $invoice->description;
+            )->implode("\n");
+        } elseif ($lineItems->count() === 1) {
+            $description = $lineItems->first()->description;
+        } else {
+            $description = $invoice->description;
+        }
 
         OrderRevenue::updateOrCreate(
             ['order_number' => "INV-{$code}-{$invoice->invoice_number}"],
