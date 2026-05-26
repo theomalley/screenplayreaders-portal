@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-26 | Add batch invoicing path — addToBatchInvoice(), send()
 // v1.0 — 2026-05-26 | Invoice generation orchestrator — PDF (Google Docs) and Stripe paths
 
 namespace App\Services;
@@ -7,6 +8,7 @@ namespace App\Services;
 use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\InvoiceLineItem;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -24,16 +26,12 @@ class InvoiceService
 
     /**
      * Generate an invoice for a client, optionally tied to an assignment.
-     * Creates the Invoice record, fires the appropriate path (PDF or Stripe),
-     * and creates a Help Scout thread if a ticket number is available.
      *
-     * @param  Client          $client
-     * @param  string          $description   Line item description
-     * @param  float           $amount        Invoice amount in USD
-     * @param  Assignment|null $assignment    The linked assignment (provides HS ticket number)
-     * @param  string|null     $notes
-     * @param  string|null     $dueDate       Y-m-d or null
-     * @return Invoice
+     * For batch clients: finds (or creates) an open draft invoice for the client
+     * and appends a line item. Does NOT send — the editor sends manually later.
+     *
+     * For standard clients: creates the Invoice record, fires the appropriate
+     * delivery path (Stripe or PDF), and posts to Help Scout if a ticket exists.
      */
     public function generate(
         Client      $client,
@@ -43,15 +41,18 @@ class InvoiceService
         ?string     $notes      = null,
         ?string     $dueDate    = null,
     ): Invoice {
-        // Allocate the next invoice number atomically
+        if ($client->batch_invoicing) {
+            return $this->addToBatchInvoice($client, $description, $amount, $assignment);
+        }
+
+        // Standard (non-batch) path — allocate invoice number atomically
         $client->increment('last_invoice_number');
         $client->refresh();
-        $invoiceNumber = (string) $client->last_invoice_number;
 
         $invoice = Invoice::create([
             'client_id'      => $client->id,
             'assignment_id'  => $assignment?->id,
-            'invoice_number' => $invoiceNumber,
+            'invoice_number' => (string) $client->last_invoice_number,
             'description'    => $description,
             'amount'         => $amount,
             'status'         => 'draft',
@@ -72,38 +73,120 @@ class InvoiceService
                 'invoice_id' => $invoice->id,
                 'error'      => $e->getMessage(),
             ]);
-            // Leave invoice record as draft so it can be retried — don't rethrow silently
             throw $e;
         }
 
         return $invoice->fresh();
     }
 
+    /**
+     * Manually send a batch draft invoice.
+     * Compiles all accumulated line items and fires the appropriate delivery path.
+     */
+    public function send(Invoice $invoice): void
+    {
+        $client    = $invoice->client;
+        $lineItems = $invoice->lineItems()->with('assignment')->get();
+
+        if ($lineItems->isEmpty()) {
+            throw new RuntimeException('Cannot send an invoice with no line items.');
+        }
+
+        // Build Stripe line items payload
+        $stripeLineItems = $lineItems->map(fn ($item) => [
+            'description'  => $item->description,
+            'amount_cents' => (int) round((float) $item->amount * 100),
+        ])->all();
+
+        // Build compiled description for PDF template (numbered list)
+        $compiledDescription = $lineItems->values()->map(
+            fn ($item, $i) => ($i + 1) . '. ' . $item->description . ' — $' . number_format((float) $item->amount, 2)
+        )->implode("\n");
+
+        // Use the first line item's assignment for Help Scout, if available
+        $primaryAssignment = $lineItems->first()?->assignment;
+
+        $invoice->update(['issued_at' => $invoice->issued_at ?? now()]);
+
+        try {
+            if ($invoice->invoice_type === 'stripe') {
+                $this->sendBatchStripe($invoice, $client, $stripeLineItems, $primaryAssignment);
+            } else {
+                $this->sendBatchPdf($invoice, $client, $compiledDescription, $primaryAssignment);
+            }
+        } catch (\Throwable $e) {
+            Log::error('InvoiceService::send failed', [
+                'invoice_id' => $invoice->id,
+                'error'      => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
     // -------------------------------------------------------------------------
-    // Stripe path
+    // Batch helpers
+    // -------------------------------------------------------------------------
+
+    private function addToBatchInvoice(Client $client, string $description, float $amount, ?Assignment $assignment): Invoice
+    {
+        // Find the open accumulating draft for this client, or create one
+        $invoice = Invoice::where('client_id', $client->id)
+            ->where('status', 'draft')
+            ->whereNull('stripe_invoice_id')
+            ->whereNull('google_doc_id')
+            ->latest()
+            ->first();
+
+        if (! $invoice) {
+            $client->increment('last_invoice_number');
+            $client->refresh();
+
+            $invoice = Invoice::create([
+                'client_id'      => $client->id,
+                'invoice_number' => (string) $client->last_invoice_number,
+                'description'    => 'Weekly batch invoice',
+                'amount'         => 0,
+                'status'         => 'draft',
+                'invoice_type'   => $client->invoice_type,
+                'issued_at'      => now(),
+            ]);
+        }
+
+        InvoiceLineItem::create([
+            'invoice_id'    => $invoice->id,
+            'assignment_id' => $assignment?->id,
+            'description'   => $description,
+            'amount'        => $amount,
+        ]);
+
+        // Keep invoice amount in sync with the sum of all line items
+        $invoice->update(['amount' => $invoice->lineItems()->sum('amount')]);
+
+        return $invoice->fresh();
+    }
+
+    // -------------------------------------------------------------------------
+    // Standard (single-item) Stripe path
     // -------------------------------------------------------------------------
 
     private function generateStripe(Invoice $invoice, Client $client, ?Assignment $assignment): void
     {
-        // 1. Ensure a Stripe customer exists for this client
         $stripeCustomerId = $client->stripe_customer_id;
 
         if (! $stripeCustomerId) {
-            $stripeCustomerId = $this->stripe->ensureCustomer(
-                $client->email ?? '',
-                $client->name
-            );
+            $stripeCustomerId = $this->stripe->ensureCustomer($client->email ?? '', $client->name);
             $client->update(['stripe_customer_id' => $stripeCustomerId]);
         }
 
-        // 2. Create, finalize, and send via Stripe
-        $dueDateTs = $invoice->due_date ? $invoice->due_date->timestamp : null;
+        $singleLineItem = [
+            'description'  => $invoice->description,
+            'amount_cents' => (int) round((float) $invoice->amount * 100),
+        ];
 
         $result = $this->stripe->createAndSendInvoice(
             stripeCustomerId: $stripeCustomerId,
-            description:      $invoice->description,
-            amountCents:      (int) round($invoice->amount * 100),
-            dueDateTimestamp: $dueDateTs,
+            lineItems: [$singleLineItem],
+            dueDateTimestamp: $invoice->due_date ? $invoice->due_date->timestamp : null,
         );
 
         $invoice->update([
@@ -112,9 +195,38 @@ class InvoiceService
             'stripe_invoice_url' => $result['hosted_invoice_url'],
         ]);
 
-        // 3. Reply on Help Scout with the invoice link (if we have a ticket)
         if ($assignment?->helpscout_ticket_number) {
             $this->postStripeHelpScoutReply($invoice, $assignment, $result['hosted_invoice_url']);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Batch Stripe send path
+    // -------------------------------------------------------------------------
+
+    private function sendBatchStripe(Invoice $invoice, Client $client, array $lineItems, ?Assignment $primaryAssignment): void
+    {
+        $stripeCustomerId = $client->stripe_customer_id;
+
+        if (! $stripeCustomerId) {
+            $stripeCustomerId = $this->stripe->ensureCustomer($client->email ?? '', $client->name);
+            $client->update(['stripe_customer_id' => $stripeCustomerId]);
+        }
+
+        $result = $this->stripe->createAndSendInvoice(
+            stripeCustomerId: $stripeCustomerId,
+            lineItems: $lineItems,
+            dueDateTimestamp: $invoice->due_date ? $invoice->due_date->timestamp : null,
+        );
+
+        $invoice->update([
+            'status'             => 'sent',
+            'stripe_invoice_id'  => $result['invoice_id'],
+            'stripe_invoice_url' => $result['hosted_invoice_url'],
+        ]);
+
+        if ($primaryAssignment?->helpscout_ticket_number) {
+            $this->postStripeHelpScoutReply($invoice, $primaryAssignment, $result['hosted_invoice_url']);
         }
     }
 
@@ -143,28 +255,23 @@ class InvoiceService
     }
 
     // -------------------------------------------------------------------------
-    // PDF path (Google Docs)
+    // Standard (single-item) PDF path
     // -------------------------------------------------------------------------
 
     private function generatePdf(Invoice $invoice, Client $client, ?Assignment $assignment): void
     {
         $srAddress    = Setting::getValue('sr_invoice_address', '');
         $emailBody    = Setting::getValue('invoice_email_body', '');
-        $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress);
+        $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $invoice->description);
 
-        // 1. Copy template and fill placeholders
         $folderId = config('services.google.drive_coverage_folder_id');
         $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
 
-        // Use the Google Drive / Docs APIs via GoogleDocsService helpers
         $docId = $this->docs->createInvoiceDoc(self::INVOICE_TEMPLATE_ID, $filename, $folderId, $placeholders);
-
         $invoice->update(['google_doc_id' => $docId]);
 
-        // 2. Export to PDF bytes
         $pdfBytes = $this->docs->exportDocToPdfBytes($docId);
 
-        // 3. Post draft reply to Help Scout with PDF attached (if we have a ticket)
         if ($assignment?->helpscout_ticket_number) {
             $this->postPdfHelpScoutDraft($invoice, $assignment, $pdfBytes, $filename, $emailBody);
         }
@@ -172,18 +279,43 @@ class InvoiceService
         $invoice->update(['status' => 'sent']);
     }
 
-    private function buildPdfPlaceholders(Invoice $invoice, Client $client, string $srAddress): array
+    // -------------------------------------------------------------------------
+    // Batch PDF send path
+    // -------------------------------------------------------------------------
+
+    private function sendBatchPdf(Invoice $invoice, Client $client, string $compiledDescription, ?Assignment $primaryAssignment): void
+    {
+        $srAddress    = Setting::getValue('sr_invoice_address', '');
+        $emailBody    = Setting::getValue('invoice_email_body', '');
+        $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $compiledDescription);
+
+        $folderId = config('services.google.drive_coverage_folder_id');
+        $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
+
+        $docId = $this->docs->createInvoiceDoc(self::INVOICE_TEMPLATE_ID, $filename, $folderId, $placeholders);
+        $invoice->update(['google_doc_id' => $docId]);
+
+        $pdfBytes = $this->docs->exportDocToPdfBytes($docId);
+
+        if ($primaryAssignment?->helpscout_ticket_number) {
+            $this->postPdfHelpScoutDraft($invoice, $primaryAssignment, $pdfBytes, $filename, $emailBody);
+        }
+
+        $invoice->update(['status' => 'sent']);
+    }
+
+    private function buildPdfPlaceholders(Invoice $invoice, Client $client, string $srAddress, string $description): array
     {
         return [
-            '{{SR_ADDRESS}}'       => $srAddress,
-            '{{CLIENT_NAME}}'      => $client->name,
-            '{{CLIENT_ADDRESS}}'   => $client->billingAddress(),
-            '{{CLIENT_EMAIL}}'     => $client->email ?? '',
-            '{{INVOICE_NUMBER}}'   => $invoice->invoice_number,
-            '{{INVOICE_DATE}}'     => now()->format('F j, Y'),
-            '{{DUE_DATE}}'         => $invoice->due_date ? $invoice->due_date->format('F j, Y') : 'Upon Receipt',
-            '{{DESCRIPTION}}'      => $invoice->description,
-            '{{AMOUNT}}'           => '$' . number_format((float) $invoice->amount, 2),
+            '{{SR_ADDRESS}}'     => $srAddress,
+            '{{CLIENT_NAME}}'    => $client->name,
+            '{{CLIENT_ADDRESS}}' => $client->billingAddress(),
+            '{{CLIENT_EMAIL}}'   => $client->email ?? '',
+            '{{INVOICE_NUMBER}}' => $invoice->invoice_number,
+            '{{INVOICE_DATE}}'   => now()->format('F j, Y'),
+            '{{DUE_DATE}}'       => $invoice->due_date ? $invoice->due_date->format('F j, Y') : 'Upon Receipt',
+            '{{DESCRIPTION}}'    => $description,
+            '{{AMOUNT}}'         => '$' . number_format((float) $invoice->amount, 2),
         ];
     }
 
@@ -209,12 +341,10 @@ class InvoiceService
 
         $html = $emailBody ?: '<p>Please find your invoice attached.</p>';
 
-        $attachment = [
+        $this->helpscout->createDraftReply($conversationId, $html, [[
             'fileName' => $filename . '.pdf',
             'mimeType' => 'application/pdf',
             'data'     => base64_encode($pdfBytes),
-        ];
-
-        $this->helpscout->createDraftReply($conversationId, $html, [$attachment]);
+        ]]);
     }
 }

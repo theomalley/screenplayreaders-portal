@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-26 | Add send() for batch draft invoices
 // v1.0 — 2026-05-26 | Invoice creation, status management, and standalone invoicing tab
 
 namespace App\Http\Controllers;
@@ -107,6 +108,27 @@ class InvoiceController extends Controller
         ]);
 
         return back()->with('success', "Invoice #{$invoice->invoice_number} marked as paid.");
+    }
+
+    /**
+     * Send a batch draft invoice — compiles all line items and fires delivery.
+     */
+    public function send(Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+
+        if ($invoice->status !== 'draft') {
+            return back()->withErrors(['invoice' => 'Only draft invoices can be sent.']);
+        }
+
+        try {
+            $this->invoiceService->send($invoice);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['invoice' => $e->getMessage()]);
+        }
+
+        return redirect()->route('clients.show', $invoice->client_id)
+            ->with('success', "Invoice #{$invoice->invoice_number} sent.");
     }
 
     /**

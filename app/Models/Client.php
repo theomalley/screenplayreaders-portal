@@ -21,6 +21,7 @@ class Client extends Model
         'notes',
         'last_invoice_number',
         'invoice_type',
+        'batch_invoicing',
         'stripe_customer_id',
     ];
 

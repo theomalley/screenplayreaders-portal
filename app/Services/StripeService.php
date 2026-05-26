@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-26 | Accept array of line items in createAndSendInvoice() for batch invoicing
 // v1.1 — 2026-05-26 | Add invoice creation and customer management for client invoicing module
 // v1.0 — 2026-05-26 | Shell — Stripe secret/publishable key config
 
@@ -40,24 +41,26 @@ class StripeService
     }
 
     /**
-     * Create a Stripe invoice for a customer, add a line item, finalize, and send it.
+     * Create a Stripe invoice for a customer, add one or more line items, finalize, and send it.
      * Returns ['invoice_id' => string, 'hosted_invoice_url' => string].
-     * $amountCents is in USD cents (e.g. 5000 = $50.00).
+     *
+     * $lineItems must be an array of ['description' => string, 'amount_cents' => int] (USD cents).
      * $dueDateTimestamp is a Unix timestamp or null (defaults to net-30).
      */
     public function createAndSendInvoice(
-        string  $stripeCustomerId,
-        string  $description,
-        int     $amountCents,
-        ?int    $dueDateTimestamp = null
+        string $stripeCustomerId,
+        array  $lineItems,
+        ?int   $dueDateTimestamp = null
     ): array {
-        // 1. Create invoice item (pending item attached to customer)
-        $this->post('/invoiceitems', [
-            'customer'    => $stripeCustomerId,
-            'amount'      => $amountCents,
-            'currency'    => 'usd',
-            'description' => $description,
-        ]);
+        // 1. Create one pending invoice item per line
+        foreach ($lineItems as $item) {
+            $this->post('/invoiceitems', [
+                'customer'    => $stripeCustomerId,
+                'amount'      => $item['amount_cents'],
+                'currency'    => 'usd',
+                'description' => $item['description'],
+            ]);
+        }
 
         // 2. Create the invoice
         $invoiceParams = [

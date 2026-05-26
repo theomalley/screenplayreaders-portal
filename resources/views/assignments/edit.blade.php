@@ -129,7 +129,9 @@
                           },
                           init() { this.$nextTick(() => this.updatePayDisplay()); },
                           createInvoice: false,
-                          invoiceClientId: '{{ old('invoice_client_id', $assignment->client_id ?? '') }}'
+                          invoiceClientId: '{{ old('invoice_client_id', $assignment->client_id ?? '') }}',
+                          batchClientIds: {{ \App\Models\Client::where('batch_invoicing', true)->pluck('id') }},
+                          get isBatchClient() { return this.batchClientIds.includes(parseInt(this.invoiceClientId)); }
                       }">
                     @csrf
                     @method('PATCH')
@@ -144,32 +146,37 @@
                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                             <label for="create_invoice" class="text-sm font-medium text-gray-700 cursor-pointer">Invoice</label>
                         </div>
-                        <div x-show="createInvoice" x-cloak class="mt-3 grid grid-cols-2 gap-4">
-                            <div>
-                                <x-input-label for="invoice_client_id" value="Client" />
-                                <select id="invoice_client_id" name="invoice_client_id"
-                                    x-model="invoiceClientId"
-                                    class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="">— Select client —</option>
-                                    @foreach(\App\Models\Client::orderBy('name')->get() as $client)
-                                        <option value="{{ $client->id }}" {{ (old('invoice_client_id', $assignment->client_id) == $client->id) ? 'selected' : '' }}>
-                                            {{ $client->name }} ({{ $client->invoice_type === 'stripe' ? 'Stripe' : 'PDF' }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <x-input-error :messages="$errors->get('invoice_client_id')" class="mt-1" />
-                            </div>
-                            <div>
-                                <x-input-label for="invoice_amount" value="Invoice Amount ($)" />
-                                <div class="mt-1 relative">
-                                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">$</span>
-                                    <x-text-input id="invoice_amount" name="invoice_amount" type="number"
-                                        step="0.01" min="0.01"
-                                        class="block w-full pl-7"
-                                        value="{{ old('invoice_amount') }}" />
+                        <div x-show="createInvoice" x-cloak class="mt-3 space-y-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <x-input-label for="invoice_client_id" value="Client" />
+                                    <select id="invoice_client_id" name="invoice_client_id"
+                                        x-model="invoiceClientId"
+                                        class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        <option value="">— Select client —</option>
+                                        @foreach(\App\Models\Client::orderBy('name')->get() as $client)
+                                            <option value="{{ $client->id }}" {{ (old('invoice_client_id', $assignment->client_id) == $client->id) ? 'selected' : '' }}>
+                                                {{ $client->name }} ({{ $client->batch_invoicing ? 'Batch' : ($client->invoice_type === 'stripe' ? 'Stripe' : 'PDF') }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <x-input-error :messages="$errors->get('invoice_client_id')" class="mt-1" />
                                 </div>
-                                <x-input-error :messages="$errors->get('invoice_amount')" class="mt-1" />
+                                <div>
+                                    <x-input-label for="invoice_amount" value="Invoice Amount ($)" />
+                                    <div class="mt-1 relative">
+                                        <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">$</span>
+                                        <x-text-input id="invoice_amount" name="invoice_amount" type="number"
+                                            step="0.01" min="0.01"
+                                            class="block w-full pl-7"
+                                            value="{{ old('invoice_amount') }}" />
+                                    </div>
+                                    <x-input-error :messages="$errors->get('invoice_amount')" class="mt-1" />
+                                </div>
                             </div>
+                            <p x-show="isBatchClient" x-cloak class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                                This client uses batch invoicing — this amount will be added to their open weekly invoice, not sent immediately.
+                            </p>
                         </div>
                     </div>
                     @elseif($assignment->invoices->isNotEmpty())
