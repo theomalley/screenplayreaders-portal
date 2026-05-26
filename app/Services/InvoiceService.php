@@ -348,7 +348,7 @@ class InvoiceService
         OrderRevenue::updateOrCreate(
             ['order_number' => "INV-{$code}-{$invoice->invoice_number}"],
             [
-                'invoice_number'     => $invoice->invoice_number,
+                'invoice_number'     => $code . str_pad($invoice->invoice_number, 4, '0', STR_PAD_LEFT),
                 'ordered_at'         => $invoice->paid_at ?? $invoice->issued_at ?? now(),
                 'order_total'        => $invoice->amount,
                 'discount_amount'    => 0,
