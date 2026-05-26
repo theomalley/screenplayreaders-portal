@@ -74,6 +74,13 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
 #portal-nav .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.1) !important; }
 #portal-nav button.bg-white { background-color: transparent !important; }
 #portal-nav .hover\:border-gray-300:hover { border-color: rgba(255,255,255,0.4) !important; }
+/* Restore dark text inside white dropdown popups (absolute-positioned) */
+#portal-nav .absolute .text-gray-500 { color: #6b7280 !important; }
+#portal-nav .absolute .text-gray-600 { color: #4b5563 !important; }
+#portal-nav .absolute .text-gray-700 { color: #374151 !important; }
+#portal-nav .absolute .text-gray-800 { color: #1f2937 !important; }
+#portal-nav .absolute .text-gray-900 { color: #111827 !important; }
+#portal-nav .absolute .hover\:text-gray-700:hover { color: #374151 !important; }
 @endif
 .border-indigo-400 { border-color: {{ $pt['accent_mid'] }} !important; }
 .text-indigo-700 { color: {{ $pt['accent'] }} !important; }
