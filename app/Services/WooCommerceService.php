@@ -100,10 +100,12 @@ class WooCommerceService
      * Trigger the Customer Invoice email for an order via the custom sr/v1 REST endpoint
      * registered in woo_tweaks.php. Authenticated with WC_PORTAL_SECRET shared secret.
      */
-    public function resendEmail(int $orderId): void
+    public function resendEmail(int $orderId, ?string $testEmail = null): void
     {
+        $payload = $testEmail ? ['test_email' => $testEmail] : [];
+
         $response = Http::withHeaders(['X-SR-Portal-Secret' => $this->portalSecret])
-            ->post($this->baseUrl . "/wp-json/sr/v1/orders/{$orderId}/resend-email");
+            ->post($this->baseUrl . "/wp-json/sr/v1/orders/{$orderId}/resend-email", $payload);
 
         if ($response->failed()) {
             throw new RuntimeException('Failed to resend email (' . $response->status() . ').');

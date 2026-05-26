@@ -117,16 +117,23 @@ class WooOrderController extends Controller
             ->with('success', 'Refund of $' . number_format((float) $validated['amount'], 2) . ' issued successfully.');
     }
 
-    public function resendEmail(int $id, WooCommerceService $woo)
+    public function resendEmail(Request $request, int $id, WooCommerceService $woo)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
+        $validated = $request->validate([
+            'test_email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        $testEmail = $validated['test_email'] ?? null;
+
         try {
-            $woo->resendEmail($id);
+            $woo->resendEmail($id, $testEmail);
         } catch (RuntimeException $e) {
             return back()->withErrors(['email' => $e->getMessage()]);
         }
 
-        return back()->with('success', 'Receipt email sent to customer.');
+        $dest = $testEmail ? "test address ({$testEmail})" : 'customer';
+        return back()->with('success', "Receipt email sent to {$dest}.");
     }
 }

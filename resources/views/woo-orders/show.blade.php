@@ -223,13 +223,27 @@
                             <h3 class="text-sm font-semibold text-gray-700">Email</h3>
                         </div>
                         <div class="px-4 py-4">
-                            <p class="text-xs text-gray-500 mb-3">Resend the customer invoice / receipt email to <strong>{{ $billingEmail }}</strong>.</p>
+                            <p class="text-xs text-gray-500 mb-3">Customer address: <strong>{{ $billingEmail }}</strong>.</p>
                             <form method="POST" action="{{ route('woo-orders.resend-email', $order['id']) }}"
-                                  onsubmit="return confirm('Resend receipt email to {{ $billingEmail }}?')">
+                                  onsubmit="return confirmResend(this)">
                                 @csrf
-                                <x-secondary-button type="submit" class="w-full justify-center text-sm">
-                                    Resend Receipt Email
-                                </x-secondary-button>
+                                <div class="space-y-3">
+                                    <div>
+                                        <x-input-label for="test_email" value="Test address (optional)" class="text-xs" />
+                                        <x-text-input
+                                            id="test_email"
+                                            name="test_email"
+                                            type="email"
+                                            class="mt-1 block w-full text-sm"
+                                            placeholder="{{ $billingEmail }}"
+                                            value="{{ old('test_email') }}"
+                                        />
+                                        <p class="mt-1 text-[11px] text-gray-400">Leave blank to send to the customer.</p>
+                                    </div>
+                                    <x-secondary-button type="submit" class="w-full justify-center text-sm">
+                                        Send Receipt Email
+                                    </x-secondary-button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -295,4 +309,11 @@
             </div>
         </div>
     </div>
+<script>
+function confirmResend(form) {
+    const testEmail = form.querySelector('#test_email').value.trim();
+    const dest = testEmail ? 'test address: ' + testEmail : '{{ $billingEmail }} (customer)';
+    return confirm('Send receipt email to ' + dest + '?');
+}
+</script>
 </x-app-layout>
