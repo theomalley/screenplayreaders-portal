@@ -247,31 +247,31 @@
                     </div>
                 </div>
 
-                {{-- ACTIONS --}}
-                <div class="flex items-center justify-between mt-4">
-                    @if($order)
-                        <form method="POST" action="{{ route('order-log.destroy', $order) }}"
-                              onsubmit="return confirm('Delete this order record? This cannot be undone.')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                                Delete Order
-                            </button>
-                        </form>
-                    @else
-                        <div></div>
-                    @endif
-                    <div class="flex items-center gap-3">
-                        <a href="{{ route('order-log.index', ['period' => 'all']) }}"
-                           class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
-                        <x-primary-button form="order-form">
-                            {{ $order ? 'Save Changes' : 'Create Order' }}
-                        </x-primary-button>
-                    </div>
-                </div>
-
             </form>
+
+            {{-- ACTIONS — outside the form to prevent nesting the delete form inside order-form --}}
+            <div class="flex items-center justify-between mt-4">
+                @if($order)
+                    <form method="POST" action="{{ route('order-log.destroy', $order) }}"
+                          onsubmit="return confirm('Delete this order record? This cannot be undone.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                            Delete Order
+                        </button>
+                    </form>
+                @else
+                    <div></div>
+                @endif
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('order-log.index', ['period' => 'all']) }}"
+                       class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
+                    <x-primary-button form="order-form">
+                        {{ $order ? 'Save Changes' : 'Create Order' }}
+                    </x-primary-button>
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>
