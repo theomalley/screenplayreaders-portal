@@ -99,10 +99,15 @@ class StripeService
 
     // -------------------------------------------------------------------------
 
+    private function client(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::withBasicAuth($this->secretKey, '')
+            ->withHeader('Stripe-Version', '2024-06-20');
+    }
+
     private function get(string $path, array $params = []): array
     {
-        $response = Http::withBasicAuth($this->secretKey, '')
-            ->get(self::BASE . $path, $params);
+        $response = $this->client()->get(self::BASE . $path, $params);
 
         if ($response->failed()) {
             throw new RuntimeException('Stripe API error: ' . ($response->json('error.message') ?? $response->body()));
@@ -113,9 +118,7 @@ class StripeService
 
     private function post(string $path, array $params): array
     {
-        $response = Http::withBasicAuth($this->secretKey, '')
-            ->asForm()
-            ->post(self::BASE . $path, $params);
+        $response = $this->client()->asForm()->post(self::BASE . $path, $params);
 
         if ($response->failed()) {
             throw new RuntimeException('Stripe API error: ' . ($response->json('error.message') ?? $response->body()));
