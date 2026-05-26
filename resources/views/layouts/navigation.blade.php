@@ -100,9 +100,6 @@
                             </div>
                         </div>
                     @else
-                        <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
-                            {{ __('Reader Manual') }}
-                        </x-nav-link>
                         @if(auth()->user()?->isReader())
                             <x-nav-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
                                 {{ __('Payments') }}
@@ -112,6 +109,9 @@
                                 {{ __('My Payments') }}
                             </x-nav-link>
                         @endif
+                        <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
+                            {{ __('Reader Manual') }}
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
@@ -215,9 +215,6 @@
                     </x-responsive-nav-link>
                 @endif
             @else
-                <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
-                    {{ __('Reader Manual') }}
-                </x-responsive-nav-link>
                 @if(auth()->user()?->isReader())
                     <x-responsive-nav-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
                         {{ __('Payments') }}
@@ -227,6 +224,9 @@
                         {{ __('My Payments') }}
                     </x-responsive-nav-link>
                 @endif
+                <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
+                    {{ __('Reader Manual') }}
+                </x-responsive-nav-link>
             @endif
         </div>
 
