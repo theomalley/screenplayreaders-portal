@@ -55,7 +55,6 @@
                             <tr>
                                 <th class="px-3 py-2 sticky left-0 bg-gray-50 z-10 border-r border-gray-200"></th>
                             <th class="px-3 py-2 text-left">Date</th>
-                                <th class="px-3 py-2 text-left">Invoice #</th>
                                 <th class="px-3 py-2 text-left">Order #</th>
                                 <th class="px-3 py-2 text-left">Customer</th>
                                 <th class="px-3 py-2 text-left">Email</th>
@@ -102,10 +101,9 @@
                                 <td class="px-3 py-2 text-gray-600 font-mono">
                                     {{ $o->ordered_at?->format('Y-m-d') ?? '—' }}
                                 </td>
-                                <td class="px-3 py-2 text-gray-500 font-mono">{{ $o->invoice_number ?: '—' }}</td>
                                 <td class="px-3 py-2 font-mono">
                                     @if(str_starts_with($o->order_number, 'INV-'))
-                                        <span class="text-indigo-700">{{ $o->order_number }}</span>
+                                        <span class="text-indigo-700">{{ $o->invoice_number ?: $o->order_number }}</span>
                                         <span class="ml-1 inline-flex px-1 py-0.5 rounded text-[9px] font-semibold bg-indigo-100 text-indigo-600 uppercase tracking-wide">invoice</span>
                                     @else
                                         <span class="text-gray-600">{{ $o->order_number }}</span>
@@ -142,7 +140,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="23" class="px-5 py-10 text-center text-sm text-gray-400">
+                                <td colspan="22" class="px-5 py-10 text-center text-sm text-gray-400">
                                     No orders found{{ $q ? ' matching "' . $q . '"' : '' }} for the selected period.
                                 </td>
                             </tr>
