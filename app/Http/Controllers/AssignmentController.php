@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-05-26 | Reader view: Completed This Week (current pay period only) + Archived tab with pay-period grouping + search.
 // v1.6 — 2026-05-26 | Invoice checkbox on create/edit forms; triggers InvoiceService on save.
 // v1.4 — 2026-05-23 | coverage stream endpoint; show coverage PDF in viewer for admins.
 // v1.3 — 2026-05-21 | script upload, page deletion, assignment show view.
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Services\InvoiceService;
 use App\Services\GoogleDriveService;
 use App\Support\FilenameGenerator;
+use App\Support\PayPeriod;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -71,20 +73,38 @@ class AssignmentController extends Controller
             ->orderBy('unassigned_at', 'asc')
             ->get();
 
+        [$periodStart, $periodEnd] = PayPeriod::current();
+
         $mine = Assignment::forReader($user->id)
             ->with(['requestedReader.readerProfile', 'coverageSubmission'])
             ->orderBy('accepted_at', 'desc')
             ->get();
+
+        // Completed assignments from before the current pay period go to the Archived tab
+        $archived = Assignment::where('assigned_reader_id', $user->id)
+            ->where('status', Assignment::STATUS_COMPLETED)
+            ->whereNotNull('completed_at')
+            ->where('completed_at', '<', $periodStart)
+            ->with(['coverageSubmission'])
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
+        $archivedByPeriod = $archived->groupBy(
+            fn ($a) => PayPeriod::start($a->completed_at)->format('Y-m-d H:i:s')
+        )->sortKeysDesc();
 
         $profile        = $user->readerProfile;
         $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
         $readerMax      = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
 
         return view('assignments.index', [
-            'canManage'  => false,
-            'available'  => $available,
-            'mine'       => $mine,
-            'readerMax'  => $readerMax,
+            'canManage'        => false,
+            'available'        => $available,
+            'mine'             => $mine,
+            'readerMax'        => $readerMax,
+            'periodStart'      => $periodStart,
+            'periodEnd'        => $periodEnd,
+            'archivedByPeriod' => $archivedByPeriod,
         ]);
     }
 
