@@ -16,6 +16,16 @@
 
         @php
         $portalThemes = [
+            'default' => [
+                'body_bg'     => '#f7f4e6',
+                'nav_bg'      => '#2b4158',
+                'nav_border'  => '#1e3047',
+                'dark_nav'    => true,
+                'accent'      => '#3c9590',
+                'accent_dark' => '#2d7470',
+                'accent_mid'  => '#3c9590',
+                'accent_bg'   => 'rgba(60,149,144,0.1)',
+            ],
             'midnight' => [
                 'body_bg'     => '#1c1c2e',
                 'nav_bg'      => '#16213e',
@@ -47,7 +57,7 @@
                 'accent_bg'   => 'rgba(212,121,59,0.1)',
             ],
         ];
-        $pt = $portalThemes[\App\Models\Setting::getValue('portal_theme', 'default')] ?? null;
+        $pt = $portalThemes[\App\Models\Setting::getValue('portal_theme', 'default')] ?? $portalThemes['default'];
         @endphp
         @if($pt)
         <style id="sr-portal-theme">

@@ -18,10 +18,10 @@
                 <p class="text-xs text-gray-500 mb-4">Sets the colour scheme for the navigation bar and accent colours throughout the portal.</p>
                 <div class="flex flex-wrap gap-3">
                     @foreach([
-                        'default'  => ['label' => 'Default',  'nav' => '#ffffff', 'border_nav' => '#e5e7eb', 'body' => '#f3f4f6', 'accent' => '#6366f1'],
-                        'midnight' => ['label' => 'Midnight', 'nav' => '#16213e', 'border_nav' => '#16213e', 'body' => '#1c1c2e', 'accent' => '#e94560'],
-                        'forest'   => ['label' => 'Forest',   'nav' => '#1e3a2f', 'border_nav' => '#1e3a2f', 'body' => '#f0f4f0', 'accent' => '#4caf50'],
-                        'warm'     => ['label' => 'Warm',     'nav' => '#5c3317', 'border_nav' => '#5c3317', 'body' => '#faf6f1', 'accent' => '#d4793b'],
+                        'default'  => ['label' => 'Default',  'nav' => '#2b4158', 'border_nav' => '#1e3047', 'body' => '#f7f4e6', 'accent' => '#3c9590'],
+                        'midnight' => ['label' => 'Midnight', 'nav' => '#16213e', 'border_nav' => '#0f3460', 'body' => '#1c1c2e', 'accent' => '#e94560'],
+                        'forest'   => ['label' => 'Forest',   'nav' => '#1e3a2f', 'border_nav' => '#2d5440', 'body' => '#f0f4f0', 'accent' => '#4caf50'],
+                        'warm'     => ['label' => 'Warm',     'nav' => '#5c3317', 'border_nav' => '#7a4520', 'body' => '#faf6f1', 'accent' => '#d4793b'],
                     ] as $slug => $theme)
                         <form method="POST" action="{{ route('settings.theme') }}">
                             @csrf
