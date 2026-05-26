@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-26 | Add create/edit/delete CRUD
 // v1.0 — 2026-05-25 | Order log — one row per WooCommerce order, admin only
 
 namespace App\Http\Controllers;
@@ -7,6 +8,7 @@ namespace App\Http\Controllers;
 use App\Models\OrderRevenue;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class OrderLogController extends Controller
 {
@@ -60,6 +62,91 @@ class OrderLogController extends Controller
             'periods' => self::$PERIODS,
             'q'       => $q,
         ]);
+    }
+
+    public function create()
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+        return view('order-log.form', ['order' => null]);
+    }
+
+    public function store(Request $request)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $data = $this->validated($request);
+
+        OrderRevenue::create($data);
+
+        return redirect()->route('order-log.index', ['period' => 'all'])
+            ->with('success', 'Order created.');
+    }
+
+    public function edit(OrderRevenue $orderLog)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+        return view('order-log.form', ['order' => $orderLog]);
+    }
+
+    public function update(Request $request, OrderRevenue $orderLog)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $data = $this->validated($request, $orderLog->id);
+
+        $orderLog->update($data);
+
+        return redirect()->route('order-log.index', ['period' => 'all'])
+            ->with('success', 'Order updated.');
+    }
+
+    public function destroy(OrderRevenue $orderLog)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $orderLog->delete();
+
+        return back()->with('success', 'Order deleted.');
+    }
+
+    private function validated(Request $request, ?int $ignoreId = null): array
+    {
+        $data = $request->validate([
+            'ordered_at'       => ['required', 'date'],
+            'order_number'     => ['required', 'string', 'max:64', Rule::unique('order_revenues', 'order_number')->ignore($ignoreId)],
+            'invoice_number'   => ['nullable', 'string', 'max:100'],
+            'customer_name'    => ['nullable', 'string', 'max:255'],
+            'customer_email'   => ['nullable', 'email', 'max:255'],
+            'customer_phone'   => ['nullable', 'string', 'max:50'],
+            'customer_address' => ['nullable', 'string'],
+            'script_title'     => ['nullable', 'string', 'max:500'],
+            'services_purchased' => ['nullable', 'string'],
+            'ticket_summary'   => ['nullable', 'string', 'max:500'],
+            'sku'              => ['nullable', 'string', 'max:255'],
+            'order_quantity'   => ['nullable', 'integer', 'min:0'],
+            'order_total'      => ['required', 'numeric'],
+            'discount_amount'  => ['nullable', 'numeric'],
+            'cog_reader'       => ['nullable', 'numeric'],
+            'cog_processing'   => ['nullable', 'numeric'],
+            'cog_precommission'=> ['nullable', 'numeric'],
+            'cog_commission'   => ['nullable', 'numeric'],
+            'cog_total'        => ['nullable', 'numeric'],
+            'net_revenue'      => ['nullable', 'numeric'],
+            'payment_method'   => ['nullable', 'string', 'max:64'],
+            'coupon_code'      => ['nullable', 'string', 'max:128'],
+            'staff_member'     => ['nullable', 'string', 'max:128'],
+            'skip_commission'  => ['boolean'],
+        ]);
+
+        // Default NOT NULL money columns to 0 if omitted
+        foreach (['discount_amount', 'cog_reader', 'cog_processing', 'cog_precommission',
+                  'cog_commission', 'cog_total', 'net_revenue'] as $col) {
+            $data[$col] = $data[$col] ?? 0;
+        }
+
+        $data['skip_commission'] = $request->boolean('skip_commission');
+
+        return $data;
     }
 
     private function dateRange(string $period): array

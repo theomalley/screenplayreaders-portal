@@ -1,7 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4 flex-wrap">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Order Log</h2>
+            <div class="flex items-center gap-4">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Order Log</h2>
+                <a href="{{ route('order-log.create') }}"
+                   class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded text-xs font-medium text-white hover:bg-indigo-700 transition">
+                    + Add Order
+                </a>
+            </div>
             <div class="flex items-center gap-2 flex-wrap">
                 {{-- Search --}}
                 <form method="GET" action="{{ route('order-log.index') }}" class="flex items-center gap-2">
@@ -47,7 +53,8 @@
                     <table class="min-w-full text-xs whitespace-nowrap divide-y divide-gray-100">
                         <thead class="bg-gray-50 text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                             <tr>
-                                <th class="px-3 py-2 text-left sticky left-0 bg-gray-50 z-10 border-r border-gray-200">Date</th>
+                                <th class="px-3 py-2 sticky left-0 bg-gray-50 z-10 border-r border-gray-200"></th>
+                            <th class="px-3 py-2 text-left">Date</th>
                                 <th class="px-3 py-2 text-left">Invoice #</th>
                                 <th class="px-3 py-2 text-left">Order #</th>
                                 <th class="px-3 py-2 text-left">Customer</th>
@@ -74,7 +81,26 @@
                         <tbody class="divide-y divide-gray-100 bg-white">
                             @forelse($orders as $o)
                             <tr class="hover:bg-gray-50">
-                                <td class="px-3 py-2 text-gray-600 sticky left-0 bg-white hover:bg-gray-50 z-10 border-r border-gray-100 font-mono">
+                                <td class="px-2 py-2 sticky left-0 bg-white z-10 border-r border-gray-100">
+                                    <div class="flex items-center gap-1">
+                                        <a href="{{ route('order-log.edit', $o) }}"
+                                           class="p-1 text-gray-400 hover:text-indigo-600 rounded transition"
+                                           title="Edit">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </a>
+                                        <form method="POST" action="{{ route('order-log.destroy', $o) }}"
+                                              onsubmit="return confirm('Delete order {{ $o->order_number }}?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="p-1 text-gray-400 hover:text-red-600 rounded transition"
+                                                    title="Delete">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2 text-gray-600 font-mono">
                                     {{ $o->ordered_at?->format('Y-m-d') ?? '—' }}
                                 </td>
                                 <td class="px-3 py-2 text-gray-500 font-mono">{{ $o->invoice_number ?: '—' }}</td>
@@ -111,7 +137,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="22" class="px-5 py-10 text-center text-sm text-gray-400">
+                                <td colspan="23" class="px-5 py-10 text-center text-sm text-gray-400">
                                     No orders found{{ $q ? ' matching "' . $q . '"' : '' }} for the selected period.
                                 </td>
                             </tr>

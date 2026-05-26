@@ -94,6 +94,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
 
     Route::get('/order-log', [OrderLogController::class, 'index'])->name('order-log.index');
+    Route::get('/order-log/create', [OrderLogController::class, 'create'])->name('order-log.create');
+    Route::post('/order-log', [OrderLogController::class, 'store'])->name('order-log.store');
+    Route::get('/order-log/{orderLog}/edit', [OrderLogController::class, 'edit'])->name('order-log.edit');
+    Route::patch('/order-log/{orderLog}', [OrderLogController::class, 'update'])->name('order-log.update');
+    Route::delete('/order-log/{orderLog}', [OrderLogController::class, 'destroy'])->name('order-log.destroy');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
