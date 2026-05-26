@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-05-26 | Admin reader popup: show this-week and last-week completed counts + pay.
 // v1.7 — 2026-05-26 | Reader view: Completed This Week (current pay period only) + Archived tab with pay-period grouping + search.
 // v1.6 — 2026-05-26 | Invoice checkbox on create/edit forms; triggers InvoiceService on save.
 // v1.4 — 2026-05-23 | coverage stream endpoint; show coverage PDF in viewer for admins.
@@ -55,6 +56,41 @@ class AssignmentController extends Controller
                 ->orderBy('name')
                 ->get();
 
+            [$thisPeriodStart, $thisPeriodEnd] = PayPeriod::current();
+            $lastPeriodEnd   = $thisPeriodStart;
+            $lastPeriodStart = PayPeriod::start($thisPeriodStart->copy()->subDay());
+
+            $readerIds = $readers->pluck('id');
+
+            $periodCompleted = Assignment::whereIn('assigned_reader_id', $readerIds)
+                ->where('status', Assignment::STATUS_COMPLETED)
+                ->whereNotNull('completed_at')
+                ->where('completed_at', '>=', $lastPeriodStart)
+                ->where('completed_at', '<', $thisPeriodEnd)
+                ->get(['assigned_reader_id', 'completed_at', 'pay_rate']);
+
+            $readerWeekStats = [];
+            foreach ($readerIds as $rid) {
+                $thisWeek = $periodCompleted->filter(
+                    fn($a) => $a->assigned_reader_id === $rid
+                        && $a->completed_at >= $thisPeriodStart
+                        && $a->completed_at < $thisPeriodEnd
+                );
+                $lastWeek = $periodCompleted->filter(
+                    fn($a) => $a->assigned_reader_id === $rid
+                        && $a->completed_at >= $lastPeriodStart
+                        && $a->completed_at < $lastPeriodEnd
+                );
+                $readerWeekStats[$rid] = [
+                    'this_count' => $thisWeek->count(),
+                    'this_pay'   => $thisWeek->sum(fn($a) => (float) $a->pay_rate),
+                    'last_count' => $lastWeek->count(),
+                    'last_pay'   => $lastWeek->sum(fn($a) => (float) $a->pay_rate),
+                    'this_label' => PayPeriod::label($thisPeriodStart),
+                    'last_label' => PayPeriod::label($lastPeriodStart),
+                ];
+            }
+
             return view('assignments.index', [
                 'canManage'        => true,
                 'assignments'      => $assignments,
@@ -63,6 +99,7 @@ class AssignmentController extends Controller
                 'readers'          => $readers,
                 'assignableUsers'  => $this->assignableUsers(),
                 'capacityOverride' => (int) Setting::getValue('capacity_override', 0),
+                'readerWeekStats'  => $readerWeekStats,
             ]);
         }
 

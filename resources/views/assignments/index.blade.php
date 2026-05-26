@@ -198,6 +198,7 @@
                                 $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
                                 $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                                 $rOnline   = $reader->isOnline();
+                                $rStats    = $readerWeekStats[$reader->id] ?? null;
                             @endphp
                             <div x-show="activeStaff === 'r{{ $reader->id }}'" x-cloak
                                  x-transition:enter="transition ease-out duration-150"
@@ -221,13 +222,33 @@
                                             @if ($rOnline)
                                                 <span class="text-xs text-green-600 font-medium">● Online</span>
                                             @endif
-                                            <span class="text-xs text-gray-400">{{ $rActive }} / {{ $rMax ?: '—' }} assignment{{ $rMax === 1 ? '' : 's' }}</span>
+                                            <span class="text-xs text-gray-400">{{ $rActive }} / {{ $rMax ?: '—' }} active</span>
                                             @if ($rProfile?->paypal_email)
                                                 <span class="text-xs text-gray-400">PayPal: {{ $rProfile->paypal_email }}</span>
                                             @endif
                                             <a href="{{ route('readers.edit', $reader) }}"
                                                class="text-xs text-indigo-500 hover:text-indigo-700 underline ml-auto">Edit Profile</a>
                                         </div>
+
+                                        {{-- Weekly pay stats --}}
+                                        @if ($rStats)
+                                            <div class="mt-2 flex gap-4">
+                                                <div class="text-xs">
+                                                    <span class="text-gray-400">This week</span>
+                                                    <span class="ml-1 font-medium text-gray-500">({{ $rStats['this_label'] }})</span>
+                                                    <span class="ml-2 font-semibold text-green-700">${{ number_format($rStats['this_pay'], 2) }}</span>
+                                                    <span class="ml-1 text-gray-400">· {{ $rStats['this_count'] }} completed</span>
+                                                </div>
+                                                <div class="text-xs border-l border-gray-200 pl-4">
+                                                    <span class="text-gray-400">Last week</span>
+                                                    <span class="ml-1 font-medium text-gray-500">({{ $rStats['last_label'] }})</span>
+                                                    <span class="ml-2 font-semibold text-gray-700">${{ number_format($rStats['last_pay'], 2) }}</span>
+                                                    <span class="ml-1 text-gray-400">· {{ $rStats['last_count'] }} completed</span>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        {{-- Active assignments --}}
                                         @if ($reader->assignments->isNotEmpty())
                                             <ul class="mt-2 space-y-1">
                                                 @foreach ($reader->assignments as $ra)
@@ -242,7 +263,7 @@
                                                 @endforeach
                                             </ul>
                                         @else
-                                            <p class="mt-1 text-sm text-gray-400">No active assignments.</p>
+                                            <p class="mt-2 text-sm text-gray-400">No active assignments.</p>
                                         @endif
                                     </div>
                                 </div>
