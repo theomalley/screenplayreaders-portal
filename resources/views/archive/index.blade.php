@@ -11,6 +11,19 @@
                     No completed assignments yet.
                 </div>
             @else
+                <div x-data="{ search: '' }">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="relative flex-1 max-w-sm">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/>
+                        </svg>
+                        <input type="text" x-model="search"
+                               placeholder="Search order #, title, writer, reader…"
+                               class="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white" />
+                        <button x-show="search" @click="search = ''"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                    </div>
+                </div>
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -59,8 +72,14 @@
                                     if ($first->vendor === 'wd') {
                                         $typeLabel = 'WD ' . $typeLabel;
                                     }
+                                    $searchStr = strtolower(implode(' ', array_filter(array_merge(
+                                        [$orderNumber, $first->script_title, $first->writer_name],
+                                        $group->map(fn($a) => $a->assignedReader?->readerProfile?->displayName() ?? $a->assignedReader?->name)->filter()->values()->toArray()
+                                    ))));
                                 @endphp
-                                <tr class="hover:bg-gray-50 align-top">
+                                <tr class="hover:bg-gray-50 align-top"
+                                    x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
+                                    data-search="{{ $searchStr }}">
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
                                         <a href="{{ route('assignments.show', $first) }}"
                                            class="hover:text-indigo-600">{{ $orderNumber }}</a>
@@ -311,6 +330,7 @@
                         </tbody>
                     </table>
                 </div>
+                </div> {{-- /x-data search wrapper --}}
             @endif
 
         </div>
