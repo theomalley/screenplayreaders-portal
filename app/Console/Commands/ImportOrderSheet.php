@@ -116,11 +116,9 @@ class ImportOrderSheet extends Command
                 }
             }
 
-            // Parse money fields
+            // Parse money fields — default to 0.0 rather than null (columns are NOT NULL)
             foreach ($this->MONEY as $col) {
-                if (isset($data[$col])) {
-                    $data[$col] = $this->parseMoney($data[$col]);
-                }
+                $data[$col] = $this->parseMoney($data[$col] ?? null) ?? 0.0;
             }
 
             // Parse quantity
