@@ -83,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/capacity-override', [SettingController::class, 'updateCapacityOverride'])->name('settings.capacity-override');
     Route::patch('/settings/session-timeout', [SettingController::class, 'updateSessionTimeout'])->name('settings.session-timeout');
     Route::patch('/settings/invoice', [SettingController::class, 'updateInvoiceSettings'])->name('settings.invoice');
+    Route::patch('/settings/theme', [SettingController::class, 'updateTheme'])->name('settings.theme');
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');

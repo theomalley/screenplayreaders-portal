@@ -12,6 +12,48 @@
                 </div>
             @endif
 
+            {{-- Portal Theme --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Portal Theme</h3>
+                <p class="text-xs text-gray-500 mb-4">Sets the colour scheme for the navigation bar and accent colours throughout the portal.</p>
+                <div class="flex flex-wrap gap-3">
+                    @foreach([
+                        'default'  => ['label' => 'Default',  'nav' => '#ffffff', 'border_nav' => '#e5e7eb', 'body' => '#f3f4f6', 'accent' => '#6366f1'],
+                        'midnight' => ['label' => 'Midnight', 'nav' => '#16213e', 'border_nav' => '#16213e', 'body' => '#1c1c2e', 'accent' => '#e94560'],
+                        'forest'   => ['label' => 'Forest',   'nav' => '#1e3a2f', 'border_nav' => '#1e3a2f', 'body' => '#f0f4f0', 'accent' => '#4caf50'],
+                        'warm'     => ['label' => 'Warm',     'nav' => '#5c3317', 'border_nav' => '#5c3317', 'body' => '#faf6f1', 'accent' => '#d4793b'],
+                    ] as $slug => $theme)
+                        <form method="POST" action="{{ route('settings.theme') }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="portal_theme" value="{{ $slug }}">
+                            <button type="submit"
+                                    class="group text-left rounded-lg overflow-hidden border-2 transition {{ $portalTheme === $slug ? 'border-indigo-500 shadow-md' : 'border-gray-200 hover:border-gray-400' }}">
+                                {{-- Mini preview --}}
+                                <div class="w-28">
+                                    <div class="h-7 flex items-center px-2 gap-1.5"
+                                         style="background-color: {{ $theme['nav'] }}; border-bottom: 1px solid {{ $theme['border_nav'] }}">
+                                        <div class="w-2 h-2 rounded-full" style="background-color: {{ $theme['accent'] }}"></div>
+                                        <div class="h-1.5 rounded w-8 opacity-50" style="background-color: {{ $theme['nav'] === '#ffffff' ? '#9ca3af' : '#ffffff' }}"></div>
+                                    </div>
+                                    <div class="h-10 flex flex-col justify-center px-2 gap-1"
+                                         style="background-color: {{ $theme['body'] }}">
+                                        <div class="h-1.5 rounded w-14 bg-gray-300 opacity-60"></div>
+                                        <div class="h-1.5 rounded w-10 bg-gray-300 opacity-40"></div>
+                                    </div>
+                                </div>
+                                <div class="px-2 py-1.5 bg-white border-t border-gray-100">
+                                    <p class="text-xs font-medium text-gray-700">{{ $theme['label'] }}</p>
+                                    @if($portalTheme === $slug)
+                                        <p class="text-[10px] text-indigo-500">Active</p>
+                                    @endif
+                                </div>
+                            </button>
+                        </form>
+                    @endforeach
+                </div>
+            </div>
+
             {{-- Nav logo --}}
             <div x-data="{ preview: null, existing: @js($logoUrl) }"
                  class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

@@ -1,5 +1,6 @@
 <?php
 
+// v2.0 — 2026-05-26 | Portal theme setting (Default, Midnight, Forest, Warm).
 // v1.9 — 2026-05-26 | Add sr_invoice_address and invoice_email_body settings for client invoicing.
 // v1.8 — 2026-05-25 | Session timeout setting.
 // v1.7 — 2026-05-24 | Consolidate permissions, filenames, coverage-success into settings index.
@@ -45,12 +46,13 @@ class SettingController extends Controller
         $coverageSuccessHtml  = $isAdmin ? Setting::getValue('coverage_success_html', '') : null;
         $srInvoiceAddress     = Setting::getValue('sr_invoice_address', '');
         $invoiceEmailBody     = Setting::getValue('invoice_email_body', '');
+        $portalTheme          = Setting::getValue('portal_theme', 'default');
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
             'capacityOverride', 'sessionTimeout',
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
-            'srInvoiceAddress', 'invoiceEmailBody',
+            'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
         ));
     }
 
@@ -162,6 +164,17 @@ class SettingController extends Controller
         Setting::setValue('invoice_email_body', trim($request->input('invoice_email_body', '')));
 
         return back()->with('success', 'Invoice settings saved.');
+    }
+
+    public function updateTheme(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $request->validate(['portal_theme' => 'required|in:default,midnight,forest,warm']);
+
+        Setting::setValue('portal_theme', $request->input('portal_theme'));
+
+        return back()->with('success', 'Theme updated.');
     }
 
     public function editCoverageSuccess(): View
