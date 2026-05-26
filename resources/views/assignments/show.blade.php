@@ -17,6 +17,18 @@
         </div>
     </x-slot>
 
+    @php
+        $batchLineItem = null;
+        if (auth()->user()?->isAdminOrEditor()) {
+            $batchLineItem = \App\Models\InvoiceLineItem::where('assignment_id', $assignment->id)
+                ->whereHas('invoice', fn ($q) => $q->where('status', 'draft')
+                    ->whereNull('stripe_invoice_id')
+                    ->whereNull('google_doc_id'))
+                ->with('invoice.client')
+                ->first();
+        }
+    @endphp
+
     @if ($isMultiReader)
     {{-- ===== MULTI-READER N-UP LAYOUT ===== --}}
     <div class="py-6 px-4 sm:px-6 lg:px-8">
@@ -34,6 +46,13 @@
         @if (session('warning'))
             <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm">
                 {{ session('warning') }}
+            </div>
+        @endif
+
+        @if ($batchLineItem)
+            <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 flex items-center justify-between">
+                <span>Added to <a href="{{ route('clients.show', $batchLineItem->invoice->client) }}" class="font-medium underline">{{ $batchLineItem->invoice->client->name }}</a>'s open weekly invoice #{{ $batchLineItem->invoice->invoice_number }} — ${{ number_format((float) $batchLineItem->amount, 2) }}</span>
+                <a href="{{ route('clients.show', $batchLineItem->invoice->client) }}" class="ml-4 text-amber-700 hover:text-amber-900 font-medium text-xs whitespace-nowrap">View Invoice →</a>
             </div>
         @endif
 
@@ -187,6 +206,13 @@
         @if (session('warning'))
             <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm">
                 {{ session('warning') }}
+            </div>
+        @endif
+
+        @if ($batchLineItem)
+            <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800 flex items-center justify-between">
+                <span>Added to <a href="{{ route('clients.show', $batchLineItem->invoice->client) }}" class="font-medium underline">{{ $batchLineItem->invoice->client->name }}</a>'s open weekly invoice #{{ $batchLineItem->invoice->invoice_number }} — ${{ number_format((float) $batchLineItem->amount, 2) }}</span>
+                <a href="{{ route('clients.show', $batchLineItem->invoice->client) }}" class="ml-4 text-amber-700 hover:text-amber-900 font-medium text-xs whitespace-nowrap">View Invoice →</a>
             </div>
         @endif
 
