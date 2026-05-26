@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-26 | Let logToOrderRevenue exceptions propagate so errors surface to the user
 // v1.3 — 2026-05-26 | Log invoices to order_revenues on payment, not on send; expose as public method
 // v1.2 — 2026-05-26 | Log sent invoices to order_revenues for Order Log + Revenue visibility
 // v1.1 — 2026-05-26 | Add batch invoicing path — addToBatchInvoice(), send()
@@ -340,33 +341,26 @@ class InvoiceService
               )->implode("\n")
             : $invoice->description;
 
-        try {
-            OrderRevenue::updateOrCreate(
-                ['order_number' => "INV-{$code}-{$invoice->invoice_number}"],
-                [
-                    'invoice_number'     => $invoice->invoice_number,
-                    'ordered_at'         => $invoice->paid_at ?? $invoice->issued_at ?? now(),
-                    'order_total'        => $invoice->amount,
-                    'discount_amount'    => 0,
-                    'cog_reader'         => 0,
-                    'cog_processing'     => 0,
-                    'cog_precommission'  => 0,
-                    'cog_commission'     => 0,
-                    'cog_total'          => 0,
-                    'net_revenue'        => $invoice->amount,
-                    'customer_name'      => $client->name,
-                    'customer_email'     => $client->email ?? '',
-                    'services_purchased' => $description,
-                    'payment_method'     => 'invoice',
-                    'skip_commission'    => true,
-                ]
-            );
-        } catch (\Throwable $e) {
-            Log::warning('InvoiceService: failed to log invoice to order_revenues', [
-                'invoice_id' => $invoice->id,
-                'error'      => $e->getMessage(),
-            ]);
-        }
+        OrderRevenue::updateOrCreate(
+            ['order_number' => "INV-{$code}-{$invoice->invoice_number}"],
+            [
+                'invoice_number'     => $invoice->invoice_number,
+                'ordered_at'         => $invoice->paid_at ?? $invoice->issued_at ?? now(),
+                'order_total'        => $invoice->amount,
+                'discount_amount'    => 0,
+                'cog_reader'         => 0,
+                'cog_processing'     => 0,
+                'cog_precommission'  => 0,
+                'cog_commission'     => 0,
+                'cog_total'          => 0,
+                'net_revenue'        => $invoice->amount,
+                'customer_name'      => $client->name,
+                'customer_email'     => $client->email ?? '',
+                'services_purchased' => $description,
+                'payment_method'     => 'invoice',
+                'skip_commission'    => true,
+            ]
+        );
     }
 
     private function postPdfHelpScoutDraft(

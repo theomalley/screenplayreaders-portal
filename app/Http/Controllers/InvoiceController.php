@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-26 | Surface logToOrderRevenue errors instead of silently swallowing them
 // v1.2 — 2026-05-26 | Split index (all invoices) from create (standalone form)
 // v1.1 — 2026-05-26 | Add send() for batch draft invoices
 // v1.0 — 2026-05-26 | Invoice creation, status management, and standalone invoicing tab
@@ -12,6 +13,7 @@ use App\Models\Invoice;
 use App\Models\OrderRevenue;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceController extends Controller
 {
@@ -129,7 +131,17 @@ class InvoiceController extends Controller
             'paid_at' => now(),
         ]);
 
-        $this->invoiceService->logToOrderRevenue($invoice->fresh());
+        try {
+            $this->invoiceService->logToOrderRevenue($invoice->fresh());
+        } catch (\Throwable $e) {
+            Log::error('markPaid: logToOrderRevenue failed', [
+                'invoice_id' => $invoice->id,
+                'error'      => $e->getMessage(),
+            ]);
+            return redirect()->route('invoicing.index')
+                ->with('success', "Invoice #{$invoice->invoice_number} marked as paid.")
+                ->withErrors(['invoice' => 'Order log sync failed: ' . $e->getMessage()]);
+        }
 
         return redirect()->route('invoicing.index')
             ->with('success', "Invoice #{$invoice->invoice_number} marked as paid.");
