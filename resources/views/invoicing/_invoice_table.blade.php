@@ -23,9 +23,14 @@ $statusColors = [
         @foreach($invoices as $invoice)
             <tr>
                 <td class="px-4 py-2 text-gray-700 text-xs">
-                    <a href="{{ route('clients.show', $invoice->client) }}" class="hover:text-indigo-600 hover:underline">
-                        {{ $invoice->client->name }}
-                    </a>
+                    @if($invoice->client_id)
+                        <a href="{{ route('clients.show', $invoice->client) }}" class="hover:text-indigo-600 hover:underline">
+                            {{ $invoice->client->name }}
+                        </a>
+                    @else
+                        <span>{{ $invoice->customer_name }}</span>
+                        <div class="text-gray-400">{{ $invoice->customer_email }}</div>
+                    @endif
                 </td>
                 <td class="px-4 py-2 font-mono text-gray-800 text-xs">
                     {{ $invoice->invoice_number }}
@@ -59,8 +64,9 @@ $statusColors = [
                         </form>
                     @elseif($invoice->status !== 'void')
                         @if($invoice->status === 'draft')
+                            @php $sendTo = $invoice->client_id ? $invoice->client->name : $invoice->customer_email; @endphp
                             <form method="POST" action="{{ route('invoices.send', $invoice) }}" class="inline"
-                                  onsubmit="return confirm('Send invoice #{{ $invoice->invoice_number }} to {{ $invoice->client->name }} now?')">
+                                  onsubmit="return confirm('Send invoice #{{ $invoice->invoice_number }} to {{ $sendTo }} now?')">
                                 @csrf
                                 <button type="submit" class="text-indigo-600 hover:underline">Send</button>
                             </form>

@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-05-26 | Add generateForCustomer(): direct Stripe + optional HelpScout draft for ad-hoc customer invoices
 // v1.5 — 2026-05-26 | Wire up real Google Docs invoice template; rework buildPdfPlaceholders() to match actual template tokens
 // v1.4 — 2026-05-26 | Let logToOrderRevenue exceptions propagate so errors surface to the user
 // v1.3 — 2026-05-26 | Log invoices to order_revenues on payment, not on send; expose as public method
@@ -20,7 +21,7 @@ use RuntimeException;
 
 class InvoiceService
 {
-    private const INVOICE_TEMPLATE_ID = '19RKODVuz9wC_1eGhhtTmb0eAwBZlz7Z4LTKJQYuCzZM';
+    public const INVOICE_TEMPLATE_ID = '19RKODVuz9wC_1eGhhtTmb0eAwBZlz7Z4LTKJQYuCzZM';
 
     public function __construct(
         private readonly StripeService      $stripe,
@@ -78,6 +79,69 @@ class InvoiceService
                 'error'      => $e->getMessage(),
             ]);
             throw $e;
+        }
+
+        return $invoice->fresh();
+    }
+
+    /**
+     * Create and send a Stripe invoice for a one-off customer (no Client record).
+     * Optionally posts a HelpScout draft to the given ticket number.
+     * Returns the created Invoice.
+     */
+    public function generateForCustomer(
+        string  $email,
+        string  $firstName,
+        string  $lastName,
+        string  $description,
+        float   $amount,
+        ?string $helpscoutTicket = null,
+        ?string $dueDate         = null,
+    ): Invoice {
+        $name             = trim("{$firstName} {$lastName}");
+        $stripeCustomerId = $this->stripe->ensureCustomer($email, $name);
+
+        $dueDateTs = $dueDate ? \Carbon\Carbon::parse($dueDate)->startOfDay()->timestamp : null;
+
+        $result = $this->stripe->createAndSendInvoice(
+            stripeCustomerId: $stripeCustomerId,
+            lineItems: [['description' => $description, 'amount_cents' => (int) round($amount * 100)]],
+            dueDateTimestamp: $dueDateTs,
+        );
+
+        $invoice = Invoice::create([
+            'client_id'          => null,
+            'customer_name'      => $name,
+            'customer_email'     => $email,
+            'invoice_number'     => $result['invoice_number'],
+            'description'        => $description,
+            'amount'             => $amount,
+            'status'             => 'sent',
+            'invoice_type'       => 'stripe',
+            'stripe_invoice_id'  => $result['invoice_id'],
+            'stripe_invoice_url' => $result['hosted_invoice_url'],
+            'issued_at'          => now(),
+            'due_date'           => $dueDate,
+        ]);
+
+        if ($helpscoutTicket) {
+            try {
+                $conversationId = $this->helpscout->findConversationIdByTicketNumber($helpscoutTicket);
+                if ($conversationId) {
+                    $invoice->update(['helpscout_conversation_id' => $conversationId]);
+                    $html = '<p>Hi ' . htmlspecialchars($firstName) . ',</p>'
+                        . '<p>[Insert saved reply here]</p>'
+                        . '<p><em>Note: Stripe invoice ' . htmlspecialchars($result['invoice_number'])
+                        . ' for $' . number_format($amount, 2)
+                        . ' was sent to ' . htmlspecialchars($email) . '.</em></p>';
+                    $this->helpscout->createDraftReply($conversationId, $html);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('generateForCustomer: HelpScout draft failed', [
+                    'invoice_id' => $invoice->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
         }
 
         return $invoice->fresh();

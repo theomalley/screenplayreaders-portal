@@ -1,12 +1,23 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('order-log.index', ['period' => 'all']) }}" class="text-gray-400 hover:text-gray-600">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            </a>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $order ? 'Edit Order — ' . $order->order_number : 'Add Order' }}
-            </h2>
+        <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-4">
+                <a href="{{ route('order-log.index', ['period' => 'all']) }}" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </a>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    {{ $order ? 'Edit Order — ' . $order->order_number : 'Add Order' }}
+                </h2>
+            </div>
+            @if($order && !str_starts_with($order->order_number, 'INV-'))
+                <a href="{{ route('order-log.invoice-pdf', $order) }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download Invoice PDF
+                </a>
+            @endif
         </div>
     </x-slot>
 

@@ -1,11 +1,15 @@
 <?php
 
+// v1.2 — 2026-05-26 | Add invoicePdf(): generate and stream a PDF invoice for any WooCommerce order
 // v1.1 — 2026-05-26 | Add create/edit/delete CRUD
 // v1.0 — 2026-05-25 | Order log — one row per WooCommerce order, admin only
 
 namespace App\Http\Controllers;
 
 use App\Models\OrderRevenue;
+use App\Models\Setting;
+use App\Services\GoogleDocsService;
+use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -107,6 +111,54 @@ class OrderLogController extends Controller
         $orderLog->delete();
 
         return back()->with('success', 'Order deleted.');
+    }
+
+    /**
+     * Generate and stream a PDF invoice for a WooCommerce order using the invoice Google Doc template.
+     * The temp copy is deleted immediately after export — nothing is saved to Drive.
+     */
+    public function invoicePdf(OrderRevenue $orderLog, GoogleDocsService $docs)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+
+        $srAddress   = Setting::getValue('sr_invoice_address', '');
+        $description = $orderLog->ticket_summary ?: $orderLog->services_purchased ?: 'Order #' . $orderLog->order_number;
+        $amount      = (float) $orderLog->order_total;
+
+        $addrParts = array_filter([
+            $orderLog->customer_address,
+        ]);
+
+        $placeholders = [
+            '{{SR_ADDRESS}}'    => $srAddress,
+            '{{INVOICENUMBER}}' => $orderLog->invoice_number ?: $orderLog->order_number,
+            '{{DATE}}'          => now()->format('F j, Y'),
+            '{{name}}'          => $orderLog->customer_name ?? '',
+            '{{company}}'       => '',
+            '{{addressline1}}' => $orderLog->customer_address ?? '',
+            '{{addressline2}}' => '',
+            '{{notes}}'         => '',
+            '{{TOTAL}}'         => number_format($amount, 2),
+            '{{URL}}'           => '',
+        ];
+
+        for ($i = 1; $i <= 8; $i++) {
+            $placeholders["{{service{$i}}}"]    = $i === 1 ? $description : '';
+            $placeholders["{{title{$i}}}"]      = '';
+            $placeholders["{{price{$i}}}"]      = $i === 1 ? number_format($amount, 2) : '';
+            $placeholders["{{qty{$i}}}"]        = $i === 1 ? '1' : '';
+            $placeholders["{{FINALPRICE{$i}}}"] = $i === 1 ? number_format($amount, 2) : '';
+        }
+
+        $pdfBytes = $docs->generatePdfBytesAndCleanup(InvoiceService::INVOICE_TEMPLATE_ID, $placeholders);
+
+        $filename = 'Invoice-' . preg_replace('/[^A-Za-z0-9\-]/', '-', $orderLog->order_number) . '.pdf';
+
+        return response($pdfBytes, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'private, no-store',
+        ]);
     }
 
     private function validated(Request $request, ?int $ignoreId = null): array

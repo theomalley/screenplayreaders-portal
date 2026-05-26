@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-26 | Add generatePdfBytesAndCleanup() for transient PDF generation (WooCommerce order invoices)
 // v1.1 — 2026-05-26 | Add createInvoiceDoc() and exportDocToPdfBytes() for invoice generation
 // v1.0 — 2026-05-22 | Create coverage Google Docs from templates; export to PDF.
 
@@ -145,6 +146,26 @@ class GoogleDocsService
         return $response->getBody()->getContents();
     }
 
+    /**
+     * Copy the template, fill placeholders, export to PDF bytes, then delete the temp copy.
+     * Use this when you need the PDF as a download without persisting the doc in Drive.
+     */
+    public function generatePdfBytesAndCleanup(string $templateId, array $placeholders): string
+    {
+        $docId = $this->copyTemplate($templateId, 'temp-invoice-' . uniqid(), null);
+        try {
+            $this->fillPlaceholders($docId, $placeholders);
+            return $this->exportDocToPdfBytes($docId);
+        } finally {
+            try {
+                $this->drive->files->delete($docId, ['supportsAllDrives' => true]);
+            } catch (\Throwable) {
+                // Non-fatal — log but don't interrupt the download
+                Log::warning('GoogleDocsService: failed to delete temp invoice doc', ['doc_id' => $docId]);
+            }
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Template selection
     // -------------------------------------------------------------------------
@@ -166,11 +187,15 @@ class GoogleDocsService
     // Drive: copy template to output folder
     // -------------------------------------------------------------------------
 
-    private function copyTemplate(string $templateId, string $filename, string $folderId): string
+    private function copyTemplate(string $templateId, string $filename, ?string $folderId): string
     {
+        $fileProps = ['name' => $filename];
+        if ($folderId) {
+            $fileProps['parents'] = [$folderId];
+        }
         $copy = $this->drive->files->copy(
             $templateId,
-            new DriveFile(['name' => $filename, 'parents' => [$folderId]]),
+            new DriveFile($fileProps),
             ['fields' => 'id', 'supportsAllDrives' => true]
         );
 

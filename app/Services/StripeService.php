@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-26 | Return invoice_number (Stripe's human-readable number) in createAndSendInvoice result
 // v1.3 — 2026-05-26 | Add pending_invoice_items_behavior=include and log amount_cents to debug $0 invoice
 // v1.2 — 2026-05-26 | Accept array of line items in createAndSendInvoice() for batch invoicing
 // v1.1 — 2026-05-26 | Add invoice creation and customer management for client invoicing module
@@ -93,6 +94,7 @@ class StripeService
 
         return [
             'invoice_id'         => $invoiceId,
+            'invoice_number'     => $sent['number'] ?? $invoiceId,
             'hosted_invoice_url' => $sent['hosted_invoice_url'] ?? '',
         ];
     }

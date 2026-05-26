@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-26 | Add customer invoice path (no client record; Stripe + optional HelpScout draft)
 // v1.3 — 2026-05-26 | Surface logToOrderRevenue errors instead of silently swallowing them
 // v1.2 — 2026-05-26 | Split index (all invoices) from create (standalone form)
 // v1.1 — 2026-05-26 | Add send() for batch draft invoices
@@ -52,11 +53,17 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Create a standalone invoice from the Invoicing tab (no assignment).
+     * Create a standalone invoice from the Invoicing tab.
+     * Branches on recipient_type: 'customer' (Stripe-only, no client record)
+     * or 'client' (existing client workflow).
      */
     public function store(Request $request)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+
+        if ($request->input('recipient_type') === 'customer') {
+            return $this->storeForCustomer($request);
+        }
 
         $data = $request->validate([
             'client_id'   => 'required|exists:clients,id',
@@ -83,6 +90,36 @@ class InvoiceController extends Controller
 
         return redirect()->route('invoicing.index')
             ->with('success', "Invoice #{$invoice->invoice_number} created and sent.");
+    }
+
+    private function storeForCustomer(Request $request)
+    {
+        $data = $request->validate([
+            'customer_first_name' => 'required|string|max:100',
+            'customer_last_name'  => 'required|string|max:100',
+            'customer_email'      => 'required|email|max:255',
+            'helpscout_ticket'    => 'nullable|string|max:50',
+            'description'         => 'required|string|max:1000',
+            'amount'              => 'required|numeric|min:0.01',
+            'due_date'            => 'nullable|date',
+        ]);
+
+        try {
+            $invoice = $this->invoiceService->generateForCustomer(
+                email:           $data['customer_email'],
+                firstName:       $data['customer_first_name'],
+                lastName:        $data['customer_last_name'],
+                description:     $data['description'],
+                amount:          (float) $data['amount'],
+                helpscoutTicket: $data['helpscout_ticket'] ?? null,
+                dueDate:         $data['due_date'] ?? null,
+            );
+        } catch (\Throwable $e) {
+            return back()->withErrors(['invoice' => $e->getMessage()])->withInput();
+        }
+
+        return redirect()->route('invoicing.index')
+            ->with('success', "Invoice {$invoice->invoice_number} sent to {$data['customer_email']}.");
     }
 
     /**
@@ -131,6 +168,12 @@ class InvoiceController extends Controller
             'paid_at' => now(),
         ]);
 
+        // Customer invoices (no client record) are not logged to the order revenue table
+        if (! $invoice->client_id) {
+            return redirect()->route('invoicing.index')
+                ->with('success', "Invoice #{$invoice->invoice_number} marked as paid.");
+        }
+
         try {
             $this->invoiceService->logToOrderRevenue($invoice->fresh());
         } catch (\Throwable $e) {
@@ -148,7 +191,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Delete a paid invoice and remove it from the order log.
+     * Delete a paid invoice and remove it from the order log (client invoices only).
      */
     public function destroy(Invoice $invoice)
     {
@@ -158,11 +201,14 @@ class InvoiceController extends Controller
             return back()->withErrors(['invoice' => 'Only paid invoices can be deleted.']);
         }
 
-        $client        = $invoice->client;
-        $code          = strtoupper($client->code ?? 'INV');
         $invoiceNumber = $invoice->invoice_number;
 
-        OrderRevenue::where('order_number', "INV-{$code}-{$invoiceNumber}")->delete();
+        // Only client invoices are logged to order_revenues
+        if ($invoice->client_id) {
+            $code = strtoupper($invoice->client->code ?? 'INV');
+            OrderRevenue::where('order_number', "INV-{$code}-{$invoiceNumber}")->delete();
+        }
+
         $invoice->delete();
 
         return redirect()->route('invoicing.index')

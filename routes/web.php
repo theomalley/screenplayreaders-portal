@@ -101,6 +101,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/order-log/create', [OrderLogController::class, 'create'])->name('order-log.create');
     Route::post('/order-log', [OrderLogController::class, 'store'])->name('order-log.store');
     Route::get('/order-log/{orderLog}/edit', [OrderLogController::class, 'edit'])->name('order-log.edit');
+    Route::get('/order-log/{orderLog}/invoice-pdf', [OrderLogController::class, 'invoicePdf'])->name('order-log.invoice-pdf');
     Route::patch('/order-log/{orderLog}', [OrderLogController::class, 'update'])->name('order-log.update');
     Route::delete('/order-log/{orderLog}', [OrderLogController::class, 'destroy'])->name('order-log.destroy');
 
