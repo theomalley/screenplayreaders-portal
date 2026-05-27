@@ -135,7 +135,10 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                             {{ $_creatorInitials }}
                         @endif
                     </div>
-                    <p class="flex-1 text-sm text-amber-900">{{ $_ann->body }}</p>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-amber-900">{{ $_ann->body }}</p>
+                        <p class="text-xs text-amber-600 mt-0.5">Posted by {{ $_creator?->name ?? 'Staff' }} · {{ $_ann->created_at->format('M j, Y \a\t g:i A') }}</p>
+                    </div>
                     <div class="flex items-center gap-3 shrink-0">
                         <button @click="
                             visible = false;
@@ -185,7 +188,10 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                                     {{ $_creatorInitials }}
                                 @endif
                             </div>
-                            <p class="flex-1 text-sm text-amber-700 opacity-75">{{ $_ann->body }}</p>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-amber-700 opacity-75">{{ $_ann->body }}</p>
+                                <p class="text-xs text-amber-500 mt-0.5">Posted by {{ $_creator?->name ?? 'Staff' }} · {{ $_ann->created_at->format('M j, Y \a\t g:i A') }}</p>
+                            </div>
                             <button @click="
                                 visible = false;
                                 fetch('{{ route('announcements.dismiss', $_ann) }}', {
