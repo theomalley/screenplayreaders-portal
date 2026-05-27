@@ -323,6 +323,13 @@
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
                                         $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $ageDays  = $diff ? $diff->days : 0;
+                                        $ageColor = match(true) {
+                                            $ageDays >= 14 => 'text-red-600 font-semibold',
+                                            $ageDays >= 8  => 'text-orange-500 font-semibold',
+                                            $ageDays >= 4  => 'text-yellow-600',
+                                            default        => 'text-green-600',
+                                        };
 
                                         $accDiff  = $assignment->accepted_at ? now()->diff($assignment->accepted_at) : null;
                                         $accStr   = $accDiff
@@ -397,7 +404,7 @@
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}">
                                         {{-- Age --}}
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">
+                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                             {{ $ageStr }}
                                             @if($accStr)
                                                 <div class="text-xs text-gray-400 tabular-nums" title="Accepted {{ $accTitle }}">↳ {{ $accStr }}</div>
@@ -692,6 +699,13 @@
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
                                         $ageTitle    = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $ageDays     = $diff ? $diff->days : 0;
+                                        $ageColor    = match(true) {
+                                            $ageDays >= 14 => 'text-red-600 font-semibold',
+                                            $ageDays >= 8  => 'text-orange-500 font-semibold',
+                                            $ageDays >= 4  => 'text-yellow-600',
+                                            default        => 'text-green-600',
+                                        };
                                         $typeLabel   = $assignment->assignment_type === 'formatting' ? 'Formatting' : 'Proofreading';
                                         $downloadUrl = $assignment->drive_script_file_id
                                             ? 'https://drive.google.com/uc?export=download&id=' . $assignment->drive_script_file_id
@@ -705,7 +719,7 @@
                                     <tr class="hover:bg-gray-50"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}">
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                         @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
                                         <td class="px-3 py-3 whitespace-nowrap font-mono">
                                             @if($hsId)
@@ -840,6 +854,13 @@
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
                                         $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $ageDays  = $diff ? $diff->days : 0;
+                                        $ageColor = match(true) {
+                                            $ageDays >= 14 => 'text-red-600 font-semibold',
+                                            $ageDays >= 8  => 'text-orange-500 font-semibold',
+                                            $ageDays >= 4  => 'text-yellow-600',
+                                            default        => 'text-green-600',
+                                        };
                                         $statusColor = match($assignment->status) {
                                             'assigned'        => 'bg-green-100 text-green-800',
                                             'qc'              => 'bg-blue-100 text-blue-800',
@@ -872,7 +893,7 @@
                                             : null;
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $rowClass }}" title="{{ $ageTitle }}">
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums">{{ $ageStr }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}">{{ $ageStr }}</td>
                                         <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
                                         <td class="px-3 py-3" x-data="{ open: false }">
                                             @if ($viewUrl)
@@ -1006,6 +1027,13 @@
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
                                                 $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                                $ageDays  = $diff ? $diff->days : 0;
+                                                $ageColor = match(true) {
+                                                    $ageDays >= 14 => 'text-red-600 font-semibold',
+                                                    $ageDays >= 8  => 'text-orange-500 font-semibold',
+                                                    $ageDays >= 4  => 'text-yellow-600',
+                                                    default        => 'text-green-600',
+                                                };
                                                 $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                 $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
@@ -1033,7 +1061,7 @@
                                                 }
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
-                                                <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
                                                 <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     @if($viewUrl)
@@ -1195,6 +1223,13 @@
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
                                                 $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                                $ageDays  = $diff ? $diff->days : 0;
+                                                $ageColor = match(true) {
+                                                    $ageDays >= 14 => 'text-red-600 font-semibold',
+                                                    $ageDays >= 8  => 'text-orange-500 font-semibold',
+                                                    $ageDays >= 4  => 'text-yellow-600',
+                                                    default        => 'text-green-600',
+                                                };
                                                 $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                 $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
@@ -1230,7 +1265,7 @@
                                                 }
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
-                                                <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                 <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
                                                 <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     @if($viewUrl)
@@ -1359,6 +1394,13 @@
                                                             : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                         : '—';
                                                     $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                                    $ageDays  = $diff ? $diff->days : 0;
+                                                    $ageColor = match(true) {
+                                                        $ageDays >= 14 => 'text-red-600 font-semibold',
+                                                        $ageDays >= 8  => 'text-orange-500 font-semibold',
+                                                        $ageDays >= 4  => 'text-yellow-600',
+                                                        default        => 'text-green-600',
+                                                    };
                                                     $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                     $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
                                                         ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
@@ -1384,7 +1426,7 @@
                                                     }
                                                 @endphp
                                                 <tr class="hover:bg-gray-50 {{ $rowClass }}">
-                                                    <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                                    <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                                     <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
                                                     <td class="px-3 py-3">
                                                         <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
@@ -1478,6 +1520,13 @@
                                                     : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                 : '—';
                                             $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                            $ageDays  = $diff ? $diff->days : 0;
+                                            $ageColor = match(true) {
+                                                $ageDays >= 14 => 'text-red-600 font-semibold',
+                                                $ageDays >= 8  => 'text-orange-500 font-semibold',
+                                                $ageDays >= 4  => 'text-yellow-600',
+                                                default        => 'text-green-600',
+                                            };
                                             $typeLabel = match($assignment->assignment_type) {
                                                 'script_coverage'   => 'Script Coverage',
                                                 'notes_only'        => 'Notes-Only',
@@ -1494,7 +1543,7 @@
                                             }
                                         @endphp
                                         <tr class="hover:bg-orange-50 border-l-4 border-orange-400">
-                                            <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                            <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                             <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
                                             <td class="px-3 py-3">
                                                 <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
