@@ -234,6 +234,8 @@
                             <option value="short"            {{ $v('assignment_type', $assignment->assignment_type) === 'short'            ? 'selected' : '' }}>Short Coverage</option>
                             <option value="budget"           {{ $v('assignment_type', $assignment->assignment_type) === 'budget'           ? 'selected' : '' }}>Budget Coverage</option>
                             <option value="book"             {{ $v('assignment_type', $assignment->assignment_type) === 'book'             ? 'selected' : '' }}>Book Coverage</option>
+                            <option value="formatting"       {{ $v('assignment_type', $assignment->assignment_type) === 'formatting'       ? 'selected' : '' }}>Formatting</option>
+                            <option value="proofreading"     {{ $v('assignment_type', $assignment->assignment_type) === 'proofreading'     ? 'selected' : '' }}>Proofreading</option>
                         </select>
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                     </div>

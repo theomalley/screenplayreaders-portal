@@ -753,17 +753,25 @@
                                             <span class="text-xs text-gray-400">Standard</span>
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
-                                            @can('delete', $assignment)
-                                                <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
-                                                      onsubmit="return confirm('Delete this assignment? This cannot be undone.')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                                                        Delete
-                                                    </button>
-                                                </form>
-                                            @endcan
+                                            <div class="flex items-center justify-end gap-2">
+                                                @can('update', $assignment)
+                                                    <a href="{{ route('assignments.edit', $assignment) }}"
+                                                       class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
+                                                        Edit
+                                                    </a>
+                                                @endcan
+                                                @can('delete', $assignment)
+                                                    <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
+                                                          onsubmit="return confirm('Delete this assignment? This cannot be undone.')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit"
+                                                                class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                @endcan
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
