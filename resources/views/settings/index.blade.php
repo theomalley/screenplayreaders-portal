@@ -77,7 +77,7 @@
                                 <div class="flex-1 min-w-0">
                                     <p class="text-gray-800">{{ $ann->body }}</p>
                                     <p class="text-xs text-gray-400 mt-0.5">
-                                        Posted by {{ $ann->createdBy?->name ?? 'Unknown' }} · {{ $ann->created_at->diffForHumans() }}
+                                        Posted by {{ $ann->createdBy?->name ?? 'Unknown' }} · {{ $ann->created_at->format('M j, Y \a\t g:i A') }} · {{ $ann->created_at->diffForHumans() }}
                                     </p>
                                 </div>
                                 <form method="POST" action="{{ route('announcements.destroy', $ann) }}"
