@@ -216,6 +216,49 @@
                 </form>
             </div>
 
+            {{-- Announcements --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Reader Announcements</h3>
+                <p class="text-xs text-gray-500 mb-4">Post updates that appear as a banner at the top of every page for all readers. Readers can mark them as read or dismiss them.</p>
+
+                <form method="POST" action="{{ route('announcements.store') }}" class="flex gap-3 items-end mb-5">
+                    @csrf
+                    <div class="flex-1">
+                        <x-input-label for="announcement_body" value="New Announcement" />
+                        <textarea id="announcement_body" name="body" rows="2"
+                                  class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                  placeholder="e.g. SR will be closed Monday for a holiday. No new assignments will be sent."
+                                  maxlength="2000" required></textarea>
+                        <x-input-error :messages="$errors->get('body')" class="mt-1" />
+                    </div>
+                    <x-primary-button>Post</x-primary-button>
+                </form>
+
+                @php $existingAnnouncements = \App\Models\Announcement::with('createdBy')->orderBy('created_at', 'desc')->get(); @endphp
+                @if($existingAnnouncements->isNotEmpty())
+                    <ul class="space-y-2">
+                        @foreach($existingAnnouncements as $ann)
+                            <li class="flex items-start gap-3 text-sm border border-gray-100 rounded-md px-3 py-2.5 bg-gray-50">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-gray-800">{{ $ann->body }}</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">
+                                        Posted by {{ $ann->createdBy?->name ?? 'Unknown' }} · {{ $ann->created_at->diffForHumans() }}
+                                    </p>
+                                </div>
+                                <form method="POST" action="{{ route('announcements.destroy', $ann) }}"
+                                      onsubmit="return confirm('Delete this announcement for all readers?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs underline whitespace-nowrap">Delete</button>
+                                </form>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-xs text-gray-400">No announcements posted yet.</p>
+                @endif
+            </div>
+
             {{-- Admin-only sections --}}
             @if ($isAdmin)
 

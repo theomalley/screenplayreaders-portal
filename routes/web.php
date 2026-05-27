@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AvailabilityController;
@@ -84,6 +85,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/session-timeout', [SettingController::class, 'updateSessionTimeout'])->name('settings.session-timeout');
     Route::patch('/settings/invoice', [SettingController::class, 'updateInvoiceSettings'])->name('settings.invoice');
     Route::patch('/settings/theme', [SettingController::class, 'updateTheme'])->name('settings.theme');
+
+    Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+    Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+    Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->name('announcements.mark-read');
+    Route::post('/announcements/{announcement}/dismiss', [AnnouncementController::class, 'dismiss'])->name('announcements.dismiss');
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');

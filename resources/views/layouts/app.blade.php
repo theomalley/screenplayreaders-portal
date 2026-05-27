@@ -100,6 +100,81 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
         <div class="min-h-screen">
             @include('layouts.navigation')
 
+            @if(auth()->check() && auth()->user()->isReader())
+            @php
+                $userId = auth()->id();
+                $_announcements = \App\Models\Announcement::query()
+                    ->whereDoesntHave('reads', fn($q) => $q->where('user_id', $userId)->whereNotNull('dismissed_at'))
+                    ->with(['reads' => fn($q) => $q->where('user_id', $userId)])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+                $_unread = $_announcements->filter(fn($a) => $a->reads->isEmpty() || $a->reads->first()?->read_at === null);
+                $_read   = $_announcements->filter(fn($a) => $a->reads->isNotEmpty() && $a->reads->first()?->read_at !== null);
+            @endphp
+            @if($_announcements->isNotEmpty())
+            <div x-data="{ showPast: false }" class="border-b border-amber-200 bg-amber-50">
+                @foreach($_unread as $_ann)
+                <div x-data="{ visible: true }"
+                     x-show="visible"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0 -translate-y-1"
+                     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-start gap-3">
+                    <svg class="w-4 h-4 mt-0.5 shrink-0 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="flex-1 text-sm text-amber-900">{{ $_ann->body }}</p>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <button @click="
+                            visible = false;
+                            fetch('{{ route('announcements.mark-read', $_ann) }}', {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                            });
+                        " class="text-xs text-amber-700 underline hover:text-amber-900 whitespace-nowrap">
+                            Mark as read
+                        </button>
+                        <button @click="
+                            visible = false;
+                            fetch('{{ route('announcements.dismiss', $_ann) }}', {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                            });
+                        " class="text-amber-500 hover:text-amber-700 text-lg leading-none">&times;</button>
+                    </div>
+                </div>
+                @if(!$loop->last) <div class="border-t border-amber-200 mx-4 sm:mx-6 lg:mx-8"></div> @endif
+                @endforeach
+
+                @if($_read->isNotEmpty())
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 {{ $_unread->isNotEmpty() ? 'border-t border-amber-200' : '' }} py-1.5">
+                    <button @click="showPast = !showPast"
+                            class="text-xs text-amber-600 hover:text-amber-800 flex items-center gap-1">
+                        <svg class="w-3 h-3 transition-transform" :class="showPast ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                        <span x-text="showPast ? 'Hide past updates' : 'View past updates ({{ $_read->count() }})'"></span>
+                    </button>
+                    <div x-show="showPast" x-cloak class="mt-2 space-y-2 pb-2">
+                        @foreach($_read as $_ann)
+                        <div x-data="{ visible: true }" x-show="visible" class="flex items-start gap-3">
+                            <p class="flex-1 text-sm text-amber-700 opacity-75">{{ $_ann->body }}</p>
+                            <button @click="
+                                visible = false;
+                                fetch('{{ route('announcements.dismiss', $_ann) }}', {
+                                    method: 'POST',
+                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                                });
+                            " class="text-amber-400 hover:text-amber-600 text-lg leading-none shrink-0">&times;</button>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+            </div>
+            @endif
+            @endif
+
             @if (isset($header))
                 <header class="bg-white shadow">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
