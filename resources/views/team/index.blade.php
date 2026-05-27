@@ -43,6 +43,9 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                @if(auth()->user()->isAdmin())
+                                    <th class="px-4 py-3"></th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-100">
@@ -76,6 +79,14 @@
                                     <td class="px-4 py-3 text-gray-500">
                                         <a href="mailto:{{ $admin->email }}" class="hover:text-indigo-600 hover:underline">{{ $admin->email }}</a>
                                     </td>
+                                    @if(auth()->user()->isAdmin())
+                                        <td class="px-4 py-3 whitespace-nowrap text-right">
+                                            <a href="{{ route('admin.editors.edit', $admin) }}"
+                                               class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
+                                                Edit
+                                            </a>
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>

@@ -1,11 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.editors.index') }}" class="text-gray-400 hover:text-gray-600">
+            <a href="{{ route('team.index') }}" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </a>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Editor Profile — {{ $user->name }}
+                {{ $user->isAdmin() ? 'Admin' : 'Editor' }} Profile — {{ $user->name }}
             </h2>
         </div>
     </x-slot>
@@ -179,6 +179,7 @@
                 </form>
 
                 <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+                    @if($user->isEditor())
                     <form method="POST" action="{{ route('admin.editors.destroy', $user) }}"
                           onsubmit="return confirm('Permanently delete this editor? This cannot be undone.')">
                         @csrf
@@ -188,14 +189,18 @@
                             Delete Editor
                         </button>
                     </form>
+                    @else
+                    <div></div>
+                    @endif
                     <div class="flex items-center gap-3">
-                        <a href="{{ route('admin.editors.index') }}"
+                        <a href="{{ route('team.index') }}"
                            class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
                         <x-primary-button form="update-form">Save Profile</x-primary-button>
                     </div>
                 </div>
             </div>
-        {{-- ── COMMISSION CONFIG ── --}}
+        {{-- ── COMMISSION CONFIG ── (editors only) --}}
+        @if($user->isEditor())
         @php
             $commissionConfig = $profile?->productCommissionsKeyed() ?? collect();
             $globalRate = (float) \App\Models\Setting::getValue('rate_editor_commission', 10.0);
@@ -254,6 +259,7 @@
                 </div>
             </form>
         </div>
+        @endif
 
         </div>
     </div>

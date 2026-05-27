@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-27 | Allow admin to edit admin accounts via the same editor form
 // v1.3 — 2026-05-27 | Enforce Password::defaults() (min 12, mixed case, numbers, symbols) on create/update
 // v1.2 — 2026-05-27 | Gate edit/delete on editors.edit / editors.delete permissions; redirect to team.index
 // v1.1 — 2026-05-25 | Add saveCommissions() for per-product commission config
@@ -84,7 +85,7 @@ class EditorProfileController extends Controller
     public function edit(User $user)
     {
         abort_unless(Permission::check('editors.edit'), 403);
-        abort_unless($user->isEditor(), 404);
+        abort_unless($user->isEditor() || $user->isAdmin(), 404);
 
         return view('admin.editors.edit', [
             'user'    => $user,
@@ -95,7 +96,7 @@ class EditorProfileController extends Controller
     public function update(Request $request, User $user)
     {
         abort_unless(Permission::check('editors.edit'), 403);
-        abort_unless($user->isEditor(), 404);
+        abort_unless($user->isEditor() || $user->isAdmin(), 404);
 
         $data = $request->validate([
             'initials'             => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
@@ -134,7 +135,8 @@ class EditorProfileController extends Controller
             collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
         );
 
-        return redirect()->route('team.index')->with('success', 'Editor profile updated.');
+        $label = $user->isAdmin() ? 'Admin' : 'Editor';
+        return redirect()->route('team.index')->with('success', "{$label} profile updated.");
     }
 
     public function saveCommissions(Request $request, User $user)
