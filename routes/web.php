@@ -89,6 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/session-timeout', [SettingController::class, 'updateSessionTimeout'])->name('settings.session-timeout');
     Route::patch('/settings/invoice', [SettingController::class, 'updateInvoiceSettings'])->name('settings.invoice');
     Route::patch('/settings/theme', [SettingController::class, 'updateTheme'])->name('settings.theme');
+    Route::patch('/settings/age-thresholds', [SettingController::class, 'updateAgeThresholds'])->name('settings.age-thresholds');
 
     Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
     Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');

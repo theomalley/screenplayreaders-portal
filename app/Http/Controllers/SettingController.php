@@ -1,5 +1,6 @@
 <?php
 
+// v2.2 — 2026-05-27 | Add age-threshold settings (per assignment type, configurable colour bands).
 // v2.1 — 2026-05-27 | Gate logo/login-logo/favicon/session-timeout/invoice as admin-only.
 // v2.0 — 2026-05-26 | Portal theme setting (Default, Midnight, Forest, Warm).
 // v1.9 — 2026-05-26 | Add sr_invoice_address and invoice_email_body settings for client invoicing.
@@ -48,12 +49,15 @@ class SettingController extends Controller
         $srInvoiceAddress     = Setting::getValue('sr_invoice_address', '');
         $invoiceEmailBody     = Setting::getValue('invoice_email_body', '');
         $portalTheme          = Setting::getValue('portal_theme', 'default');
+        $ageThresholds        = Setting::getAgeThresholds();
+        $ageThresholdTypes    = Setting::AGE_THRESHOLD_TYPES;
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
             'capacityOverride', 'sessionTimeout',
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
+            'ageThresholds', 'ageThresholdTypes',
         ));
     }
 
@@ -176,6 +180,28 @@ class SettingController extends Controller
         Setting::setValue('portal_theme', $request->input('portal_theme'));
 
         return back()->with('success', 'Theme updated.');
+    }
+
+    public function updateAgeThresholds(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $types = array_keys(Setting::AGE_THRESHOLD_TYPES);
+        $rules = [];
+        foreach ($types as $type) {
+            $rules["yellow_{$type}"] = 'required|integer|min:1|max:365';
+            $rules["orange_{$type}"] = 'required|integer|min:1|max:365';
+            $rules["red_{$type}"]    = 'required|integer|min:1|max:365';
+        }
+        $data = $request->validate($rules);
+
+        foreach ($types as $type) {
+            Setting::setValue("age_yellow_{$type}", (int) $data["yellow_{$type}"]);
+            Setting::setValue("age_orange_{$type}", (int) $data["orange_{$type}"]);
+            Setting::setValue("age_red_{$type}",    (int) $data["red_{$type}"]);
+        }
+
+        return back()->with('success', 'Age thresholds saved.');
     }
 
     public function editCoverageSuccess(): View

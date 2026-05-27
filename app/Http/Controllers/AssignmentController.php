@@ -1,5 +1,6 @@
 <?php
 
+// v2.0 — 2026-05-27 | Pass $ageThresholds from DB settings to view (per-type colour bands).
 // v1.9 — 2026-05-27 | Admin/editor My Assignments section: own active assignments shown below main table.
 // v1.8 — 2026-05-26 | Admin reader popup: show this-week and last-week completed counts + pay.
 // v1.7 — 2026-05-26 | Reader view: Completed This Week (current pay period only) + Archived tab with pay-period grouping + search.
@@ -119,6 +120,7 @@ class AssignmentController extends Controller
                 'readerWeekStats'  => $readerWeekStats,
                 'archivedAll'      => $archivedAll,
                 'myAssignments'    => $myAssignments,
+                'ageThresholds'    => Setting::getAgeThresholds(),
             ]);
         }
 
@@ -161,6 +163,7 @@ class AssignmentController extends Controller
             'periodStart'      => $periodStart,
             'periodEnd'        => $periodEnd,
             'archivedByPeriod' => $archivedByPeriod,
+            'ageThresholds'    => Setting::getAgeThresholds(),
         ]);
     }
 

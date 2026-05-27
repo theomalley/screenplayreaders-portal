@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-27 | Add AGE_THRESHOLD_DEFAULTS and getAgeThresholds() for per-type age colours
 // v1.0 — 2026-05-17 | Key/value settings store; ratesForForms() shapes rates for JS
 
 namespace App\Models;
@@ -46,6 +47,47 @@ class Setting extends Model
         }
 
         return $rates;
+    }
+
+    /** Assignment types that have configurable age-colour thresholds. */
+    public const AGE_THRESHOLD_TYPES = [
+        'script_coverage' => 'Script Coverage',
+        'notes_only'      => 'Notes-Only',
+        'deep_dive'       => 'Deep-Dive',
+        'short'           => 'Short',
+        'budget'          => 'Budget',
+        'formatting'      => 'Formatting',
+        'proofreading'    => 'Proofreading',
+    ];
+
+    /** Default thresholds (days) — yellow / orange / red. */
+    public const AGE_THRESHOLD_DEFAULTS = ['yellow' => 4, 'orange' => 8, 'red' => 14];
+
+    /**
+     * Returns age-colour thresholds keyed by assignment type.
+     * Falls back to AGE_THRESHOLD_DEFAULTS for any missing setting.
+     */
+    public static function getAgeThresholds(): array
+    {
+        $keys = [];
+        foreach (array_keys(self::AGE_THRESHOLD_TYPES) as $type) {
+            foreach (['yellow', 'orange', 'red'] as $band) {
+                $keys[] = "age_{$band}_{$type}";
+            }
+        }
+
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        $result = [];
+        foreach (array_keys(self::AGE_THRESHOLD_TYPES) as $type) {
+            $result[$type] = [
+                'yellow' => (int) ($stored["age_yellow_{$type}"] ?? self::AGE_THRESHOLD_DEFAULTS['yellow']),
+                'orange' => (int) ($stored["age_orange_{$type}"] ?? self::AGE_THRESHOLD_DEFAULTS['orange']),
+                'red'    => (int) ($stored["age_red_{$type}"]    ?? self::AGE_THRESHOLD_DEFAULTS['red']),
+            ];
+        }
+
+        return $result;
     }
 
     public static function getValue(string $key, mixed $default = null): mixed

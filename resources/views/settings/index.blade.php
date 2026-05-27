@@ -135,6 +135,68 @@
                 </div>
             </div>
 
+            {{-- Assignment Age Colour Thresholds --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Assignment Age Colours</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Set the day thresholds at which each assignment type's age text changes colour.
+                    <span class="inline-block w-2 h-2 rounded-full bg-green-500 mx-0.5"></span> Green = fresh,
+                    <span class="inline-block w-2 h-2 rounded-full bg-yellow-400 mx-0.5"></span> Yellow,
+                    <span class="inline-block w-2 h-2 rounded-full bg-orange-400 mx-0.5"></span> Orange,
+                    <span class="inline-block w-2 h-2 rounded-full bg-red-500 mx-0.5"></span> Red = overdue.
+                </p>
+                <form method="POST" action="{{ route('settings.age-thresholds') }}">
+                    @csrf
+                    @method('PATCH')
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                                    <th class="text-left py-2 pr-4 font-medium">Service</th>
+                                    <th class="text-center py-2 px-3 font-medium">
+                                        <span class="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-1"></span>Yellow after (days)
+                                    </th>
+                                    <th class="text-center py-2 px-3 font-medium">
+                                        <span class="inline-block w-2 h-2 rounded-full bg-orange-400 mr-1"></span>Orange after (days)
+                                    </th>
+                                    <th class="text-center py-2 px-3 font-medium">
+                                        <span class="inline-block w-2 h-2 rounded-full bg-red-500 mr-1"></span>Red after (days)
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                @foreach ($ageThresholdTypes as $type => $label)
+                                    <tr>
+                                        <td class="py-2 pr-4 text-gray-700 font-medium whitespace-nowrap">{{ $label }}</td>
+                                        <td class="py-2 px-3 text-center">
+                                            <input type="number" name="yellow_{{ $type }}"
+                                                   value="{{ $ageThresholds[$type]['yellow'] }}"
+                                                   min="1" max="365" required
+                                                   class="w-16 text-center border-gray-300 rounded-md shadow-sm text-sm focus:ring-yellow-400 focus:border-yellow-400">
+                                        </td>
+                                        <td class="py-2 px-3 text-center">
+                                            <input type="number" name="orange_{{ $type }}"
+                                                   value="{{ $ageThresholds[$type]['orange'] }}"
+                                                   min="1" max="365" required
+                                                   class="w-16 text-center border-gray-300 rounded-md shadow-sm text-sm focus:ring-orange-400 focus:border-orange-400">
+                                        </td>
+                                        <td class="py-2 px-3 text-center">
+                                            <input type="number" name="red_{{ $type }}"
+                                                   value="{{ $ageThresholds[$type]['red'] }}"
+                                                   min="1" max="365" required
+                                                   class="w-16 text-center border-gray-300 rounded-md shadow-sm text-sm focus:ring-red-500 focus:border-red-500">
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4">
+                        <x-primary-button>Save Thresholds</x-primary-button>
+                    </div>
+                </form>
+            </div>
+
             {{-- Admin-only sections --}}
             @if ($isAdmin)
 

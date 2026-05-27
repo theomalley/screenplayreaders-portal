@@ -324,11 +324,12 @@
                                             : '—';
                                         $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                         $ageDays  = $diff ? $diff->days : 0;
+                                        $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 4, 'orange' => 8, 'red' => 14];
                                         $ageColor = match(true) {
-                                            $ageDays >= 14 => 'text-red-600 font-semibold',
-                                            $ageDays >= 8  => 'text-orange-500 font-semibold',
-                                            $ageDays >= 4  => 'text-yellow-600',
-                                            default        => 'text-green-600',
+                                            $ageDays >= $ageT['red']    => 'text-red-600 font-semibold',
+                                            $ageDays >= $ageT['orange'] => 'text-orange-500 font-semibold',
+                                            $ageDays >= $ageT['yellow'] => 'text-yellow-600',
+                                            default                     => 'text-green-600',
                                         };
 
                                         $accDiff  = $assignment->accepted_at ? now()->diff($assignment->accepted_at) : null;
@@ -700,11 +701,12 @@
                                             : '—';
                                         $ageTitle    = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                         $ageDays     = $diff ? $diff->days : 0;
+                                        $ageT        = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 4, 'orange' => 8, 'red' => 14];
                                         $ageColor    = match(true) {
-                                            $ageDays >= 14 => 'text-red-600 font-semibold',
-                                            $ageDays >= 8  => 'text-orange-500 font-semibold',
-                                            $ageDays >= 4  => 'text-yellow-600',
-                                            default        => 'text-green-600',
+                                            $ageDays >= $ageT['red']    => 'text-red-600 font-semibold',
+                                            $ageDays >= $ageT['orange'] => 'text-orange-500 font-semibold',
+                                            $ageDays >= $ageT['yellow'] => 'text-yellow-600',
+                                            default                     => 'text-green-600',
                                         };
                                         $typeLabel   = $assignment->assignment_type === 'formatting' ? 'Formatting' : 'Proofreading';
                                         $downloadUrl = $assignment->drive_script_file_id
@@ -855,11 +857,12 @@
                                             : '—';
                                         $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                         $ageDays  = $diff ? $diff->days : 0;
+                                        $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 4, 'orange' => 8, 'red' => 14];
                                         $ageColor = match(true) {
-                                            $ageDays >= 14 => 'text-red-600 font-semibold',
-                                            $ageDays >= 8  => 'text-orange-500 font-semibold',
-                                            $ageDays >= 4  => 'text-yellow-600',
-                                            default        => 'text-green-600',
+                                            $ageDays >= $ageT['red']    => 'text-red-600 font-semibold',
+                                            $ageDays >= $ageT['orange'] => 'text-orange-500 font-semibold',
+                                            $ageDays >= $ageT['yellow'] => 'text-yellow-600',
+                                            default                     => 'text-green-600',
                                         };
                                         $statusColor = match($assignment->status) {
                                             'assigned'        => 'bg-green-100 text-green-800',
@@ -1028,11 +1031,12 @@
                                                     : '—';
                                                 $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                                 $ageDays  = $diff ? $diff->days : 0;
+                                                $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 4, 'orange' => 8, 'red' => 14];
                                                 $ageColor = match(true) {
-                                                    $ageDays >= 14 => 'text-red-600 font-semibold',
-                                                    $ageDays >= 8  => 'text-orange-500 font-semibold',
-                                                    $ageDays >= 4  => 'text-yellow-600',
-                                                    default        => 'text-green-600',
+                                                    $ageDays >= $ageT['red']    => 'text-red-600 font-semibold',
+                                                    $ageDays >= $ageT['orange'] => 'text-orange-500 font-semibold',
+                                                    $ageDays >= $ageT['yellow'] => 'text-yellow-600',
+                                                    default                     => 'text-green-600',
                                                 };
                                                 $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                 $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
@@ -1224,11 +1228,12 @@
                                                     : '—';
                                                 $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                                 $ageDays  = $diff ? $diff->days : 0;
+                                                $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 4, 'orange' => 8, 'red' => 14];
                                                 $ageColor = match(true) {
-                                                    $ageDays >= 14 => 'text-red-600 font-semibold',
-                                                    $ageDays >= 8  => 'text-orange-500 font-semibold',
-                                                    $ageDays >= 4  => 'text-yellow-600',
-                                                    default        => 'text-green-600',
+                                                    $ageDays >= $ageT['red']    => 'text-red-600 font-semibold',
+                                                    $ageDays >= $ageT['orange'] => 'text-orange-500 font-semibold',
+                                                    $ageDays >= $ageT['yellow'] => 'text-yellow-600',
+                                                    default                     => 'text-green-600',
                                                 };
                                                 $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                 $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
@@ -1395,11 +1400,12 @@
                                                         : '—';
                                                     $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                                     $ageDays  = $diff ? $diff->days : 0;
+                                                    $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 4, 'orange' => 8, 'red' => 14];
                                                     $ageColor = match(true) {
-                                                        $ageDays >= 14 => 'text-red-600 font-semibold',
-                                                        $ageDays >= 8  => 'text-orange-500 font-semibold',
-                                                        $ageDays >= 4  => 'text-yellow-600',
-                                                        default        => 'text-green-600',
+                                                        $ageDays >= $ageT['red']    => 'text-red-600 font-semibold',
+                                                        $ageDays >= $ageT['orange'] => 'text-orange-500 font-semibold',
+                                                        $ageDays >= $ageT['yellow'] => 'text-yellow-600',
+                                                        default                     => 'text-green-600',
                                                     };
                                                     $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                     $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
@@ -1521,11 +1527,12 @@
                                                 : '—';
                                             $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
                                             $ageDays  = $diff ? $diff->days : 0;
+                                            $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 4, 'orange' => 8, 'red' => 14];
                                             $ageColor = match(true) {
-                                                $ageDays >= 14 => 'text-red-600 font-semibold',
-                                                $ageDays >= 8  => 'text-orange-500 font-semibold',
-                                                $ageDays >= 4  => 'text-yellow-600',
-                                                default        => 'text-green-600',
+                                                $ageDays >= $ageT['red']    => 'text-red-600 font-semibold',
+                                                $ageDays >= $ageT['orange'] => 'text-orange-500 font-semibold',
+                                                $ageDays >= $ageT['yellow'] => 'text-yellow-600',
+                                                default                     => 'text-green-600',
                                             };
                                             $typeLabel = match($assignment->assignment_type) {
                                                 'script_coverage'   => 'Script Coverage',
