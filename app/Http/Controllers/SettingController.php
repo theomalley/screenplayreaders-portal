@@ -1,5 +1,6 @@
 <?php
 
+// v2.3 — 2026-05-27 | Age thresholds use hours (max 8760); On Desk column on all assignment tables.
 // v2.2 — 2026-05-27 | Add age-threshold settings (per assignment type, configurable colour bands).
 // v2.1 — 2026-05-27 | Gate logo/login-logo/favicon/session-timeout/invoice as admin-only.
 // v2.0 — 2026-05-26 | Portal theme setting (Default, Midnight, Forest, Warm).
@@ -189,9 +190,9 @@ class SettingController extends Controller
         $types = array_keys(Setting::AGE_THRESHOLD_TYPES);
         $rules = [];
         foreach ($types as $type) {
-            $rules["yellow_{$type}"] = 'required|integer|min:1|max:365';
-            $rules["orange_{$type}"] = 'required|integer|min:1|max:365';
-            $rules["red_{$type}"]    = 'required|integer|min:1|max:365';
+            $rules["yellow_{$type}"] = 'required|integer|min:1|max:8760';
+            $rules["orange_{$type}"] = 'required|integer|min:1|max:8760';
+            $rules["red_{$type}"]    = 'required|integer|min:1|max:8760';
         }
         $data = $request->validate($rules);
 

@@ -60,8 +60,8 @@ class Setting extends Model
         'proofreading'    => 'Proofreading',
     ];
 
-    /** Default thresholds (days) — yellow / orange / red. */
-    public const AGE_THRESHOLD_DEFAULTS = ['yellow' => 4, 'orange' => 8, 'red' => 14];
+    /** Default thresholds (hours) — yellow / orange / red. */
+    public const AGE_THRESHOLD_DEFAULTS = ['yellow' => 96, 'orange' => 192, 'red' => 336];
 
     /**
      * Returns age-colour thresholds keyed by assignment type.
