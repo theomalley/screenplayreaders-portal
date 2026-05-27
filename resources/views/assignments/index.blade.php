@@ -810,6 +810,115 @@
 
                 </div> {{-- /x-data search wrapper --}}
 
+            {{-- ===== MY ASSIGNMENTS (admin/editor writing coverage) ===== --}}
+            @if ($myAssignments->isNotEmpty())
+                <div class="mt-8">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+                        My Assignments
+                        <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold normal-case">{{ $myAssignments->count() }}</span>
+                    </h3>
+                    <div class="bg-white rounded-lg shadow-sm border border-indigo-200 overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-indigo-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider">Title / Writer</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+                                    <th class="px-3 py-3"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                @foreach ($myAssignments as $assignment)
+                                    @php
+                                        $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
+                                        $ageStr   = $diff
+                                            ? ($diff->days >= 1
+                                                ? ($diff->days . 'd ' . $diff->h . 'h')
+                                                : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                            : '—';
+                                        $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $statusColor = match($assignment->status) {
+                                            'assigned'        => 'bg-green-100 text-green-800',
+                                            'qc'              => 'bg-blue-100 text-blue-800',
+                                            'needs_attention' => 'bg-orange-100 text-orange-800',
+                                            default           => 'bg-gray-100 text-gray-700',
+                                        };
+                                        $statusLabel = match($assignment->status) {
+                                            'assigned'        => 'Assigned to you',
+                                            'qc'              => 'QC',
+                                            'needs_attention' => 'Needs Attention',
+                                            default           => ucfirst($assignment->status),
+                                        };
+                                        $typeLabel = match($assignment->assignment_type) {
+                                            'script_coverage'   => 'Script Coverage',
+                                            'notes_only'        => 'Notes-Only',
+                                            'deep_dive'         => 'Deep-Dive',
+                                            'short'             => 'Short',
+                                            'budget'            => 'Budget',
+                                            'book'              => 'Book',
+                                            'coverage'          => 'Coverage',
+                                            'development_notes' => 'Dev Notes',
+                                            default             => $assignment->assignment_type ?? '—',
+                                        };
+                                        if ($assignment->vendor === 'wd') $typeLabel = 'WD ' . $typeLabel;
+                                        $rowClass = $assignment->status === 'needs_attention'
+                                            ? 'border-l-4 border-orange-400'
+                                            : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
+                                        $viewUrl = $assignment->drive_script_file_id
+                                            ? route('assignments.streamScript', $assignment)
+                                            : null;
+                                    @endphp
+                                    <tr class="hover:bg-gray-50 {{ $rowClass }}" title="{{ $ageTitle }}">
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums">{{ $ageStr }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
+                                        <td class="px-3 py-3">
+                                            @if ($viewUrl)
+                                                <button type="button"
+                                                        x-data="{ open: false }"
+                                                        @click="open = true">
+                                                    <span class="font-medium text-gray-900 hover:text-indigo-600 cursor-pointer">{{ $assignment->script_title }}</span>
+                                                    <div x-show="open" x-cloak
+                                                         @keydown.escape.window="open = false"
+                                                         class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                        <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2">
+                                                            <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                            <button @click.stop="open = false" type="button"
+                                                                    class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                        </div>
+                                                        <iframe :src="open ? @js($viewUrl) : ''"
+                                                                class="flex-1 w-full border-0"
+                                                                allowfullscreen></iframe>
+                                                    </div>
+                                                </button>
+                                            @else
+                                                <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                            @endif
+                                            <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                        </td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">{{ $assignment->page_count }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
+                                        </td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-right">
+                                            @can('submitCoverage', $assignment)
+                                                <a href="{{ route('coverage.show', $assignment) }}"
+                                                   class="inline-flex items-center px-2.5 py-1 bg-indigo-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-indigo-500 transition whitespace-nowrap">
+                                                    Write Coverage
+                                                </a>
+                                            @endcan
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
             {{-- ===== READER VIEW ===== --}}
             @else
                 @php $needsAttentionCount = $mine->where('status', 'needs_attention')->count(); @endphp

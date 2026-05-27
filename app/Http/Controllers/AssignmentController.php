@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-05-27 | Admin/editor My Assignments section: own active assignments shown below main table.
 // v1.8 — 2026-05-26 | Admin reader popup: show this-week and last-week completed counts + pay.
 // v1.7 — 2026-05-26 | Reader view: Completed This Week (current pay period only) + Archived tab with pay-period grouping + search.
 // v1.6 — 2026-05-26 | Invoice checkbox on create/edit forms; triggers InvoiceService on save.
@@ -97,6 +98,16 @@ class AssignmentController extends Controller
                 ->orderBy('completed_at', 'desc')
                 ->get();
 
+            $myAssignments = Assignment::where('assigned_reader_id', $user->id)
+                ->whereIn('status', [
+                    Assignment::STATUS_ASSIGNED,
+                    Assignment::STATUS_QC,
+                    Assignment::STATUS_NEEDS_ATTENTION,
+                ])
+                ->with(['coverageSubmission'])
+                ->orderBy('accepted_at', 'desc')
+                ->get();
+
             return view('assignments.index', [
                 'canManage'        => true,
                 'assignments'      => $assignments,
@@ -107,6 +118,7 @@ class AssignmentController extends Controller
                 'capacityOverride' => (int) Setting::getValue('capacity_override', 0),
                 'readerWeekStats'  => $readerWeekStats,
                 'archivedAll'      => $archivedAll,
+                'myAssignments'    => $myAssignments,
             ]);
         }
 
