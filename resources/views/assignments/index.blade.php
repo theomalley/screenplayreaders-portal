@@ -97,15 +97,17 @@
                                     $rActive   = $reader->assignments->count();
                                     $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
                                     $rFull     = $rMax > 0 && $rActive >= $rMax;
-                                    $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
-                                    $rOnline   = $reader->isOnline();
+                                    $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
+                                    $rOnline      = $reader->isOnline();
+                                    $rUnavailable = $rProfile?->availability === 'unavailable';
                                 @endphp
                                 <div class="flex flex-col items-center gap-0.5">
                                     <button type="button"
                                         @click="activeStaff = activeStaff === 'r{{ $reader->id }}' ? null : 'r{{ $reader->id }}'"
                                         :class="activeStaff === 'r{{ $reader->id }}' ? 'ring-2 ring-offset-1 ring-gray-400' : ''"
                                         class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer
-                                            {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}"
+                                            {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}
+                                            {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
                                         title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
                                     >
                                         @if ($rPhotoUrl)
