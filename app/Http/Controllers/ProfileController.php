@@ -67,8 +67,8 @@ class ProfileController extends Controller
         $path = $request->file('photo')->store('editor-photos', 'public');
 
         $user->editorProfile()->updateOrCreate(
-            ['user_id' => $user->id],
-            ['photo'   => $path]
+            ['user_id'    => $user->id],
+            ['photo'      => $path, 'initials' => '', 'first_name' => '', 'last_name' => '']
         );
 
         return back()->with('status', 'photo-updated');
