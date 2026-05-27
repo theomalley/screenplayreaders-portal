@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -48,6 +49,29 @@ class ProfileController extends Controller
         }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    public function uploadPhoto(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $request->validate(['photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:4096']);
+
+        $user    = $request->user();
+        $profile = $user->editorProfile;
+
+        if ($profile?->photo) {
+            Storage::disk('public')->delete($profile->photo);
+        }
+
+        $path = $request->file('photo')->store('editor-photos', 'public');
+
+        $user->editorProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['photo'   => $path]
+        );
+
+        return back()->with('status', 'photo-updated');
     }
 
     public function destroy(Request $request): RedirectResponse
