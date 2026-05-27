@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-05-27 | Enforce Password::defaults() (min 12, mixed case, numbers, symbols) on create/update
 // v1.5 — 2026-05-27 | Gate edit/delete on readers.edit / readers.delete permissions; redirect to team.index
 // v1.4 — 2026-05-25 | Add requests_bypass_capacity to store/update.
 // v1.3 — 2026-05-24 | Add MIME allowlist to photo upload; delete photo file on reader destroy.
@@ -14,6 +15,7 @@ use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 
 class ReaderProfileController extends Controller
 {
@@ -48,7 +50,7 @@ class ReaderProfileController extends Controller
         $data = $request->validate([
             'name'                       => ['required', 'string', 'max:255'],
             'email'                      => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password'                   => ['required', 'string', 'min:8', 'confirmed'],
+            'password'                   => ['required', 'confirmed', Password::defaults()],
             'initials'                   => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
             'first_name'                 => ['required', 'string', 'max:100'],
             'last_name'                  => ['required', 'string', 'max:100'],
@@ -106,7 +108,7 @@ class ReaderProfileController extends Controller
             'paypal_email'               => ['nullable', 'email', 'max:255'],
             'photo'                      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'email'                      => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'password'                   => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password'                   => ['nullable', 'confirmed', Password::defaults()],
             'availability'               => ['required', 'in:available,unavailable'],
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
