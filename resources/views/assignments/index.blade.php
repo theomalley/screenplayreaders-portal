@@ -368,10 +368,11 @@
                                             : null;
 
                                         $assignedInitials = $assignment->assignedReader?->readerProfile?->initials
-                                            ?? ($assignment->assignedReader ? substr($assignment->assignedReader->name, 0, 2) : null);
-                                        $assignedPhotoUrl = $assignment->assignedReader?->readerProfile?->photo
-                                            ? asset('storage/' . $assignment->assignedReader->readerProfile->photo)
-                                            : null;
+                                            ?? $assignment->assignedReader?->editorProfile?->initials
+                                            ?? ($assignment->assignedReader ? strtoupper(substr($assignment->assignedReader->name, 0, 2)) : null);
+                                        $assignedPhoto    = $assignment->assignedReader?->readerProfile?->photo
+                                            ?? $assignment->assignedReader?->editorProfile?->photo;
+                                        $assignedPhotoUrl = $assignedPhoto ? asset('storage/' . $assignedPhoto) : null;
 
                                         $viewUrl  = $assignment->drive_script_file_id
                                             ? route('assignments.streamScript', $assignment)

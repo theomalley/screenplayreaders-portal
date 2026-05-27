@@ -33,6 +33,57 @@
                 </div>
             @endif
 
+            {{-- ── Admins ─────────────────────────────────────────────── --}}
+            @if ($admins->isNotEmpty())
+            <div>
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admins</h3>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            @foreach ($admins as $admin)
+                                @php
+                                    $profile  = $admin->editorProfile;
+                                    $initials = $profile?->initials ?? strtoupper(substr($admin->name, 0, 2));
+                                    $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+                                @endphp
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-3">
+                                            <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0">
+                                                @if ($photoUrl)
+                                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                        <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
+                                                    </span>
+                                                @else
+                                                    {{ $initials }}
+                                                @endif
+                                                @if($admin->isOnline())
+                                                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
+                                                @endif
+                                            </span>
+                                            <div>
+                                                <div class="font-medium text-gray-900">{{ $profile?->displayName() ?? $admin->name }}</div>
+                                                <div class="text-[11px] text-violet-500 font-medium">Admin</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-500">
+                                        <a href="mailto:{{ $admin->email }}" class="hover:text-indigo-600 hover:underline">{{ $admin->email }}</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
             {{-- ── Editors ────────────────────────────────────────────── --}}
             <div>
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Editors</h3>

@@ -8,8 +8,12 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            @if(auth()->user()->isAdminOrEditor())
-            @php $currentPhoto = auth()->user()->editorProfile?->photo ? asset('storage/' . auth()->user()->editorProfile->photo) : null; @endphp
+            @if(auth()->user()->isAdminOrEditor() || auth()->user()->isReader())
+            @php
+                $currentPhoto = auth()->user()->isAdminOrEditor()
+                    ? (auth()->user()->editorProfile?->photo ? asset('storage/' . auth()->user()->editorProfile->photo) : null)
+                    : (auth()->user()->readerProfile?->photo  ? asset('storage/' . auth()->user()->readerProfile->photo)  : null);
+            @endphp
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl" x-data="{ preview: null }">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Profile Photo</h2>

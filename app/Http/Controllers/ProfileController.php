@@ -53,23 +53,32 @@ class ProfileController extends Controller
 
     public function uploadPhoto(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $user = $request->user();
+        abort_unless($user->isAdminOrEditor() || $user->isReader(), 403);
 
         $request->validate(['photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:4096']);
 
-        $user    = $request->user();
-        $profile = $user->editorProfile;
-
-        if ($profile?->photo) {
-            Storage::disk('public')->delete($profile->photo);
+        if ($user->isReader()) {
+            $profile = $user->readerProfile;
+            if ($profile?->photo) {
+                Storage::disk('public')->delete($profile->photo);
+            }
+            $path = $request->file('photo')->store('reader-photos', 'public');
+            $user->readerProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['photo'   => $path]
+            );
+        } else {
+            $profile = $user->editorProfile;
+            if ($profile?->photo) {
+                Storage::disk('public')->delete($profile->photo);
+            }
+            $path = $request->file('photo')->store('editor-photos', 'public');
+            $user->editorProfile()->updateOrCreate(
+                ['user_id'    => $user->id],
+                ['photo'      => $path, 'initials' => '', 'first_name' => '', 'last_name' => '']
+            );
         }
-
-        $path = $request->file('photo')->store('editor-photos', 'public');
-
-        $user->editorProfile()->updateOrCreate(
-            ['user_id'    => $user->id],
-            ['photo'      => $path, 'initials' => '', 'first_name' => '', 'last_name' => '']
-        );
 
         return back()->with('status', 'photo-updated');
     }

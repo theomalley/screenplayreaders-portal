@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-05-27 | Include admins section; reader photo upload; fix admin photo in assigned-reader column.
 // v1.0 — 2026-05-27 | Combined Team view — editors and readers on one unified list
 
 namespace App\Http\Controllers;
@@ -13,6 +14,11 @@ class TeamController extends Controller
     public function index()
     {
         abort_unless(Permission::check('team'), 403);
+
+        $admins = User::where('role', 'admin')
+            ->with('editorProfile')
+            ->orderBy('name')
+            ->get();
 
         $editors = User::where('role', 'editor')
             ->with('editorProfile')
@@ -35,6 +41,7 @@ class TeamController extends Controller
             ->get();
 
         return view('team.index', [
+            'admins'           => $admins,
             'editors'          => $editors,
             'readers'          => $readers,
             'canEditEditors'   => Permission::check('editors.edit'),
