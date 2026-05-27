@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-27 | Add Log::info/error around updateOrCreate to diagnose missing order-log rows
 // v1.3 — 2026-05-26 | Cast numeric NOT-NULL fields to float to reject null from callers
 // v1.2 — 2026-05-25 | Accept customer/order detail fields for Order Log
 // v1.1 — 2026-05-25 | Accept line_items_json; recalculate cog_commission using portal config
@@ -14,6 +15,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class OrderRevenueController extends Controller
@@ -110,10 +112,27 @@ class OrderRevenueController extends Controller
             }
         }
 
-        OrderRevenue::updateOrCreate(
-            ['order_number' => $data['order_number']],
-            $data
-        );
+        $existing = OrderRevenue::where('order_number', $data['order_number'])->first();
+        Log::info('OrderRevenue sync', [
+            'order_number' => $data['order_number'],
+            'ordered_at'   => $data['ordered_at'],
+            'order_total'  => $data['order_total'],
+            'action'       => $existing ? 'update (id=' . $existing->id . ')' : 'create',
+        ]);
+
+        try {
+            OrderRevenue::updateOrCreate(
+                ['order_number' => $data['order_number']],
+                $data
+            );
+            Log::info('OrderRevenue sync OK', ['order_number' => $data['order_number']]);
+        } catch (\Throwable $e) {
+            Log::error('OrderRevenue sync DB error', [
+                'order_number' => $data['order_number'],
+                'error'        => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'DB error: ' . $e->getMessage()], 500);
+        }
 
         return response()->json(['status' => 'ok'], 200);
     }
