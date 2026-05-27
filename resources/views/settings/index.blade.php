@@ -12,150 +12,6 @@
                 </div>
             @endif
 
-            {{-- Portal Theme --}}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Portal Theme</h3>
-                <p class="text-xs text-gray-500 mb-4">Sets the colour scheme for the navigation bar and accent colours throughout the portal.</p>
-                <div class="flex flex-wrap gap-3">
-                    @foreach([
-                        'default'  => ['label' => 'Default',  'nav' => '#2b4158', 'border_nav' => '#1e3047', 'body' => '#f7f4e6', 'accent' => '#3c9590'],
-                        'midnight' => ['label' => 'Midnight', 'nav' => '#16213e', 'border_nav' => '#0f3460', 'body' => '#1c1c2e', 'accent' => '#e94560'],
-                        'forest'   => ['label' => 'Forest',   'nav' => '#1e3a2f', 'border_nav' => '#2d5440', 'body' => '#f0f4f0', 'accent' => '#4caf50'],
-                        'warm'     => ['label' => 'Warm',     'nav' => '#5c3317', 'border_nav' => '#7a4520', 'body' => '#faf6f1', 'accent' => '#d4793b'],
-                    ] as $slug => $theme)
-                        <form method="POST" action="{{ route('settings.theme') }}">
-                            @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="portal_theme" value="{{ $slug }}">
-                            <button type="submit"
-                                    class="group text-left rounded-lg overflow-hidden border-2 transition {{ $portalTheme === $slug ? 'border-indigo-500 shadow-md' : 'border-gray-200 hover:border-gray-400' }}">
-                                {{-- Mini preview --}}
-                                <div class="w-28">
-                                    <div class="h-7 flex items-center px-2 gap-1.5"
-                                         style="background-color: {{ $theme['nav'] }}; border-bottom: 1px solid {{ $theme['border_nav'] }}">
-                                        <div class="w-2 h-2 rounded-full" style="background-color: {{ $theme['accent'] }}"></div>
-                                        <div class="h-1.5 rounded w-8 opacity-50" style="background-color: {{ $theme['nav'] === '#ffffff' ? '#9ca3af' : '#ffffff' }}"></div>
-                                    </div>
-                                    <div class="h-10 flex flex-col justify-center px-2 gap-1"
-                                         style="background-color: {{ $theme['body'] }}">
-                                        <div class="h-1.5 rounded w-14 bg-gray-300 opacity-60"></div>
-                                        <div class="h-1.5 rounded w-10 bg-gray-300 opacity-40"></div>
-                                    </div>
-                                </div>
-                                <div class="px-2 py-1.5 bg-white border-t border-gray-100">
-                                    <p class="text-xs font-medium text-gray-700">{{ $theme['label'] }}</p>
-                                    @if($portalTheme === $slug)
-                                        <p class="text-[10px] text-indigo-500">Active</p>
-                                    @endif
-                                </div>
-                            </button>
-                        </form>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Nav logo --}}
-            <div x-data="{ preview: null, existing: @js($logoUrl) }"
-                 class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Navigation Logo</h3>
-                <p class="text-xs text-gray-500 mb-4">Appears in the top-left of the portal navigation bar.</p>
-
-                <div class="mb-5">
-                    <img x-show="preview || existing"
-                         :src="preview || existing"
-                         alt="Navigation logo preview"
-                         class="h-14 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
-                    <div x-show="!preview && !existing" class="flex items-center gap-3 text-sm text-gray-400">
-                        <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
-                        <span>Default logo — no custom logo uploaded yet.</span>
-                    </div>
-                </div>
-
-                <form method="POST" action="{{ route('settings.logo') }}" enctype="multipart/form-data"
-                      class="flex items-end gap-3">
-                    @csrf
-                    <div class="flex-1">
-                        <x-input-label for="logo" :value="__('Choose file')" />
-                        <input id="logo" name="logo" type="file" accept="image/*"
-                               @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
-                               class="mt-1 block w-full text-sm text-gray-500
-                                      file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
-                                      file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
-                                      hover:file:bg-gray-200 cursor-pointer">
-                        <x-input-error class="mt-1" :messages="$errors->get('logo')" />
-                        <p class="mt-1 text-xs text-gray-400">PNG, JPG, SVG, or WebP · max 4 MB</p>
-                    </div>
-                    <x-primary-button>Upload</x-primary-button>
-                </form>
-            </div>
-
-            {{-- Login logo --}}
-            <div x-data="{ preview: null, existing: @js($loginLogoUrl) }"
-                 class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Login Screen Logo</h3>
-                <p class="text-xs text-gray-500 mb-4">Appears above the login form on the sign-in page.</p>
-
-                <div class="mb-5">
-                    <img x-show="preview || existing"
-                         :src="preview || existing"
-                         alt="Login logo preview"
-                         class="h-20 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
-                    <div x-show="!preview && !existing" class="flex items-center gap-3 text-sm text-gray-400">
-                        <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
-                        <span>Default logo — no custom login logo uploaded yet.</span>
-                    </div>
-                </div>
-
-                <form method="POST" action="{{ route('settings.login-logo') }}" enctype="multipart/form-data"
-                      class="flex items-end gap-3">
-                    @csrf
-                    <div class="flex-1">
-                        <x-input-label for="login_logo" :value="__('Choose file')" />
-                        <input id="login_logo" name="login_logo" type="file" accept="image/*"
-                               @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
-                               class="mt-1 block w-full text-sm text-gray-500
-                                      file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
-                                      file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
-                                      hover:file:bg-gray-200 cursor-pointer">
-                        <x-input-error class="mt-1" :messages="$errors->get('login_logo')" />
-                        <p class="mt-1 text-xs text-gray-400">PNG, JPG, SVG, or WebP · max 4 MB</p>
-                    </div>
-                    <x-primary-button>Upload</x-primary-button>
-                </form>
-            </div>
-
-            {{-- Favicon --}}
-            <div x-data="{ preview: null, existing: @js($faviconUrl) }"
-                 class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Favicon</h3>
-                <p class="text-xs text-gray-500 mb-4">Browser tab icon for the portal. PNG recommended (32×32 or 64×64).</p>
-
-                <div class="mb-5">
-                    <img x-show="preview || existing"
-                         :src="preview || existing"
-                         alt="Favicon preview"
-                         class="w-8 h-8 object-contain rounded border border-gray-200 bg-gray-50">
-                    <p x-show="!preview && !existing" class="text-sm text-gray-400">No favicon uploaded yet — browser will use its default.</p>
-                </div>
-
-                <form method="POST" action="{{ route('settings.favicon') }}" enctype="multipart/form-data"
-                      class="flex items-end gap-3">
-                    @csrf
-                    <div class="flex-1">
-                        <x-input-label for="favicon" :value="__('Choose file')" />
-                        <input id="favicon" name="favicon" type="file" accept="image/png,image/x-icon,image/svg+xml,image/webp"
-                               @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
-                               class="mt-1 block w-full text-sm text-gray-500
-                                      file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
-                                      file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
-                                      hover:file:bg-gray-200 cursor-pointer">
-                        <x-input-error class="mt-1" :messages="$errors->get('favicon')" />
-                        <p class="mt-1 text-xs text-gray-400">PNG, ICO, SVG, or WebP · max 512 KB</p>
-                    </div>
-                    <x-primary-button>Upload</x-primary-button>
-                </form>
-            </div>
-
             {{-- Reader Capacity Override --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Reader Capacity Override</h3>
@@ -195,28 +51,7 @@
                 </form>
             </div>
 
-            {{-- Session Timeout --}}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Session Timeout</h3>
-                <p class="text-xs text-gray-500 mb-4">
-                    How long a user can be idle before being automatically logged out. Minimum 5 minutes, maximum 1440 (24 hours).
-                </p>
-                <form method="POST" action="{{ route('settings.session-timeout') }}" class="flex items-end gap-3">
-                    @csrf
-                    @method('PATCH')
-                    <div>
-                        <x-input-label for="session_timeout_minutes" value="Timeout (minutes)" />
-                        <input type="number" id="session_timeout_minutes" name="session_timeout_minutes"
-                               min="5" max="1440" step="1"
-                               value="{{ $sessionTimeout }}"
-                               class="mt-1 block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                        <x-input-error class="mt-1" :messages="$errors->get('session_timeout_minutes')" />
-                    </div>
-                    <x-primary-button>Save</x-primary-button>
-                </form>
-            </div>
-
-            {{-- Announcements --}}
+            {{-- Reader Announcements --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Reader Announcements</h3>
                 <p class="text-xs text-gray-500 mb-4">Post updates that appear as a banner at the top of every page for all readers. Readers can mark them as read or dismiss them.</p>
@@ -259,8 +94,205 @@
                 @endif
             </div>
 
+            {{-- Portal Theme --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Portal Theme</h3>
+                <p class="text-xs text-gray-500 mb-4">Sets the colour scheme for the navigation bar and accent colours throughout the portal.</p>
+                <div class="flex flex-wrap gap-3">
+                    @foreach([
+                        'default'  => ['label' => 'Default',  'nav' => '#2b4158', 'border_nav' => '#1e3047', 'body' => '#f7f4e6', 'accent' => '#3c9590'],
+                        'midnight' => ['label' => 'Midnight', 'nav' => '#16213e', 'border_nav' => '#0f3460', 'body' => '#1c1c2e', 'accent' => '#e94560'],
+                        'forest'   => ['label' => 'Forest',   'nav' => '#1e3a2f', 'border_nav' => '#2d5440', 'body' => '#f0f4f0', 'accent' => '#4caf50'],
+                        'warm'     => ['label' => 'Warm',     'nav' => '#5c3317', 'border_nav' => '#7a4520', 'body' => '#faf6f1', 'accent' => '#d4793b'],
+                    ] as $slug => $theme)
+                        <form method="POST" action="{{ route('settings.theme') }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="portal_theme" value="{{ $slug }}">
+                            <button type="submit"
+                                    class="group text-left rounded-lg overflow-hidden border-2 transition {{ $portalTheme === $slug ? 'border-indigo-500 shadow-md' : 'border-gray-200 hover:border-gray-400' }}">
+                                <div class="w-28">
+                                    <div class="h-7 flex items-center px-2 gap-1.5"
+                                         style="background-color: {{ $theme['nav'] }}; border-bottom: 1px solid {{ $theme['border_nav'] }}">
+                                        <div class="w-2 h-2 rounded-full" style="background-color: {{ $theme['accent'] }}"></div>
+                                        <div class="h-1.5 rounded w-8 opacity-50" style="background-color: {{ $theme['nav'] === '#ffffff' ? '#9ca3af' : '#ffffff' }}"></div>
+                                    </div>
+                                    <div class="h-10 flex flex-col justify-center px-2 gap-1"
+                                         style="background-color: {{ $theme['body'] }}">
+                                        <div class="h-1.5 rounded w-14 bg-gray-300 opacity-60"></div>
+                                        <div class="h-1.5 rounded w-10 bg-gray-300 opacity-40"></div>
+                                    </div>
+                                </div>
+                                <div class="px-2 py-1.5 bg-white border-t border-gray-100">
+                                    <p class="text-xs font-medium text-gray-700">{{ $theme['label'] }}</p>
+                                    @if($portalTheme === $slug)
+                                        <p class="text-[10px] text-indigo-500">Active</p>
+                                    @endif
+                                </div>
+                            </button>
+                        </form>
+                    @endforeach
+                </div>
+            </div>
+
             {{-- Admin-only sections --}}
             @if ($isAdmin)
+
+                {{-- Navigation Logo --}}
+                <div x-data="{ preview: null, existing: @js($logoUrl) }"
+                     class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Navigation Logo</h3>
+                    <p class="text-xs text-gray-500 mb-4">Appears in the top-left of the portal navigation bar.</p>
+
+                    <div class="mb-5">
+                        <img x-show="preview || existing"
+                             :src="preview || existing"
+                             alt="Navigation logo preview"
+                             class="h-14 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
+                        <div x-show="!preview && !existing" class="flex items-center gap-3 text-sm text-gray-400">
+                            <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
+                            <span>Default logo — no custom logo uploaded yet.</span>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('settings.logo') }}" enctype="multipart/form-data"
+                          class="flex items-end gap-3">
+                        @csrf
+                        <div class="flex-1">
+                            <x-input-label for="logo" :value="__('Choose file')" />
+                            <input id="logo" name="logo" type="file" accept="image/*"
+                                   @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
+                                   class="mt-1 block w-full text-sm text-gray-500
+                                          file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
+                                          file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
+                                          hover:file:bg-gray-200 cursor-pointer">
+                            <x-input-error class="mt-1" :messages="$errors->get('logo')" />
+                            <p class="mt-1 text-xs text-gray-400">PNG, JPG, SVG, or WebP · max 4 MB</p>
+                        </div>
+                        <x-primary-button>Upload</x-primary-button>
+                    </form>
+                </div>
+
+                {{-- Login Screen Logo --}}
+                <div x-data="{ preview: null, existing: @js($loginLogoUrl) }"
+                     class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Login Screen Logo</h3>
+                    <p class="text-xs text-gray-500 mb-4">Appears above the login form on the sign-in page.</p>
+
+                    <div class="mb-5">
+                        <img x-show="preview || existing"
+                             :src="preview || existing"
+                             alt="Login logo preview"
+                             class="h-20 w-auto object-contain rounded border border-gray-200 p-2 bg-gray-50">
+                        <div x-show="!preview && !existing" class="flex items-center gap-3 text-sm text-gray-400">
+                            <x-application-logo class="h-10 w-10 fill-current text-gray-300" />
+                            <span>Default logo — no custom login logo uploaded yet.</span>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('settings.login-logo') }}" enctype="multipart/form-data"
+                          class="flex items-end gap-3">
+                        @csrf
+                        <div class="flex-1">
+                            <x-input-label for="login_logo" :value="__('Choose file')" />
+                            <input id="login_logo" name="login_logo" type="file" accept="image/*"
+                                   @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
+                                   class="mt-1 block w-full text-sm text-gray-500
+                                          file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
+                                          file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
+                                          hover:file:bg-gray-200 cursor-pointer">
+                            <x-input-error class="mt-1" :messages="$errors->get('login_logo')" />
+                            <p class="mt-1 text-xs text-gray-400">PNG, JPG, SVG, or WebP · max 4 MB</p>
+                        </div>
+                        <x-primary-button>Upload</x-primary-button>
+                    </form>
+                </div>
+
+                {{-- Favicon --}}
+                <div x-data="{ preview: null, existing: @js($faviconUrl) }"
+                     class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Favicon</h3>
+                    <p class="text-xs text-gray-500 mb-4">Browser tab icon for the portal. PNG recommended (32×32 or 64×64).</p>
+
+                    <div class="mb-5">
+                        <img x-show="preview || existing"
+                             :src="preview || existing"
+                             alt="Favicon preview"
+                             class="w-8 h-8 object-contain rounded border border-gray-200 bg-gray-50">
+                        <p x-show="!preview && !existing" class="text-sm text-gray-400">No favicon uploaded yet — browser will use its default.</p>
+                    </div>
+
+                    <form method="POST" action="{{ route('settings.favicon') }}" enctype="multipart/form-data"
+                          class="flex items-end gap-3">
+                        @csrf
+                        <div class="flex-1">
+                            <x-input-label for="favicon" :value="__('Choose file')" />
+                            <input id="favicon" name="favicon" type="file" accept="image/png,image/x-icon,image/svg+xml,image/webp"
+                                   @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => { preview = e.target.result }; r.readAsDataURL(f) }"
+                                   class="mt-1 block w-full text-sm text-gray-500
+                                          file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
+                                          file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
+                                          hover:file:bg-gray-200 cursor-pointer">
+                            <x-input-error class="mt-1" :messages="$errors->get('favicon')" />
+                            <p class="mt-1 text-xs text-gray-400">PNG, ICO, SVG, or WebP · max 512 KB</p>
+                        </div>
+                        <x-primary-button>Upload</x-primary-button>
+                    </form>
+                </div>
+
+                {{-- Session Timeout --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Session Timeout</h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        How long a user can be idle before being automatically logged out. Minimum 5 minutes, maximum 1440 (24 hours).
+                    </p>
+                    <form method="POST" action="{{ route('settings.session-timeout') }}" class="flex items-end gap-3">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <x-input-label for="session_timeout_minutes" value="Timeout (minutes)" />
+                            <input type="number" id="session_timeout_minutes" name="session_timeout_minutes"
+                                   min="5" max="1440" step="1"
+                                   value="{{ $sessionTimeout }}"
+                                   class="mt-1 block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error class="mt-1" :messages="$errors->get('session_timeout_minutes')" />
+                        </div>
+                        <x-primary-button>Save</x-primary-button>
+                    </form>
+                </div>
+
+                {{-- Invoice Settings --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Invoice Settings</h3>
+                    <p class="text-xs text-gray-500 mb-4">Used when generating client invoices. The SR address can be overridden per-client.</p>
+
+                    <form method="POST" action="{{ route('settings.invoice') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div>
+                            <x-input-label for="sr_invoice_address" value="Screenplay Readers Address (default for invoices)" />
+                            <textarea id="sr_invoice_address" name="sr_invoice_address" rows="4"
+                                class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="e.g. Screenplay Readers&#10;123 Main St&#10;Los Angeles, CA 90001"
+                            >{{ old('sr_invoice_address', $srInvoiceAddress) }}</textarea>
+                            <p class="mt-1 text-xs text-gray-400">Appears as the sender address on PDF invoices.</p>
+                        </div>
+
+                        <div>
+                            <x-input-label for="invoice_email_body" value="PDF Invoice Email Body (Help Scout draft)" />
+                            <textarea id="invoice_email_body" name="invoice_email_body" rows="6"
+                                class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="Hi,&#10;&#10;Please find your invoice attached…"
+                            >{{ old('invoice_email_body', $invoiceEmailBody) }}</textarea>
+                            <p class="mt-1 text-xs text-gray-400">Used as the body of the Help Scout draft reply when sending PDF invoices. Plain text or HTML.</p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Invoice Settings</x-primary-button>
+                        </div>
+                    </form>
+                </div>
 
                 {{-- Permissions --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -288,9 +320,9 @@
                                             <td class="px-4 py-2.5 text-gray-700">{{ $label }}</td>
                                             @foreach(\App\Support\Permission::ROLES as $role)
                                                 @php
-                                                    $checked   = $permissionsGrid[$feature][$role] ?? false;
+                                                    $checked     = $permissionsGrid[$feature][$role] ?? false;
                                                     $isAdminRole = $role === 'admin';
-                                                    $inputName = 'perm_' . $role . '_' . str_replace('.', '_', $feature);
+                                                    $inputName   = 'perm_' . $role . '_' . str_replace('.', '_', $feature);
                                                 @endphp
                                                 <td class="px-4 py-2.5 text-center">
                                                     @if($isAdminRole)
@@ -435,40 +467,6 @@
                 </div>
 
             @endif
-
-        </div>
-            {{-- Invoice Settings --}}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Invoice Settings</h3>
-                <p class="text-xs text-gray-500 mb-4">Used when generating client invoices. The SR address can be overridden per-client.</p>
-
-                <form method="POST" action="{{ route('settings.invoice') }}" class="space-y-4">
-                    @csrf
-                    @method('PATCH')
-
-                    <div>
-                        <x-input-label for="sr_invoice_address" value="Screenplay Readers Address (default for invoices)" />
-                        <textarea id="sr_invoice_address" name="sr_invoice_address" rows="4"
-                            class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder="e.g. Screenplay Readers&#10;123 Main St&#10;Los Angeles, CA 90001"
-                        >{{ old('sr_invoice_address', $srInvoiceAddress) }}</textarea>
-                        <p class="mt-1 text-xs text-gray-400">Appears as the sender address on PDF invoices.</p>
-                    </div>
-
-                    <div>
-                        <x-input-label for="invoice_email_body" value="PDF Invoice Email Body (Help Scout draft)" />
-                        <textarea id="invoice_email_body" name="invoice_email_body" rows="6"
-                            class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder="Hi,&#10;&#10;Please find your invoice attached…"
-                        >{{ old('invoice_email_body', $invoiceEmailBody) }}</textarea>
-                        <p class="mt-1 text-xs text-gray-400">Used as the body of the Help Scout draft reply when sending PDF invoices. Plain text or HTML.</p>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <x-primary-button>Save Invoice Settings</x-primary-button>
-                    </div>
-                </form>
-            </div>
 
         </div>
     </div>

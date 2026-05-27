@@ -1,5 +1,6 @@
 <?php
 
+// v2.1 — 2026-05-27 | Gate logo/login-logo/favicon/session-timeout/invoice as admin-only.
 // v2.0 — 2026-05-26 | Portal theme setting (Default, Midnight, Forest, Warm).
 // v1.9 — 2026-05-26 | Add sr_invoice_address and invoice_email_body settings for client invoicing.
 // v1.8 — 2026-05-25 | Session timeout setting.
@@ -58,7 +59,7 @@ class SettingController extends Controller
 
     public function uploadLogo(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(auth()->user()->isAdmin(), 403);
 
         $request->validate(['logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:4096']);
 
@@ -81,7 +82,7 @@ class SettingController extends Controller
 
     public function uploadLoginLogo(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(auth()->user()->isAdmin(), 403);
 
         $request->validate(['login_logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:4096']);
 
@@ -104,7 +105,7 @@ class SettingController extends Controller
 
     public function uploadFavicon(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(auth()->user()->isAdmin(), 403);
 
         $request->validate(['favicon' => 'required|file|mimes:png,ico,svg,webp|max:512']);
 
@@ -141,7 +142,7 @@ class SettingController extends Controller
 
     public function updateSessionTimeout(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(auth()->user()->isAdmin(), 403);
 
         $request->validate(['session_timeout_minutes' => 'required|integer|min:5|max:1440']);
 
@@ -153,7 +154,7 @@ class SettingController extends Controller
 
     public function updateInvoiceSettings(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless(auth()->user()->isAdmin(), 403);
 
         $request->validate([
             'sr_invoice_address' => 'nullable|string|max:1000',
