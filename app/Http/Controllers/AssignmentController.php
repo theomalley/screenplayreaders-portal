@@ -54,7 +54,8 @@ class AssignmentController extends Controller
             $readers = User::where('role', 'reader')
                 ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
                 ->orderBy('name')
-                ->get();
+                ->get()
+                ->sortBy(fn($r) => $r->readerProfile?->availability === 'unavailable' ? 1 : 0);
 
             [$thisPeriodStart, $thisPeriodEnd] = PayPeriod::current();
             $lastPeriodEnd   = $thisPeriodStart;
