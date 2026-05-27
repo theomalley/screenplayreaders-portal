@@ -136,6 +136,10 @@
                             </button>
                             <div x-show="adminOpen" x-cloak
                                  class="absolute top-full left-0 mt-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                                <a href="{{ route('settings.index') }}"
+                                    class="block px-4 py-2 text-sm {{ request()->routeIs('settings.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Settings
+                                </a>
                                 <a href="{{ route('archive.index') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('archive.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Archive
@@ -147,10 +151,6 @@
                                 <a href="{{ route('manual.show') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
-                                </a>
-                                <a href="{{ route('settings.index') }}"
-                                    class="block px-4 py-2 text-sm {{ request()->routeIs('settings.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Settings
                                 </a>
                                 @if(auth()->user()?->isAdmin())
                                     <div class="my-1 border-t border-gray-100"></div>
