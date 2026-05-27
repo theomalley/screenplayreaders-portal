@@ -100,7 +100,7 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
         <div class="min-h-screen">
             @include('layouts.navigation')
 
-            @if(auth()->check() && auth()->user()->isReader())
+            @if(auth()->check())
             @php
                 $userId = auth()->id();
                 $_announcements = \App\Models\Announcement::query()

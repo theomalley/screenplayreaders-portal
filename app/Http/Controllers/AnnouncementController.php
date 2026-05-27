@@ -37,7 +37,6 @@ class AnnouncementController extends Controller
 
     public function markRead(Announcement $announcement): Response
     {
-        abort_unless(auth()->user()->isReader(), 403);
 
         AnnouncementRead::updateOrCreate(
             ['announcement_id' => $announcement->id, 'user_id' => auth()->id()],
@@ -49,7 +48,6 @@ class AnnouncementController extends Controller
 
     public function dismiss(Announcement $announcement): Response
     {
-        abort_unless(auth()->user()->isReader(), 403);
 
         AnnouncementRead::updateOrCreate(
             ['announcement_id' => $announcement->id, 'user_id' => auth()->id()],
