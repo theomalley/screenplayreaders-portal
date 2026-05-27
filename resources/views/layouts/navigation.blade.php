@@ -152,10 +152,12 @@
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
                                 </a>
+                                @if(\App\Support\Permission::check('team'))
                                 <a href="{{ route('team.index') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('team.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Team
                                 </a>
+                                @endif
                                 @if(auth()->user()?->isAdmin())
                                     <div class="my-1 border-t border-gray-100"></div>
                                     <a href="{{ route('reader-pay.index') }}"
@@ -285,9 +287,11 @@
                 <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                     {{ __('Settings') }}
                 </x-responsive-nav-link>
+                @if(\App\Support\Permission::check('team'))
                 <x-responsive-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')">
                     {{ __('Team') }}
                 </x-responsive-nav-link>
+                @endif
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('reader-pay.index')" :active="request()->routeIs('reader-pay.*')">
                         {{ __('Reader Pay') }}

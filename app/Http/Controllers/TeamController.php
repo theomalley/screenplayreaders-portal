@@ -12,7 +12,7 @@ class TeamController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless(Permission::check('team'), 403);
 
         $editors = User::where('role', 'editor')
             ->with('editorProfile')
