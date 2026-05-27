@@ -71,11 +71,16 @@
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
-                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0 overflow-hidden">
+                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0">
                                                     @if ($photoUrl)
-                                                        <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                                        <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                            <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
+                                                        </span>
                                                     @else
                                                         {{ $initials }}
+                                                    @endif
+                                                    @if($editor->isOnline())
+                                                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
                                                 </span>
                                                 <div class="font-medium text-gray-900">
@@ -204,11 +209,16 @@
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
-                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 overflow-hidden">
+                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0">
                                                     @if ($photoUrl)
-                                                        <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                                        <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                            <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
+                                                        </span>
                                                     @else
                                                         {{ $initials }}
+                                                    @endif
+                                                    @if($reader->isOnline())
+                                                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
                                                 </span>
                                                 <div class="font-medium text-gray-900">
