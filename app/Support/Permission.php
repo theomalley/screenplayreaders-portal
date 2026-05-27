@@ -19,6 +19,10 @@ class Permission
         'manual'             => 'Reader Manual — View',
         'manual.edit'        => 'Reader Manual — Edit',
         'readers'            => 'Readers Management',
+        'readers.edit'       => 'Readers — Edit',
+        'readers.delete'     => 'Readers — Delete',
+        'editors.edit'       => 'Editors — Edit',
+        'editors.delete'     => 'Editors — Delete',
     ];
 
     // Defaults used when no DB record exists yet
@@ -32,6 +36,10 @@ class Permission
         'manual'             => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],
         'manual.edit'        => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
         'readers'            => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
+        'readers.edit'       => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
+        'readers.delete'     => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
+        'editors.edit'       => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
+        'editors.delete'     => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
     ];
 
     /** Settings key for a feature+role pair. */

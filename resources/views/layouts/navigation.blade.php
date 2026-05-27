@@ -119,9 +119,9 @@
                             </div>
                         @endif
 
-                        {{-- Admin dropdown (Readers, Archive, Ratebook, Reader Manual) --}}
+                        {{-- Admin dropdown (Team, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*');
+                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -152,16 +152,11 @@
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
                                 </a>
+                                <a href="{{ route('team.index') }}"
+                                    class="block px-4 py-2 text-sm {{ request()->routeIs('team.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Team
+                                </a>
                                 @if(auth()->user()?->isAdmin())
-                                    <div class="my-1 border-t border-gray-100"></div>
-                                    <a href="{{ route('admin.editors.index') }}"
-                                        class="block px-4 py-2 text-sm {{ request()->routeIs('admin.editors*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                        Editors
-                                    </a>
-                                    <a href="{{ route('readers.index') }}"
-                                        class="block px-4 py-2 text-sm {{ request()->routeIs('readers.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                        Readers
-                                    </a>
                                     <div class="my-1 border-t border-gray-100"></div>
                                     <a href="{{ route('reader-pay.index') }}"
                                         class="block px-4 py-2 text-sm {{ request()->routeIs('reader-pay.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
@@ -290,13 +285,10 @@
                 <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                     {{ __('Settings') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')">
+                    {{ __('Team') }}
+                </x-responsive-nav-link>
                 @if(auth()->user()?->isAdmin())
-                    <x-responsive-nav-link :href="route('admin.editors.index')" :active="request()->routeIs('admin.editors*')">
-                        {{ __('Editors') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('readers.index')" :active="request()->routeIs('readers.*')">
-                        {{ __('Readers') }}
-                    </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('reader-pay.index')" :active="request()->routeIs('reader-pay.*')">
                         {{ __('Reader Pay') }}
                     </x-responsive-nav-link>

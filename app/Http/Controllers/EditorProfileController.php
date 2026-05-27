@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-27 | Gate edit/delete on editors.edit / editors.delete permissions; redirect to team.index
 // v1.1 — 2026-05-25 | Add saveCommissions() for per-product commission config
 // v1.0.2 — 2026-05-24 | Add MIME allowlist to photo upload.
 // v1.0.1 — 2026-05-24 | Force redeploy with editor_profiles migration.
@@ -10,6 +11,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\EditorProductCommission;
 use App\Models\User;
+use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -74,12 +76,12 @@ class EditorProfileController extends Controller
             'upload_warning'       => $data['upload_warning'] ?? null,
         ]);
 
-        return redirect()->route('admin.editors.index')->with('success', 'Editor created.');
+        return redirect()->route('team.index')->with('success', 'Editor created.');
     }
 
     public function edit(User $user)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(Permission::check('editors.edit'), 403);
         abort_unless($user->isEditor(), 404);
 
         return view('admin.editors.edit', [
@@ -90,7 +92,7 @@ class EditorProfileController extends Controller
 
     public function update(Request $request, User $user)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(Permission::check('editors.edit'), 403);
         abort_unless($user->isEditor(), 404);
 
         $data = $request->validate([
@@ -130,7 +132,7 @@ class EditorProfileController extends Controller
             collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
         );
 
-        return redirect()->route('admin.editors.index')->with('success', 'Editor profile updated.');
+        return redirect()->route('team.index')->with('success', 'Editor profile updated.');
     }
 
     public function saveCommissions(Request $request, User $user)
@@ -166,7 +168,7 @@ class EditorProfileController extends Controller
 
     public function destroy(User $user)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(Permission::check('editors.delete'), 403);
         abort_unless($user->isEditor(), 404);
 
         if ($user->assignments()->where('status', Assignment::STATUS_ASSIGNED)->exists()) {
@@ -179,6 +181,6 @@ class EditorProfileController extends Controller
 
         $user->delete();
 
-        return redirect()->route('admin.editors.index')->with('success', 'Editor deleted.');
+        return redirect()->route('team.index')->with('success', 'Editor deleted.');
     }
 }
