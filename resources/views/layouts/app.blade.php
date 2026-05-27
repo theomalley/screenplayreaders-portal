@@ -105,7 +105,7 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                 $userId = auth()->id();
                 $_announcements = \App\Models\Announcement::query()
                     ->whereDoesntHave('reads', fn($q) => $q->where('user_id', $userId)->whereNotNull('dismissed_at'))
-                    ->with(['reads' => fn($q) => $q->where('user_id', $userId)])
+                    ->with(['reads' => fn($q) => $q->where('user_id', $userId), 'createdBy.editorProfile'])
                     ->orderBy('created_at', 'desc')
                     ->get();
                 $_unread = $_announcements->filter(fn($a) => $a->reads->isEmpty() || $a->reads->first()?->read_at === null);
@@ -114,15 +114,27 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
             @if($_announcements->isNotEmpty())
             <div x-data="{ showPast: false }" class="border-b border-amber-200 bg-amber-50">
                 @foreach($_unread as $_ann)
+                @php
+                    $_creator = $_ann->createdBy;
+                    $_creatorPhoto = $_creator?->editorProfile?->photo ? asset('storage/' . $_creator->editorProfile->photo) : null;
+                    $_creatorInitials = $_creator?->editorProfile?->initials
+                        ?? ($_creator ? strtoupper(implode('', array_map(fn($w) => $w[0], array_filter(explode(' ', $_creator->name))))) : '?');
+                    $_creatorInitials = substr($_creatorInitials, 0, 2);
+                @endphp
                 <div x-data="{ visible: true }"
                      x-show="visible"
                      x-transition:leave="transition ease-in duration-200"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0 -translate-y-1"
                      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-start gap-3">
-                    <svg class="w-4 h-4 mt-0.5 shrink-0 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clip-rule="evenodd"/>
-                    </svg>
+                    <div class="relative w-6 h-6 rounded-full bg-amber-300 flex items-center justify-center text-[10px] font-mono font-semibold text-amber-900 shrink-0 mt-0.5 overflow-hidden"
+                         title="{{ $_creator?->name ?? 'Staff' }}">
+                        @if($_creatorPhoto)
+                            <img src="{{ $_creatorPhoto }}" alt="{{ $_creatorInitials }}" class="absolute inset-0 w-full h-full object-cover" />
+                        @else
+                            {{ $_creatorInitials }}
+                        @endif
+                    </div>
                     <p class="flex-1 text-sm text-amber-900">{{ $_ann->body }}</p>
                     <div class="flex items-center gap-3 shrink-0">
                         <button @click="
@@ -157,7 +169,22 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                     </button>
                     <div x-show="showPast" x-cloak class="mt-2 space-y-2 pb-2">
                         @foreach($_read as $_ann)
+                        @php
+                            $_creator = $_ann->createdBy;
+                            $_creatorPhoto = $_creator?->editorProfile?->photo ? asset('storage/' . $_creator->editorProfile->photo) : null;
+                            $_creatorInitials = $_creator?->editorProfile?->initials
+                                ?? ($_creator ? strtoupper(implode('', array_map(fn($w) => $w[0], array_filter(explode(' ', $_creator->name))))) : '?');
+                            $_creatorInitials = substr($_creatorInitials, 0, 2);
+                        @endphp
                         <div x-data="{ visible: true }" x-show="visible" class="flex items-start gap-3">
+                            <div class="relative w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center text-[10px] font-mono font-semibold text-amber-700 shrink-0 mt-0.5 overflow-hidden opacity-75"
+                                 title="{{ $_creator?->name ?? 'Staff' }}">
+                                @if($_creatorPhoto)
+                                    <img src="{{ $_creatorPhoto }}" alt="{{ $_creatorInitials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                @else
+                                    {{ $_creatorInitials }}
+                                @endif
+                            </div>
                             <p class="flex-1 text-sm text-amber-700 opacity-75">{{ $_ann->body }}</p>
                             <button @click="
                                 visible = false;
