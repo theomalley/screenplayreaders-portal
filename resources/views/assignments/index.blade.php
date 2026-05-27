@@ -874,25 +874,24 @@
                                     <tr class="hover:bg-gray-50 {{ $rowClass }}" title="{{ $ageTitle }}">
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums">{{ $ageStr }}</td>
                                         <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                        <td class="px-3 py-3">
+                                        <td class="px-3 py-3" x-data="{ open: false }">
                                             @if ($viewUrl)
-                                                <button type="button"
-                                                        x-data="{ open: false }"
-                                                        @click="open = true">
-                                                    <span class="font-medium text-gray-900 hover:text-indigo-600 cursor-pointer">{{ $assignment->script_title }}</span>
-                                                    <div x-show="open" x-cloak
-                                                         @keydown.escape.window="open = false"
-                                                         class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                        <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2">
-                                                            <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                            <button @click.stop="open = false" type="button"
-                                                                    class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
-                                                        </div>
-                                                        <iframe :src="open ? @js($viewUrl) : ''"
-                                                                class="flex-1 w-full border-0"
-                                                                allowfullscreen></iframe>
+                                                <button @click="open = true" type="button"
+                                                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                                <div x-show="open" x-cloak
+                                                     @keydown.escape.window="open = false"
+                                                     tabindex="-1"
+                                                     x-effect="if (open) $nextTick(() => $el.focus())"
+                                                     class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                                    <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2">
+                                                        <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
+                                                        <button @click="open = false" type="button"
+                                                                class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                     </div>
-                                                </button>
+                                                    <iframe :src="open ? @js($viewUrl) : ''"
+                                                            class="flex-1 w-full border-0"
+                                                            allowfullscreen></iframe>
+                                                </div>
                                             @else
                                                 <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
                                             @endif
