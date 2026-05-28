@@ -336,7 +336,11 @@ class AssignmentController extends Controller
 
         abort_if(empty($pages), 422, 'No valid page numbers provided.');
 
-        $drive->deletePages($assignment->drive_script_file_id, $pages);
+        try {
+            $drive->deletePages($assignment->drive_script_file_id, $pages);
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
 
         $label = count($pages) === 1
             ? 'Page ' . $pages[0] . ' removed.'

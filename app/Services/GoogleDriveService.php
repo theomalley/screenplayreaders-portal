@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-28 | Preprocess PDFs with Ghostscript before FPDI to support compressed cross-reference streams.
 // v1.4 — 2026-05-24 | Add deleteFile for assignment cleanup on destroy.
 // v1.3 — 2026-05-22 | Remove public Drive permissions on upload; add downloadContents for portal proxy; revokePublicAccess on replace.
 // v1.2 — 2026-05-21 | Add supportsAllDrives to all API calls — required for Shared Drive usage.
@@ -122,12 +123,41 @@ class GoogleDriveService
     }
 
     /**
+     * Re-render a PDF at compatibility level 1.4 using Ghostscript so FPDI's free
+     * parser can read it. Modern PDFs use compressed cross-reference streams that
+     * FPDI cannot parse without the paid add-on.
+     */
+    private function flattenForFpdi(string $sourcePath): string
+    {
+        $output   = tempnam(sys_get_temp_dir(), 'sr_flat_') . '.pdf';
+        $exitCode = 0;
+
+        exec(
+            'gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4'
+            . ' -sOutputFile=' . escapeshellarg($output)
+            . ' ' . escapeshellarg($sourcePath)
+            . ' 2>/dev/null',
+            $ignored,
+            $exitCode
+        );
+
+        @unlink($sourcePath);
+
+        if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
+            @unlink($output);
+            throw new \RuntimeException('Ghostscript preprocessing failed. Ensure gs is installed on the server.');
+        }
+
+        return $output;
+    }
+
+    /**
      * Delete specific pages from the Drive PDF, re-upload in place, return same file ID.
      * $pages is a 1-indexed array of page numbers to remove, e.g. [1] or [1, 103].
      */
     public function deletePages(string $fileId, array $pages): string
     {
-        $source = $this->downloadToTemp($fileId);
+        $source = $this->flattenForFpdi($this->downloadToTemp($fileId));
 
         try {
             $pdf       = new Fpdi();
