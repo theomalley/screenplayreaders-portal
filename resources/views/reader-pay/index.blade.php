@@ -25,7 +25,17 @@
                     {{-- Reader header --}}
                     <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-amber-200 bg-amber-50">
                         <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                            <span class="font-semibold text-gray-800">{{ $rd['reader_name'] }}</span>
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('readers.edit', $rd['reader_id']) }}" title="Edit {{ $rd['reader_name'] }}">
+                                    @if($rd['photo_url'])
+                                        <img src="{{ $rd['photo_url'] }}" alt="{{ $rd['initials'] }}"
+                                             class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">
+                                    @else
+                                        <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-semibold ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">{{ $rd['initials'] }}</div>
+                                    @endif
+                                </a>
+                                <span class="font-semibold text-gray-800">{{ $rd['reader_name'] }}</span>
+                            </div>
                             @if($rd['paypal_email'])
                                 <span class="text-sm text-gray-500">· PayPal: <span class="font-mono text-xs">{{ $rd['paypal_email'] }}</span></span>
                             @endif
@@ -144,7 +154,17 @@
                         <details class="group">
                             <summary class="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 list-none">
                                 <div class="flex items-center gap-4">
-                                    <span class="font-medium text-gray-800">{{ $batch['reader_name'] }}</span>
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('readers.edit', $batch['reader_id']) }}" title="Edit {{ $batch['reader_name'] }}" @click.stop>
+                                            @if($batch['photo_url'] ?? null)
+                                                <img src="{{ $batch['photo_url'] }}" alt="{{ $batch['initials'] ?? '?' }}"
+                                                     class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">
+                                            @else
+                                                <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-semibold ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">{{ $batch['initials'] ?? '?' }}</div>
+                                            @endif
+                                        </a>
+                                        <span class="font-medium text-gray-800">{{ $batch['reader_name'] }}</span>
+                                    </div>
                                     <span class="text-xs text-gray-400">Paid {{ $batch['paid_at']->format('M j, Y') }}</span>
                                     <span class="text-xs text-gray-500">
                                         {{ count($batch['assignments']) }} coverage(s)

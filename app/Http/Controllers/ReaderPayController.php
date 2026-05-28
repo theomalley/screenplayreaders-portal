@@ -55,6 +55,8 @@ class ReaderPayController extends Controller
                 'reader_id'    => $readerId,
                 'reader_name'  => $profile?->displayName() ?? $reader?->name ?? 'Unknown',
                 'paypal_email' => $profile?->paypal_email,
+                'photo_url'    => $profile?->photo ? asset('storage/' . $profile->photo) : null,
+                'initials'     => $profile?->initials ?? '?',
                 'assignments'  => $assignments->sortBy('completed_at'),
                 'adjustments'  => $adjustments->sortBy('created_at'),
                 'total_owed'   => $totalOwed,
@@ -174,8 +176,11 @@ class ReaderPayController extends Controller
 
         foreach ($paidAssignments as $a) {
             $key = $a->assigned_reader_id . '|' . $a->reader_paid_at->toDateString();
+            $profile = $a->assignedReader?->readerProfile;
             $batches[$key]['reader_id']   ??= $a->assigned_reader_id;
-            $batches[$key]['reader_name'] ??= $a->assignedReader?->readerProfile?->displayName() ?? $a->assignedReader?->name ?? 'Unknown';
+            $batches[$key]['reader_name'] ??= $profile?->displayName() ?? $a->assignedReader?->name ?? 'Unknown';
+            $batches[$key]['photo_url']   ??= $profile?->photo ? asset('storage/' . $profile->photo) : null;
+            $batches[$key]['initials']    ??= $profile?->initials ?? '?';
             $batches[$key]['paid_at']     ??= $a->reader_paid_at;
             $batches[$key]['assignments'][] = $a;
             $batches[$key]['adjustments']   ??= [];
@@ -184,8 +189,11 @@ class ReaderPayController extends Controller
 
         foreach ($paidAdjustments as $adj) {
             $key = $adj->user_id . '|' . $adj->reader_paid_at->toDateString();
+            $profile = $adj->reader?->readerProfile;
             $batches[$key]['reader_id']   ??= $adj->user_id;
-            $batches[$key]['reader_name'] ??= $adj->reader?->readerProfile?->displayName() ?? $adj->reader?->name ?? 'Unknown';
+            $batches[$key]['reader_name'] ??= $profile?->displayName() ?? $adj->reader?->name ?? 'Unknown';
+            $batches[$key]['photo_url']   ??= $profile?->photo ? asset('storage/' . $profile->photo) : null;
+            $batches[$key]['initials']    ??= $profile?->initials ?? '?';
             $batches[$key]['paid_at']     ??= $adj->reader_paid_at;
             $batches[$key]['assignments'] ??= [];
             $batches[$key]['adjustments'][] = $adj;
