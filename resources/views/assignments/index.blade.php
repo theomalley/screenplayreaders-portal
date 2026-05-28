@@ -300,18 +300,14 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">On Desk</th>
+                                    <th class="px-2 py-3"></th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Reader</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-                                    <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -406,9 +402,43 @@
                                     <tr class="hover:bg-gray-50 {{ $rowClass }}"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}">
-                                        {{-- Age --}}
-                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">{{ $accStr ?? '—' }}</td>
+                                        {{-- Age + Rush --}}
+                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                            {{ $ageStr }}
+                                            @if ($assignment->rush)
+                                                <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                            @endif
+                                        </td>
+
+                                        {{-- Edit (small, right of Age) --}}
+                                        <td class="px-2 py-3 whitespace-nowrap">
+                                            @can('update', $assignment)
+                                                <a href="{{ route('assignments.edit', $assignment) }}"
+                                                   class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
+                                            @endcan
+                                        </td>
+
+                                        {{-- Accepted by (time + reader icon) --}}
+                                        <td class="px-3 py-3 whitespace-nowrap" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
+                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
+                                            @if ($accStr)
+                                                <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
+                                            @endif
+                                            @if ($assignedInitials)
+                                                <div class="flex flex-col items-center gap-0.5 mt-1.5">
+                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
+                                                        @if ($assignedPhotoUrl)
+                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
+                                                            </span>
+                                                        @else
+                                                            {{ $assignedInitials }}
+                                                        @endif
+                                                    </span>
+                                                    <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
+                                                </div>
+                                            @endif
+                                        </td>
 
                                         {{-- Order # --}}
                                         @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
@@ -422,15 +452,82 @@
                                             @endif
                                         </td>
 
-                                        {{-- Title / Writer --}}
-                                        <td class="px-3 py-3" x-data="{ open: false }">
+                                        {{-- Title / Writer (+ notes icon + page count) --}}
+                                        <td class="px-3 py-3"
+                                            x-data="{
+                                                viewerOpen: false,
+                                                notesOpen: false,
+                                                hover: false,
+                                                tipX: 0,
+                                                tipY: 0,
+                                                note: @js($assignment->notes ?? ''),
+                                                saving: false,
+                                                saved: false,
+                                                async saveNote() {
+                                                    this.saving = true; this.saved = false;
+                                                    try {
+                                                        const r = await fetch(@js(route('assignments.updateNotes', $assignment)), {
+                                                            method: 'PATCH',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                                'Accept': 'application/json',
+                                                            },
+                                                            body: JSON.stringify({ notes: this.note }),
+                                                        });
+                                                        if (r.ok) this.saved = true;
+                                                    } finally { this.saving = false; }
+                                                }
+                                            }">
+                                            <div class="flex items-center gap-1">
+                                                @if($assignment->notes)
+                                                    <div class="inline-block shrink-0"
+                                                         @mouseenter="hover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
+                                                         @mouseleave="hover = false">
+                                                        <button @click="notesOpen = !notesOpen" type="button"
+                                                                class="text-amber-500 hover:text-amber-600 transition">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                            </svg>
+                                                        </button>
+                                                        <div x-show="hover && !notesOpen" x-cloak
+                                                             :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
+                                                             class="z-50 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
+                                                            <p x-text="note"></p>
+                                                            <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                                @if($viewUrl)
+                                                    <button @click="viewerOpen = true" type="button"
+                                                            class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                                @else
+                                                    <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                @endif
+                                            </div>
+                                            <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p</div>
+
+                                            {{-- Notes edit panel --}}
+                                            <div x-show="notesOpen" x-cloak class="mt-1.5 w-56">
+                                                <textarea x-model="note" rows="3"
+                                                          class="w-full text-xs border border-gray-200 rounded p-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"></textarea>
+                                                <div class="flex items-center justify-end gap-1 mt-1">
+                                                    <button type="button" @click="notesOpen=false"
+                                                            class="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-0.5">Close</button>
+                                                    <button type="button" :disabled="saving" @click="saveNote()"
+                                                            class="text-xs px-2 py-0.5 bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50"
+                                                            x-text="saving ? 'Saving…' : 'Save'"></button>
+                                                </div>
+                                                <span x-show="saved" class="text-[10px] text-green-600 block mt-0.5">Saved</span>
+                                            </div>
+
+                                            {{-- Script viewer --}}
                                             @if($viewUrl)
-                                                <button @click="open = true" type="button"
-                                                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
-                                                <div x-show="open" x-cloak
-                                                     @keydown.escape.window="open = false"
+                                                <div x-show="viewerOpen" x-cloak
+                                                     @keydown.escape.window="viewerOpen = false"
                                                      tabindex="-1"
-                                                     x-effect="if (open) $nextTick(() => $el.focus())"
+                                                     x-effect="if (viewerOpen) $nextTick(() => $el.focus())"
                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
                                                     <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
                                                         <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
@@ -465,37 +562,20 @@
                                                                     Remove
                                                                 </button>
                                                             </form>
-                                                            <button @click="open = false" type="button"
+                                                            <button @click="viewerOpen = false" type="button"
                                                                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                         </div>
                                                     </div>
-                                                    <iframe :src="open ? @js($viewUrl) : ''"
+                                                    <iframe :src="viewerOpen ? @js($viewUrl) : ''"
                                                             class="flex-1 w-full border-0"
                                                             allowfullscreen></iframe>
                                                 </div>
-                                            @else
-                                                <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
                                             @endif
-                                            <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                        </td>
-
-                                        {{-- Page count --}}
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">
-                                            {{ $assignment->page_count }}
                                         </td>
 
                                         {{-- Assignment Type --}}
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">
                                             {{ $typeLabel }}
-                                        </td>
-
-                                        {{-- Turnaround --}}
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            @if ($assignment->rush)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-400 text-amber-900 uppercase tracking-wide">Rush</span>
-                                            @else
-                                                <span class="text-xs text-gray-400">Standard</span>
-                                            @endif
                                         </td>
 
                                         {{-- Pay rate --}}
@@ -577,94 +657,6 @@
                                                 </div>
                                             </form>
                                         </td>
-
-                                        {{-- Assigned reader --}}
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            @if ($assignedInitials)
-                                                <div class="flex flex-col items-center gap-0.5">
-                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
-                                                        @if ($assignedPhotoUrl)
-                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
-                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
-                                                            </span>
-                                                        @else
-                                                            {{ $assignedInitials }}
-                                                        @endif
-                                                    </span>
-                                                    <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
-                                                </div>
-                                            @else
-                                                <span class="text-gray-300">—</span>
-                                            @endif
-                                        </td>
-
-                                        {{-- Notes (hover tooltip + click-to-edit for admin/editor) --}}
-                                        <td class="px-3 py-3"
-                                            x-data="{
-                                                open: false,
-                                                hover: false,
-                                                tipX: 0,
-                                                tipY: 0,
-                                                note: @js($assignment->notes ?? ''),
-                                                saving: false,
-                                                saved: false,
-                                                async save() {
-                                                    this.saving = true; this.saved = false;
-                                                    try {
-                                                        const r = await fetch(@js(route('assignments.updateNotes', $assignment)), {
-                                                            method: 'PATCH',
-                                                            headers: {
-                                                                'Content-Type': 'application/json',
-                                                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                                                'Accept': 'application/json',
-                                                            },
-                                                            body: JSON.stringify({ notes: this.note }),
-                                                        });
-                                                        if (r.ok) this.saved = true;
-                                                    } finally { this.saving = false; }
-                                                }
-                                            }">
-                                            @if($assignment->notes)
-                                                <div class="inline-block"
-                                                     @mouseenter="hover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
-                                                     @mouseleave="hover = false">
-                                                    <button @click="open = !open" type="button"
-                                                            class="text-amber-500 hover:text-amber-600 transition">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
-                                                        </svg>
-                                                    </button>
-                                                    <div x-show="hover && !open" x-cloak
-                                                         :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
-                                                         class="z-50 w-56 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg whitespace-pre-wrap pointer-events-none">
-                                                        <p x-text="note"></p>
-                                                        <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
-                                                    </div>
-                                                </div>
-                                                <div x-show="open" x-cloak class="mt-1.5 w-56">
-                                                    <textarea x-model="note" rows="3"
-                                                              class="w-full text-xs border border-gray-200 rounded p-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"></textarea>
-                                                    <div class="flex items-center justify-end gap-1 mt-1">
-                                                        <button type="button" @click="open=false"
-                                                                class="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-0.5">Close</button>
-                                                        <button type="button" :disabled="saving" @click="save()"
-                                                                class="text-xs px-2 py-0.5 bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50"
-                                                                x-text="saving ? 'Saving…' : 'Save'"></button>
-                                                    </div>
-                                                    <span x-show="saved" class="text-[10px] text-green-600 block mt-0.5">Saved</span>
-                                                </div>
-                                            @endif
-                                        </td>
-
-                                        {{-- Actions --}}
-                                        <td class="px-3 py-3 whitespace-nowrap text-right">
-                                            @can('update', $assignment)
-                                                <a href="{{ route('assignments.edit', $assignment) }}"
-                                                   class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
-                                                    Edit
-                                                </a>
-                                            @endcan
-                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -681,11 +673,11 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">On Desk</th>
+                                    <th class="px-3 py-3"></th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Turnaround</th>
                                     <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
@@ -698,7 +690,7 @@
                                                 ? ($diff->days . 'd ' . $diff->h . 'h')
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
-                                        $ageTitle    = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $ageTitle    = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
                                         $ageHours    = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                         $ageT        = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                         $ageColor    = match(true) {
@@ -713,7 +705,7 @@
                                                 ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
                                                 : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                             : null;
-                                        $accTitle    = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+                                        $accTitle    = $assignment->accepted_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? null;
                                         $typeLabel   = $assignment->assignment_type === 'formatting' ? 'Formatting' : 'Proofreading';
                                         $downloadUrl = $assignment->drive_script_file_id
                                             ? 'https://drive.google.com/uc?export=download&id=' . $assignment->drive_script_file_id
@@ -728,7 +720,16 @@
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}">
                                         <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">{{ $accStr ?? '—' }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap">
+                                            @can('update', $assignment)
+                                                <a href="{{ route('assignments.edit', $assignment) }}"
+                                                   class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
+                                            @endcan
+                                        </td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
+                                            {{ $accStr ?? '—' }}
+                                            @if($accStr)<div class="text-xs text-gray-400">ago</div>@endif
+                                        </td>
                                         @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
                                         <td class="px-3 py-3 whitespace-nowrap font-mono">
                                             @if($hsId)
@@ -747,31 +748,21 @@
                                                 <span class="font-medium text-gray-400" title="File upload pending">{{ $assignment->script_title }}</span>
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                            @if($assignment->page_count)<div class="text-xs text-gray-400">{{ $assignment->page_count }}p</div>@endif
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            <span class="text-xs text-gray-400">Standard</span>
-                                        </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                @can('update', $assignment)
-                                                    <a href="{{ route('assignments.edit', $assignment) }}"
-                                                       class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
-                                                        Edit
-                                                    </a>
-                                                @endcan
-                                                @can('delete', $assignment)
-                                                    <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
-                                                          onsubmit="return confirm('Delete this assignment? This cannot be undone.')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit"
-                                                                class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                                                            Delete
-                                                        </button>
-                                                    </form>
-                                                @endcan
-                                            </div>
+                                            @can('delete', $assignment)
+                                                <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
+                                                      onsubmit="return confirm('Delete this assignment? This cannot be undone.')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @endforeach
