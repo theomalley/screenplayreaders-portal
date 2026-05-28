@@ -165,12 +165,16 @@ class AssignmentController extends Controller
         $onlineEditors = User::whereIn('role', ['admin', 'editor'])
             ->with(['editorProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->filter(fn($u) => $u->isOnline())
+            ->values();
 
         $onlineReaders = User::where('role', 'reader')
             ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->filter(fn($u) => $u->isOnline() || $u->id === $user->id)
+            ->values();
 
         return view('assignments.index', [
             'canManage'        => false,
