@@ -21,12 +21,13 @@ class ProfileUpdateRequest extends FormRequest
             ],
         ];
 
+        $rules['timezone'] = ['nullable', 'timezone'];
+
         if (!$this->user()->isReader()) {
             $rules['name'] = ['required', 'string', 'max:255'];
         } else {
-            $rules['phone']              = ['nullable', 'string', 'max:30'];
-            $rules['timezone']           = ['nullable', 'timezone'];
-            $rules['sms_notifications']  = ['nullable', 'boolean'];
+            $rules['phone']             = ['nullable', 'string', 'max:30'];
+            $rules['sms_notifications'] = ['nullable', 'boolean'];
         }
 
         return $rules;

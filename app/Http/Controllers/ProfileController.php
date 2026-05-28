@@ -39,6 +39,11 @@ class ProfileController extends Controller
                     'timezone' => $validated['timezone'] ?? null,
                 ]
             );
+        } elseif ($request->user()->isAdminOrEditor()) {
+            $request->user()->editorProfile()->updateOrCreate(
+                ['user_id' => $request->user()->id],
+                ['timezone' => $validated['timezone'] ?? null]
+            );
         }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');

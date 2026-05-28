@@ -53,14 +53,17 @@
             <x-input-error class="mt-2" :messages="$errors->get('phone')" />
             <p class="mt-1 text-xs text-gray-500">Used for voice calls and optional SMS notifications.</p>
         </div>
+        @endif
 
         <div>
             <x-input-label for="timezone" :value="__('Your Timezone')" />
-            <x-timezone-select name="timezone" :selected="old('timezone', auth()->user()->readerProfile?->timezone ?? 'UTC')" class="mt-1 block w-full" />
+            @if(auth()->user()->isReader())
+                <x-timezone-select name="timezone" :selected="old('timezone', auth()->user()->readerProfile?->timezone ?? 'UTC')" class="mt-1 block w-full" />
+            @else
+                <x-timezone-select name="timezone" :selected="old('timezone', auth()->user()->editorProfile?->timezone ?? 'UTC')" class="mt-1 block w-full" />
+            @endif
             <x-input-error class="mt-2" :messages="$errors->get('timezone')" />
         </div>
-
-        @endif
 
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
