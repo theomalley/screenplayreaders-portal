@@ -146,7 +146,7 @@
                                 </a>
                                 <a href="{{ route('ratebook.index') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('ratebook.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Ratebook
+                                    Rates
                                 </a>
                                 <a href="{{ route('manual.show') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
@@ -183,7 +183,7 @@
                         @endif
                         @if(\App\Support\Permission::check('ratebook'))
                             <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
-                                {{ __('Ratebook') }}
+                                {{ __('Rates') }}
                             </x-nav-link>
                         @endif
                         <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
@@ -284,7 +284,7 @@
                     {{ __('Archive') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
-                    {{ __('Ratebook') }}
+                    {{ __('Rates') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                     {{ __('Reader Manual') }}
@@ -317,7 +317,7 @@
                 @endif
                 @if(\App\Support\Permission::check('ratebook'))
                     <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
-                        {{ __('Ratebook') }}
+                        {{ __('Rates') }}
                     </x-responsive-nav-link>
                 @endif
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
