@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coverage — {{ $assignment->script_title }}</title>
     @vite(['resources/css/app.css'])
+    <style>
+        @media print {
+            html, body { display: none !important; }
+        }
+    </style>
+    <script>
+        window.print = function () {};
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+            }
+        });
+    </script>
 </head>
 <body class="bg-white text-gray-800 text-sm font-sans p-6 max-w-3xl mx-auto">
 
