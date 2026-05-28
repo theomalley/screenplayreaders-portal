@@ -1,5 +1,6 @@
 <?php
 
+// v2.1 — 2026-05-28 | Parse assignment date input in app timezone; pass $appTimezone to index/edit views.
 // v2.0 — 2026-05-27 | Pass $ageThresholds from DB settings to view (per-type colour bands).
 // v1.9 — 2026-05-27 | Admin/editor My Assignments section: own active assignments shown below main table.
 // v1.8 — 2026-05-26 | Admin reader popup: show this-week and last-week completed counts + pay.
@@ -121,6 +122,7 @@ class AssignmentController extends Controller
                 'archivedAll'      => $archivedAll,
                 'myAssignments'    => $myAssignments,
                 'ageThresholds'    => Setting::getAgeThresholds(),
+                'appTimezone'      => Setting::getAppTimezone(),
             ]);
         }
 
@@ -491,8 +493,9 @@ class AssignmentController extends Controller
         $rates           = Setting::ratesForForms();
         $readers         = User::where('role', 'reader')->with('readerProfile')->orderBy('name')->get();
         $assignableUsers = $this->assignableUsers();
+        $appTimezone     = Setting::getAppTimezone();
 
-        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers'));
+        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers', 'appTimezone'));
     }
 
     public function update(UpdateAssignmentRequest $request, Assignment $assignment)
@@ -504,7 +507,8 @@ class AssignmentController extends Controller
 
         $newCreatedAt = null;
         if (!empty($data['date']) && !empty($data['time'])) {
-            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time']);
+            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time'], Setting::getAppTimezone())
+                ->utc();
         }
         unset($data['date'], $data['time']);
 

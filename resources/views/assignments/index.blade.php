@@ -323,7 +323,7 @@
                                                 ? ($diff->days . 'd ' . $diff->h . 'h')
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
-                                        $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
                                         $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                         $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                         $ageColor = match(true) {
@@ -871,7 +871,7 @@
                                                 ? ($diff->days . 'd ' . $diff->h . 'h')
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
-                                        $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                        $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
                                         $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                         $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                         $ageColor = match(true) {
@@ -1054,7 +1054,7 @@
                                                         ? ($diff->days . 'd ' . $diff->h . 'h')
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
-                                                $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                                $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
                                                 $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                                 $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                                 $ageColor = match(true) {
@@ -1260,7 +1260,7 @@
                                                         ? ($diff->days . 'd ' . $diff->h . 'h')
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
-                                                $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                                $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
                                                 $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                                 $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                                 $ageColor = match(true) {
@@ -1441,7 +1441,7 @@
                                                             ? ($diff->days . 'd ' . $diff->h . 'h')
                                                             : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                         : '—';
-                                                    $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                                    $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
                                                     $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                                     $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                                     $ageColor = match(true) {
@@ -1577,7 +1577,7 @@
                                                     ? ($diff->days . 'd ' . $diff->h . 'h')
                                                     : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                 : '—';
-                                            $ageTitle = $assignment->created_at?->format('M j, Y g:ia') ?? '—';
+                                            $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
                                             $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                             $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                             $ageColor = match(true) {

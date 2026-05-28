@@ -54,6 +54,12 @@
             <p class="mt-1 text-xs text-gray-500">Used for voice calls and optional SMS notifications.</p>
         </div>
 
+        <div>
+            <x-input-label for="timezone" :value="__('Your Timezone')" />
+            <x-timezone-select name="timezone" :selected="old('timezone', auth()->user()->readerProfile?->timezone ?? 'UTC')" class="mt-1 block w-full" />
+            <x-input-error class="mt-2" :messages="$errors->get('timezone')" />
+        </div>
+
         @endif
 
         <div class="flex items-center gap-4">

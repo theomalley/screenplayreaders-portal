@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-28 | Add timezone field to editor/admin profile update
 // v1.4 — 2026-05-27 | Allow admin to edit admin accounts via the same editor form
 // v1.3 — 2026-05-27 | Enforce Password::defaults() (min 12, mixed case, numbers, symbols) on create/update
 // v1.2 — 2026-05-27 | Gate edit/delete on editors.edit / editors.delete permissions; redirect to team.index
@@ -109,6 +110,7 @@ class EditorProfileController extends Controller
             'availability'         => ['required', 'in:available,unavailable'],
             'availability_message' => ['nullable', 'string', 'max:500'],
             'upload_warning'       => ['nullable', 'string', 'max:1000'],
+            'timezone'             => ['nullable', 'timezone'],
         ]);
 
         if ($request->hasFile('photo')) {

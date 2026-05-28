@@ -34,7 +34,10 @@ class ProfileController extends Controller
         if ($request->user()->isReader()) {
             $request->user()->readerProfile()->updateOrCreate(
                 ['user_id' => $request->user()->id],
-                ['phone' => $validated['phone'] ?? null]
+                [
+                    'phone'    => $validated['phone'] ?? null,
+                    'timezone' => $validated['timezone'] ?? null,
+                ]
             );
         }
 

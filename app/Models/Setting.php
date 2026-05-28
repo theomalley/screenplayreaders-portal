@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-28 | Add getAppTimezone() for admin-configurable display timezone
 // v1.1 — 2026-05-27 | Add AGE_THRESHOLD_DEFAULTS and getAgeThresholds() for per-type age colours
 // v1.0 — 2026-05-17 | Key/value settings store; ratesForForms() shapes rates for JS
 
@@ -88,6 +89,11 @@ class Setting extends Model
         }
 
         return $result;
+    }
+
+    public static function getAppTimezone(): string
+    {
+        return static::where('key', 'app_timezone')->value('value') ?? 'UTC';
     }
 
     public static function getValue(string $key, mixed $default = null): mixed

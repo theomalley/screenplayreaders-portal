@@ -145,6 +145,13 @@
                             <p class="mt-1 text-xs text-gray-400">Leave blank for no warning.</p>
                             <x-input-error :messages="$errors->get('upload_warning')" class="mt-1" />
                         </div>
+
+                        <div>
+                            <x-input-label for="timezone" value="Timezone" />
+                            <x-timezone-select name="timezone" :selected="old('timezone', $profile?->timezone ?? 'UTC')" class="mt-1 block w-full" />
+                            <p class="mt-1 text-xs text-gray-400">Used for displaying and entering assignment dates.</p>
+                            <x-input-error :messages="$errors->get('timezone')" class="mt-1" />
+                        </div>
                     </div>
 
                     {{-- Account --}}

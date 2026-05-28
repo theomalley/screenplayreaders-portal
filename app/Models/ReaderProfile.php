@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-28 | Add timezone to fillable
 // v1.4 — 2026-05-25 | Add requests_bypass_capacity flag; isAtCapacity() accepts $isRequestedAssignment param.
 // v1.3 — 2026-05-24 | isAtCapacity() respects global capacity_override setting.
 // v1.2 — 2026-05-24 | Add upload_warning field (customer-facing per-reader message on upload form)
@@ -36,6 +37,7 @@ class ReaderProfile extends Model
         'availability',
         'availability_message',
         'upload_warning',
+        'timezone',
     ];
 
     protected $casts = [

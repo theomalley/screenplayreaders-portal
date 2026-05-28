@@ -135,6 +135,20 @@
                 </div>
             </div>
 
+            {{-- App Timezone --}}
+            @if($isAdmin)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">App Timezone</h3>
+                <p class="text-xs text-gray-500 mb-4">Controls how assignment dates are displayed and parsed on the Edit Assignment form. Set this to the timezone your team operates in.</p>
+                <form method="POST" action="{{ route('settings.timezone') }}" class="flex items-center gap-3">
+                    @csrf
+                    @method('PATCH')
+                    <x-timezone-select name="app_timezone" :selected="$appTimezone" class="w-72" />
+                    <x-primary-button type="submit">Save</x-primary-button>
+                </form>
+            </div>
+            @endif
+
             {{-- Assignment Age Colour Thresholds --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Assignment Age Colours</h3>
