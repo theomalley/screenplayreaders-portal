@@ -112,6 +112,38 @@
                         </div>
                     </div>
 
+                    {{-- Rates --}}
+                    <div class="pt-4 border-t border-gray-100 space-y-4">
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Rates</p>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="editor_commission" value="Commission Rate" />
+                                <div class="mt-1 flex items-center gap-1">
+                                    <x-text-input id="editor_commission" name="editor_commission" type="number"
+                                        class="block w-24 text-right"
+                                        value="{{ old('editor_commission') }}"
+                                        min="0" max="100" step="0.01"
+                                        placeholder="0.00" />
+                                    <span class="text-gray-400 text-sm">%</span>
+                                </div>
+                                <x-input-error :messages="$errors->get('editor_commission')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="editor_weekly_flat" value="Weekly Flat Pay" />
+                                <div class="mt-1 flex items-center gap-1">
+                                    <span class="text-gray-400 text-sm">$</span>
+                                    <x-text-input id="editor_weekly_flat" name="editor_weekly_flat" type="number"
+                                        class="block w-28 text-right"
+                                        value="{{ old('editor_weekly_flat') }}"
+                                        min="0" max="9999.99" step="0.01"
+                                        placeholder="0.00" />
+                                </div>
+                                <x-input-error :messages="$errors->get('editor_weekly_flat')" class="mt-1" />
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Availability --}}
                     <div class="pt-4 border-t border-gray-100 space-y-4">
                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Availability</p>

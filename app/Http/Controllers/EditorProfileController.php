@@ -1,6 +1,6 @@
 <?php
 
-// v1.6 — 2026-05-28 | Add editor_commission and editor_weekly_flat fields
+// v1.7 — 2026-05-28 | Rate fields on create; remove global rate fallback concept
 // v1.5 — 2026-05-28 | Add timezone field to editor/admin profile update
 // v1.4 — 2026-05-27 | Allow admin to edit admin accounts via the same editor form
 // v1.3 — 2026-05-27 | Enforce Password::defaults() (min 12, mixed case, numbers, symbols) on create/update
@@ -62,6 +62,8 @@ class EditorProfileController extends Controller
             'availability'         => ['required', 'in:available,unavailable'],
             'availability_message' => ['nullable', 'string', 'max:500'],
             'upload_warning'       => ['nullable', 'string', 'max:1000'],
+            'editor_commission'    => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'editor_weekly_flat'   => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
         ]);
 
         $user = User::create([
@@ -79,6 +81,8 @@ class EditorProfileController extends Controller
             'availability'         => $data['availability'],
             'availability_message' => $data['availability_message'] ?? null,
             'upload_warning'       => $data['upload_warning'] ?? null,
+            'editor_commission'    => $data['editor_commission'] ?? null,
+            'editor_weekly_flat'   => $data['editor_weekly_flat'] ?? null,
         ]);
 
         return redirect()->route('team.index')->with('success', 'Editor created.');

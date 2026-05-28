@@ -1,12 +1,11 @@
 <?php
 
-// v1.0 — 2026-05-25 | Admin/editor view of editor pay — commissions, adjustments, mark-paid, history
+// v1.1 — 2026-05-28 | Source weekly flat from editor profile; remove global Setting dependency
 
 namespace App\Http\Controllers;
 
 use App\Models\EditorPayAdjustment;
 use App\Models\OrderRevenue;
-use App\Models\Setting;
 use App\Models\User;
 use App\Support\PayPeriod;
 use Carbon\Carbon;
@@ -37,7 +36,7 @@ class EditorPayController extends Controller
         // Find the editor user for PayPal email + mark-paid action target
         $editor = User::where('role', 'editor')->whereHas('editorProfile')->first();
 
-        $weeklyFlat = (float) Setting::getValue('rate_editor_weekly_flat', 500.00);
+        $weeklyFlat = (float) ($editor?->editorProfile?->editor_weekly_flat ?? 0.0);
 
         // --- HISTORY ---
         $paidOrders = OrderRevenue::whereNotNull('editor_paid_at')

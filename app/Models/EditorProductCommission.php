@@ -2,8 +2,8 @@
 
 // v1.0 — 2026-05-25 | Per-product commission config for an editor
 //   commission_enabled = false → product never earns commission for this editor
-//   custom_amount set → flat dollar amount per order line occurrence
-//   custom_amount null → use global rate_editor_commission % × line_total
+//   custom_amount set → fixed dollar commission per order line occurrence
+//   custom_amount null → use this editor's commission rate % × eligible precommission share
 
 namespace App\Models;
 

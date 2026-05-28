@@ -1,6 +1,6 @@
 <?php
 
-// v1.2 — 2026-05-28 | Per-role editor rates; readers can view (no editor rates shown)
+// v1.3 — 2026-05-28 | Per-editor rates only; remove global rate fallback
 // v1.1 — 2026-05-22 | Permission::check for access; editor commission/weekly flat rates added
 
 namespace App\Http\Controllers;
@@ -27,28 +27,20 @@ class RatebookController extends Controller
                 ->with('editorProfile')
                 ->orderBy('name')
                 ->get()
-                ->map(function ($e) use ($rates) {
+                ->map(function ($e) {
                     $p = $e->editorProfile;
                     return [
-                        'id'           => $e->id,
-                        'name'         => $p?->displayName() ?? $e->name,
-                        'commission'   => $p?->editor_commission !== null
-                            ? ['value' => $p->editor_commission, 'custom' => true]
-                            : ['value' => $rates['rate_editor_commission'], 'custom' => false],
-                        'weekly_flat'  => $p?->editor_weekly_flat !== null
-                            ? ['value' => $p->editor_weekly_flat, 'custom' => true]
-                            : ['value' => $rates['rate_editor_weekly_flat'], 'custom' => false],
+                        'id'          => $e->id,
+                        'name'        => $p?->displayName() ?? $e->name,
+                        'commission'  => $p?->editor_commission,
+                        'weekly_flat' => $p?->editor_weekly_flat,
                     ];
                 });
         } elseif ($user->isEditor()) {
             $p = $user->editorProfile;
             $myEditorRates = [
-                'commission'  => $p?->editor_commission !== null
-                    ? $p->editor_commission
-                    : $rates['rate_editor_commission'],
-                'weekly_flat' => $p?->editor_weekly_flat !== null
-                    ? $p->editor_weekly_flat
-                    : $rates['rate_editor_weekly_flat'],
+                'commission'  => $p?->editor_commission,
+                'weekly_flat' => $p?->editor_weekly_flat,
             ];
         }
 

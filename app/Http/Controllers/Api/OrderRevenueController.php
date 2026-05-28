@@ -1,6 +1,6 @@
 <?php
 
-// v1.4 — 2026-05-27 | Add Log::info/error around updateOrCreate to diagnose missing order-log rows
+// v1.5 — 2026-05-28 | Source commission rate from editor profile; remove global Setting dependency
 // v1.3 — 2026-05-26 | Cast numeric NOT-NULL fields to float to reject null from callers
 // v1.2 — 2026-05-25 | Accept customer/order detail fields for Order Log
 // v1.1 — 2026-05-25 | Accept line_items_json; recalculate cog_commission using portal config
@@ -11,7 +11,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EditorProductCommission;
 use App\Models\OrderRevenue;
-use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -159,7 +158,7 @@ class OrderRevenueController extends Controller
 
         $editorProfile = $editor->editorProfile;
         $commissionConfig = $editorProfile->productCommissionsKeyed();
-        $globalRate = (float) Setting::getValue('rate_editor_commission', 10.0) / 100.0;
+        $globalRate = (float) ($editorProfile->editor_commission ?? 10.0) / 100.0;
 
         // If no per-product config has been set up yet, fall back to theme value
         if ($commissionConfig->isEmpty()) {

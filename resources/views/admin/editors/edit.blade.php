@@ -208,16 +208,10 @@
             </div>
         {{-- ── EDITOR RATES ── (editors only) --}}
         @if($user->isEditor())
-        @php
-            $globalCommission  = (float) \App\Models\Setting::getValue('rate_editor_commission', 10.0);
-            $globalWeeklyFlat  = (float) \App\Models\Setting::getValue('rate_editor_weekly_flat', 0.0);
-        @endphp
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div class="px-5 py-4 bg-gray-50 border-b border-gray-200">
                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Editor Rates</h3>
-                <p class="text-xs text-gray-400 mt-0.5">
-                    Override this editor's commission rate and weekly flat pay. Leave blank to use the global defaults ({{ $globalCommission }}% / ${{ number_format($globalWeeklyFlat, 2) }}/wk).
-                </p>
+                <p class="text-xs text-gray-400 mt-0.5">Commission rate and weekly flat pay for this editor.</p>
             </div>
             <form method="POST" action="{{ route('admin.editors.update', $user) }}" class="p-5 space-y-4">
                 @csrf
@@ -236,10 +230,9 @@
                                 class="block w-24 text-right"
                                 value="{{ old('editor_commission', $profile?->editor_commission) }}"
                                 min="0" max="100" step="0.01"
-                                placeholder="{{ $globalCommission }}" />
+                                placeholder="0.00" />
                             <span class="text-gray-400 text-sm">%</span>
                         </div>
-                        <p class="mt-1 text-xs text-gray-400">Leave blank to use global ({{ $globalCommission }}%)</p>
                         <x-input-error :messages="$errors->get('editor_commission')" class="mt-1" />
                     </div>
                     <div>
@@ -250,9 +243,8 @@
                                 class="block w-28 text-right"
                                 value="{{ old('editor_weekly_flat', $profile?->editor_weekly_flat) }}"
                                 min="0" max="9999.99" step="0.01"
-                                placeholder="{{ number_format($globalWeeklyFlat, 2) }}" />
+                                placeholder="0.00" />
                         </div>
-                        <p class="mt-1 text-xs text-gray-400">Leave blank to use global (${{ number_format($globalWeeklyFlat, 2) }})</p>
                         <x-input-error :messages="$errors->get('editor_weekly_flat')" class="mt-1" />
                     </div>
                 </div>
@@ -263,16 +255,13 @@
         </div>
 
         {{-- ── COMMISSION CONFIG ── (editors only) --}}
-        @php
-            $commissionConfig = $profile?->productCommissionsKeyed() ?? collect();
-            $globalRate = $globalCommission;
-        @endphp
+        @php $commissionConfig = $profile?->productCommissionsKeyed() ?? collect(); @endphp
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div class="px-5 py-4 bg-gray-50 border-b border-gray-200">
                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Commission Config</h3>
                 <p class="text-xs text-gray-400 mt-0.5">
-                    Toggle which products earn commission and set custom flat amounts per occurrence.
-                    Leave amount blank to use the global rate ({{ $globalRate }}% of eligible precommission share).
+                    Toggle which products earn commission and set a custom fixed commission amount per occurrence.
+                    Leave blank to use this editor's commission rate.
                 </p>
             </div>
             <form method="POST" action="{{ route('admin.editors.commissions', $user) }}">
@@ -283,7 +272,7 @@
                         <tr>
                             <th class="px-5 py-2 text-left">Product / Service</th>
                             <th class="px-4 py-2 text-center">Earns Commission</th>
-                            <th class="px-4 py-2 text-right">Custom Flat Amount</th>
+                            <th class="px-4 py-2 text-right">Custom Commission</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
