@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reader Help Guide — Screenplay Readers Portal</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --sidebar-width: 230px;
+            --color-brand: #4f46e5;
+            --color-brand-light: #eef2ff;
+            --color-text: #1f2937;
+            --color-muted: #6b7280;
+            --color-border: #e5e7eb;
+            --color-bg: #f9fafb;
+            --color-white: #ffffff;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--color-text);
+            background: var(--color-bg);
+            line-height: 1.65;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── Sidebar ── */
+        nav {
+            width: var(--sidebar-width);
+            background: var(--color-white);
+            border-right: 1px solid var(--color-border);
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 24px 0;
+            flex-shrink: 0;
+        }
+
+        .nav-logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 12px;
+        }
+
+        .nav-logo .brand {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-brand);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .nav-logo .sub {
+            display: block;
+            font-size: 11px;
+            color: var(--color-muted);
+            margin-top: 2px;
+        }
+
+        .nav-section {
+            padding: 14px 20px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #9ca3af;
+        }
+
+        nav a {
+            display: block;
+            padding: 6px 20px;
+            font-size: 13px;
+            color: var(--color-muted);
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: all 0.12s;
+        }
+
+        nav a:hover {
+            color: var(--color-brand);
+            background: var(--color-brand-light);
+            border-left-color: var(--color-brand);
+        }
+
+        /* ── Main ── */
+        main {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 52px 60px 96px;
+            max-width: 860px;
+        }
+
+        /* ── Typography ── */
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--color-text);
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: var(--color-muted);
+            margin-bottom: 48px;
+        }
+
+        h2 {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-top: 60px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--color-border);
+            scroll-margin-top: 24px;
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-top: 28px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        p { margin-bottom: 14px; font-size: 14px; color: #374151; }
+
+        ul, ol { padding-left: 22px; margin-bottom: 14px; }
+
+        li { font-size: 14px; color: #374151; margin-bottom: 7px; }
+
+        strong { color: var(--color-text); }
+
+        /* ── Callout boxes ── */
+        .callout {
+            border-radius: 8px;
+            padding: 13px 16px;
+            margin: 20px 0;
+            font-size: 13.5px;
+            display: flex;
+            gap: 11px;
+            align-items: flex-start;
+        }
+
+        .callout-icon { font-size: 15px; line-height: 1.5; flex-shrink: 0; margin-top: 1px; }
+        .callout-body { flex: 1; }
+        .callout-body strong { display: block; margin-bottom: 4px; font-size: 13.5px; }
+        .callout-body p { margin-bottom: 0; font-size: 13.5px; }
+
+        .callout.tip     { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+        .callout.note    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+        .callout.warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+
+        /* ── Status badges ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 9px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-amber  { background: #fef3c7; color: #92400e; }
+        .badge-green  { background: #d1fae5; color: #065f46; }
+        .badge-blue   { background: #dbeafe; color: #1e40af; }
+        .badge-gray   { background: #f3f4f6; color: #374151; }
+        .badge-orange { background: #ffedd5; color: #9a3412; }
+        .badge-red    { background: #fee2e2; color: #991b1b; }
+
+        /* ── Numbered steps ── */
+        .steps { counter-reset: step; list-style: none; padding-left: 0; }
+
+        .steps > li {
+            counter-increment: step;
+            display: flex;
+            gap: 14px;
+            margin-bottom: 18px;
+            align-items: flex-start;
+        }
+
+        .steps > li::before {
+            content: counter(step);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--color-brand);
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .steps > li .step-body { flex: 1; }
+        .steps > li .step-body strong { display: block; font-size: 14px; margin-bottom: 4px; }
+        .steps > li .step-body p { margin-bottom: 0; font-size: 13.5px; }
+
+        /* ── Inline UI mockups ── */
+        .ui-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 11px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 600;
+            vertical-align: middle;
+            line-height: 1.6;
+        }
+
+        .ui-btn-primary { background: #4f46e5; color: white; }
+        .ui-btn-outline { background: white; color: #374151; border: 1px solid #d1d5db; }
+        .ui-btn-red     { background: white; color: #dc2626; border: 1px solid #fca5a5; }
+
+        /* ── Staff panel demo ── */
+        .staff-demo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 16px 20px;
+            background: #f9fafb;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            margin: 16px 0 20px;
+        }
+
+        .avatar-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+
+        .avatar {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        .avatar.indigo { background: #e0e7ff; color: #4338ca; }
+        .avatar.gray   { background: #f3f4f6; color: #4b5563; }
+        .avatar.amber  { background: #fef3c7; color: #92400e; }
+
+        .avatar .green-dot {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            border: 2px solid white;
+        }
+
+        .avatar .count-badge {
+            position: absolute;
+            top: -2px; right: -2px;
+            width: 15px; height: 15px;
+            border-radius: 50%;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            background: #6366f1;
+            color: white;
+        }
+
+        .avatar.dashed { outline: 2px dashed #f87171; outline-offset: 2px; }
+
+        .avatar-label { font-size: 10px; font-family: 'SF Mono', 'Fira Code', monospace; color: #818cf8; }
+        .avatar-label.gray-label { color: #9ca3af; }
+
+        .staff-divider { width: 1px; height: 30px; background: var(--color-border); margin: 0 4px; }
+
+        .staff-demo-caption { font-size: 12px; color: var(--color-muted); margin-left: 6px; }
+
+        /* ── Table ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+            margin: 16px 0 24px;
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            text-align: left;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--color-muted);
+            border-bottom: 1px solid var(--color-border);
+            padding: 10px 14px;
+            background: #f9fafb;
+        }
+
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--color-border);
+            vertical-align: top;
+            color: #374151;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        /* ── Code ── */
+        code {
+            background: #f3f4f6;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: #374151;
+        }
+
+        /* ── Inline green dot ── */
+        .online-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px #d1d5db;
+            vertical-align: middle;
+            margin-right: 2px;
+        }
+
+        /* ── Divider ── */
+        hr { border: none; border-top: 1px solid var(--color-border); margin: 40px 0; }
+
+        /* ── FAQ items ── */
+        .faq-item { margin-bottom: 28px; }
+        .faq-q { font-weight: 700; font-size: 14px; color: var(--color-text); margin-bottom: 6px; }
+        .faq-a { font-size: 14px; color: #374151; }
+
+        /* ── Footer ── */
+        .footer { font-size: 12px; color: #9ca3af; text-align: center; margin-top: 8px; }
+
+        /* ── Print ── */
+        @media print {
+            nav { display: none; }
+            main { margin-left: 0; padding: 24px; max-width: none; }
+            h2 { break-before: page; }
+            h2:first-of-type { break-before: avoid; }
+            .staff-demo { border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav>
+    <div class="nav-logo">
+        <span class="brand">Screenplay Readers</span>
+        <span class="sub">Reader Help Guide</span>
+    </div>
+    <div class="nav-section">Getting Started</div>
+    <a href="#welcome">Welcome</a>
+    <a href="#logging-in">Logging In</a>
+    <div class="nav-section">Your Work</div>
+    <a href="#dashboard">Assignments Dashboard</a>
+    <a href="#accepting">Accepting an Assignment</a>
+    <a href="#writing-coverage">Writing Coverage</a>
+    <a href="#statuses">Assignment Statuses</a>
+    <div class="nav-section">Account</div>
+    <a href="#getting-paid">Getting Paid</a>
+    <a href="#your-profile">Your Profile</a>
+    <a href="#rates">Rates</a>
+    <div class="nav-section">Reference</div>
+    <a href="#faq">FAQ</a>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main>
+
+    <h1>Reader Help Guide</h1>
+    <p class="subtitle">A walkthrough of the Screenplay Readers staff portal — everything you need to manage your assignments from start to finish.</p>
+
+
+    <!-- WELCOME -->
+    <h2 id="welcome">Welcome</h2>
+    <p>The Screenplay Readers staff portal is where you manage your coverage work from start to finish. Once you're logged in you can browse available scripts, accept assignments, read the material, submit completed coverage, and track your pay — all in one place.</p>
+    <p>This guide covers everything you need to work confidently in the portal. If something isn't covered here, reach out to your editor or admin directly.</p>
+
+
+    <!-- LOGGING IN -->
+    <h2 id="logging-in">Logging In</h2>
+    <p>Navigate to the portal URL provided by your editor and sign in with your email address and password.</p>
+
+    <div class="callout note">
+        <span class="callout-icon">ℹ️</span>
+        <div class="callout-body">
+            <strong>First time logging in?</strong>
+            <p>Your account is created by an admin. You'll receive an invitation email with a link to set your password. If that link has expired, use the <strong>Forgot your password?</strong> link on the login page to generate a new one.</p>
+        </div>
+    </div>
+
+    <p>If you forget your password at any time, use the <strong>Forgot your password?</strong> link on the login screen. A reset link will be emailed to you.</p>
+
+
+    <!-- DASHBOARD -->
+    <h2 id="dashboard">Assignments Dashboard</h2>
+    <p>After logging in you'll land on the <strong>Assignments</strong> page. This is your home base — everything you need to do your work is here.</p>
+
+    <h3>The Staff Panel</h3>
+    <p>At the top of the page you'll see a row of small circular avatar icons. This is the staff panel. It shows you who is currently active in the portal, including editors, admins, and other readers.</p>
+
+    <!-- Staff panel visual -->
+    <div class="staff-demo">
+        <!-- Editors -->
+        <div class="avatar-wrap">
+            <div class="avatar indigo">KL<span class="green-dot"></span><span class="count-badge">2</span></div>
+            <span class="avatar-label">KL</span>
+        </div>
+        <div class="avatar-wrap">
+            <div class="avatar indigo">SR</div>
+            <span class="avatar-label">SR</span>
+        </div>
+        <!-- Divider -->
+        <div class="staff-divider"></div>
+        <!-- Readers -->
+        <div class="avatar-wrap">
+            <div class="avatar gray">JM<span class="green-dot"></span><span class="count-badge" style="background:#22c55e;">1</span></div>
+            <span class="avatar-label gray-label">JM</span>
+        </div>
+        <div class="avatar-wrap">
+            <div class="avatar gray dashed">TC</div>
+            <span class="avatar-label gray-label">TC</span>
+        </div>
+        <div class="avatar-wrap">
+            <div class="avatar amber">ME<span class="green-dot"></span></div>
+            <span class="avatar-label gray-label">ME</span>
+        </div>
+        <span class="staff-demo-caption">← Example staff panel</span>
+    </div>
+
+    <ul>
+        <li><strong>Indigo icons</strong> are editors and admins. <strong>Gray icons</strong> are readers.</li>
+        <li>A <span class="online-dot"></span><strong>green dot</strong> in the bottom-right corner of an icon means that person is currently active in the portal (within the last 5 minutes).</li>
+        <li>A <strong style="color:#ef4444;">dashed red border</strong> around a reader's icon means they have marked themselves as unavailable.</li>
+        <li>A small number badge on the top-right of an icon shows that person's current active assignment count.</li>
+        <li><strong>An amber-tinted icon</strong> means that reader is at capacity (their active assignments have hit their maximum).</li>
+        <li>You will always see your own icon regardless of your online status. Other readers only appear when they're currently online.</li>
+        <li>The panel refreshes automatically every 5 minutes.</li>
+    </ul>
+
+    <h3>The Three Tabs</h3>
+    <p>Below the staff panel are three tabs that organize your work:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tab</th>
+                <th>What it shows</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Available Assignments</strong></td>
+                <td>Scripts open for acceptance — either available to any reader, or assignments where a customer has specifically requested you.</td>
+            </tr>
+            <tr>
+                <td><strong>My Assignments</strong></td>
+                <td>Assignments you've accepted that are currently in progress.</td>
+            </tr>
+            <tr>
+                <td><strong>Needs Attention</strong></td>
+                <td>Assignments flagged by your editor that require action from you before they can be delivered. An orange alert banner appears at the top of the page when you have items here.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+            <strong>Watch the Needs Attention tab.</strong>
+            <p>If an assignment appears here, your editor has reviewed your coverage and needs revisions before it can be delivered to the customer. Address these promptly.</p>
+        </div>
+    </div>
+
+    <h3>Reading the Assignment List</h3>
+    <p>Each row in the Available Assignments list shows the key details you need before accepting:</p>
+
+    <ul>
+        <li><strong>Script title and writer name</strong></li>
+        <li><strong>Assignment type</strong> — e.g. Script Coverage, Notes-Only, Deep-Dive, Short</li>
+        <li><strong>Page count and pay rate</strong> — shown as <code>Xp · $XX.XX</code></li>
+        <li><strong>Age</strong> — how long the assignment has been waiting. The color shifts from green → yellow → orange → red as it ages, so you can see at a glance which orders have been sitting longest.</li>
+        <li><strong><span class="badge badge-amber">Rush</span></strong> — rush assignments show an amber badge and a flashing "Due by…" deadline. These must be submitted within 23 hours of the order timestamp.</li>
+        <li><strong>Reader Request</strong> — a small purple icon next to a reader's initials indicates a customer specifically requested that reader for this script.</li>
+    </ul>
+
+    <p>Click anywhere on a row to open the full assignment detail.</p>
+
+
+    <!-- ACCEPTING -->
+    <h2 id="accepting">Accepting an Assignment</h2>
+
+    <h3>Step by Step</h3>
+    <ol class="steps">
+        <li>
+            <div class="step-body">
+                <strong>Browse the Available Assignments tab.</strong>
+                <p>Look through the list and find a script you'd like to cover. Check the type, page count, pay rate, and any deadline before committing.</p>
+            </div>
+        </li>
+        <li>
+            <div class="step-body">
+                <strong>Click the row to open the assignment.</strong>
+                <p>The detail view shows all information about the script and the order, including the full pay breakdown.</p>
+            </div>
+        </li>
+        <li>
+            <div class="step-body">
+                <strong>Click Accept.</strong>
+                <p>Click the <span class="ui-btn ui-btn-primary">Accept Assignment</span> button. The assignment will immediately move to your <strong>My Assignments</strong> tab and its status will change to <span class="badge badge-green">Assigned</span>.</p>
+            </div>
+        </li>
+        <li>
+            <div class="step-body">
+                <strong>Read the script.</strong>
+                <p>The script title in your My Assignments list is a clickable link that opens the script in an inline viewer. You can scroll through it, jump to any page by dragging the scrollbar, or download it if you prefer to read offline.</p>
+            </div>
+        </li>
+    </ol>
+
+    <h3>Reader Requests</h3>
+    <p>Customers can request a specific reader when placing their order. If a customer has requested you, the assignment appears in your Available Assignments tab with a small purple icon labeled <strong>Request</strong>. Reader-requested assignments are only visible to you and to admins/editors — other readers cannot see or accept them.</p>
+
+    <div class="callout tip">
+        <span class="callout-icon">✅</span>
+        <div class="callout-body">
+            <strong>Reader Requests don't count toward your maximum.</strong>
+            <p>Even if you're at your concurrent assignment limit, you can still accept a script where a customer has specifically requested you.</p>
+        </div>
+    </div>
+
+    <h3>Rush Orders</h3>
+    <p>Rush orders are marked with an <span class="badge badge-amber">Rush</span> badge. The "Due by…" text flashes in orange to draw your attention to the deadline. Rush orders must be submitted within <strong>23 hours</strong> of the order timestamp shown on the row.</p>
+    <p>Rush orders carry a higher pay rate to reflect the fast turnaround. Like reader requests, rush orders <strong>do not count toward your maximum concurrent assignments</strong>.</p>
+
+    <h3>Capacity Limit</h3>
+    <p>Your profile includes a maximum concurrent assignments setting (configured by your editor). When you're at your limit, the Accept button will not appear on standard assignments — you'll need to complete or cancel an existing one first to free up a slot.</p>
+
+    <p>Two types of assignments bypass the limit entirely:</p>
+    <ul>
+        <li>Reader-requested assignments (customer specifically asked for you)</li>
+        <li>Rush orders</li>
+    </ul>
+
+    <h3>Cancelling an Assignment</h3>
+    <p>If you've accepted an assignment and need to give it back, you can cancel it from the assignment detail page as long as its status is still <span class="badge badge-green">Assigned</span>. Click <span class="ui-btn ui-btn-red">Cancel Assignment</span> and confirm the prompt. The assignment returns to the available pool for other readers.</p>
+
+    <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+            <strong>You cannot cancel after submitting coverage.</strong>
+            <p>Once coverage is submitted, the assignment moves to QC and cancellation is no longer available. Contact your editor if you need help at that point.</p>
+        </div>
+    </div>
+
+
+    <!-- WRITING COVERAGE -->
+    <h2 id="writing-coverage">Writing Coverage</h2>
+
+    <h3>Opening the Coverage Form</h3>
+    <p>Once you've accepted an assignment and read the script, navigate to your <strong>My Assignments</strong> tab and locate the assignment. Click the <span class="ui-btn ui-btn-primary">Write Coverage</span> button on the right side of the row to open the coverage form.</p>
+
+    <h3>The Coverage Form</h3>
+    <p>Work through each section carefully. The fields you'll see vary slightly by assignment type, but typically include:</p>
+
+    <ul>
+        <li><strong>Logline</strong> — One or two sentences summarising the script's premise.</li>
+        <li><strong>Synopsis</strong> — A thorough summary of the story, usually scene-by-scene or act-by-act.</li>
+        <li><strong>Comments</strong> — Your analysis of the craft: structure, character, dialogue, theme, marketability, and any other elements relevant to the assignment type.</li>
+        <li><strong>Ratings / Scores</strong> — Numerical or categorical evaluations where required.</li>
+        <li><strong>Recommendation</strong> — Your overall verdict (e.g. Recommend, Consider, Pass).</li>
+    </ul>
+
+    <div class="callout tip">
+        <span class="callout-icon">✅</span>
+        <div class="callout-body">
+            <strong>You don't have to finish in one sitting.</strong>
+            <p>Your work is saved as you go. You can return to the coverage form at any time before final submission and pick up where you left off.</p>
+        </div>
+    </div>
+
+    <h3>Submitting Your Coverage</h3>
+    <ol class="steps">
+        <li>
+            <div class="step-body">
+                <strong>Review everything before submitting.</strong>
+                <p>Read back through your coverage. Check for spelling, completeness, and that all required fields are filled in.</p>
+            </div>
+        </li>
+        <li>
+            <div class="step-body">
+                <strong>Click Submit Coverage.</strong>
+                <p>Once submitted the assignment status changes to <span class="badge badge-blue">QC</span>. Your editor will review it before it's delivered to the customer.</p>
+            </div>
+        </li>
+        <li>
+            <div class="step-body">
+                <strong>Watch for Needs Attention.</strong>
+                <p>If your editor needs revisions, the assignment will reappear in your <strong>Needs Attention</strong> tab with feedback notes. Address the feedback and re-submit — the assignment will go back through QC.</p>
+            </div>
+        </li>
+    </ol>
+
+    <div class="callout note">
+        <span class="callout-icon">ℹ️</span>
+        <div class="callout-body">
+            <strong>Submission is not instant delivery.</strong>
+            <p>All coverage goes through a QC review by your editor before it reaches the customer. The <span class="badge badge-blue">QC</span> status means it's in your editor's queue — no action needed from you unless it comes back as Needs Attention.</p>
+        </div>
+    </div>
+
+
+    <!-- STATUSES -->
+    <h2 id="statuses">Assignment Statuses</h2>
+    <p>Every assignment moves through a series of statuses. Here's what each one means from your perspective:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>What it means</th>
+                <th>Action needed?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="badge badge-gray">Pending</span></td>
+                <td>A new order has just arrived and is being set up. Not yet in the available list.</td>
+                <td>None</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-amber">Available</span></td>
+                <td>The assignment is open and ready to be accepted by a reader.</td>
+                <td>Accept it if you're interested</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-green">Assigned</span></td>
+                <td>You've accepted the assignment and are working on coverage.</td>
+                <td>Write and submit coverage</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-orange">Needs Attention</span></td>
+                <td>Your editor reviewed your coverage and needs changes before delivery.</td>
+                <td><strong>Yes — review feedback and resubmit</strong></td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-blue">QC</span></td>
+                <td>You've submitted coverage. Your editor is reviewing it.</td>
+                <td>None — wait for the QC outcome</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-green">Completed</span></td>
+                <td>Coverage approved and delivered to the customer. Assignment is done.</td>
+                <td>None</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-red">Cancelled</span></td>
+                <td>The assignment was cancelled — by you, an editor, or admin.</td>
+                <td>None</td>
+            </tr>
+        </tbody>
+    </table>
+
+
+    <!-- GETTING PAID -->
+    <h2 id="getting-paid">Getting Paid</h2>
+
+    <h3>How Pay is Calculated</h3>
+    <p>Each assignment displays its pay rate in the list view as <code>Xp · $XX.XX</code>. The rate is calculated when the assignment is created and is based on several factors:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Factor</th>
+                <th>Effect on pay</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Assignment type</strong></td>
+                <td>Each type (Script Coverage, Notes-Only, Deep-Dive, Short, etc.) has its own base rate.</td>
+            </tr>
+            <tr>
+                <td><strong>Page count</strong></td>
+                <td>Scripts over 120 pages carry an oversized surcharge.</td>
+            </tr>
+            <tr>
+                <td><strong>Rush</strong></td>
+                <td>A rush fee is added on top of the base rate for 23-hour turnaround orders.</td>
+            </tr>
+            <tr>
+                <td><strong>Reader Request</strong></td>
+                <td>A request fee is added when a customer has specifically requested you. Exception: Deep-Dive Dev Notes orders always include a free reader request — no fee is added.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>You can view the full current rate breakdown on the <strong>Rates</strong> page (see the Rates section below).</p>
+
+    <h3>Payment Method</h3>
+    <p>Payment is issued via <strong>PayPal</strong>. Make sure your PayPal email address is correctly entered in your profile. Navigate to <strong>Profile</strong> from the top navigation, update the PayPal email field, and save.</p>
+
+    <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+            <strong>Double-check your PayPal email before your first payment.</strong>
+            <p>Payments go directly to the address on file. If it's wrong your payment may go to the wrong account or bounce entirely. Contact your editor immediately if you need to correct an email after a payment has been sent.</p>
+        </div>
+    </div>
+
+    <h3>Pay Schedule</h3>
+    <p>Pay is processed by your editor or admin after your coverage has passed QC and the assignment is marked Completed. Your editor will communicate the specific payment cadence (weekly, bi-weekly, etc.).</p>
+
+
+    <!-- YOUR PROFILE -->
+    <h2 id="your-profile">Your Profile</h2>
+    <p>Access your profile by clicking your name or the Profile link in the navigation. Keep this information current — it affects how assignments are routed to you and how you get paid.</p>
+
+    <h3>Availability</h3>
+    <p>Your availability status signals to editors and admins whether you're open to new work.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Setting</th>
+                <th>What it does</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Available</strong></td>
+                <td>You're open for assignments. Your icon in the staff panel appears normally.</td>
+            </tr>
+            <tr>
+                <td><strong>Unavailable</strong></td>
+                <td>You're not accepting new work. Your icon shows a <strong style="color:#ef4444;">dashed red border</strong>, signalling to admins and editors that you're currently out.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>Toggle your availability whenever you go on holiday, take a break, or come back from one. Your editor can see your status in the staff panel in real time — no need to message them separately.</p>
+
+    <h3>Display Name and Initials</h3>
+    <p>Your <strong>display name</strong> appears in assignment records and pay reports. Your <strong>initials</strong> (up to 3 characters) are what appear on your avatar icon throughout the portal. Make sure both are set correctly so your editor can identify your work easily.</p>
+
+    <h3>Profile Photo</h3>
+    <p>You can upload a profile photo, which replaces your initials on your avatar icon across the portal. A square crop works best. Keep the file size reasonable — it's displayed small.</p>
+
+    <h3>Maximum Concurrent Assignments</h3>
+    <p>This is set by your editor and controls how many assignments you can hold at the same time. You cannot change this yourself — contact your editor if you'd like to adjust your cap up or down.</p>
+
+    <div class="callout tip">
+        <span class="callout-icon">✅</span>
+        <div class="callout-body">
+            <strong>Rush orders and Reader Requests are exempt from your cap.</strong>
+            <p>Even at your maximum, you can still accept these. Factor that in if you tend to receive frequent reader requests.</p>
+        </div>
+    </div>
+
+    <h3>PayPal Email</h3>
+    <p>Enter the email address linked to your PayPal account. This is where your pay will be sent. Set it before your first assignment is completed.</p>
+
+
+    <!-- RATES -->
+    <h2 id="rates">Rates</h2>
+    <p>The <strong>Rates</strong> page is available from the main navigation. It shows the current pay rates for all assignment types so you always know what you'll earn before accepting a script.</p>
+
+    <p>The rates page includes:</p>
+    <ul>
+        <li>Base rate per assignment type</li>
+        <li>Oversized page surcharge (scripts over 120 pages)</li>
+        <li>Rush order fee</li>
+        <li>Reader Request fee</li>
+    </ul>
+
+    <div class="callout note">
+        <span class="callout-icon">ℹ️</span>
+        <div class="callout-body">
+            <strong>Deep-Dive Dev Notes include a free Reader Request.</strong>
+            <p>When you're assigned to a Deep-Dive Dev Notes order that carries a reader request, no request fee is added to your pay rate — it's already included in the service price.</p>
+        </div>
+    </div>
+
+
+    <!-- FAQ -->
+    <h2 id="faq">FAQ</h2>
+
+    <div class="faq-item">
+        <p class="faq-q">An assignment was mentioned to me but I can't see it in the available list. What's going on?</p>
+        <p class="faq-a">The assignment may still be in <span class="badge badge-gray">Pending</span> status — it just arrived from the customer and hasn't been moved to Available yet. It's also possible the assignment carries a reader request for a different reader and isn't visible to you. Ask your editor to confirm its status.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">The Accept button isn't showing on an assignment. Why?</p>
+        <p class="faq-a">You're most likely at your maximum concurrent assignment limit. Complete or cancel one of your current assignments to free up a slot. If the assignment has a reader request for another reader, you won't be able to accept it regardless of your capacity.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">I submitted coverage but the assignment is still showing in My Assignments.</p>
+        <p class="faq-a">After submission the assignment moves to <span class="badge badge-blue">QC</span> status. It remains visible in your My Assignments tab so you can monitor its progress. It will be marked Completed once your editor has approved and delivered it.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">My coverage was sent back. What do I do?</p>
+        <p class="faq-a">Go to the <strong>Needs Attention</strong> tab. Open the assignment and read the notes from your editor. Return to the coverage form, make the requested changes, and re-submit. The assignment will go back into QC review.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">The script viewer is loading slowly. Is there a way to jump to a specific page?</p>
+        <p class="faq-a">Yes — you can drag the scrollbar directly to jump to any position in the document instantly rather than scrolling page by page.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">Can I see assignments I completed in the past?</p>
+        <p class="faq-a">Past completed assignments aren't surfaced in the reader view. Contact your editor if you need a record of your completed work or pay history.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">How do I know if an editor or admin is available to answer a question?</p>
+        <p class="faq-a">Check the staff panel at the top of the Assignments page. Editors and admins with a <span class="online-dot"></span>green dot on their icon are currently active in the portal.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">I need to take time off. What should I do?</p>
+        <p class="faq-a">Set your availability to <strong>Unavailable</strong> in your profile. Your icon will immediately show the dashed red border in the staff panel so your editor knows you're out. Switch it back to <strong>Available</strong> when you return.</p>
+    </div>
+
+    <div class="faq-item">
+        <p class="faq-q">My pay rate on an assignment looks wrong. Who do I contact?</p>
+        <p class="faq-a">Check the Rates page to verify what the rate should be, then reach out to your editor with the order number and the discrepancy. Rates are set when the assignment is created and can be corrected by an admin before payment is issued.</p>
+    </div>
+
+    <hr>
+    <p class="footer">Screenplay Readers Staff Portal &middot; Reader Help Guide &middot; Internal use only</p>
+
+</main>
+
+</body>
+</html>
