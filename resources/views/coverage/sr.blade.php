@@ -296,7 +296,7 @@
                             <span x-show="draftError" x-cloak class="text-sm text-red-500">Error saving.</span>
                             <button type="button"
                                 :disabled="draftSaving || submitting"
-                                @click="saveDraft()"
+                                @click="saveDraft($el)"
                                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors inline-flex items-center gap-2 disabled:opacity-50">
                                 <svg x-show="draftSaving" class="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -424,12 +424,12 @@
                 return map[this.type] || 0;
             },
 
-            async saveDraft() {
+            async saveDraft(btn) {
                 this.draftSaving = true;
                 this.draftSaved = false;
                 this.draftError = false;
                 try {
-                    const fd = new FormData(this.$el);
+                    const fd = new FormData(btn.closest('form'));
                     const r = await fetch(this.draftUrl, {
                         method: 'POST',
                         headers: {
