@@ -924,6 +924,12 @@
 
             {{-- ===== MY ASSIGNMENTS (admin/editor writing coverage) ===== --}}
             @if ($myAssignments->isNotEmpty())
+                @php
+                    $meUser     = auth()->user();
+                    $meInitials = $meUser->editorProfile?->initials ?? $meUser->readerProfile?->initials ?? strtoupper(substr($meUser->name, 0, 2));
+                    $mePhotoRaw = $meUser->editorProfile?->photo ?? $meUser->readerProfile?->photo;
+                    $mePhotoUrl = $mePhotoRaw ? asset('storage/' . $mePhotoRaw) : null;
+                @endphp
                 <div class="mt-8">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
                         My Assignments
@@ -1054,12 +1060,24 @@
                                                 <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ $meUser->isAdmin() ? '0.00' : number_format($assignment->pay_rate, 2) }}</div>
                                             <div class="mt-1.5">
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                             </div>
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
+                                            <div class="flex flex-col items-center gap-0.5 mb-1">
+                                                <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
+                                                    @if ($mePhotoUrl)
+                                                        <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                            <img src="{{ $mePhotoUrl }}" alt="{{ $meInitials }}" class="w-full h-full object-cover" />
+                                                        </span>
+                                                    @else
+                                                        {{ $meInitials }}
+                                                    @endif
+                                                </span>
+                                                <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $meInitials }}</span>
+                                            </div>
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>

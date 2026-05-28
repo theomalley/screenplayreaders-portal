@@ -75,10 +75,10 @@ class Assignment extends Model
     protected static function booted(): void
     {
         static::saving(function (Assignment $assignment) {
-            if ($assignment->assigned_reader_id && $assignment->isDirty('assigned_reader_id')) {
+            if ($assignment->assigned_reader_id) {
                 $reader = User::find($assignment->assigned_reader_id);
                 if ($reader && $reader->isAdmin()) {
-                    $assignment->pay_rate = 0.00;
+                    $assignment->pay_rate = '0.00';
                 }
             }
         });

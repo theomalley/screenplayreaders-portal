@@ -29,7 +29,7 @@
                 <div><span class="text-indigo-500 font-medium block">Script</span>{{ $assignment->script_title }}</div>
                 <div><span class="text-indigo-500 font-medium block">Writer</span>{{ $writerDisplay }}</div>
                 <div><span class="text-indigo-500 font-medium block">Pages</span>{{ $assignment->page_count }}</div>
-                <div><span class="text-indigo-500 font-medium block">Rate</span>${{ number_format($assignment->pay_rate, 2) }}</div>
+                <div><span class="text-indigo-500 font-medium block">Rate</span>${{ $assignment->assignedReader?->isAdmin() ? '0.00' : number_format($assignment->pay_rate, 2) }}</div>
                 <div><span class="text-indigo-500 font-medium block">Type</span>{{ $typeDisplay }}</div>
                 <div><span class="text-indigo-500 font-medium block">Request?</span>{{ $assignment->requested_reader_id ? 'Yes' : 'No' }}</div>
                 <div><span class="text-indigo-500 font-medium block">Reader</span>{{ $assignment->assignedReader?->readerProfile?->initials ?? $assignment->assignedReader?->editorProfile?->initials ?? '—' }}</div>
