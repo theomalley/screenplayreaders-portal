@@ -1,5 +1,6 @@
 <?php
 
+// v2.5 — 2026-05-28 | Dev autofill toggle per role (admin/editor/reader) for coverage forms.
 // v2.4 — 2026-05-28 | App timezone setting (admin-configurable; used for assignment date display and input).
 // v2.3 — 2026-05-27 | Age thresholds use hours (max 8760); On Desk column on all assignment tables.
 // v2.2 — 2026-05-27 | Add age-threshold settings (per assignment type, configurable colour bands).
@@ -54,6 +55,11 @@ class SettingController extends Controller
         $ageThresholds        = Setting::getAgeThresholds();
         $ageThresholdTypes    = Setting::AGE_THRESHOLD_TYPES;
         $appTimezone          = Setting::getAppTimezone();
+        $devAutofill          = [
+            'admin'  => (bool) Setting::getValue('dev_autofill_admin',  false),
+            'editor' => (bool) Setting::getValue('dev_autofill_editor', false),
+            'reader' => (bool) Setting::getValue('dev_autofill_reader', false),
+        ];
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
@@ -61,6 +67,7 @@ class SettingController extends Controller
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
+            'devAutofill',
         ));
     }
 
@@ -223,6 +230,17 @@ class SettingController extends Controller
         Setting::setValue('coverage_success_html', trim($request->input('content', '')));
 
         return back()->with('success', 'Coverage submission page updated.');
+    }
+
+    public function updateDevAutofill(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        Setting::setValue('dev_autofill_admin',  $request->boolean('dev_autofill_admin')  ? '1' : '0');
+        Setting::setValue('dev_autofill_editor', $request->boolean('dev_autofill_editor') ? '1' : '0');
+        Setting::setValue('dev_autofill_reader', $request->boolean('dev_autofill_reader') ? '1' : '0');
+
+        return back()->with('success', 'Autofill settings saved.');
     }
 
     public function updateTimezone(Request $request): RedirectResponse

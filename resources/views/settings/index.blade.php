@@ -574,6 +574,31 @@
                     </form>
                 </div>
 
+                {{-- Dev Autofill --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Coverage Form — Dev Autofill</h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        Show the "DEV: Autofill test data" button on the Write Coverage form. Enable per role for testing; disable before going live.
+                    </p>
+                    <form method="POST" action="{{ route('settings.dev-autofill') }}">
+                        @csrf
+                        @method('PATCH')
+                        <div class="space-y-3">
+                            @foreach (['admin' => 'Admins', 'editor' => 'Editors', 'reader' => 'Readers'] as $role => $label)
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="dev_autofill_{{ $role }}" value="1"
+                                           {{ $devAutofill[$role] ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <span class="text-sm text-gray-700">Show autofill button for <strong>{{ $label }}</strong></span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end mt-4">
+                            <x-primary-button>Save</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+
             @endif
 
         </div>

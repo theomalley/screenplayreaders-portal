@@ -10,6 +10,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCoverageSubmissionRequest;
 use App\Models\Assignment;
+use App\Models\Setting;
 use App\Services\GoogleDocsService;
 use App\Support\FilenameGenerator;
 use Illuminate\Http\JsonResponse;
@@ -24,10 +25,14 @@ class CoverageSubmissionController extends Controller
     {
         $this->authorize('submitCoverage', $assignment);
 
+        $user     = auth()->user();
         $existing = $assignment->coverageSubmission;
-        $view = $assignment->vendor === 'wd' ? 'coverage.wd' : 'coverage.sr';
+        $view     = $assignment->vendor === 'wd' ? 'coverage.wd' : 'coverage.sr';
 
-        return view($view, compact('assignment', 'existing'));
+        $autofillKey  = $user->isAdmin() ? 'dev_autofill_admin' : ($user->isEditor() ? 'dev_autofill_editor' : 'dev_autofill_reader');
+        $showAutofill = (bool) Setting::getValue($autofillKey, false);
+
+        return view($view, compact('assignment', 'existing', 'showAutofill'));
     }
 
     public function store(StoreCoverageSubmissionRequest $request, Assignment $assignment)

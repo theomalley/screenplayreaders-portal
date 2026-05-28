@@ -50,11 +50,12 @@
                 </div>
             @endif
 
-            {{-- DEV ONLY: remove before launch --}}
+            @if($showAutofill)
             <button type="button" onclick="srAutofill()"
                 class="w-full py-2 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-lg">
                 DEV: Autofill test data
             </button>
+            @endif
 
             <form method="POST" action="{{ route('coverage.store', $assignment) }}"
                   x-data="srCoverage()" x-cloak

@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/theme', [SettingController::class, 'updateTheme'])->name('settings.theme');
     Route::patch('/settings/age-thresholds', [SettingController::class, 'updateAgeThresholds'])->name('settings.age-thresholds');
     Route::patch('/settings/timezone', [SettingController::class, 'updateTimezone'])->name('settings.timezone');
+    Route::patch('/settings/dev-autofill', [SettingController::class, 'updateDevAutofill'])->name('settings.dev-autofill');
 
     Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
     Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
