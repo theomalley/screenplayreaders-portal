@@ -36,7 +36,7 @@
                 <div><span class="text-indigo-500 font-medium block">Rate</span>${{ number_format($assignment->pay_rate, 2) }}</div>
                 <div><span class="text-indigo-500 font-medium block">Type</span>{{ $typeDisplay }}</div>
                 <div><span class="text-indigo-500 font-medium block">Request?</span>{{ $assignment->requested_reader_id ? 'Yes' : 'No' }}</div>
-                <div><span class="text-indigo-500 font-medium block">Reader</span>{{ auth()->user()->readerProfile?->initials ?? '—' }}</div>
+                <div><span class="text-indigo-500 font-medium block">Reader</span>{{ $assignment->assignedReader?->readerProfile?->initials ?? $assignment->assignedReader?->editorProfile?->initials ?? '—' }}</div>
             </div>
 
             @if ($errors->any())
