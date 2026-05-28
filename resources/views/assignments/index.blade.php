@@ -1203,18 +1203,13 @@
                 </div>
                 @endif
 
-                <div x-data="{ tab: 'all' }"
+                <div x-data="{ tab: 'mine' }"
                      x-init="setInterval(() => {
                          if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')) location.reload();
                      }, 300000)">
 
                     {{-- Tabs --}}
                     <div class="flex border-b border-gray-200 mb-4">
-                        <button @click="tab = 'all'"
-                                :class="tab === 'all' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
-                                class="px-4 py-2 text-sm transition">
-                            Available Assignments
-                        </button>
                         <button @click="tab = 'mine'"
                                 :class="tab === 'mine' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                                 class="px-4 py-2 text-sm transition flex items-center gap-1.5">
@@ -1232,6 +1227,11 @@
                             @if($mineActiveCount > 0)
                                 <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">{{ $mineActiveCount }}</span>
                             @endif
+                        </button>
+                        <button @click="tab = 'all'"
+                                :class="tab === 'all' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                                class="px-4 py-2 text-sm transition">
+                            Available Assignments
                         </button>
                         <button @click="tab = 'archived'"
                                 :class="tab === 'archived' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
