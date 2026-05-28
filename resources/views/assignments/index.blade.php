@@ -45,9 +45,6 @@
 
             {{-- ===== ADMIN / EDITOR VIEW ===== --}}
             @if ($canManage)
-            <script>setInterval(() => {
-                if (!document.querySelector('.fixed.inset-0.z-50:not([style*="display: none"])')) location.reload();
-            }, 30000);</script>
 
                 {{-- Staff panel: editors first, then readers --}}
                 @if ($editors->isNotEmpty() || $readers->isNotEmpty())
@@ -1188,7 +1185,7 @@
                 <div x-data="{ tab: 'all' }"
                      x-init="setInterval(() => {
                          if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')) location.reload();
-                     }, 15000)">
+                     }, 300000)">
 
                     {{-- Tabs --}}
                     <div class="flex border-b border-gray-200 mb-4">
