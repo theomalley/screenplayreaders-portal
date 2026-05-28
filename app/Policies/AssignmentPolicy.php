@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-28 | delete: allow editors (canManageAssignments) not just admins.
 // v1.1 — 2026-05-24 | submitCoverage allows admin/editor when they are the assigned user.
 // v1.0 — 2026-05-16 | Role-based access for assignments. All authz flows through here — no inline checks in controllers.
 
@@ -44,7 +45,7 @@ class AssignmentPolicy
 
     public function delete(User $user, Assignment $assignment): bool
     {
-        return $user->isAdmin();
+        return $user->canManageAssignments();
     }
 
     /** Reader accepting an unassigned assignment */
