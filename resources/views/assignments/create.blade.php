@@ -57,8 +57,10 @@
                                   sharedMod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
 
                               // Reader request modifier — per slot, since each reader may or may not be requested
+                              // Deep-Dive Dev Notes includes a free reader request — never add the fee
                               const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
-                              const modFor  = (i) => this.requestedReaders[i] ? reqRate : 0;
+                              const isDeepDive1R = this.numReaders === '1' && this.assignmentType === 'deep_dive';
+                              const modFor  = (i) => (this.requestedReaders[i] && !isDeepDive1R) ? reqRate : 0;
 
                               if (this.numReaders !== '1') {
                                   const typeA  = this.vendor === 'sr' ? 'script_coverage' : 'coverage';

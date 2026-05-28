@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-28 | Deep-Dive Dev Notes includes a free reader request — exclude request fee from pay rate.
 // v1.4.1 — 2026-05-24 | Force redeploy with formatting upload fixes.
 // v1.4 — 2026-05-24 | Preserve original file extension in stored filename so UploadScriptToDrive
 //                     gets the correct ext — store() guesses MIME-based ext (e.g. zip for .fadein).
@@ -163,7 +164,8 @@ class IncomingAssignmentController extends Controller
             $total += (float) $rates['rate_sr_rush'];
         }
 
-        if ($requestedReaderId) {
+        // Deep-Dive Dev Notes includes a free reader request — never add the fee
+        if ($requestedReaderId && $type !== 'deep_dive') {
             $total += (float) $rates['rate_sr_request'];
         }
 

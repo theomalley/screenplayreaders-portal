@@ -1,5 +1,6 @@
 <?php
 
+// v2.2 — 2026-05-28 | Deep-Dive Dev Notes includes a free reader request — exclude request fee from pay rate.
 // v2.1 — 2026-05-28 | Parse assignment date input in app timezone; pass $appTimezone to index/edit views.
 // v2.0 — 2026-05-27 | Pass $ageThresholds from DB settings to view (per-type colour bands).
 // v1.9 — 2026-05-27 | Admin/editor My Assignments section: own active assignments shown below main table.
@@ -303,7 +304,8 @@ class AssignmentController extends Controller
             $total += (float) ($vendor === 'sr' ? $rates['rate_sr_rush'] : $rates['rate_wd_rush']);
         }
 
-        if ($requestedReaderId) {
+        // Deep-Dive Dev Notes includes a free reader request — never add the fee
+        if ($requestedReaderId && $type !== 'deep_dive') {
             $total += (float) ($vendor === 'sr' ? $rates['rate_sr_request'] : $rates['rate_wd_request']);
         }
 
