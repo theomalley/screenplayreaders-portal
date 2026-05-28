@@ -53,7 +53,7 @@ class User extends Authenticatable
         return in_array($this->role, $roles, true);
     }
 
-    public function isOnline(): bool         { return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinute()); }
+    public function isOnline(): bool         { return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(5)); }
 
     public function isAdmin(): bool          { return $this->role === 'admin'; }
     public function isEditor(): bool         { return $this->role === 'editor'; }
