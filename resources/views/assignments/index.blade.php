@@ -299,8 +299,7 @@
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                 </tr>
@@ -398,7 +397,7 @@
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
-                                        {{-- Order # (first): portal link, edit, HelpScout --}}
+                                        {{-- Order Details (first): portal link, age, HelpScout --}}
                                         @php
                                             $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
                                             $wooOrderUrl = ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
@@ -411,56 +410,11 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            <div class="mt-1">
-                                                <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
-                                                      x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <input type="hidden" name="assigned_reader_id" x-ref="rInput" value="" />
-                                                    <select name="status" x-ref="sSel"
-                                                        @change="
-                                                            if ($event.target.value === 'assigned') {
-                                                                pendingAssign = true;
-                                                            } else {
-                                                                pendingAssign = false;
-                                                                $refs.rInput.value = '';
-                                                                $event.target.closest('form').submit();
-                                                            }
-                                                        "
-                                                        class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
-                                                        @foreach ([
-                                                            'incoming'        => 'Pending',
-                                                            'unassigned'      => 'Available',
-                                                            'assigned'        => 'Assigned',
-                                                            'completed'       => 'Completed',
-                                                            'qc'              => 'QC',
-                                                            'needs_attention' => 'Needs Attention',
-                                                            'on_hold_customer' => 'On Hold – Customer',
-                                                            'on_hold_sr'      => 'On Hold – SR',
-                                                            'cancelled'       => 'Cancelled',
-                                                        ] as $value => $label)
-                                                            <option value="{{ $value }}" {{ $assignment->status === $value ? 'selected' : '' }}>
-                                                                {{ $label }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <div x-show="pendingAssign" x-cloak class="mt-1 flex items-center gap-1">
-                                                        <select
-                                                            @change="if ($event.target.value) { $refs.rInput.value = $event.target.value; $event.target.closest('form').submit(); }"
-                                                            class="text-xs rounded border border-gray-200 bg-white py-0.5 pl-2 pr-5 cursor-pointer focus:ring-indigo-400">
-                                                            <option value="">→ assign to</option>
-                                                            @foreach ($assignableUsers as $aUser)
-                                                                <option value="{{ $aUser->id }}">
-                                                                    {{ $aUser->readerProfile?->initials ?? $aUser->editorProfile?->initials ?? strtoupper(substr($aUser->name, 0, 2)) }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                        <button type="button"
-                                                                @click="pendingAssign = false; $refs.sSel.value = curStatus"
-                                                                class="text-gray-400 hover:text-gray-700 text-base leading-none px-0.5"
-                                                                title="Cancel">×</button>
-                                                    </div>
-                                                </form>
+                                            <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                {{ $ageStr }}
+                                                @if ($assignment->rush)
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                @endif
                                             </div>
                                             @if ($hsId)
                                                 <div class="mt-1">
@@ -476,15 +430,7 @@
                                             @endif
                                         </td>
 
-                                        {{-- Age + Rush --}}
-                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                            {{ $ageStr }}
-                                            @if ($assignment->rush)
-                                                <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
-                                            @endif
-                                        </td>
-
-                                        {{-- Assignment (type + notes icon + title + writer + pages · pay + request) --}}
+                                        {{-- Assignment (type + notes icon + title + writer + pages · pay + request + status) --}}
                                         <td class="px-3 py-3"
                                             x-data="{
                                                 viewerOpen: false,
@@ -554,6 +500,57 @@
                                                     <span class="text-[9px] text-purple-400 font-mono leading-none">Request</span>
                                                 </div>
                                             @endif
+                                            <div class="mt-1.5">
+                                                <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
+                                                      x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="assigned_reader_id" x-ref="rInput" value="" />
+                                                    <select name="status" x-ref="sSel"
+                                                        @change="
+                                                            if ($event.target.value === 'assigned') {
+                                                                pendingAssign = true;
+                                                            } else {
+                                                                pendingAssign = false;
+                                                                $refs.rInput.value = '';
+                                                                $event.target.closest('form').submit();
+                                                            }
+                                                        "
+                                                        class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
+                                                        @foreach ([
+                                                            'incoming'        => 'Pending',
+                                                            'unassigned'      => 'Available',
+                                                            'assigned'        => 'Assigned',
+                                                            'completed'       => 'Completed',
+                                                            'qc'              => 'QC',
+                                                            'needs_attention' => 'Needs Attention',
+                                                            'on_hold_customer' => 'On Hold – Customer',
+                                                            'on_hold_sr'      => 'On Hold – SR',
+                                                            'cancelled'       => 'Cancelled',
+                                                        ] as $value => $label)
+                                                            <option value="{{ $value }}" {{ $assignment->status === $value ? 'selected' : '' }}>
+                                                                {{ $label }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <div x-show="pendingAssign" x-cloak class="mt-1 flex items-center gap-1">
+                                                        <select
+                                                            @change="if ($event.target.value) { $refs.rInput.value = $event.target.value; $event.target.closest('form').submit(); }"
+                                                            class="text-xs rounded border border-gray-200 bg-white py-0.5 pl-2 pr-5 cursor-pointer focus:ring-indigo-400">
+                                                            <option value="">→ assign to</option>
+                                                            @foreach ($assignableUsers as $aUser)
+                                                                <option value="{{ $aUser->id }}">
+                                                                    {{ $aUser->readerProfile?->initials ?? $aUser->editorProfile?->initials ?? strtoupper(substr($aUser->name, 0, 2)) }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <button type="button"
+                                                                @click="pendingAssign = false; $refs.sSel.value = curStatus"
+                                                                class="text-gray-400 hover:text-gray-700 text-base leading-none px-0.5"
+                                                                title="Cancel">×</button>
+                                                    </div>
+                                                </form>
+                                            </div>
 
                                             {{-- Notes edit panel --}}
                                             <div x-show="notesOpen" x-cloak class="mt-1.5 w-56">
@@ -657,8 +654,7 @@
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                     <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-3 py-3"></th>
@@ -703,7 +699,7 @@
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
-                                        {{-- Order # (first): portal link, HelpScout --}}
+                                        {{-- Order Details (first): portal link, age, HelpScout --}}
                                         @php
                                             $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
                                             $wooOrderUrl = ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
@@ -716,8 +712,9 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
+                                            <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</div>
                                             @if ($hsId)
-                                                <div class="mt-0.5">
+                                                <div class="mt-1">
                                                     <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
                                                        target="_blank" rel="noopener noreferrer"
                                                        title="HelpScout ticket"
@@ -729,7 +726,6 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
                                         <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if($accStr)<div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>@endif
@@ -837,11 +833,9 @@
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-indigo-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-3 py-3 text-center text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                     <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
@@ -912,6 +906,12 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
+                                            <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                {{ $ageStr }}
+                                                @if ($assignment->rush)
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                @endif
+                                            </div>
                                             @can('update', $assignment)
                                                 <div class="mt-0.5">
                                                     <a href="{{ route('assignments.edit', $assignment) }}"
@@ -929,12 +929,6 @@
                                                         </svg>
                                                     </a>
                                                 </div>
-                                            @endif
-                                        </td>
-                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                            {{ $ageStr }}
-                                            @if ($assignment->rush)
-                                                <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
                                             @endif
                                         </td>
                                         <td class="px-3 py-3" x-data="{ open: false }">
@@ -961,15 +955,15 @@
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                            <div class="mt-1.5">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
+                                            </div>
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                             @endif
-                                        </td>
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
                                             @can('submitCoverage', $assignment)
@@ -1052,11 +1046,9 @@
                                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                                     <thead class="bg-gray-50">
                                         <tr>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                             <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                             <th class="px-3 py-3"></th>
                                         </tr>
                                     </thead>
@@ -1113,12 +1105,14 @@
                                                 }
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
-                                                <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                    {{ $ageStr }}
-                                                    @if ($assignment->rush)
-                                                        <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
-                                                    @endif
+                                                <td class="px-3 py-3 whitespace-nowrap">
+                                                    <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
+                                                    <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                        {{ $ageStr }}
+                                                        @if ($assignment->rush)
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                        @endif
+                                                    </div>
                                                 </td>
                                                 <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
@@ -1161,15 +1155,15 @@
                                                             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-100 text-purple-700">For you</span>
                                                         </div>
                                                     @endif
+                                                    <div class="mt-1.5">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
+                                                    </div>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                                     <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                                     @if ($accStr)
                                                         <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                                     @endif
-                                                </td>
-                                                <td class="px-3 py-3 whitespace-nowrap">
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right"
                                                     x-data="{ accepting: false, error: '' }">
@@ -1233,11 +1227,9 @@
                                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                                 <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                                 <th class="px-3 py-3"></th>
                                             </tr>
                                         </thead>
@@ -1301,12 +1293,14 @@
                                                 }
                                             @endphp
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
-                                                <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                    {{ $ageStr }}
-                                                    @if ($assignment->rush)
-                                                        <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
-                                                    @endif
+                                                <td class="px-3 py-3 whitespace-nowrap">
+                                                    <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
+                                                    <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                        {{ $ageStr }}
+                                                        @if ($assignment->rush)
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                        @endif
+                                                    </div>
                                                 </td>
                                                 <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
@@ -1344,15 +1338,15 @@
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                                    <div class="mt-1.5">
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
+                                                    </div>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                                     <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                                     @if ($accStr)
                                                         <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                                     @endif
-                                                </td>
-                                                <td class="px-3 py-3 whitespace-nowrap">
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right">
                                                     <div class="flex items-center justify-end gap-2">
@@ -1393,11 +1387,9 @@
                                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                                 <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                                 <th class="px-3 py-3"></th>
                                             </tr>
                                         </thead>
@@ -1451,12 +1443,14 @@
                                                     }
                                                 @endphp
                                                 <tr class="hover:bg-gray-50 {{ $rowClass }}">
-                                                    <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                                    <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                        {{ $ageStr }}
-                                                        @if ($assignment->rush)
-                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
-                                                        @endif
+                                                    <td class="px-3 py-3 whitespace-nowrap">
+                                                        <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
+                                                        <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                            {{ $ageStr }}
+                                                            @if ($assignment->rush)
+                                                                <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                            @endif
+                                                        </div>
                                                     </td>
                                                     <td class="px-3 py-3" x-data="{ textOpen: false }">
                                                         <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
@@ -1482,15 +1476,15 @@
                                                                         class="flex-1 w-full border-0 bg-white"></iframe>
                                                             </div>
                                                         @endif
+                                                        <div class="mt-1.5">
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
+                                                        </div>
                                                     </td>
                                                     <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                                         <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                                         @if ($accStr)
                                                             <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                                         @endif
-                                                    </td>
-                                                    <td class="px-3 py-3 whitespace-nowrap">
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
                                                     </td>
                                                     <td class="px-3 py-3"></td>
                                                 </tr>
@@ -1510,8 +1504,7 @@
                             <table class="min-w-full divide-y divide-gray-200 text-sm">
                                 <thead class="bg-orange-50">
                                     <tr>
-                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                         <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider">Assignment</th>
                                         <th class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                         <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider">Notes from Admin</th>
@@ -1559,12 +1552,14 @@
                                             }
                                         @endphp
                                         <tr class="hover:bg-orange-50 border-l-4 border-orange-400">
-                                            <td class="px-3 py-3 whitespace-nowrap font-mono text-gray-700">{{ $assignment->order_number }}</td>
-                                            <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                {{ $ageStr }}
-                                                @if ($assignment->rush)
-                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
-                                                @endif
+                                            <td class="px-3 py-3 whitespace-nowrap">
+                                                <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
+                                                <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                    {{ $ageStr }}
+                                                    @if ($assignment->rush)
+                                                        <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="px-3 py-3">
                                                 <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
