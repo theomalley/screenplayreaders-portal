@@ -1120,7 +1120,7 @@
                         <button @click="tab = 'archived'"
                                 :class="tab === 'archived' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                                 class="px-4 py-2 text-sm transition">
-                            Archived
+                            Archive / Paid
                         </button>
                         @if($needsAttentionCount > 0)
                             <button @click="tab = 'attention'"
@@ -1304,6 +1304,7 @@
                             $mineCurrent   = $mine->filter(fn($a) => in_array($a->status, ['assigned', 'qc']));
                             $mineCompleted = $mine->filter(fn($a) =>
                                 $a->status === 'completed' &&
+                                $a->reader_paid_at === null &&
                                 ($a->completed_at === null ||
                                     ($a->completed_at->gte($periodStart) && $a->completed_at->lte($periodEnd)))
                             );
@@ -1723,13 +1724,21 @@
                         @else
                             @foreach($archivedByPeriod as $periodKey => $periodAssignments)
                                 @php
-                                    $pStart = \Carbon\Carbon::parse($periodKey, \App\Support\PayPeriod::TZ);
-                                    $pLabel = \App\Support\PayPeriod::label($pStart);
-                                    $pTotal = $periodAssignments->sum(fn($a) => (float) $a->pay_rate);
+                                    $pStart  = \Carbon\Carbon::parse($periodKey, \App\Support\PayPeriod::TZ);
+                                    $pLabel  = \App\Support\PayPeriod::label($pStart);
+                                    $pTotal  = $periodAssignments->sum(fn($a) => (float) $a->pay_rate);
+                                    $isPaid  = $periodAssignments->every(fn($a) => $a->reader_paid_at !== null);
+                                    $paidAt  = $isPaid ? $periodAssignments->first()->reader_paid_at : null;
                                 @endphp
                                 <div class="mb-6">
                                     <div class="flex items-center justify-between mb-2 px-1">
-                                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">{{ $pLabel }}</h3>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">{{ $pLabel }}</h3>
+                                            @if($isPaid)
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700"
+                                                      title="Paid {{ $paidAt?->format('M j, Y') }}">Paid</span>
+                                            @endif
+                                        </div>
                                         <span class="text-xs font-semibold text-gray-500">${{ number_format($pTotal, 2) }}</span>
                                     </div>
                                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

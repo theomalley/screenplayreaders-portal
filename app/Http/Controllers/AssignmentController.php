@@ -140,11 +140,14 @@ class AssignmentController extends Controller
             ->orderBy('accepted_at', 'desc')
             ->get();
 
-        // Completed assignments from before the current pay period go to the Archived tab
+        // Archived = completed before current period, OR paid by admin (even if still in current period)
         $archived = Assignment::where('assigned_reader_id', $user->id)
             ->where('status', Assignment::STATUS_COMPLETED)
             ->whereNotNull('completed_at')
-            ->where('completed_at', '<', $periodStart)
+            ->where(function ($q) use ($periodStart) {
+                $q->where('completed_at', '<', $periodStart)
+                  ->orWhereNotNull('reader_paid_at');
+            })
             ->with(['coverageSubmission'])
             ->orderBy('completed_at', 'desc')
             ->get();
