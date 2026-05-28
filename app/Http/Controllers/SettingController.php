@@ -187,7 +187,7 @@ class SettingController extends Controller
 
     public function updateAgeThresholds(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_unless(auth()->user()->isAdmin(), 403);
 
         $types = array_keys(Setting::AGE_THRESHOLD_TYPES);
         $rules = [];
