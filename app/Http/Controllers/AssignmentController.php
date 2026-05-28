@@ -169,11 +169,14 @@ class AssignmentController extends Controller
             ->filter(fn($u) => $u->isOnline())
             ->values();
 
+        $editorOnline  = $onlineEditors->isNotEmpty();
+
+        // Show self always; show all other readers when any editor/admin is online; otherwise only online readers.
         $onlineReaders = User::where('role', 'reader')
             ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
             ->orderBy('name')
             ->get()
-            ->filter(fn($u) => $u->isOnline() || $u->id === $user->id)
+            ->filter(fn($u) => $u->isOnline() || $u->id === $user->id || $editorOnline)
             ->values();
 
         return view('assignments.index', [
