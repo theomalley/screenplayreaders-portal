@@ -206,11 +206,66 @@
                     </div>
                 </div>
             </div>
-        {{-- ── COMMISSION CONFIG ── (editors only) --}}
+        {{-- ── EDITOR RATES ── (editors only) --}}
         @if($user->isEditor())
         @php
+            $globalCommission  = (float) \App\Models\Setting::getValue('rate_editor_commission', 10.0);
+            $globalWeeklyFlat  = (float) \App\Models\Setting::getValue('rate_editor_weekly_flat', 0.0);
+        @endphp
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 bg-gray-50 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Editor Rates</h3>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    Override this editor's commission rate and weekly flat pay. Leave blank to use the global defaults ({{ $globalCommission }}% / ${{ number_format($globalWeeklyFlat, 2) }}/wk).
+                </p>
+            </div>
+            <form method="POST" action="{{ route('admin.editors.update', $user) }}" class="p-5 space-y-4">
+                @csrf
+                @method('PATCH')
+                {{-- carry through all required fields as hidden so validation passes --}}
+                <input type="hidden" name="initials"   value="{{ $profile?->initials }}">
+                <input type="hidden" name="first_name" value="{{ $profile?->first_name }}">
+                <input type="hidden" name="last_name"  value="{{ $profile?->last_name }}">
+                <input type="hidden" name="email"      value="{{ $user->email }}">
+                <input type="hidden" name="availability" value="{{ $profile?->availability ?? 'available' }}">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <x-input-label for="editor_commission" value="Commission Rate" />
+                        <div class="mt-1 flex items-center gap-1">
+                            <x-text-input id="editor_commission" name="editor_commission" type="number"
+                                class="block w-24 text-right"
+                                value="{{ old('editor_commission', $profile?->editor_commission) }}"
+                                min="0" max="100" step="0.01"
+                                placeholder="{{ $globalCommission }}" />
+                            <span class="text-gray-400 text-sm">%</span>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-400">Leave blank to use global ({{ $globalCommission }}%)</p>
+                        <x-input-error :messages="$errors->get('editor_commission')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="editor_weekly_flat" value="Weekly Flat Pay" />
+                        <div class="mt-1 flex items-center gap-1">
+                            <span class="text-gray-400 text-sm">$</span>
+                            <x-text-input id="editor_weekly_flat" name="editor_weekly_flat" type="number"
+                                class="block w-28 text-right"
+                                value="{{ old('editor_weekly_flat', $profile?->editor_weekly_flat) }}"
+                                min="0" max="9999.99" step="0.01"
+                                placeholder="{{ number_format($globalWeeklyFlat, 2) }}" />
+                        </div>
+                        <p class="mt-1 text-xs text-gray-400">Leave blank to use global (${{ number_format($globalWeeklyFlat, 2) }})</p>
+                        <x-input-error :messages="$errors->get('editor_weekly_flat')" class="mt-1" />
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <x-primary-button>Save Rates</x-primary-button>
+                </div>
+            </form>
+        </div>
+
+        {{-- ── COMMISSION CONFIG ── (editors only) --}}
+        @php
             $commissionConfig = $profile?->productCommissionsKeyed() ?? collect();
-            $globalRate = (float) \App\Models\Setting::getValue('rate_editor_commission', 10.0);
+            $globalRate = $globalCommission;
         @endphp
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div class="px-5 py-4 bg-gray-50 border-b border-gray-200">

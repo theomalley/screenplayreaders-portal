@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-28 | Add editor_commission and editor_weekly_flat
 // v1.2 — 2026-05-28 | Add timezone to fillable
 // v1.1 — 2026-05-25 | Add productCommissions relationship
 // v1.0 — 2026-05-24 | Initial scaffold: editor profile linked 1:1 to users with role=editor
@@ -23,6 +24,13 @@ class EditorProfile extends Model
         'availability_message',
         'upload_warning',
         'timezone',
+        'editor_commission',
+        'editor_weekly_flat',
+    ];
+
+    protected $casts = [
+        'editor_commission'  => 'float',
+        'editor_weekly_flat' => 'float',
     ];
 
     public function user(): BelongsTo

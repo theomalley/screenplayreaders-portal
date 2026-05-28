@@ -31,7 +31,7 @@ class Permission
         'assignments.manage' => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
         'qc'                 => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
         'archive'            => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
-        'ratebook'           => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
+        'ratebook'           => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],
         'ratebook.edit'      => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
         'manual'             => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],
         'manual.edit'        => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],

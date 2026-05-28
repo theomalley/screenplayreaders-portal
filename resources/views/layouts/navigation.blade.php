@@ -181,6 +181,11 @@
                                 {{ __('My Payments') }}
                             </x-nav-link>
                         @endif
+                        @if(\App\Support\Permission::check('ratebook'))
+                            <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
+                                {{ __('Ratebook') }}
+                            </x-nav-link>
+                        @endif
                         <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                             {{ __('Reader Manual') }}
                         </x-nav-link>
@@ -308,6 +313,11 @@
                 @elseif(auth()->user()?->isEditor())
                     <x-responsive-nav-link :href="route('editor-payments.index')" :active="request()->routeIs('editor-payments.*')">
                         {{ __('My Payments') }}
+                    </x-responsive-nav-link>
+                @endif
+                @if(\App\Support\Permission::check('ratebook'))
+                    <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
+                        {{ __('Ratebook') }}
                     </x-responsive-nav-link>
                 @endif
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
