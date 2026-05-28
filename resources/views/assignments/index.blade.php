@@ -1103,6 +1103,82 @@
                     </div>
                 @endif
 
+                {{-- Online staff panel --}}
+                @if ($onlineEditors->isNotEmpty() || $onlineReaders->isNotEmpty())
+                <div class="mb-5 flex items-center gap-2 flex-wrap">
+
+                    {{-- Editors --}}
+                    @foreach ($onlineEditors as $editor)
+                        @php
+                            $eProfile  = $editor->editorProfile;
+                            $eInitials = $eProfile?->initials ?? strtoupper(substr($editor->name, 0, 2));
+                            $eActive   = $editor->assignments->count();
+                            $ePhotoUrl = $eProfile?->photo ? asset('storage/' . $eProfile->photo) : null;
+                        @endphp
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700"
+                                  title="{{ $eProfile?->displayName() ?? $editor->name }} (Editor) · Online — {{ $eActive }} active">
+                                @if ($ePhotoUrl)
+                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                        <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="w-full h-full object-cover" />
+                                    </span>
+                                @else
+                                    {{ $eInitials }}
+                                @endif
+                                @if ($eActive > 0)
+                                    <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-indigo-500 text-white">
+                                        {{ $eActive }}
+                                    </span>
+                                @endif
+                                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                            </span>
+                            <span class="text-[9px] text-indigo-400 font-mono leading-none">{{ $eInitials }}</span>
+                        </div>
+                    @endforeach
+
+                    {{-- Divider between editors and readers --}}
+                    @if ($onlineEditors->isNotEmpty() && $onlineReaders->isNotEmpty())
+                        <div class="w-px h-8 bg-gray-200 mx-1 self-center"></div>
+                    @endif
+
+                    {{-- Readers --}}
+                    @foreach ($onlineReaders as $reader)
+                        @php
+                            $rProfile     = $reader->readerProfile;
+                            $rInitials    = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
+                            $rActive      = $reader->assignments->count();
+                            $rMax         = $rProfile?->max_concurrent_assignments ?? 0;
+                            $rFull        = $rMax > 0 && $rActive >= $rMax;
+                            $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
+                            $rUnavailable = $rProfile?->availability === 'unavailable';
+                        @endphp
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold
+                                {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700' }}
+                                {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
+                                  title="{{ $rProfile?->displayName() ?? $reader->name }} · Online — {{ $rActive }}/{{ $rMax ?: '?' }} active">
+                                @if ($rPhotoUrl)
+                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                        <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="w-full h-full object-cover" />
+                                    </span>
+                                @else
+                                    {{ $rInitials }}
+                                @endif
+                                @if ($rActive > 0)
+                                    <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
+                                        {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
+                                        {{ $rActive }}
+                                    </span>
+                                @endif
+                                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                            </span>
+                            <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rInitials }}</span>
+                        </div>
+                    @endforeach
+
+                </div>
+                @endif
+
                 <div x-data="{ tab: 'all' }"
                      x-init="setInterval(() => {
                          if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')) location.reload();

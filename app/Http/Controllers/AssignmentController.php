@@ -1,5 +1,6 @@
 <?php
 
+// v2.3 — 2026-05-28 | Reader view: pass onlineEditors + onlineReaders for staff icon panel.
 // v2.2 — 2026-05-28 | Deep-Dive Dev Notes includes a free reader request — exclude request fee from pay rate.
 // v2.1 — 2026-05-28 | Parse assignment date input in app timezone; pass $appTimezone to index/edit views.
 // v2.0 — 2026-05-27 | Pass $ageThresholds from DB settings to view (per-type colour bands).
@@ -161,6 +162,18 @@ class AssignmentController extends Controller
         $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
         $readerMax      = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
 
+        $onlineEditors = User::whereIn('role', ['admin', 'editor'])
+            ->with(['editorProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
+            ->get()
+            ->filter(fn($u) => $u->isOnline())
+            ->values();
+
+        $onlineReaders = User::where('role', 'reader')
+            ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
+            ->get()
+            ->filter(fn($u) => $u->isOnline())
+            ->values();
+
         return view('assignments.index', [
             'canManage'        => false,
             'available'        => $available,
@@ -170,6 +183,8 @@ class AssignmentController extends Controller
             'periodEnd'        => $periodEnd,
             'archivedByPeriod' => $archivedByPeriod,
             'ageThresholds'    => Setting::getAgeThresholds(),
+            'onlineEditors'    => $onlineEditors,
+            'onlineReaders'    => $onlineReaders,
         ]);
     }
 
