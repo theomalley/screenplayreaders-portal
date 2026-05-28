@@ -1234,28 +1234,29 @@
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
-                                                             @keydown.arrow-right.window="if (open) nextPage()"
-                                                             @keydown.arrow-left.window="if (open) prevPage()"
                                                              x-ref="modal"
                                                              tabindex="-1"
                                                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
                                                             <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
                                                                 <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
                                                                 <div class="flex items-center gap-3 shrink-0">
-                                                                    <div x-show="totalPages > 0" class="flex items-center gap-2">
-                                                                        <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
-                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
-                                                                        <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
-                                                                        <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
-                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                                                                        <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'"></span>
+                                                                        <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5">
+                                                                            Go to page
+                                                                            <input type="number" min="1" :max="totalPages"
+                                                                                   @change="scrollToPage($event.target.value)"
+                                                                                   @keydown.enter.prevent="scrollToPage($event.target.value)"
+                                                                                   class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
+                                                                            / <span x-text="totalPages"></span>
+                                                                        </span>
                                                                     </div>
                                                                     <button @click="open = false" type="button"
                                                                             class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                                 </div>
                                                             </div>
-                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4" @wheel="handleWheel($event)">
-                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
-                                                                <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
                                                             </div>
                                                         </div>
                                                     @else
@@ -1423,28 +1424,29 @@
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
-                                                             @keydown.arrow-right.window="if (open) nextPage()"
-                                                             @keydown.arrow-left.window="if (open) prevPage()"
                                                              x-ref="modal"
                                                              tabindex="-1"
                                                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
                                                             <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-4">
                                                                 <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
                                                                 <div class="flex items-center gap-3 shrink-0">
-                                                                    <div x-show="totalPages > 0" class="flex items-center gap-2">
-                                                                        <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
-                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">‹</button>
-                                                                        <span class="text-xs text-gray-300 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
-                                                                        <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
-                                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200 disabled:opacity-40">›</button>
+                                                                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                                                                        <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'"></span>
+                                                                        <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5">
+                                                                            Go to page
+                                                                            <input type="number" min="1" :max="totalPages"
+                                                                                   @change="scrollToPage($event.target.value)"
+                                                                                   @keydown.enter.prevent="scrollToPage($event.target.value)"
+                                                                                   class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
+                                                                            / <span x-text="totalPages"></span>
+                                                                        </span>
                                                                     </div>
                                                                     <button @click="open = false" type="button"
                                                                             class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                                 </div>
                                                             </div>
-                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center bg-gray-800 py-6 px-4" @wheel="handleWheel($event)">
-                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm">Loading…</div>
-                                                                <canvas x-ref="canvas" class="shadow-2xl"></canvas>
+                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
                                                             </div>
                                                         </div>
                                                     @else
@@ -1863,12 +1865,12 @@
 
             Alpine.data('pdfViewer', (url) => {
                 let pdfDoc = null;
-                let wheelTimer = null;
+                let pages  = [];
 
                 return {
                     open: false,
                     url: url,
-                    currentPage: 1,
+                    currentPage: 0,
                     totalPages: 0,
                     loading: false,
 
@@ -1888,7 +1890,7 @@
                                 withCredentials: true,
                             }).promise;
                             this.totalPages = pdfDoc.numPages;
-                            await this.renderPage(1);
+                            await this.renderAllPages();
                         } catch (e) {
                             console.error('PDF load error:', e);
                         } finally {
@@ -1896,45 +1898,29 @@
                         }
                     },
 
-                    async renderPage(num) {
-                        if (!pdfDoc) return;
-                        this.loading = true;
-                        try {
-                            const page = await pdfDoc.getPage(num);
-                            const wrap = this.$refs.canvasWrap;
-                            const maxW = Math.max(wrap.clientWidth - 48, 200);
+                    async renderAllPages() {
+                        const wrap = this.$refs.canvasWrap;
+                        pages = [];
+                        const maxW = Math.max(wrap.clientWidth - 48, 200);
+                        for (let i = 1; i <= this.totalPages; i++) {
+                            this.currentPage = i;
+                            const page = await pdfDoc.getPage(i);
                             const base = page.getViewport({ scale: 1 });
                             const scale = Math.min(maxW / base.width, 2.0);
                             const vp = page.getViewport({ scale });
-                            const canvas = this.$refs.canvas;
+                            const canvas = document.createElement('canvas');
                             canvas.width  = vp.width;
                             canvas.height = vp.height;
+                            canvas.className = 'shadow-2xl shrink-0';
+                            wrap.appendChild(canvas);
+                            pages.push(canvas);
                             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                            this.currentPage = num;
-                            if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;
-                        } finally {
-                            this.loading = false;
                         }
                     },
 
-                    async prevPage() {
-                        if (this.currentPage > 1) await this.renderPage(this.currentPage - 1);
-                    },
-
-                    async nextPage() {
-                        if (this.currentPage < this.totalPages) await this.renderPage(this.currentPage + 1);
-                    },
-
-                    handleWheel(e) {
-                        e.preventDefault();
-                        if (this.loading || wheelTimer) return;
-                        if (e.deltaY > 0 && this.currentPage < this.totalPages) {
-                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 200);
-                            this.nextPage();
-                        } else if (e.deltaY < 0 && this.currentPage > 1) {
-                            wheelTimer = setTimeout(() => { wheelTimer = null; }, 200);
-                            this.prevPage();
-                        }
+                    scrollToPage(num) {
+                        const n = Math.max(1, Math.min(parseInt(num) || 1, this.totalPages));
+                        if (pages[n - 1]) pages[n - 1].scrollIntoView({ behavior: 'smooth' });
                     },
                 };
             });
