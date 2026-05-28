@@ -163,15 +163,18 @@
                                 :style="`color: ${scoreColor(averageScore())}`"
                                 x-text="'Avg: ' + averageScore()"></span>
                         </h3>
-                        <div class="flex items-center gap-2">
-                            <x-input-label for="randomAnchor" value="Randomize around:" class="whitespace-nowrap" />
-                            <x-text-input id="randomAnchor" type="number" class="w-20 text-sm"
-                                x-model.number="randomAnchor" min="50" max="100" placeholder="75" />
-                            <button type="button"
-                                @click="randomizeScores()"
-                                class="text-xs px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium">
-                                Randomize
-                            </button>
+                        <div class="text-right">
+                            <div class="flex items-center gap-2">
+                                <x-input-label for="randomAnchor" value="Randomize around:" class="whitespace-nowrap" />
+                                <x-text-input id="randomAnchor" type="number" class="w-20 text-sm"
+                                    x-model.number="randomAnchor" min="50" max="100" placeholder="75" />
+                                <button type="button"
+                                    @click="randomizeScores()"
+                                    class="text-xs px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium">
+                                    Randomize
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Use only as a starting point, then dial in.</p>
                         </div>
                     </div>
 

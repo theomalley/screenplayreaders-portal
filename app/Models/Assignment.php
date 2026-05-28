@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-05-28 | Zero pay_rate automatically when assigned reader is an admin
 // v1.8 — 2026-05-26 | Add client_id relationship for invoicing
 // v1.6 — 2026-05-25 | Add needs_attention status + notes field; scopeForReader includes needs_attention
 // v1.5 — 2026-05-25 | Add helpscoutConversation relationship (auto-populated by Zapier via order_number).
@@ -69,6 +70,18 @@ class Assignment extends Model
             'reader_paid_at'            => 'datetime',
             'helpscout_draft_sent_at'   => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Assignment $assignment) {
+            if ($assignment->assigned_reader_id && $assignment->isDirty('assigned_reader_id')) {
+                $reader = User::find($assignment->assigned_reader_id);
+                if ($reader && $reader->isAdmin()) {
+                    $assignment->pay_rate = 0.00;
+                }
+            }
+        });
     }
 
     // --- Status helpers ---
