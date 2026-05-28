@@ -1103,21 +1103,22 @@
                     </div>
                 @endif
 
-                {{-- Online staff panel --}}
+                {{-- Staff panel — all editors always visible; all readers always visible; green dot for online --}}
                 @if ($onlineEditors->isNotEmpty() || $onlineReaders->isNotEmpty())
                 <div class="mb-5 flex items-center gap-2 flex-wrap">
 
-                    {{-- Editors --}}
+                    {{-- Editors (always shown) --}}
                     @foreach ($onlineEditors as $editor)
                         @php
                             $eProfile  = $editor->editorProfile;
                             $eInitials = $eProfile?->initials ?? strtoupper(substr($editor->name, 0, 2));
                             $eActive   = $editor->assignments->count();
                             $ePhotoUrl = $eProfile?->photo ? asset('storage/' . $eProfile->photo) : null;
+                            $eOnline   = $editor->isOnline();
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
                             <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700"
-                                  title="{{ $eProfile?->displayName() ?? $editor->name }} (Editor) · Online — {{ $eActive }} active">
+                                  title="{{ $eProfile?->displayName() ?? $editor->name }} (Editor){{ $eOnline ? ' · Online' : '' }} — {{ $eActive }} active">
                                 @if ($ePhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="w-full h-full object-cover" />
@@ -1130,7 +1131,9 @@
                                         {{ $eActive }}
                                     </span>
                                 @endif
-                                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                                @if ($eOnline)
+                                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                                @endif
                             </span>
                             <span class="text-[9px] text-indigo-400 font-mono leading-none">{{ $eInitials }}</span>
                         </div>
@@ -1141,7 +1144,7 @@
                         <div class="w-px h-8 bg-gray-200 mx-1 self-center"></div>
                     @endif
 
-                    {{-- Readers --}}
+                    {{-- Readers (always shown) --}}
                     @foreach ($onlineReaders as $reader)
                         @php
                             $rProfile     = $reader->readerProfile;
@@ -1151,12 +1154,13 @@
                             $rFull        = $rMax > 0 && $rActive >= $rMax;
                             $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                             $rUnavailable = $rProfile?->availability === 'unavailable';
+                            $rOnline      = $reader->isOnline();
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
                             <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold
                                 {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700' }}
                                 {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
-                                  title="{{ $rProfile?->displayName() ?? $reader->name }} · Online — {{ $rActive }}/{{ $rMax ?: '?' }} active">
+                                  title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active">
                                 @if ($rPhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="w-full h-full object-cover" />
@@ -1170,7 +1174,9 @@
                                         {{ $rActive }}
                                     </span>
                                 @endif
-                                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                                @if ($rOnline)
+                                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
+                                @endif
                             </span>
                             <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rInitials }}</span>
                         </div>
