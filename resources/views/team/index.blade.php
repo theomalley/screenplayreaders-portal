@@ -43,9 +43,6 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                @if(auth()->user()->isAdmin())
-                                    <th class="px-4 py-3"></th>
-                                @endif
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-100">
@@ -58,7 +55,11 @@
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-4 py-3">
                                         <div class="flex items-center gap-3">
-                                            <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0">
+                                            @if(auth()->user()->isAdmin())
+                                                <a href="{{ route('admin.editors.edit', $admin) }}" class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0 hover:ring-2 hover:ring-violet-300 transition">
+                                            @else
+                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0">
+                                            @endif
                                                 @if ($photoUrl)
                                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                                         <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
@@ -69,7 +70,11 @@
                                                 @if($admin->isOnline())
                                                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                 @endif
-                                            </span>
+                                            @if(auth()->user()->isAdmin())
+                                                </a>
+                                            @else
+                                                </span>
+                                            @endif
                                             <div>
                                                 <div class="font-medium text-gray-900">{{ $profile?->displayName() ?? $admin->name }}</div>
                                                 <div class="text-[11px] text-violet-500 font-medium">Admin</div>
@@ -79,14 +84,6 @@
                                     <td class="px-4 py-3 text-gray-500">
                                         <a href="mailto:{{ $admin->email }}" class="hover:text-indigo-600 hover:underline">{{ $admin->email }}</a>
                                     </td>
-                                    @if(auth()->user()->isAdmin())
-                                        <td class="px-4 py-3 whitespace-nowrap text-right">
-                                            <a href="{{ route('admin.editors.edit', $admin) }}"
-                                               class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
-                                                Edit
-                                            </a>
-                                        </td>
-                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>
@@ -113,14 +110,7 @@
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Editor</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Active</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Total</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PayPal</th>
-                                    @if($canEditEditors || $canDeleteEditors)
-                                        <th class="px-4 py-3"></th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -129,11 +119,16 @@
                                         $profile  = $editor->editorProfile;
                                         $initials = $profile?->initials ?? strtoupper(substr($editor->name, 0, 2));
                                         $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+                                        $avail    = $profile?->availability ?? 'available';
                                     @endphp
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
-                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0">
+                                                @if($canEditEditors)
+                                                    <a href="{{ route('admin.editors.edit', $editor) }}" class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0 hover:ring-2 hover:ring-indigo-300 transition">
+                                                @else
+                                                    <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0">
+                                                @endif
                                                     @if ($photoUrl)
                                                         <span class="absolute inset-0 rounded-full overflow-hidden">
                                                             <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
@@ -144,7 +139,11 @@
                                                     @if($editor->isOnline())
                                                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
-                                                </span>
+                                                @if($canEditEditors)
+                                                    </a>
+                                                @else
+                                                    </span>
+                                                @endif
                                                 <div class="font-medium text-gray-900">
                                                     {{ $profile?->displayName() ?? $editor->name }}
                                                 </div>
@@ -153,11 +152,7 @@
                                         <td class="px-4 py-3 text-gray-500">
                                             <a href="mailto:{{ $editor->email }}" class="hover:text-indigo-600 hover:underline">{{ $editor->email }}</a>
                                         </td>
-                                        <td class="px-4 py-3 text-gray-700 tabular-nums">{{ $editor->active_count }}</td>
-                                        <td class="px-4 py-3 text-gray-700 tabular-nums">{{ $editor->completed_count }}</td>
-                                        <td class="px-4 py-3 text-gray-500 tabular-nums">{{ $editor->total_count }}</td>
                                         <td class="px-4 py-3">
-                                            @php $avail = $profile?->availability ?? 'available'; @endphp
                                             <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
                                                 <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
                                                 {{ ucfirst($avail) }}
@@ -168,59 +163,6 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-4 py-3 text-gray-500 text-xs">{{ $profile?->paypal_email ?? '—' }}</td>
-                                        @if($canEditEditors || $canDeleteEditors)
-                                            <td class="px-4 py-3 whitespace-nowrap text-right"
-                                                x-data="{ open: false, typed: '' }">
-                                                <div class="flex items-center justify-end gap-2">
-                                                    @if($canEditEditors)
-                                                        <a href="{{ route('admin.editors.edit', $editor) }}"
-                                                           class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
-                                                            Edit
-                                                        </a>
-                                                    @endif
-                                                    @if($canDeleteEditors)
-                                                        <form method="POST" action="{{ route('admin.editors.destroy', $editor) }}" x-ref="deleteForm">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="button" @click="open = true; typed = ''"
-                                                                    class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                                                                Delete
-                                                            </button>
-                                                        </form>
-                                                        <div x-show="open" x-cloak
-                                                             @keydown.escape.window="open = false"
-                                                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                                                            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6" @click.stop>
-                                                                <h3 class="text-base font-semibold text-gray-900 mb-1">Delete Editor</h3>
-                                                                <p class="text-sm text-gray-600 mb-4">
-                                                                    This will permanently delete <strong>{{ $profile?->displayName() ?? $editor->name }}</strong>. This cannot be undone.
-                                                                </p>
-                                                                <p class="text-sm text-gray-700 mb-2">
-                                                                    Type <span class="font-mono font-semibold text-red-600">DELETE EDITOR</span> to confirm:
-                                                                </p>
-                                                                <input type="text" x-model="typed"
-                                                                       placeholder="DELETE EDITOR"
-                                                                       @keydown.enter="if (typed === 'DELETE EDITOR') $refs.deleteForm.submit()"
-                                                                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400 mb-4" />
-                                                                <div class="flex justify-end gap-3">
-                                                                    <button type="button" @click="open = false; typed = ''"
-                                                                            class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition">
-                                                                        Cancel
-                                                                    </button>
-                                                                    <button type="button"
-                                                                            :disabled="typed !== 'DELETE EDITOR'"
-                                                                            @click="$refs.deleteForm.submit()"
-                                                                            class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition">
-                                                                        Delete Editor
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -247,15 +189,7 @@
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reader</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Active</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Total</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Capacity</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PayPal</th>
-                                    @if($canEditReaders || $canDeleteReaders)
-                                        <th class="px-4 py-3"></th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -263,15 +197,17 @@
                                     @php
                                         $profile   = $reader->readerProfile;
                                         $initials  = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
-                                        $max       = $profile?->max_concurrent_assignments ?? 0;
-                                        $active    = $reader->active_count;
-                                        $atCap     = $max > 0 && $active >= $max;
                                         $photoUrl  = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+                                        $avail     = $profile?->availability ?? 'available';
                                     @endphp
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
-                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0">
+                                                @if($canEditReaders)
+                                                    <a href="{{ route('readers.edit', $reader) }}" class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 hover:ring-2 hover:ring-gray-400 transition {{ $avail !== 'available' ? 'border-2 border-dashed border-red-300' : '' }}">
+                                                @else
+                                                    <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 {{ $avail !== 'available' ? 'border-2 border-dashed border-red-300' : '' }}">
+                                                @endif
                                                     @if ($photoUrl)
                                                         <span class="absolute inset-0 rounded-full overflow-hidden">
                                                             <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
@@ -282,7 +218,11 @@
                                                     @if($reader->isOnline())
                                                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
-                                                </span>
+                                                @if($canEditReaders)
+                                                    </a>
+                                                @else
+                                                    </span>
+                                                @endif
                                                 <div class="font-medium text-gray-900">
                                                     {{ $profile?->displayName() ?? $reader->name }}
                                                 </div>
@@ -291,19 +231,7 @@
                                         <td class="px-4 py-3 text-gray-500">
                                             <a href="mailto:{{ $reader->email }}" class="hover:text-indigo-600 hover:underline">{{ $reader->email }}</a>
                                         </td>
-                                        <td class="px-4 py-3 tabular-nums">
-                                            <span class="{{ $atCap ? 'text-amber-700 font-semibold' : 'text-gray-700' }}">{{ $active }}</span>
-                                        </td>
-                                        <td class="px-4 py-3 text-gray-700 tabular-nums">{{ $reader->completed_count }}</td>
-                                        <td class="px-4 py-3 text-gray-500 tabular-nums">{{ $reader->total_count }}</td>
-                                        <td class="px-4 py-3 text-gray-500 tabular-nums">
-                                            {{ $active }}/{{ $max ?: '—' }}
-                                            @if ($atCap)
-                                                <span class="ml-1 text-[10px] font-bold text-amber-600 uppercase">Full</span>
-                                            @endif
-                                        </td>
                                         <td class="px-4 py-3">
-                                            @php $avail = $profile?->availability ?? 'available'; @endphp
                                             <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
                                                 <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
                                                 {{ ucfirst($avail) }}
@@ -314,59 +242,6 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-4 py-3 text-gray-500 text-xs">{{ $profile?->paypal_email ?? '—' }}</td>
-                                        @if($canEditReaders || $canDeleteReaders)
-                                            <td class="px-4 py-3 whitespace-nowrap text-right"
-                                                x-data="{ open: false, typed: '' }">
-                                                <div class="flex items-center justify-end gap-2">
-                                                    @if($canEditReaders)
-                                                        <a href="{{ route('readers.edit', $reader) }}"
-                                                           class="inline-flex items-center px-2.5 py-1 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
-                                                            Edit
-                                                        </a>
-                                                    @endif
-                                                    @if($canDeleteReaders)
-                                                        <form method="POST" action="{{ route('readers.destroy', $reader) }}" x-ref="deleteForm">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="button" @click="open = true; typed = ''"
-                                                                    class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                                                                Delete
-                                                            </button>
-                                                        </form>
-                                                        <div x-show="open" x-cloak
-                                                             @keydown.escape.window="open = false"
-                                                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                                                            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6" @click.stop>
-                                                                <h3 class="text-base font-semibold text-gray-900 mb-1">Delete Reader</h3>
-                                                                <p class="text-sm text-gray-600 mb-4">
-                                                                    This will permanently delete <strong>{{ $profile?->displayName() ?? $reader->name }}</strong>. This cannot be undone.
-                                                                </p>
-                                                                <p class="text-sm text-gray-700 mb-2">
-                                                                    Type <span class="font-mono font-semibold text-red-600">DELETE READER</span> to confirm:
-                                                                </p>
-                                                                <input type="text" x-model="typed"
-                                                                       placeholder="DELETE READER"
-                                                                       @keydown.enter="if (typed === 'DELETE READER') $refs.deleteForm.submit()"
-                                                                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400 mb-4" />
-                                                                <div class="flex justify-end gap-3">
-                                                                    <button type="button" @click="open = false; typed = ''"
-                                                                            class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition">
-                                                                        Cancel
-                                                                    </button>
-                                                                    <button type="button"
-                                                                            :disabled="typed !== 'DELETE READER'"
-                                                                            @click="$refs.deleteForm.submit()"
-                                                                            class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition">
-                                                                        Delete Reader
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>

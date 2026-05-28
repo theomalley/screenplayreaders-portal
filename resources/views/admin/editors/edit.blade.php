@@ -186,7 +186,7 @@
                 </form>
 
                 <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-                    @if($user->isEditor())
+                    @if($user->isEditor() && auth()->user()->isAdmin())
                     <form method="POST" action="{{ route('admin.editors.destroy', $user) }}"
                           onsubmit="return confirm('Permanently delete this editor? This cannot be undone.')">
                         @csrf
