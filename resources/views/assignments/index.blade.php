@@ -1486,35 +1486,36 @@
                                             <tr>
                                                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                                <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
+                                                <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed by</th>
                                                 <th class="px-3 py-3"></th>
                                             </tr>
                                         </thead>
                                         <tbody class="bg-white divide-y divide-gray-100">
                                             @foreach($mineCompleted as $assignment)
                                                 @php
-                                                    $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
-                                                    $ageStr   = $diff
-                                                        ? ($diff->days >= 1
-                                                            ? ($diff->days . 'd ' . $diff->h . 'h')
-                                                            : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
+                                                    // Overall turnaround: created_at → completed_at
+                                                    $overallDiff  = ($assignment->created_at && $assignment->completed_at)
+                                                        ? $assignment->created_at->diff($assignment->completed_at) : null;
+                                                    $overallStr   = $overallDiff
+                                                        ? ($overallDiff->days >= 1
+                                                            ? ($overallDiff->days . 'd ' . $overallDiff->h . 'h')
+                                                            : ($overallDiff->h >= 1 ? ($overallDiff->h . 'h ' . $overallDiff->i . 'm') : (max(0, $overallDiff->i) . 'm')))
                                                         : '—';
-                                                    $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
-                                                    $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
-                                                    $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
-                                                    $ageColor = match(true) {
-                                                        $ageHours >= $ageT['red']    => 'text-red-600 font-semibold',
-                                                        $ageHours >= $ageT['orange'] => 'text-orange-500 font-semibold',
-                                                        $ageHours >= $ageT['yellow'] => 'text-yellow-600',
-                                                        default                     => 'text-green-600',
-                                                    };
-                                                    $accDiff  = $assignment->accepted_at ? now()->diff($assignment->accepted_at) : null;
-                                                    $accStr   = $accDiff
-                                                        ? ($accDiff->days >= 1
-                                                            ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
-                                                            : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
-                                                        : null;
-                                                    $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+                                                    $overallTitle = ($assignment->created_at && $assignment->completed_at)
+                                                        ? ($assignment->created_at->format('M j g:ia') . ' → ' . $assignment->completed_at->format('M j g:ia'))
+                                                        : '—';
+                                                    // Assignment turnaround: accepted_at (or created_at) → completed_at
+                                                    $assignStart  = $assignment->accepted_at ?? $assignment->created_at;
+                                                    $assignDiff   = ($assignStart && $assignment->completed_at)
+                                                        ? $assignStart->diff($assignment->completed_at) : null;
+                                                    $assignStr    = $assignDiff
+                                                        ? ($assignDiff->days >= 1
+                                                            ? ($assignDiff->days . 'd ' . $assignDiff->h . 'h')
+                                                            : ($assignDiff->h >= 1 ? ($assignDiff->h . 'h ' . $assignDiff->i . 'm') : (max(0, $assignDiff->i) . 'm')))
+                                                        : '—';
+                                                    $assignTitle  = ($assignStart && $assignment->completed_at)
+                                                        ? ($assignStart->format('M j g:ia') . ' → ' . $assignment->completed_at->format('M j g:ia'))
+                                                        : '—';
                                                     $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                     $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
                                                         ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
@@ -1524,6 +1525,10 @@
                                                     $viewUrl  = $assignment->drive_script_file_id
                                                         ? route('assignments.streamScript', $assignment)
                                                         : null;
+                                                    $mePhotoUrl   = auth()->user()->readerProfile?->photo
+                                                        ? asset('storage/' . auth()->user()->readerProfile->photo)
+                                                        : null;
+                                                    $meInitials   = auth()->user()->readerProfile?->initials ?? 'Me';
                                                     $typeLabel = match($assignment->assignment_type) {
                                                         'script_coverage'   => 'Script Coverage',
                                                         'notes_only'        => 'Notes-Only',
@@ -1542,11 +1547,16 @@
                                                 <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                     <td class="px-3 py-3 whitespace-nowrap">
                                                         <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
-                                                        <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                            {{ $ageStr }}
-                                                            @if ($assignment->rush)
-                                                                <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
-                                                            @endif
+                                                        @if ($assignment->rush)
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                        @endif
+                                                        <div class="mt-1.5">
+                                                            <div class="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Overall Turnaround</div>
+                                                            <div class="text-xs tabular-nums text-gray-600" title="{{ $overallTitle }}">{{ $overallStr }}</div>
+                                                        </div>
+                                                        <div class="mt-1">
+                                                            <div class="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Assignment Turnaround</div>
+                                                            <div class="text-xs tabular-nums text-gray-600" title="{{ $assignTitle }}">{{ $assignStr }}</div>
                                                         </div>
                                                     </td>
                                                     <td class="px-3 py-3" x-data="{ textOpen: false }">
@@ -1577,11 +1587,16 @@
                                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
                                                         </div>
                                                     </td>
-                                                    <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
-                                                        <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
-                                                        @if ($accStr)
-                                                            <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
-                                                        @endif
+                                                    <td class="px-3 py-3 whitespace-nowrap text-center">
+                                                        <div class="flex flex-col items-center gap-1">
+                                                            @if($mePhotoUrl)
+                                                                <img src="{{ $mePhotoUrl }}" alt="{{ $meInitials }}"
+                                                                     class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-200">
+                                                            @else
+                                                                <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-semibold ring-1 ring-gray-200">{{ $meInitials }}</div>
+                                                            @endif
+                                                            <span class="text-xs text-gray-500">Me</span>
+                                                        </div>
                                                     </td>
                                                     <td class="px-3 py-3"></td>
                                                 </tr>
