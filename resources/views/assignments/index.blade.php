@@ -655,8 +655,8 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
@@ -689,13 +689,38 @@
                                         $downloadUrl = $assignment->drive_script_file_id
                                             ? 'https://drive.google.com/uc?export=download&id=' . $assignment->drive_script_file_id
                                             : null;
+
+                                        $assignedInitials = $assignment->assignedReader?->readerProfile?->initials
+                                            ?? $assignment->assignedReader?->editorProfile?->initials
+                                            ?? ($assignment->assignedReader ? strtoupper(substr($assignment->assignedReader->name, 0, 2)) : null);
+                                        $assignedPhoto    = $assignment->assignedReader?->readerProfile?->photo
+                                            ?? $assignment->assignedReader?->editorProfile?->photo;
+                                        $assignedPhotoUrl = $assignedPhoto ? asset('storage/' . $assignedPhoto) : null;
+
+                                        $statusColor = match($assignment->status) {
+                                            'unassigned'       => 'bg-amber-100 text-amber-800',
+                                            'assigned'         => 'bg-green-100 text-green-800',
+                                            'completed'        => 'bg-green-100 text-green-800',
+                                            'qc'               => 'bg-blue-100 text-blue-800',
+                                            'incoming'         => 'bg-gray-100 text-gray-700',
+                                            'cancelled'        => 'bg-red-100 text-red-700',
+                                            'on_hold_customer' => 'bg-red-100 text-red-700',
+                                            'on_hold_sr'       => 'bg-red-100 text-red-700',
+                                            'needs_attention'  => 'bg-orange-100 text-orange-800',
+                                            default            => 'bg-gray-100 text-gray-700',
+                                        };
+
+                                        $rowClass = ($assignment->rush && $assignment->status === 'unassigned')
+                                            ? 'border-l-4 border-amber-400'
+                                            : '';
+
                                         $searchStr = strtolower(implode(' ', array_filter([
                                             $assignment->order_number,
                                             $assignment->script_title,
                                             $assignment->writer_name,
                                         ])));
                                     @endphp
-                                    <tr class="hover:bg-gray-50 cursor-pointer"
+                                    <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
@@ -712,7 +737,12 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</div>
+                                            <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                {{ $ageStr }}
+                                                @if ($assignment->rush)
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                @endif
+                                            </div>
                                             @if ($hsId)
                                                 <div class="mt-1">
                                                     <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
@@ -726,10 +756,6 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
-                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
-                                            @if($accStr)<div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>@endif
-                                        </td>
                                         <td class="px-3 py-3">
                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($downloadUrl)
@@ -739,7 +765,78 @@
                                                 <span class="font-medium text-gray-400" title="File upload pending">{{ $assignment->script_title }}</span>
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                            @if($assignment->page_count)<div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p</div>@endif
+                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                            <div class="mt-1.5">
+                                                <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
+                                                      x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="assigned_reader_id" x-ref="rInput" value="" />
+                                                    <select name="status" x-ref="sSel"
+                                                        @change="
+                                                            if ($event.target.value === 'assigned') {
+                                                                pendingAssign = true;
+                                                            } else {
+                                                                pendingAssign = false;
+                                                                $refs.rInput.value = '';
+                                                                $event.target.closest('form').submit();
+                                                            }
+                                                        "
+                                                        class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
+                                                        @foreach ([
+                                                            'incoming'        => 'Pending',
+                                                            'unassigned'      => 'Available',
+                                                            'assigned'        => 'Assigned',
+                                                            'completed'       => 'Completed',
+                                                            'qc'              => 'QC',
+                                                            'needs_attention' => 'Needs Attention',
+                                                            'on_hold_customer' => 'On Hold – Customer',
+                                                            'on_hold_sr'      => 'On Hold – SR',
+                                                            'cancelled'       => 'Cancelled',
+                                                        ] as $value => $label)
+                                                            <option value="{{ $value }}" {{ $assignment->status === $value ? 'selected' : '' }}>
+                                                                {{ $label }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <div x-show="pendingAssign" x-cloak class="mt-1 flex items-center gap-1">
+                                                        <select
+                                                            @change="if ($event.target.value) { $refs.rInput.value = $event.target.value; $event.target.closest('form').submit(); }"
+                                                            class="text-xs rounded border border-gray-200 bg-white py-0.5 pl-2 pr-5 cursor-pointer focus:ring-indigo-400">
+                                                            <option value="">→ assign to</option>
+                                                            @foreach ($assignableUsers as $aUser)
+                                                                <option value="{{ $aUser->id }}">
+                                                                    {{ $aUser->readerProfile?->initials ?? $aUser->editorProfile?->initials ?? strtoupper(substr($aUser->name, 0, 2)) }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <button type="button"
+                                                                @click="pendingAssign = false; $refs.sSel.value = curStatus"
+                                                                class="text-gray-400 hover:text-gray-700 text-base leading-none px-0.5"
+                                                                title="Cancel">×</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
+                                            @if ($assignedInitials)
+                                                <div class="flex flex-col items-center gap-0.5 mb-1">
+                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
+                                                        @if ($assignedPhotoUrl)
+                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
+                                                            </span>
+                                                        @else
+                                                            {{ $assignedInitials }}
+                                                        @endif
+                                                    </span>
+                                                    <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
+                                                </div>
+                                            @endif
+                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
+                                            @if ($accStr)
+                                                <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
+                                            @endif
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
                                             @can('delete', $assignment)
