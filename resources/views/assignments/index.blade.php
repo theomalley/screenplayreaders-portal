@@ -413,8 +413,9 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                {{ $ageStr }}
+                                            <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                            <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                Age: {{ $ageStr }}
                                                 @if ($assignment->rush)
                                                     <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                 @endif
@@ -636,6 +637,9 @@
                                                     <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
                                                 </div>
                                             @endif
+                                            @if ($assignment->accepted_at)
+                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                            @endif
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
@@ -740,8 +744,9 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                {{ $ageStr }}
+                                            <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                            <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                Age: {{ $ageStr }}
                                                 @if ($assignment->rush)
                                                     <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                 @endif
@@ -835,6 +840,9 @@
                                                     </span>
                                                     <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
                                                 </div>
+                                            @endif
+                                            @if ($assignment->accepted_at)
+                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
                                             @endif
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
@@ -1081,6 +1089,9 @@
                                                 </span>
                                                 <span class="text-[9px] {{ $meLabelClr }} font-mono leading-none">{{ $meInitials }}</span>
                                             </div>
+                                            @if ($assignment->accepted_at)
+                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                            @endif
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
@@ -1320,8 +1331,9 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
-                                                    <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                        {{ $ageStr }}
+                                                    <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                    <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                        Age: {{ $ageStr }}
                                                         @if ($assignment->rush)
                                                             <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                         @endif
@@ -1516,8 +1528,9 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
-                                                    <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
-                                                        {{ $ageStr }}
+                                                    <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                    <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
+                                                        Age: {{ $ageStr }}
                                                         @if ($assignment->rush)
                                                             <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                         @endif
@@ -1578,6 +1591,9 @@
                                                         </span>
                                                         <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rMeInitials }}</span>
                                                     </div>
+                                                    @if ($assignment->accepted_at)
+                                                        <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                    @endif
                                                     <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                                     @if ($accStr)
                                                         <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>

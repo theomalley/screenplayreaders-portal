@@ -185,6 +185,7 @@ class AssignmentController extends Controller
             'periodEnd'        => $periodEnd,
             'archivedByPeriod' => $archivedByPeriod,
             'ageThresholds'    => Setting::getAgeThresholds(),
+            'appTimezone'      => Setting::getAppTimezone(),
             'onlineEditors'    => $onlineEditors,
             'onlineReaders'    => $onlineReaders,
         ]);
