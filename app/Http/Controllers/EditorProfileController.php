@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-05-28 | Separate updateRates() to prevent profile/rates forms from nulling each other's fields
 // v1.7 — 2026-05-28 | Rate fields on create; remove global rate fallback concept
 // v1.5 — 2026-05-28 | Add timezone field to editor/admin profile update
 // v1.4 — 2026-05-27 | Allow admin to edit admin accounts via the same editor form
@@ -116,8 +117,6 @@ class EditorProfileController extends Controller
             'availability_message' => ['nullable', 'string', 'max:500'],
             'upload_warning'       => ['nullable', 'string', 'max:1000'],
             'timezone'             => ['nullable', 'timezone'],
-            'editor_commission'    => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'editor_weekly_flat'   => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -146,6 +145,24 @@ class EditorProfileController extends Controller
 
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
         return redirect()->route('team.index')->with('success', "{$label} profile updated.");
+    }
+
+    public function updateRates(Request $request, User $user)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($user->isEditor(), 404);
+
+        $data = $request->validate([
+            'editor_commission'  => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'editor_weekly_flat' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+        ]);
+
+        $user->editorProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            $data
+        );
+
+        return redirect()->route('admin.editors.edit', $user)->with('success', 'Rates updated.');
     }
 
     public function saveCommissions(Request $request, User $user)

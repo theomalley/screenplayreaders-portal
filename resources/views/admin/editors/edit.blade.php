@@ -213,15 +213,9 @@
                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Editor Rates</h3>
                 <p class="text-xs text-gray-400 mt-0.5">Commission rate and weekly flat pay for this editor.</p>
             </div>
-            <form method="POST" action="{{ route('admin.editors.update', $user) }}" class="p-5 space-y-4">
+            <form method="POST" action="{{ route('admin.editors.updateRates', $user) }}" class="p-5 space-y-4">
                 @csrf
                 @method('PATCH')
-                {{-- carry through all required fields as hidden so validation passes --}}
-                <input type="hidden" name="initials"   value="{{ $profile?->initials }}">
-                <input type="hidden" name="first_name" value="{{ $profile?->first_name }}">
-                <input type="hidden" name="last_name"  value="{{ $profile?->last_name }}">
-                <input type="hidden" name="email"      value="{{ $user->email }}">
-                <input type="hidden" name="availability" value="{{ $profile?->availability ?? 'available' }}">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <x-input-label for="editor_commission" value="Commission Rate" />
