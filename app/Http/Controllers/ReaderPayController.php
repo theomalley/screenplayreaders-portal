@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-28 | Add markUnpaid — revert a paid batch back to unpaid
 // v1.1 — 2026-05-25 | Add manual adjustments, paginated history, PayPeriod grouping
 // v1.0 — 2026-05-25 | Initial — unpaid completed assignments grouped by reader, mark-as-paid
 
@@ -107,6 +108,28 @@ class ReaderPayController extends Controller
 
         return redirect()->route('reader-pay.index')
             ->with('success', "Marked {$name} as paid ({$assignmentCount} coverage(s), {$adjustmentCount} adjustment(s)).");
+    }
+
+    public function markUnpaid(Request $request, User $reader)
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $validated = $request->validate(['paid_at' => 'required|date']);
+        $date = Carbon::parse($validated['paid_at'])->toDateString();
+
+        $assignmentCount = Assignment::where('assigned_reader_id', $reader->id)
+            ->where('vendor', 'sr')
+            ->whereDate('reader_paid_at', $date)
+            ->update(['reader_paid_at' => null]);
+
+        $adjustmentCount = ReaderPayAdjustment::where('user_id', $reader->id)
+            ->whereDate('reader_paid_at', $date)
+            ->update(['reader_paid_at' => null]);
+
+        $name = $reader->readerProfile?->displayName() ?? $reader->name;
+
+        return redirect()->route('reader-pay.index')
+            ->with('success', "Reverted {$name}'s {$date} payment to unpaid ({$assignmentCount} coverage(s), {$adjustmentCount} adjustment(s)).");
     }
 
     public function addAdjustment(Request $request, User $reader)

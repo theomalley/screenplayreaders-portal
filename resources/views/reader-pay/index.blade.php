@@ -157,6 +157,17 @@
                                     <span class="font-semibold {{ $batch['total'] >= 0 ? 'text-green-700' : 'text-red-600' }}">
                                         ${{ number_format($batch['total'], 2) }}
                                     </span>
+                                    <form method="POST"
+                                          action="{{ route('reader-pay.mark-unpaid', $batch['reader_id']) }}"
+                                          onsubmit="return confirm('Revert this payment to unpaid?')"
+                                          @click.stop>
+                                        @csrf
+                                        <input type="hidden" name="paid_at" value="{{ $batch['paid_at']->toDateString() }}">
+                                        <button type="submit"
+                                                class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-white border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 rounded transition-colors">
+                                            Mark Unpaid
+                                        </button>
+                                    </form>
                                     <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                     </svg>

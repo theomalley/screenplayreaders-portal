@@ -145,6 +145,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');
     Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
+    Route::post('/reader-pay/{reader}/mark-unpaid', [ReaderPayController::class, 'markUnpaid'])->name('reader-pay.mark-unpaid');
     Route::post('/reader-pay/{reader}/adjustment', [ReaderPayController::class, 'addAdjustment'])->name('reader-pay.add-adjustment');
     Route::delete('/reader-pay/adjustment/{adjustment}', [ReaderPayController::class, 'deleteAdjustment'])->name('reader-pay.delete-adjustment');
 
