@@ -19,6 +19,12 @@
             50%       { border-left-color: rgb(233, 213, 255); }
         }
         .request-pulse { animation: request-pulse 2.5s ease-in-out infinite; }
+
+        @keyframes rush-due-flash {
+            0%,  49.9% { color: rgb(234, 88, 12); }
+            50%, 100%  { color: transparent; }
+        }
+        .rush-due { animation: rush-due-flash 2s linear infinite; }
     </style>
 
     <div class="py-6">
@@ -176,7 +182,7 @@
                                                 @foreach ($editor->assignments as $ra)
                                                     <li class="flex items-center gap-2 text-sm text-gray-700">
                                                         @if ($ra->rush)
-                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span>
+                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span><span class="rush-due text-[9px] ml-1">Due by {{ $ra->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span>
                                                         @endif
                                                         <span class="font-medium">{{ $ra->script_title }}</span>
                                                         <span class="text-gray-400">{{ $ra->writer_name }}</span>
@@ -256,7 +262,7 @@
                                                 @foreach ($reader->assignments as $ra)
                                                     <li class="flex items-center gap-2 text-sm text-gray-700">
                                                         @if ($ra->rush)
-                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span>
+                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span><span class="rush-due text-[9px] ml-1">Due by {{ $ra->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span>
                                                         @endif
                                                         <span class="font-medium">{{ $ra->script_title }}</span>
                                                         <span class="text-gray-400">{{ $ra->writer_name }}</span>
@@ -413,7 +419,7 @@
                                             <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 {{ $ageStr }}
                                                 @if ($assignment->rush)
-                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                 @endif
                                             </div>
                                             @if ($hsId)
@@ -740,7 +746,7 @@
                                             <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 {{ $ageStr }}
                                                 @if ($assignment->rush)
-                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                 @endif
                                             </div>
                                             @if ($hsId)
@@ -1006,7 +1012,7 @@
                                             <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 {{ $ageStr }}
                                                 @if ($assignment->rush)
-                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                 @endif
                                             </div>
                                             @can('update', $assignment)
@@ -1216,7 +1222,7 @@
                                                     <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                         {{ $ageStr }}
                                                         @if ($assignment->rush)
-                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -1405,7 +1411,7 @@
                                                     <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                         {{ $ageStr }}
                                                         @if ($assignment->rush)
-                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -1558,7 +1564,7 @@
                                                     <td class="px-3 py-3 whitespace-nowrap">
                                                         <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                                         @if ($assignment->rush)
-                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                         @endif
                                                         <div class="mt-1.5">
                                                             <div class="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Overall Turnaround</div>
@@ -1679,7 +1685,7 @@
                                                 <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                     {{ $ageStr }}
                                                     @if ($assignment->rush)
-                                                        <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span></div>
+                                                        <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
                                                     @endif
                                                 </div>
                                             </td>
