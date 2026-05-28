@@ -303,7 +303,6 @@
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -395,9 +394,10 @@
                                             $assignment->assignedReader?->name,
                                         ])));
                                     @endphp
-                                    <tr class="hover:bg-gray-50 {{ $rowClass }}"
+                                    <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
-                                        data-search="{{ $searchStr }}">
+                                        data-search="{{ $searchStr }}"
+                                        @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
                                         {{-- Order # (first): portal link, edit, HelpScout --}}
                                         @php
                                             $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
@@ -411,14 +411,59 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            @can('update', $assignment)
-                                                <div class="mt-0.5">
-                                                    <a href="{{ route('assignments.edit', $assignment) }}"
-                                                       class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
-                                                </div>
-                                            @endcan
+                                            <div class="mt-1">
+                                                <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
+                                                      x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="assigned_reader_id" x-ref="rInput" value="" />
+                                                    <select name="status" x-ref="sSel"
+                                                        @change="
+                                                            if ($event.target.value === 'assigned') {
+                                                                pendingAssign = true;
+                                                            } else {
+                                                                pendingAssign = false;
+                                                                $refs.rInput.value = '';
+                                                                $event.target.closest('form').submit();
+                                                            }
+                                                        "
+                                                        class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
+                                                        @foreach ([
+                                                            'incoming'        => 'Pending',
+                                                            'unassigned'      => 'Available',
+                                                            'assigned'        => 'Assigned',
+                                                            'completed'       => 'Completed',
+                                                            'qc'              => 'QC',
+                                                            'needs_attention' => 'Needs Attention',
+                                                            'on_hold_customer' => 'On Hold – Customer',
+                                                            'on_hold_sr'      => 'On Hold – SR',
+                                                            'cancelled'       => 'Cancelled',
+                                                        ] as $value => $label)
+                                                            <option value="{{ $value }}" {{ $assignment->status === $value ? 'selected' : '' }}>
+                                                                {{ $label }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <div x-show="pendingAssign" x-cloak class="mt-1 flex items-center gap-1">
+                                                        <select
+                                                            @change="if ($event.target.value) { $refs.rInput.value = $event.target.value; $event.target.closest('form').submit(); }"
+                                                            class="text-xs rounded border border-gray-200 bg-white py-0.5 pl-2 pr-5 cursor-pointer focus:ring-indigo-400">
+                                                            <option value="">→ assign to</option>
+                                                            @foreach ($assignableUsers as $aUser)
+                                                                <option value="{{ $aUser->id }}">
+                                                                    {{ $aUser->readerProfile?->initials ?? $aUser->editorProfile?->initials ?? strtoupper(substr($aUser->name, 0, 2)) }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                        <button type="button"
+                                                                @click="pendingAssign = false; $refs.sSel.value = curStatus"
+                                                                class="text-gray-400 hover:text-gray-700 text-base leading-none px-0.5"
+                                                                title="Cancel">×</button>
+                                                    </div>
+                                                </form>
+                                            </div>
                                             @if ($hsId)
-                                                <div class="mt-0.5">
+                                                <div class="mt-1">
                                                     <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
                                                        target="_blank" rel="noopener noreferrer"
                                                        title="HelpScout ticket"
@@ -597,60 +642,6 @@
                                             @endif
                                         </td>
 
-                                        {{-- Status (inline quick-change) --}}
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
-                                                  x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="assigned_reader_id" x-ref="rInput" value="" />
-                                                <select name="status" x-ref="sSel"
-                                                    @change="
-                                                        if ($event.target.value === 'assigned') {
-                                                            pendingAssign = true;
-                                                        } else {
-                                                            pendingAssign = false;
-                                                            $refs.rInput.value = '';
-                                                            $event.target.closest('form').submit();
-                                                        }
-                                                    "
-                                                    class="text-xs rounded-full border-0 ring-1 ring-gray-200 py-0.5 pl-2.5 pr-6 cursor-pointer focus:ring-indigo-400 {{ $statusColor }}">
-                                                    @foreach ([
-                                                        'incoming'        => 'Pending',
-                                                        'unassigned'      => 'Available',
-                                                        'assigned'        => 'Assigned',
-                                                        'completed'       => 'Completed',
-                                                        'qc'              => 'QC',
-                                                        'needs_attention' => 'Needs Attention',
-                                                        'on_hold_customer' => 'On Hold – Customer',
-                                                        'on_hold_sr'      => 'On Hold – SR',
-                                                        'cancelled'       => 'Cancelled',
-                                                    ] as $value => $label)
-                                                        <option value="{{ $value }}" {{ $assignment->status === $value ? 'selected' : '' }}>
-                                                            {{ $label }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-
-                                                {{-- Reader sub-picker — appears when Assigned is selected --}}
-                                                <div x-show="pendingAssign" x-cloak class="mt-1.5 flex items-center gap-1">
-                                                    <select
-                                                        @change="if ($event.target.value) { $refs.rInput.value = $event.target.value; $event.target.closest('form').submit(); }"
-                                                        class="text-xs rounded border border-gray-200 bg-white py-0.5 pl-2 pr-5 cursor-pointer focus:ring-indigo-400">
-                                                        <option value="">→ assign to</option>
-                                                        @foreach ($assignableUsers as $aUser)
-                                                            <option value="{{ $aUser->id }}">
-                                                                {{ $aUser->readerProfile?->initials ?? $aUser->editorProfile?->initials ?? strtoupper(substr($aUser->name, 0, 2)) }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <button type="button"
-                                                            @click="pendingAssign = false; $refs.sSel.value = curStatus"
-                                                            class="text-gray-400 hover:text-gray-700 text-base leading-none px-0.5"
-                                                            title="Cancel">×</button>
-                                                </div>
-                                            </form>
-                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -708,10 +699,11 @@
                                             $assignment->writer_name,
                                         ])));
                                     @endphp
-                                    <tr class="hover:bg-gray-50"
+                                    <tr class="hover:bg-gray-50 cursor-pointer"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
-                                        data-search="{{ $searchStr }}">
-                                        {{-- Order # (first): portal link, edit, HelpScout --}}
+                                        data-search="{{ $searchStr }}"
+                                        @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
+                                        {{-- Order # (first): portal link, HelpScout --}}
                                         @php
                                             $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
                                             $wooOrderUrl = ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
@@ -724,12 +716,6 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            @can('update', $assignment)
-                                                <div class="mt-0.5">
-                                                    <a href="{{ route('assignments.edit', $assignment) }}"
-                                                       class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
-                                                </div>
-                                            @endcan
                                             @if ($hsId)
                                                 <div class="mt-0.5">
                                                     <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
