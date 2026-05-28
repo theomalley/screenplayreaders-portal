@@ -430,7 +430,6 @@
                 this.draftError = false;
                 try {
                     const fd = new FormData(this.$el);
-                    fd.append('_method', 'PATCH');
                     const r = await fetch(this.draftUrl, {
                         method: 'POST',
                         headers: {
