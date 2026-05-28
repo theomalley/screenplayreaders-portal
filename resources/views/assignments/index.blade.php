@@ -301,9 +301,8 @@
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                 </tr>
                             </thead>
@@ -440,29 +439,7 @@
                                             @endif
                                         </td>
 
-                                        {{-- Accepted by (icon on top, centered) --}}
-                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
-                                            @if ($assignedInitials)
-                                                <div class="flex flex-col items-center gap-0.5 mb-1">
-                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
-                                                        @if ($assignedPhotoUrl)
-                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
-                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
-                                                            </span>
-                                                        @else
-                                                            {{ $assignedInitials }}
-                                                        @endif
-                                                    </span>
-                                                    <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
-                                                </div>
-                                            @endif
-                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
-                                            @if ($accStr)
-                                                <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
-                                            @endif
-                                        </td>
-
-                                        {{-- Assignment (type + notes icon + title + writer + pages · pay) --}}
+                                        {{-- Assignment (type + notes icon + title + writer + pages · pay + request) --}}
                                         <td class="px-3 py-3"
                                             x-data="{
                                                 viewerOpen: false,
@@ -518,6 +495,20 @@
                                             </div>
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                            @if ($reqInitials)
+                                                <div class="flex items-center gap-1 mt-1">
+                                                    <span class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-mono font-semibold shrink-0">
+                                                        @if ($reqPhotoUrl)
+                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                            </span>
+                                                        @else
+                                                            {{ $reqInitials }}
+                                                        @endif
+                                                    </span>
+                                                    <span class="text-[9px] text-purple-400 font-mono leading-none">Request</span>
+                                                </div>
+                                            @endif
 
                                             {{-- Notes edit panel --}}
                                             <div x-show="notesOpen" x-cloak class="mt-1.5 w-56">
@@ -584,23 +575,25 @@
                                             @endif
                                         </td>
 
-                                        {{-- Request --}}
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            @if ($reqInitials)
-                                                <div class="flex flex-col items-center gap-0.5">
-                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-mono font-semibold">
-                                                        @if ($reqPhotoUrl)
+                                        {{-- Accepted by (icon on top, centered) --}}
+                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
+                                            @if ($assignedInitials)
+                                                <div class="flex flex-col items-center gap-0.5 mb-1">
+                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
+                                                        @if ($assignedPhotoUrl)
                                                             <span class="absolute inset-0 rounded-full overflow-hidden">
-                                                                <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
                                                             </span>
                                                         @else
-                                                            {{ $reqInitials }}
+                                                            {{ $assignedInitials }}
                                                         @endif
                                                     </span>
-                                                    <span class="text-[9px] text-purple-400 font-mono leading-none">{{ $reqInitials }}</span>
+                                                    <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
                                                 </div>
-                                            @else
-                                                <span class="text-gray-300">—</span>
+                                            @endif
+                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
+                                            @if ($accStr)
+                                                <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                             @endif
                                         </td>
 
