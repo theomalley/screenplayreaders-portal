@@ -1069,7 +1069,7 @@
                                             @can('submitCoverage', $assignment)
                                                 <a href="{{ route('coverage.show', $assignment) }}"
                                                    class="inline-flex items-center px-2.5 py-1 bg-indigo-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-indigo-500 transition whitespace-nowrap">
-                                                    Write Coverage
+                                                    {{ $assignment->coverageSubmission ? 'Continue Coverage' : 'Write Coverage' }}
                                                 </a>
                                             @endcan
                                         </td>
@@ -1548,7 +1548,7 @@
                                                         @can('submitCoverage', $assignment)
                                                             <a href="{{ route('coverage.show', $assignment) }}"
                                                                class="inline-flex items-center px-2.5 py-1 bg-indigo-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-indigo-500 transition whitespace-nowrap">
-                                                                Write Coverage
+                                                                {{ $assignment->coverageSubmission ? 'Continue Coverage' : 'Write Coverage' }}
                                                             </a>
                                                         @endcan
                                                         @can('cancel', $assignment)

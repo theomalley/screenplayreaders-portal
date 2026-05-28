@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'show'])->name('coverage.show');
     Route::post('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'store'])->name('coverage.store');
+    Route::patch('assignments/{assignment}/coverage/draft', [CoverageSubmissionController::class, 'saveDraft'])->name('coverage.draft');
     Route::get('coverage/submitted', [CoverageSubmissionController::class, 'submitted'])->name('coverage.submitted');
     Route::get('assignments/{assignment}/coverage-preview', [CoverageSubmissionController::class, 'coveragePreview'])->name('coverage.preview');
 
