@@ -925,10 +925,13 @@
             {{-- ===== MY ASSIGNMENTS (admin/editor writing coverage) ===== --}}
             @if ($myAssignments->isNotEmpty())
                 @php
-                    $meUser     = auth()->user();
-                    $meInitials = $meUser->editorProfile?->initials ?? $meUser->readerProfile?->initials ?? strtoupper(substr($meUser->name, 0, 2));
-                    $mePhotoRaw = $meUser->editorProfile?->photo ?? $meUser->readerProfile?->photo;
-                    $mePhotoUrl = $mePhotoRaw ? asset('storage/' . $mePhotoRaw) : null;
+                    $meUser      = auth()->user();
+                    $meProfile   = $meUser->editorProfile;
+                    $meInitials  = $meProfile?->initials ?? strtoupper(substr($meUser->name, 0, 2));
+                    $mePhotoRaw  = $meProfile?->photo;
+                    $mePhotoUrl  = $mePhotoRaw ? asset('storage/' . $mePhotoRaw) : null;
+                    $meAvatarBg  = 'bg-indigo-100 text-indigo-700';
+                    $meLabelClr  = 'text-indigo-400';
                 @endphp
                 <div class="mt-8">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
@@ -1067,7 +1070,7 @@
                                         </td>
                                         <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                             <div class="flex flex-col items-center gap-0.5 mb-1">
-                                                <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
+                                                <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full {{ $meAvatarBg }} text-xs font-mono font-semibold">
                                                     @if ($mePhotoUrl)
                                                         <span class="absolute inset-0 rounded-full overflow-hidden">
                                                             <img src="{{ $mePhotoUrl }}" alt="{{ $meInitials }}" class="w-full h-full object-cover" />
@@ -1076,7 +1079,7 @@
                                                         {{ $meInitials }}
                                                     @endif
                                                 </span>
-                                                <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $meInitials }}</span>
+                                                <span class="text-[9px] {{ $meLabelClr }} font-mono leading-none">{{ $meInitials }}</span>
                                             </div>
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
@@ -1446,6 +1449,12 @@
                                             </tr>
                                         </thead>
                                         <tbody class="bg-white divide-y divide-gray-100">
+                                            @php
+                                                $rMe        = auth()->user();
+                                                $rMeProfile = $rMe->readerProfile;
+                                                $rMeInitials = $rMeProfile?->initials ?? strtoupper(substr($rMe->name, 0, 2));
+                                                $rMePhotoUrl = $rMeProfile?->photo ? asset('storage/' . $rMeProfile->photo) : null;
+                                            @endphp
                                             @foreach($mineCurrent as $assignment)
                                             @php
                                                 $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
@@ -1556,6 +1565,19 @@
                                                     </div>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
+                                                    <div class="flex flex-col items-center gap-0.5 mb-1">
+                                                        <span class="text-[9px] text-gray-400 font-mono leading-none">Me</span>
+                                                        <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
+                                                            @if ($rMePhotoUrl)
+                                                                <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                    <img src="{{ $rMePhotoUrl }}" alt="{{ $rMeInitials }}" class="w-full h-full object-cover" />
+                                                                </span>
+                                                            @else
+                                                                {{ $rMeInitials }}
+                                                            @endif
+                                                        </span>
+                                                        <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rMeInitials }}</span>
+                                                    </div>
                                                     <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                                     @if ($accStr)
                                                         <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
