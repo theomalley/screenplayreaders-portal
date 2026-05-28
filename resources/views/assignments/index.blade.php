@@ -299,13 +299,10 @@
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
-                                    <th class="px-2 py-3"></th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Request</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                 </tr>
@@ -402,6 +399,39 @@
                                     <tr class="hover:bg-gray-50 {{ $rowClass }}"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}">
+                                        {{-- Order # (first): portal link, edit, HelpScout --}}
+                                        @php
+                                            $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
+                                            $wooOrderUrl = ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
+                                                ? route('woo-orders.show', $assignment->order_number)
+                                                : null;
+                                        @endphp
+                                        <td class="px-3 py-3 whitespace-nowrap">
+                                            @if ($wooOrderUrl)
+                                                <a href="{{ $wooOrderUrl }}" class="font-mono text-gray-700 hover:text-indigo-600 hover:underline">{{ $assignment->order_number }}</a>
+                                            @else
+                                                <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
+                                            @endif
+                                            @can('update', $assignment)
+                                                <div class="mt-0.5">
+                                                    <a href="{{ route('assignments.edit', $assignment) }}"
+                                                       class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
+                                                </div>
+                                            @endcan
+                                            @if ($hsId)
+                                                <div class="mt-0.5">
+                                                    <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
+                                                       target="_blank" rel="noopener noreferrer"
+                                                       title="HelpScout ticket"
+                                                       class="inline-flex text-gray-400 hover:text-indigo-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                                                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H6l-4 4V5z" clip-rule="evenodd"/>
+                                                        </svg>
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </td>
+
                                         {{-- Age + Rush --}}
                                         <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                             {{ $ageStr }}
@@ -410,22 +440,10 @@
                                             @endif
                                         </td>
 
-                                        {{-- Edit (small, right of Age) --}}
-                                        <td class="px-2 py-3 whitespace-nowrap">
-                                            @can('update', $assignment)
-                                                <a href="{{ route('assignments.edit', $assignment) }}"
-                                                   class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
-                                            @endcan
-                                        </td>
-
-                                        {{-- Accepted by (time + reader icon) --}}
-                                        <td class="px-3 py-3 whitespace-nowrap" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
-                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
-                                            @if ($accStr)
-                                                <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
-                                            @endif
+                                        {{-- Accepted by (icon on top, centered) --}}
+                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                             @if ($assignedInitials)
-                                                <div class="flex flex-col items-center gap-0.5 mt-1.5">
+                                                <div class="flex flex-col items-center gap-0.5 mb-1">
                                                     <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
                                                         @if ($assignedPhotoUrl)
                                                             <span class="absolute inset-0 rounded-full overflow-hidden">
@@ -438,21 +456,13 @@
                                                     <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
                                                 </div>
                                             @endif
-                                        </td>
-
-                                        {{-- Order # --}}
-                                        @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
-                                        <td class="px-3 py-3 whitespace-nowrap font-mono">
-                                            @if($hsId)
-                                                <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
-                                                   target="_blank" rel="noopener noreferrer"
-                                                   class="text-gray-700 hover:text-indigo-600 hover:underline">{{ $assignment->order_number }}</a>
-                                            @else
-                                                {{ $assignment->order_number }}
+                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
+                                            @if ($accStr)
+                                                <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                             @endif
                                         </td>
 
-                                        {{-- Title / Writer (+ notes icon + page count) --}}
+                                        {{-- Assignment (type + notes icon + title + writer + pages · pay) --}}
                                         <td class="px-3 py-3"
                                             x-data="{
                                                 viewerOpen: false,
@@ -479,6 +489,7 @@
                                                     } finally { this.saving = false; }
                                                 }
                                             }">
+                                            <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             <div class="flex items-center gap-1">
                                                 @if($assignment->notes)
                                                     <div class="inline-block shrink-0"
@@ -506,7 +517,7 @@
                                                 @endif
                                             </div>
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p</div>
+                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
 
                                             {{-- Notes edit panel --}}
                                             <div x-show="notesOpen" x-cloak class="mt-1.5 w-56">
@@ -571,16 +582,6 @@
                                                             allowfullscreen></iframe>
                                                 </div>
                                             @endif
-                                        </td>
-
-                                        {{-- Assignment Type --}}
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">
-                                            {{ $typeLabel }}
-                                        </td>
-
-                                        {{-- Pay rate --}}
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-700 tabular-nums">
-                                            ${{ number_format($assignment->pay_rate, 2) }}
                                         </td>
 
                                         {{-- Request --}}
@@ -672,12 +673,10 @@
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
-                                    <th class="px-3 py-3"></th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Age</th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
@@ -719,28 +718,45 @@
                                     <tr class="hover:bg-gray-50"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}">
-                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                        {{-- Order # (first): portal link, edit, HelpScout --}}
+                                        @php
+                                            $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
+                                            $wooOrderUrl = ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
+                                                ? route('woo-orders.show', $assignment->order_number)
+                                                : null;
+                                        @endphp
                                         <td class="px-3 py-3 whitespace-nowrap">
-                                            @can('update', $assignment)
-                                                <a href="{{ route('assignments.edit', $assignment) }}"
-                                                   class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
-                                            @endcan
-                                        </td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-500 tabular-nums" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
-                                            {{ $accStr ?? '—' }}
-                                            @if($accStr)<div class="text-xs text-gray-400">ago</div>@endif
-                                        </td>
-                                        @php $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id; @endphp
-                                        <td class="px-3 py-3 whitespace-nowrap font-mono">
-                                            @if($hsId)
-                                                <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
-                                                   target="_blank" rel="noopener noreferrer"
-                                                   class="text-gray-700 hover:text-indigo-600 hover:underline">{{ $assignment->order_number }}</a>
+                                            @if ($wooOrderUrl)
+                                                <a href="{{ $wooOrderUrl }}" class="font-mono text-gray-700 hover:text-indigo-600 hover:underline">{{ $assignment->order_number }}</a>
                                             @else
-                                                {{ $assignment->order_number }}
+                                                <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
+                                            @endif
+                                            @can('update', $assignment)
+                                                <div class="mt-0.5">
+                                                    <a href="{{ route('assignments.edit', $assignment) }}"
+                                                       class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline">Edit</a>
+                                                </div>
+                                            @endcan
+                                            @if ($hsId)
+                                                <div class="mt-0.5">
+                                                    <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/"
+                                                       target="_blank" rel="noopener noreferrer"
+                                                       title="HelpScout ticket"
+                                                       class="inline-flex text-gray-400 hover:text-indigo-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                                                            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H6l-4 4V5z" clip-rule="evenodd"/>
+                                                        </svg>
+                                                    </a>
+                                                </div>
                                             @endif
                                         </td>
+                                        <td class="px-3 py-3 whitespace-nowrap tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">{{ $ageStr }}</td>
+                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
+                                            <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
+                                            @if($accStr)<div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>@endif
+                                        </td>
                                         <td class="px-3 py-3">
+                                            <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($downloadUrl)
                                                 <a href="{{ $downloadUrl }}"
                                                    class="font-medium text-gray-900 hover:text-indigo-600">{{ $assignment->script_title }}</a>
@@ -748,9 +764,8 @@
                                                 <span class="font-medium text-gray-400" title="File upload pending">{{ $assignment->script_title }}</span>
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                            @if($assignment->page_count)<div class="text-xs text-gray-400">{{ $assignment->page_count }}p</div>@endif
+                                            @if($assignment->page_count)<div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p</div>@endif
                                         </td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
                                         <td class="px-3 py-3 whitespace-nowrap text-right">
                                             @can('delete', $assignment)
                                                 <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
