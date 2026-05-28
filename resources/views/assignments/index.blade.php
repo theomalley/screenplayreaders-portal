@@ -1099,6 +1099,7 @@
                 @if($readerMax > 0)
                     <div class="mb-4 text-sm text-gray-500">
                         <span class="font-medium text-gray-700">Current Maximum Assignments:</span> {{ $readerMax }}
+                        <span class="text-xs text-gray-400 ml-1">Rush orders and Reader Requests do not count toward this maximum.</span>
                     </div>
                 @endif
 
