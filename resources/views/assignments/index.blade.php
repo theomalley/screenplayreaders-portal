@@ -1896,13 +1896,6 @@
                                     </div>
                                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                                         <table class="min-w-full divide-y divide-gray-200 text-sm">
-                                            <thead class="bg-gray-50">
-                                                <tr>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                                </tr>
-                                            </thead>
                                             <tbody class="bg-white divide-y divide-gray-100">
                                                 @foreach($periodAssignments as $assignment)
                                                     @php
@@ -1929,15 +1922,13 @@
                                                         data-title="{{ strtolower($assignment->script_title ?? '') }}"
                                                         data-order="{{ strtolower($assignment->order_number ?? '') }}"
                                                         data-writer="{{ strtolower($assignment->writer_name ?? '') }}">
-                                                        <td class="px-3 py-2 whitespace-nowrap text-gray-500 tabular-nums text-xs">
-                                                            {{ $assignment->completed_at?->format('M j') ?? '—' }}
-                                                        </td>
-                                                        <td class="px-3 py-2 whitespace-nowrap font-mono text-gray-700 text-xs">{{ $assignment->order_number }}</td>
                                                         <td class="px-3 py-2" x-data="{ textOpen: false }">
+                                                            <div class="text-[10px] font-mono text-gray-500 mb-0.5">{{ $assignment->order_number }}</div>
                                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                             <div class="font-medium text-gray-900 text-xs">{{ $assignment->script_title }}</div>
                                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · <span class="font-bold text-gray-600">${{ number_format($assignment->pay_rate, 2) }}</span></div>
+                                                            <div class="text-[10px] text-gray-400 tabular-nums mt-0.5">Completed {{ $assignment->completed_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') ?? '—' }}</div>
                                                             @if($assignment->coverageSubmission)
                                                                 <button @click="textOpen = true" type="button"
                                                                         class="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline mt-0.5 leading-none">View coverage</button>
