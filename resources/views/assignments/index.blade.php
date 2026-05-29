@@ -316,7 +316,7 @@
                                                 ? ($diff->days . 'd ' . $diff->h . 'h')
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
-                                        $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
+                                        $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? '—';
                                         $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                         $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                         $ageColor = match(true) {
@@ -332,7 +332,7 @@
                                                 ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
                                                 : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                             : null;
-                                        $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+                                        $accTitle = $assignment->accepted_at?->format('D M j, Y g:ia') ?? null;
 
                                         $statusColor = match($assignment->status) {
                                             'unassigned'       => 'bg-amber-100 text-amber-800',
@@ -413,7 +413,7 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                            <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                             <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 Age: {{ $ageStr }}
                                                 @if ($assignment->rush)
@@ -638,7 +638,7 @@
                                                 </div>
                                             @endif
                                             @if ($assignment->accepted_at)
-                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                             @endif
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
@@ -676,7 +676,7 @@
                                                 ? ($diff->days . 'd ' . $diff->h . 'h')
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
-                                        $ageTitle    = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
+                                        $ageTitle    = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? '—';
                                         $ageHours    = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                         $ageT        = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                         $ageColor    = match(true) {
@@ -691,7 +691,7 @@
                                                 ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
                                                 : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                             : null;
-                                        $accTitle    = $assignment->accepted_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? null;
+                                        $accTitle    = $assignment->accepted_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? null;
                                         $typeLabel   = $assignment->assignment_type === 'formatting' ? 'Formatting' : 'Proofreading';
                                         $downloadUrl = $assignment->drive_script_file_id
                                             ? 'https://drive.google.com/uc?export=download&id=' . $assignment->drive_script_file_id
@@ -744,7 +744,7 @@
                                             @else
                                                 <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                             @endif
-                                            <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                            <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                             <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 Age: {{ $ageStr }}
                                                 @if ($assignment->rush)
@@ -842,7 +842,7 @@
                                                 </div>
                                             @endif
                                             @if ($assignment->accepted_at)
-                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                             @endif
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
@@ -965,7 +965,7 @@
                                                 ? ($diff->days . 'd ' . $diff->h . 'h')
                                                 : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                             : '—';
-                                        $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
+                                        $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? '—';
                                         $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                         $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                         $ageColor = match(true) {
@@ -1007,7 +1007,7 @@
                                                 ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
                                                 : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                             : null;
-                                        $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+                                        $accTitle = $assignment->accepted_at?->format('D M j, Y g:ia') ?? null;
                                         $viewUrl = $assignment->drive_script_file_id
                                             ? route('assignments.streamScript', $assignment)
                                             : null;
@@ -1090,7 +1090,7 @@
                                                 <span class="text-[9px] {{ $meLabelClr }} font-mono leading-none">{{ $meInitials }}</span>
                                             </div>
                                             @if ($assignment->accepted_at)
-                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                             @endif
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
@@ -1286,7 +1286,7 @@
                                                         ? ($diff->days . 'd ' . $diff->h . 'h')
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
-                                                $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
+                                                $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? '—';
                                                 $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                                 $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                                 $ageColor = match(true) {
@@ -1301,7 +1301,7 @@
                                                         ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
                                                         : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                                     : null;
-                                                $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+                                                $accTitle = $assignment->accepted_at?->format('D M j, Y g:ia') ?? null;
                                                 $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                 $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
@@ -1331,7 +1331,7 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
-                                                    <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                    <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                                     <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                         Age: {{ $ageStr }}
                                                         @if ($assignment->rush)
@@ -1475,7 +1475,7 @@
                                                         ? ($diff->days . 'd ' . $diff->h . 'h')
                                                         : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                     : '—';
-                                                $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
+                                                $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? '—';
                                                 $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                                 $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                                 $ageColor = match(true) {
@@ -1490,7 +1490,7 @@
                                                         ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
                                                         : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                                     : null;
-                                                $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+                                                $accTitle = $assignment->accepted_at?->format('D M j, Y g:ia') ?? null;
                                                 $reqInitials  = $assignment->requestedReader?->readerProfile?->initials;
                                                 $reqPhotoUrl  = $assignment->requestedReader?->readerProfile?->photo
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
@@ -1528,7 +1528,7 @@
                                             <tr class="hover:bg-gray-50 {{ $rowClass }}">
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
-                                                    <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                    <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                                     <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                         Age: {{ $ageStr }}
                                                         @if ($assignment->rush)
@@ -1592,7 +1592,7 @@
                                                         <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rMeInitials }}</span>
                                                     </div>
                                                     @if ($assignment->accepted_at)
-                                                        <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</div>
+                                                        <div class="text-[9px] text-gray-500 tabular-nums leading-none mb-0.5">{{ $assignment->accepted_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
                                                     @endif
                                                     <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                                     @if ($accStr)
@@ -1786,7 +1786,7 @@
                                                     ? ($diff->days . 'd ' . $diff->h . 'h')
                                                     : ($diff->h >= 1 ? ($diff->h . 'h ' . $diff->i . 'm') : (max(0, $diff->i) . 'm')))
                                                 : '—';
-                                            $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia T') ?? '—';
+                                            $ageTitle = $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? '—';
                                             $ageHours = $diff ? ($diff->days * 24 + $diff->h) : 0;
                                             $ageT     = $ageThresholds[$assignment->assignment_type] ?? ['yellow' => 96, 'orange' => 192, 'red' => 336];
                                             $ageColor = match(true) {
@@ -1801,7 +1801,7 @@
                                                     ? ($accDiff->days . 'd ' . $accDiff->h . 'h')
                                                     : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                                 : null;
-                                            $accTitle = $assignment->accepted_at?->format('M j, Y g:ia') ?? null;
+                                            $accTitle = $assignment->accepted_at?->format('D M j, Y g:ia') ?? null;
                                             $typeLabel = match($assignment->assignment_type) {
                                                 'script_coverage'   => 'Script Coverage',
                                                 'notes_only'        => 'Notes-Only',

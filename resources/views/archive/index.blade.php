@@ -144,7 +144,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
-                                        {{ $latestDone ? \Carbon\Carbon::createFromTimestamp($latestDone)->setTimezone('America/Los_Angeles')->format('M j, Y g:ia') : '—' }}
+                                        {{ $latestDone ? \Carbon\Carbon::createFromTimestamp($latestDone)->setTimezone('America/Los_Angeles')->format('D M j, Y g:ia') : '—' }}
                                     </td>
                                     <td class="px-4 py-3 whitespace-nowrap tabular-nums">
                                         @if($taStr)

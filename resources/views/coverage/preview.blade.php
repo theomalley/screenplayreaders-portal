@@ -97,8 +97,8 @@
         {{-- Timing --}}
         @php
             $tz = 'America/Los_Angeles';
-            $acceptedStr  = $assignment->accepted_at  ? $assignment->accepted_at->setTimezone($tz)->format('M j, Y g:ia')  : null;
-            $completedStr = $assignment->completed_at ? $assignment->completed_at->setTimezone($tz)->format('M j, Y g:ia') : null;
+            $acceptedStr  = $assignment->accepted_at  ? $assignment->accepted_at->setTimezone($tz)->format('D M j, Y g:ia')  : null;
+            $completedStr = $assignment->completed_at ? $assignment->completed_at->setTimezone($tz)->format('D M j, Y g:ia') : null;
 
             if ($assignment->created_at && $assignment->completed_at) {
                 $td  = $assignment->created_at->diff($assignment->completed_at);
