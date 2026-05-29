@@ -601,6 +601,75 @@
 
             @endif
 
+            {{-- QC Saved Replies --}}
+            @if($isAdmin)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                 x-data="{
+                     replies: {{ Js::from($qcSavedReplies) }},
+                     addReply() {
+                         this.replies.push({ name: '', body: '' });
+                         this.$nextTick(() => {
+                             const inputs = this.$el.querySelectorAll('input[name*=\"[name]\"]');
+                             inputs[inputs.length - 1]?.focus();
+                         });
+                     },
+                     removeReply(idx) {
+                         this.replies.splice(idx, 1);
+                     }
+                 }">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">QC Saved Replies</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Quick-insert notes shown as checkboxes in the "Send Back to Reader" modal on the QC review page.
+                    Check one or more to append the text into the notes field before sending.
+                </p>
+
+                <form method="POST" action="{{ route('settings.qc-saved-replies') }}">
+                    @csrf
+                    @method('PATCH')
+
+                    <div class="space-y-3 mb-4">
+                        <template x-for="(reply, idx) in replies" :key="idx">
+                            <div class="flex gap-2 items-start p-3 bg-gray-50 rounded-md border border-gray-200">
+                                <div class="flex flex-col gap-2 flex-1 min-w-0">
+                                    <input type="text"
+                                           :name="'replies[' + idx + '][name]'"
+                                           x-model="reply.name"
+                                           placeholder="Reply name (e.g. Too much formatting talk)"
+                                           maxlength="100"
+                                           class="w-full text-sm border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+                                    <textarea
+                                           :name="'replies[' + idx + '][body]'"
+                                           x-model="reply.body"
+                                           placeholder="Text inserted into the notes field…"
+                                           rows="2"
+                                           maxlength="2000"
+                                           class="w-full text-sm border border-gray-300 rounded px-2.5 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"></textarea>
+                                </div>
+                                <button type="button" @click="removeReply(idx)"
+                                        class="shrink-0 mt-1 text-gray-400 hover:text-red-500 transition-colors"
+                                        title="Remove">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <button type="button" @click="addReply()"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add reply
+                        </button>
+                        <x-primary-button>Save replies</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
         </div>
     </div>
 </x-app-layout>

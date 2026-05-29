@@ -1,5 +1,6 @@
 <?php
 
+// v2.6 — 2026-05-29 | QC saved replies — admin-customizable quick-insert notes for Send Back modal.
 // v2.5 — 2026-05-28 | Dev autofill toggle per role (admin/editor/reader) for coverage forms.
 // v2.4 — 2026-05-28 | App timezone setting (admin-configurable; used for assignment date display and input).
 // v2.3 — 2026-05-27 | Age thresholds use hours (max 8760); On Desk column on all assignment tables.
@@ -60,6 +61,7 @@ class SettingController extends Controller
             'editor' => (bool) Setting::getValue('dev_autofill_editor', false),
             'reader' => (bool) Setting::getValue('dev_autofill_reader', false),
         ];
+        $qcSavedReplies       = Setting::getSavedReplies();
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
@@ -67,7 +69,7 @@ class SettingController extends Controller
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
-            'devAutofill',
+            'devAutofill', 'qcSavedReplies',
         ));
     }
 
@@ -241,6 +243,27 @@ class SettingController extends Controller
         Setting::setValue('dev_autofill_reader', $request->boolean('dev_autofill_reader') ? '1' : '0');
 
         return back()->with('success', 'Autofill settings saved.');
+    }
+
+    public function updateQcSavedReplies(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate([
+            'replies'           => 'nullable|array',
+            'replies.*.name'    => 'required|string|max:100',
+            'replies.*.body'    => 'required|string|max:2000',
+        ]);
+
+        $replies = collect($request->input('replies', []))
+            ->map(fn($r) => ['name' => trim($r['name']), 'body' => trim($r['body'])])
+            ->filter(fn($r) => $r['name'] !== '' && $r['body'] !== '')
+            ->values()
+            ->all();
+
+        Setting::setSavedReplies($replies);
+
+        return back()->with('success', 'QC saved replies updated.');
     }
 
     public function updateTimezone(Request $request): RedirectResponse

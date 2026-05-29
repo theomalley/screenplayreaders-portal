@@ -15,7 +15,34 @@
         </div>
     </x-slot>
 
-    <div class="py-6" x-data="{ editOpen: false, sendBackOpen: false }">
+    <div class="py-6" x-data="{
+        editOpen: false,
+        sendBackOpen: false,
+        notes: '',
+        checked: {},
+        toggleReply(idx, body) {
+            if (this.checked[idx]) {
+                // Remove the inserted text
+                const sep = '\n\n';
+                let n = this.notes;
+                // Try removing with leading separator first, then trailing
+                if (n.includes(sep + body)) {
+                    n = n.replace(sep + body, '');
+                } else if (n.includes(body + sep)) {
+                    n = n.replace(body + sep, '');
+                } else {
+                    n = n.replace(body, '');
+                }
+                this.notes = n.trimStart();
+                delete this.checked[idx];
+            } else {
+                this.notes = this.notes.trimEnd()
+                    ? this.notes.trimEnd() + '\n\n' + body
+                    : body;
+                this.checked[idx] = true;
+            }
+        }
+    }">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
             {{-- Flash messages --}}
@@ -116,15 +143,39 @@
             {{-- Send Back modal --}}
             <div x-show="sendBackOpen" x-cloak @keydown.escape.window="sendBackOpen = false"
                  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 p-6">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
                     <h3 class="text-lg font-semibold text-gray-900 mb-1">Send Back to Reader</h3>
                     <p class="text-sm text-gray-500 mb-4">The reader will see this assignment under "Needs Attention" and can revise and resubmit their coverage.</p>
+
+                    @if(count($qcSavedReplies) > 0)
+                        <div class="mb-4 border border-gray-200 rounded-md overflow-hidden">
+                            <div class="px-3 py-2 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                Quick-insert saved replies
+                            </div>
+                            <div class="p-3 grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                                @foreach($qcSavedReplies as $idx => $reply)
+                                    <label class="flex items-start gap-2 cursor-pointer group">
+                                        <input type="checkbox"
+                                               :checked="checked[{{ $idx }}]"
+                                               @change="toggleReply({{ $idx }}, {{ Js::from($reply['body']) }})"
+                                               class="mt-0.5 shrink-0 rounded border-gray-300 text-orange-500 focus:ring-orange-400 cursor-pointer">
+                                        <span class="text-xs text-gray-700 group-hover:text-gray-900 leading-snug">
+                                            <span class="font-medium">{{ $reply['name'] }}</span>
+                                            <span class="text-gray-400 ml-1">— {{ Str::limit($reply['body'], 60) }}</span>
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('qc.send-back', $assignment) }}">
                         @csrf
                         <textarea name="notes" rows="6" placeholder="Optional notes for the reader…"
+                                  x-model="notes"
                                   class="w-full text-sm border border-gray-300 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400"></textarea>
                         <div class="flex items-center justify-end gap-3 mt-4">
-                            <button type="button" @click="sendBackOpen = false"
+                            <button type="button" @click="sendBackOpen = false; notes = ''; checked = {}"
                                     class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors">
                                 Cancel
                             </button>

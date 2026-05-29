@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-05-29 | Pass qcSavedReplies to show() for Send Back modal quick-insert checkboxes.
 // v1.5 — 2026-05-25 | Add sendBack() — returns assignment to reader as needs_attention with optional notes
 // v1.4 — 2026-05-24 | Standardize draftAll() auth to Permission::check('qc').
 // v1.3 — 2026-05-24 | draftAll: create draft with all available coverage PDFs for an order
@@ -14,6 +15,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\HelpScoutConversation;
+use App\Models\Setting;
 use App\Services\GoogleDocsService;
 use App\Services\GoogleDriveService;
 use App\Services\HelpScoutService;
@@ -42,7 +44,9 @@ class QcController extends Controller
 
         $assignment->load(['assignedReader.readerProfile', 'coverageSubmission']);
 
-        return view('qc.show', compact('assignment'));
+        $qcSavedReplies = Setting::getSavedReplies();
+
+        return view('qc.show', compact('assignment', 'qcSavedReplies'));
     }
 
     public function regeneratePdf(Assignment $assignment)
