@@ -1913,6 +1913,16 @@
                                                         if ($assignment->vendor === 'wd') {
                                                             $typeLabel = 'WD ' . $typeLabel;
                                                         }
+                                                        $rtaDiff = ($assignment->accepted_at && $assignment->submitted_at)
+                                                            ? $assignment->accepted_at->diff($assignment->submitted_at)
+                                                            : null;
+                                                        $rtaStr = $rtaDiff
+                                                            ? ($rtaDiff->days >= 1
+                                                                ? ($rtaDiff->days . 'd ' . $rtaDiff->h . 'h ' . $rtaDiff->i . 'm')
+                                                                : ($rtaDiff->h >= 1
+                                                                    ? ($rtaDiff->h . 'h ' . $rtaDiff->i . 'm')
+                                                                    : ($rtaDiff->i . 'm')))
+                                                            : null;
                                                     @endphp
                                                     <tr class="hover:bg-gray-50"
                                                         x-show="q === '' ||
@@ -1929,6 +1939,9 @@
                                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · <span class="font-bold text-gray-600">${{ number_format($assignment->pay_rate, 2) }}</span></div>
                                                             <div class="text-[10px] text-gray-400 tabular-nums mt-0.5">Completed {{ $assignment->completed_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') ?? '—' }}</div>
+                                                            @if($rtaStr)
+                                                                <div class="text-[10px] text-gray-400 tabular-nums">Reader turnaround time: {{ $rtaStr }}</div>
+                                                            @endif
                                                             @if($assignment->coverageSubmission)
                                                                 <button @click="textOpen = true" type="button"
                                                                         class="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline mt-0.5 leading-none">View coverage</button>
