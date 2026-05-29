@@ -1900,11 +1900,7 @@
                                                 <tr>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed</th>
                                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order #</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title / Writer</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pay</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Coverage</th>
+                                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="bg-white divide-y divide-gray-100">
@@ -1937,17 +1933,14 @@
                                                             {{ $assignment->completed_at?->format('M j') ?? '—' }}
                                                         </td>
                                                         <td class="px-3 py-2 whitespace-nowrap font-mono text-gray-700 text-xs">{{ $assignment->order_number }}</td>
-                                                        <td class="px-3 py-2">
+                                                        <td class="px-3 py-2" x-data="{ textOpen: false }">
+                                                            <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                             <div class="font-medium text-gray-900 text-xs">{{ $assignment->script_title }}</div>
                                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                                        </td>
-                                                        <td class="px-3 py-2 whitespace-nowrap text-gray-700 tabular-nums text-xs">{{ $assignment->page_count }}</td>
-                                                        <td class="px-3 py-2 whitespace-nowrap text-gray-600 text-xs">{{ $typeLabel }}</td>
-                                                        <td class="px-3 py-2 whitespace-nowrap text-gray-700 tabular-nums text-xs">${{ number_format($assignment->pay_rate, 2) }}</td>
-                                                        <td class="px-3 py-2 whitespace-nowrap text-xs" x-data="{ textOpen: false }">
+                                                            <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
                                                             @if($assignment->coverageSubmission)
                                                                 <button @click="textOpen = true" type="button"
-                                                                        class="text-indigo-600 hover:text-indigo-800 hover:underline">View</button>
+                                                                        class="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline mt-0.5 leading-none">View coverage</button>
                                                                 <div x-show="textOpen" x-cloak
                                                                      @keydown.escape.window="textOpen = false"
                                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
@@ -1959,8 +1952,6 @@
                                                                     <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
                                                                             class="flex-1 w-full border-0 bg-white"></iframe>
                                                                 </div>
-                                                            @else
-                                                                <span class="text-gray-300">—</span>
                                                             @endif
                                                         </td>
                                                     </tr>
