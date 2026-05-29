@@ -19,6 +19,7 @@ use App\Http\Controllers\QcController;
 use App\Http\Controllers\RatebookController;
 use App\Http\Controllers\ReaderPayController;
 use App\Http\Controllers\ReaderProfileController;
+use App\Http\Controllers\ReaderEarningsController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatisticsController;
@@ -145,6 +146,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/woo-orders/{id}/resend-email', [WooOrderController::class, 'resendEmail'])->name('woo-orders.resend-email')->whereNumber('id');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
+    Route::get('/reader-earnings', [ReaderEarningsController::class, 'index'])->name('reader-earnings.index');
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');
     Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
