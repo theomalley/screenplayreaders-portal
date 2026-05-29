@@ -633,16 +633,18 @@
                                 <div class="flex flex-col gap-2 flex-1 min-w-0">
                                     <input type="text"
                                            :name="'replies[' + idx + '][name]'"
-                                           x-model="reply.name"
+                                           :value="replies[idx].name"
+                                           @input="replies[idx].name = $event.target.value"
                                            placeholder="Reply name (e.g. Too much formatting talk)"
                                            maxlength="100"
                                            class="w-full text-sm border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
                                     <textarea
                                            :name="'replies[' + idx + '][body]'"
-                                           x-model="reply.body"
+                                           @input="replies[idx].body = $event.target.value"
                                            placeholder="Text inserted into the notes field…"
                                            rows="2"
                                            maxlength="2000"
+                                           x-text="replies[idx].body"
                                            class="w-full text-sm border border-gray-300 rounded px-2.5 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"></textarea>
                                 </div>
                                 <button type="button" @click="removeReply(idx)"
