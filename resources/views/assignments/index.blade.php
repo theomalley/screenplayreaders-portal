@@ -10,6 +10,12 @@
                     + Create Assignment
                 </a>
             @endcan
+            @if(!$canManage && isset($periodStart))
+                <div class="text-sm text-gray-500">
+                    Current period: <span class="font-medium text-gray-700">{{ \App\Support\PayPeriod::label($periodStart) }}</span>
+                    &nbsp;· next payout Sat {{ $periodEnd->addHour()->format('M j') }}
+                </div>
+            @endif
         </div>
     </x-slot>
 

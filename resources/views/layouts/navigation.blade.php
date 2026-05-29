@@ -173,15 +173,6 @@
                             </div>
                         </div>
                     @else
-                        @if(auth()->user()?->isReader())
-                            <x-nav-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
-                                {{ __('Payments') }}
-                            </x-nav-link>
-                        @elseif(auth()->user()?->isEditor())
-                            <x-nav-link :href="route('editor-payments.index')" :active="request()->routeIs('editor-payments.*')">
-                                {{ __('My Payments') }}
-                            </x-nav-link>
-                        @endif
                         @if(\App\Support\Permission::check('ratebook'))
                             <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                                 {{ __('Rates') }}
@@ -307,15 +298,6 @@
                     </x-responsive-nav-link>
                 @endif
             @else
-                @if(auth()->user()?->isReader())
-                    <x-responsive-nav-link :href="route('payments.index')" :active="request()->routeIs('payments.*')">
-                        {{ __('Payments') }}
-                    </x-responsive-nav-link>
-                @elseif(auth()->user()?->isEditor())
-                    <x-responsive-nav-link :href="route('editor-payments.index')" :active="request()->routeIs('editor-payments.*')">
-                        {{ __('My Payments') }}
-                    </x-responsive-nav-link>
-                @endif
                 @if(\App\Support\Permission::check('ratebook'))
                     <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                         {{ __('Rates') }}
