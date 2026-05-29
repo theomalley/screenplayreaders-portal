@@ -223,7 +223,7 @@
                                 {{ old('quality_checked') ? 'checked' : '' }}
                                 class="mt-0.5 rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500" />
                             <span class="text-sm text-gray-700 font-medium">
-                                I have reviewed this coverage and confirm it is complete, accurate, and ready for QC.
+                                I've provided helpful, actionable feedback, have adhered to Screenplay Readers quality standards listed in the Reader Manual, and reviewed my work for errors.
                             </span>
                         </label>
                         <x-input-error :messages="$errors->get('quality_checked')" class="mt-1" />
