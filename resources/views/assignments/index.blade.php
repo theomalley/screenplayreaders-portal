@@ -28,11 +28,7 @@
 
         .rush-due { color: rgb(234, 88, 12); }
 
-        @keyframes rush-countdown-blink {
-            0%, 49.9% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-        }
-        .rush-countdown { animation: rush-countdown-blink 1s linear infinite; color: rgb(234, 88, 12); }
+        .rush-countdown { color: rgb(234, 88, 12); }
     </style>
     <script>
         document.addEventListener('alpine:init', () => {
