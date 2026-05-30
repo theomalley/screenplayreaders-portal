@@ -38,10 +38,17 @@
             <div>
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admins</h3>
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <table class="w-full divide-y divide-gray-200 text-sm" style="table-layout:fixed">
+                        <colgroup>
+                            <col style="width:32%">
+                            <col style="width:20%">
+                            <col style="width:28%">
+                            <col style="width:20%">
+                        </colgroup>
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
                             </tr>
@@ -76,6 +83,9 @@
                                                 <div class="text-[11px] text-violet-500 font-medium">Admin</div>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-500 text-sm">
+                                        {{ $profile?->title ?? '—' }}
                                     </td>
                                     <td class="px-4 py-3 text-gray-500">
                                         <a href="mailto:{{ $admin->email }}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation()">{{ $admin->email }}</a>
@@ -112,7 +122,13 @@
                     </div>
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <table class="w-full divide-y divide-gray-200 text-sm" style="table-layout:fixed">
+                            <colgroup>
+                                <col style="width:32%">
+                                <col style="width:20%">
+                                <col style="width:28%">
+                                <col style="width:20%">
+                            </colgroup>
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Editor</th>
@@ -188,7 +204,13 @@
                     </div>
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <table class="w-full divide-y divide-gray-200 text-sm" style="table-layout:fixed">
+                            <colgroup>
+                                <col style="width:32%">
+                                <col style="width:20%">
+                                <col style="width:28%">
+                                <col style="width:20%">
+                            </colgroup>
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reader</th>
