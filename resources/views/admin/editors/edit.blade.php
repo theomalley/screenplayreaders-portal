@@ -93,6 +93,15 @@
                         </div>
                     </div>
 
+                    <div>
+                        <x-input-label for="title" value="Title" />
+                        <x-text-input id="title" name="title" type="text"
+                            class="mt-1 block w-full"
+                            value="{{ old('title', $profile?->title) }}"
+                            placeholder="e.g. Senior Editor, Managing Editor" />
+                        <x-input-error :messages="$errors->get('title')" class="mt-1" />
+                    </div>
+
                     {{-- PayPal --}}
                     <div>
                         <x-input-label for="paypal_email" value="PayPal Email" />

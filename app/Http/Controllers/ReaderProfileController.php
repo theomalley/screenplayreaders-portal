@@ -104,6 +104,7 @@ class ReaderProfileController extends Controller
             'initials'                   => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
             'first_name'                 => ['required', 'string', 'max:100'],
             'last_name'                  => ['required', 'string', 'max:100'],
+            'title'                      => ['nullable', 'string', 'max:100'],
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
             'photo'                      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],

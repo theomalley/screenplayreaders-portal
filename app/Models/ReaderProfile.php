@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-05-30 | Add title to fillable
 // v1.5 — 2026-05-28 | Add timezone to fillable
 // v1.4 — 2026-05-25 | Add requests_bypass_capacity flag; isAtCapacity() accepts $isRequestedAssignment param.
 // v1.3 — 2026-05-24 | isAtCapacity() respects global capacity_override setting.
@@ -21,6 +22,7 @@ class ReaderProfile extends Model
         'initials',
         'first_name',
         'last_name',
+        'title',
         'photo',
         'max_concurrent_assignments',
         'requests_bypass_capacity',

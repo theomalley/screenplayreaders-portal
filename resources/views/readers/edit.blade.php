@@ -93,6 +93,15 @@
                         </div>
                     </div>
 
+                    <div>
+                        <x-input-label for="title" value="Title" />
+                        <x-text-input id="title" name="title" type="text"
+                            class="mt-1 block w-full"
+                            value="{{ old('title', $profile?->title) }}"
+                            placeholder="e.g. Lead Reader, Formatting Specialist" />
+                        <x-input-error :messages="$errors->get('title')" class="mt-1" />
+                    </div>
+
                     {{-- Capacity + PayPal --}}
                     <div class="grid grid-cols-2 gap-3">
                         <div>

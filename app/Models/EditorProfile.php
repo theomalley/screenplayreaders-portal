@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-30 | Add title to fillable
 // v1.3 — 2026-05-28 | Add editor_commission and editor_weekly_flat
 // v1.2 — 2026-05-28 | Add timezone to fillable
 // v1.1 — 2026-05-25 | Add productCommissions relationship
@@ -18,6 +19,7 @@ class EditorProfile extends Model
         'initials',
         'first_name',
         'last_name',
+        'title',
         'photo',
         'paypal_email',
         'availability',

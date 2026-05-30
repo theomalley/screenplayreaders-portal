@@ -90,7 +90,7 @@
                                         @click="activeStaff = activeStaff === 'e{{ $editor->id }}' ? null : 'e{{ $editor->id }}'"
                                         :class="activeStaff === 'e{{ $editor->id }}' ? 'ring-2 ring-offset-1 ring-indigo-400' : ''"
                                         class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
-                                        title="{{ $eProfile?->displayName() ?? $editor->name }} (Editor){{ $eOnline ? ' · Online' : '' }} — {{ $eActive }} active"
+                                        title="{{ $eProfile?->displayName() ?? $editor->name }}{{ $eProfile?->title ? ' · ' . $eProfile->title : '' }} (Editor){{ $eOnline ? ' · Online' : '' }} — {{ $eActive }} active"
                                     >
                                         @if ($ePhotoUrl)
                                             <span class="absolute inset-0 rounded-full overflow-hidden">
@@ -136,7 +136,7 @@
                                         class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer
                                             {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}
                                             {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
-                                        title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
+                                        title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rProfile?->title ? ' · ' . $rProfile->title : '' }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
                                     >
                                         @if ($rPhotoUrl)
                                             <span class="absolute inset-0 rounded-full overflow-hidden">
@@ -1175,7 +1175,7 @@
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
                             <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700"
-                                  title="{{ $eProfile?->displayName() ?? $editor->name }} (Editor){{ $eOnline ? ' · Online' : '' }} — {{ $eActive }} active">
+                                  title="{{ $eProfile?->displayName() ?? $editor->name }}{{ $eProfile?->title ? ' · ' . $eProfile->title : '' }} (Editor){{ $eOnline ? ' · Online' : '' }} — {{ $eActive }} active">
                                 @if ($ePhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="w-full h-full object-cover" />
@@ -1217,7 +1217,7 @@
                             <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold
                                 {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700' }}
                                 {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
-                                  title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active">
+                                  title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rProfile?->title ? ' · ' . $rProfile->title : '' }}{{ $rOnline ? ' · Online' : '' }}{{ $reader->id === auth()->id() ? ' — ' . $rActive . '/' . ($rMax ?: '?') . ' active' : '' }}">
                                 @if ($rPhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="w-full h-full object-cover" />
