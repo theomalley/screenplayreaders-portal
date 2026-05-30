@@ -133,6 +133,10 @@ class Setting extends Model
     ];
 
     public const EMAIL_NOTIFICATION_DEFAULTS = [
+        'email_notif_subject_new'         => 'New Assignment Available',
+        'email_notif_subject_rush'        => 'Rush Assignment Available',
+        'email_notif_subject_request'     => 'Reader Request',
+        'email_notif_subject_rush_request'=> 'Rush Reader Request',
         'email_notif_header_new'          => 'New Assignment Available',
         'email_notif_header_rush'         => 'Rush Assignment Available',
         'email_notif_header_request'      => 'Reader Request',

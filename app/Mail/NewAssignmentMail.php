@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-30 | Add subject line variants from Settings
 // v1.2 — 2026-05-30 | Read header/body text from Settings (admin-editable)
 // v1.1 — 2026-05-30 | Pre-compute header/body labels; MailerSend does not support nested conditionals
 // v1.0 — 2026-05-30 | Initial: notify readers of new unassigned assignment via MailerSend template
@@ -31,6 +32,13 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
         $requested = $this->context === 'request';
         $texts     = Setting::getEmailNotificationTexts();
 
+        $subject = match(true) {
+            $requested && $rush => $texts['email_notif_subject_rush_request'],
+            $requested          => $texts['email_notif_subject_request'],
+            $rush               => $texts['email_notif_subject_rush'],
+            default             => $texts['email_notif_subject_new'],
+        };
+
         $header = match(true) {
             $requested && $rush => $texts['email_notif_header_rush_request'],
             $requested          => $texts['email_notif_header_request'],
@@ -48,6 +56,8 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
             ? $texts['email_notif_body_request']
             : $texts['email_notif_body_new'];
 
+        $this->subject($subject);
+
         $this->mailersend(
             template_id: config('services.mailersend.assignment_template_id'),
             personalization: [
@@ -55,6 +65,7 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
                     'email' => $this->reader->email,
                     'data'  => [
                         'reader_name'    => $this->reader->readerProfile?->first_name ?? $this->reader->name,
+                        'subject'        => $subject,
                         'header'         => $header,
                         'script_details' => $script_details,
                         'body_message'   => $body_message,

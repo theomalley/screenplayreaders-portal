@@ -683,6 +683,24 @@
                     @method('PATCH')
 
                     <fieldset>
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Subject lines <span class="normal-case font-normal text-gray-400">({{ '{{ subject }}' }} in template)</span></legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach ([
+                                'email_notif_subject_new'          => 'Standard new assignment',
+                                'email_notif_subject_rush'         => 'Rush assignment',
+                                'email_notif_subject_request'      => 'Reader request',
+                                'email_notif_subject_rush_request' => 'Rush reader request',
+                            ] as $key => $label)
+                            <div>
+                                <x-input-label :for="$key" :value="$label" class="mb-1" />
+                                <x-text-input :id="$key" :name="$key" type="text" class="w-full text-sm"
+                                    :value="old($key, $emailNotifTexts[$key])" required maxlength="500" />
+                            </div>
+                            @endforeach
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
                         <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Headers <span class="normal-case font-normal text-gray-400">({{ '{{ header }}' }} in template)</span></legend>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             @foreach ([
