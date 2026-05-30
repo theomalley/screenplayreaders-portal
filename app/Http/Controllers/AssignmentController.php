@@ -565,6 +565,7 @@ class AssignmentController extends Controller
         if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
             $data['assigned_reader_id'] = null;
             $data['accepted_at']        = null;
+            $data['reader_declined']    = false;
         }
 
         if (!empty($data['assigned_reader_id'])) {
@@ -612,6 +613,7 @@ class AssignmentController extends Controller
         if ($request->status === Assignment::STATUS_UNASSIGNED) {
             $data['assigned_reader_id'] = null;
             $data['accepted_at']        = null;
+            $data['reader_declined']    = false;
         }
 
         if ($request->status === Assignment::STATUS_ASSIGNED && $request->filled('assigned_reader_id')) {
@@ -672,6 +674,28 @@ class AssignmentController extends Controller
         return request()->expectsJson()
             ? response()->json(['success' => true])
             : back()->with('success', 'Assignment accepted.');
+    }
+
+    public function decline(Assignment $assignment)
+    {
+        $this->authorize('accept', $assignment);
+
+        $user = auth()->user();
+
+        if ($assignment->requested_reader_id !== $user->id) {
+            return response()->json(['message' => 'You were not requested for this assignment.'], 403);
+        }
+
+        if ($assignment->status !== Assignment::STATUS_UNASSIGNED) {
+            return response()->json(['message' => 'This assignment is no longer available.'], 409);
+        }
+
+        $assignment->update([
+            'status'          => Assignment::STATUS_INCOMING,
+            'reader_declined' => true,
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
     public function destroy(Assignment $assignment)

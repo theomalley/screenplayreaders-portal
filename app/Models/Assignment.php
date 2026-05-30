@@ -1,5 +1,6 @@
 <?php
 
+// v1.10 — 2026-05-30 | Add reader_declined to fillable and casts
 // v1.9 — 2026-05-28 | Zero pay_rate automatically when assigned reader is an admin
 // v1.8 — 2026-05-26 | Add client_id relationship for invoicing
 // v1.6 — 2026-05-25 | Add needs_attention status + notes field; scopeForReader includes needs_attention
@@ -55,6 +56,7 @@ class Assignment extends Model
         'reader_paid_at',
         'helpscout_draft_sent_at',
         'client_id',
+        'reader_declined',
     ];
 
     protected function casts(): array
@@ -69,6 +71,7 @@ class Assignment extends Model
             'completed_at'              => 'datetime',
             'reader_paid_at'            => 'datetime',
             'helpscout_draft_sent_at'   => 'datetime',
+            'reader_declined'           => 'boolean',
         ];
     }
 

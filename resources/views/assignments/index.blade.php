@@ -508,6 +508,9 @@
                                                         @endif
                                                     </span>
                                                     <span class="text-[9px] text-purple-400 font-mono leading-none">Request</span>
+                                                    @if ($assignment->reader_declined)
+                                                        <span class="text-[9px] text-red-400 font-mono leading-none">· No can do</span>
+                                                    @endif
                                                 </div>
                                             @endif
                                             <div class="mt-1.5">
@@ -1384,7 +1387,16 @@
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
                                                     @if ($isRequestedForMe)
                                                         <div class="flex items-center gap-1 mt-1">
-                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-100 text-purple-700">For you</span>
+                                                            <span class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-mono font-semibold shrink-0">
+                                                                @if ($reqPhotoUrl)
+                                                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                        <img src="{{ $reqPhotoUrl }}" alt="{{ $reqInitials }}" class="w-full h-full object-cover" />
+                                                                    </span>
+                                                                @else
+                                                                    {{ $reqInitials }}
+                                                                @endif
+                                                            </span>
+                                                            <span class="text-[9px] text-purple-400 font-mono leading-none">Request</span>
                                                         </div>
                                                     @endif
                                                     <div class="mt-1.5">
@@ -1398,31 +1410,55 @@
                                                     @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right"
-                                                    x-data="{ accepting: false, error: '' }">
+                                                    x-data="{ accepting: false, declining: false, error: '' }">
                                                     <span x-show="error" x-cloak
                                                           x-text="error"
                                                           class="text-xs text-red-600 font-medium"></span>
-                                                    <button x-show="!error" type="button"
-                                                            :disabled="accepting"
-                                                            @click="accepting = true; error = '';
-                                                                fetch('{{ route('assignments.accept', $assignment) }}', {
-                                                                    method: 'POST',
-                                                                    headers: {
-                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                                                        'Accept': 'application/json',
-                                                                    }
-                                                                }).then(r => {
-                                                                    if (r.ok) {
-                                                                        $el.closest('tr').remove();
-                                                                        location.reload();
-                                                                    } else {
-                                                                        r.json().then(d => { accepting = false; error = d.message ?? 'No longer available.'; }).catch(() => { accepting = false; error = 'No longer available.'; });
-                                                                    }
-                                                                }).catch(() => { accepting = false; error = 'Request failed — try again.'; })"
-                                                            :class="accepting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-500'"
-                                                            class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white transition">
-                                                        <span x-text="accepting ? 'Accepting…' : 'Accept'"></span>
-                                                    </button>
+                                                    <div x-show="!error" class="flex flex-col items-end gap-1">
+                                                        <button type="button"
+                                                                :disabled="accepting || declining"
+                                                                @click="accepting = true; error = '';
+                                                                    fetch('{{ route('assignments.accept', $assignment) }}', {
+                                                                        method: 'POST',
+                                                                        headers: {
+                                                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                                            'Accept': 'application/json',
+                                                                        }
+                                                                    }).then(r => {
+                                                                        if (r.ok) {
+                                                                            $el.closest('tr').remove();
+                                                                            location.reload();
+                                                                        } else {
+                                                                            r.json().then(d => { accepting = false; error = d.message ?? 'No longer available.'; }).catch(() => { accepting = false; error = 'No longer available.'; });
+                                                                        }
+                                                                    }).catch(() => { accepting = false; error = 'Request failed — try again.'; })"
+                                                                :class="(accepting || declining) ? 'opacity-60 cursor-not-allowed' : 'hover:bg-green-500'"
+                                                                class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white transition">
+                                                            <span x-text="accepting ? 'Accepting…' : 'Accept'"></span>
+                                                        </button>
+                                                        @if ($isRequestedForMe)
+                                                        <button type="button"
+                                                                :disabled="accepting || declining"
+                                                                @click="declining = true; error = '';
+                                                                    fetch('{{ route('assignments.decline', $assignment) }}', {
+                                                                        method: 'POST',
+                                                                        headers: {
+                                                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                                            'Accept': 'application/json',
+                                                                        }
+                                                                    }).then(r => {
+                                                                        if (r.ok) {
+                                                                            $el.closest('tr').remove();
+                                                                        } else {
+                                                                            r.json().then(d => { declining = false; error = d.message ?? 'Could not decline.'; }).catch(() => { declining = false; error = 'Could not decline.'; });
+                                                                        }
+                                                                    }).catch(() => { declining = false; error = 'Request failed — try again.'; })"
+                                                                :class="(accepting || declining) ? 'opacity-60 cursor-not-allowed' : 'hover:bg-red-100'"
+                                                                class="inline-flex items-center px-3 py-1 bg-white border border-red-300 rounded text-xs font-semibold text-red-500 transition">
+                                                            <span x-text="declining ? 'Declining…' : 'No can do'"></span>
+                                                        </button>
+                                                        @endif
+                                                    </div>
                                                 </td>
                                             </tr>
                                         @endforeach
