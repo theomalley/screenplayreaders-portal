@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-05-30 | Pass pendingApprovals count to view.
 // v1.1 — 2026-05-27 | Include admins section; reader photo upload; fix admin photo in assigned-reader column.
 // v1.0 — 2026-05-27 | Combined Team view — editors and readers on one unified list
 
@@ -40,14 +41,25 @@ class TeamController extends Controller
             ->orderBy('name')
             ->get();
 
+        $pendingApprovals = 0;
+        foreach ($readers as $r) {
+            if ($r->readerProfile?->bio_pending !== null)  $pendingApprovals++;
+            if ($r->readerProfile?->photo_pending)         $pendingApprovals++;
+        }
+        foreach ($editors as $e) {
+            if ($e->editorProfile?->bio_pending !== null)  $pendingApprovals++;
+            if ($e->editorProfile?->photo_pending)         $pendingApprovals++;
+        }
+
         return view('team.index', [
-            'admins'           => $admins,
-            'editors'          => $editors,
-            'readers'          => $readers,
-            'canEditEditors'   => Permission::check('editors.edit'),
-            'canDeleteEditors' => Permission::check('editors.delete'),
-            'canEditReaders'   => Permission::check('readers.edit'),
-            'canDeleteReaders' => Permission::check('readers.delete'),
+            'admins'            => $admins,
+            'editors'           => $editors,
+            'readers'           => $readers,
+            'canEditEditors'    => Permission::check('editors.edit'),
+            'canDeleteEditors'  => Permission::check('editors.delete'),
+            'canEditReaders'    => Permission::check('readers.edit'),
+            'canDeleteReaders'  => Permission::check('readers.delete'),
+            'pendingApprovals'  => $pendingApprovals,
         ]);
     }
 }

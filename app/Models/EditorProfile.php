@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-05-30 | Add bio_pending and photo_pending to fillable
 // v1.5 — 2026-05-30 | Add bio to fillable
 // v1.4 — 2026-05-30 | Add title to fillable
 // v1.3 — 2026-05-28 | Add editor_commission and editor_weekly_flat
@@ -22,7 +23,9 @@ class EditorProfile extends Model
         'last_name',
         'title',
         'bio',
+        'bio_pending',
         'photo',
+        'photo_pending',
         'paypal_email',
         'availability',
         'availability_message',

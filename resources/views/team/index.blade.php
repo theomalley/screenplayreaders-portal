@@ -1,7 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Team</h2>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                Team
+                @if (($pendingApprovals ?? 0) > 0)
+                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">{{ $pendingApprovals }} pending</span>
+                @endif
+            </h2>
             <div class="flex items-center gap-2">
                 @if(auth()->user()->isAdmin())
                     <a href="{{ route('admin.editors.create') }}"

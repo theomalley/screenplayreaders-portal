@@ -29,7 +29,11 @@
                     @endif
 
                     {{-- Photo --}}
-                    @php $currentPhotoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : ''; @endphp
+                    @php
+                        $currentPhotoUrl    = $profile?->photo ? asset('storage/' . $profile->photo) : '';
+                        $pendingPhotoUrl    = $profile?->photo_pending ? asset('storage/' . $profile->photo_pending) : null;
+                        $pendingBioContent  = $profile?->bio_pending;
+                    @endphp
                     <div x-data="{ previewUrl: '{{ $currentPhotoUrl }}' }">
                         <x-input-label value="Photo" />
                         <div class="mt-2 flex items-center gap-4">
@@ -55,6 +59,21 @@
                         </div>
                         <x-input-error :messages="$errors->get('photo')" class="mt-1" />
                     </div>
+
+                    @if ($pendingPhotoUrl)
+                        <div class="flex items-center gap-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded">
+                            <img src="{{ $pendingPhotoUrl }}" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending photo" />
+                            <div class="flex-1 text-xs text-amber-700">Pending photo waiting for approval.</div>
+                            <form method="POST" action="{{ route('admin.approvals.photo.approve', $user) }}">
+                                @csrf
+                                <button type="submit" class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.approvals.photo.reject', $user) }}">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="px-2 py-1 text-xs bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200">Reject</button>
+                            </form>
+                        </div>
+                    @endif
 
                     {{-- Initials --}}
                     <div>
@@ -196,6 +215,22 @@
                                 <p><code class="bg-white px-1 rounded border border-gray-200 select-all">[sr_staff_bio id="{{ $user->id }}"]</code></p>
                                 <p class="text-gray-400 italic">Changes take up to 30 seconds to appear on the website due to caching.</p>
                             </div>
+                            @if ($pendingBioContent)
+                                <div class="mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 space-y-2">
+                                    <p class="font-medium">Pending bio waiting for approval:</p>
+                                    <div class="text-gray-600 italic line-clamp-3">{{ strip_tags($pendingBioContent) }}</div>
+                                    <div class="flex gap-2">
+                                        <form method="POST" action="{{ route('admin.approvals.bio.approve', $user) }}">
+                                            @csrf
+                                            <button type="submit" class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('admin.approvals.bio.reject', $user) }}">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="px-2 py-1 text-xs bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200">Reject</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
 

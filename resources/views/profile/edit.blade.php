@@ -18,9 +18,10 @@
 
             @if(auth()->user()->isAdminOrEditor() || auth()->user()->isReader())
             @php
-                $currentPhoto = auth()->user()->isAdminOrEditor()
-                    ? (auth()->user()->editorProfile?->photo ? asset('storage/' . auth()->user()->editorProfile->photo) : null)
-                    : (auth()->user()->readerProfile?->photo  ? asset('storage/' . auth()->user()->readerProfile->photo)  : null);
+                $meProfile    = auth()->user()->isAdminOrEditor() ? auth()->user()->editorProfile : auth()->user()->readerProfile;
+                $currentPhoto = $meProfile?->photo ? asset('storage/' . $meProfile->photo) : null;
+                $pendingPhoto = $meProfile?->photo_pending ? asset('storage/' . $meProfile->photo_pending) : null;
+                $pendingBio   = $meProfile?->bio_pending;
             @endphp
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl" x-data="{ preview: null }">
@@ -53,8 +54,16 @@
                                 <x-primary-button>Upload Photo</x-primary-button>
                                 @if (session('status') === 'photo-updated')
                                     <span class="ml-3 text-sm text-green-600">Saved.</span>
+                                @elseif (session('status') === 'photo-pending')
+                                    <span class="ml-3 text-sm text-amber-600">Submitted for admin approval.</span>
                                 @endif
                             </div>
+                            @if ($pendingPhoto)
+                                <div class="mt-3 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                    <img src="{{ $pendingPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending photo" />
+                                    <span>Photo pending admin approval.</span>
+                                </div>
+                            @endif
                         </form>
                     </div>
                 </div>
@@ -62,11 +71,7 @@
 
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    @php
-                        $currentBio = auth()->user()->isAdminOrEditor()
-                            ? auth()->user()->editorProfile?->bio
-                            : auth()->user()->readerProfile?->bio;
-                    @endphp
+                    @php $currentBio = $meProfile?->bio; @endphp
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Bio</h2>
                     <p class="text-sm text-gray-600 mb-4">Displayed on the public website. HTML is supported — you can use <code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;a href=""&gt;</code>, etc.</p>
 
@@ -92,8 +97,15 @@
                             <x-primary-button>Save Bio</x-primary-button>
                             @if (session('status') === 'bio-updated')
                                 <span class="ml-3 text-sm text-green-600">Saved.</span>
+                            @elseif (session('status') === 'bio-pending')
+                                <span class="ml-3 text-sm text-amber-600">Submitted for admin approval.</span>
                             @endif
                         </div>
+                        @if ($pendingBio)
+                            <div class="mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                Bio change pending admin approval.
+                            </div>
+                        @endif
                     </form>
                 </div>
             </div>

@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-05-30 | Add bio_pending and photo_pending to fillable
 // v1.7 — 2026-05-30 | Add bio to fillable
 // v1.6 — 2026-05-30 | Add title to fillable
 // v1.5 — 2026-05-28 | Add timezone to fillable
@@ -25,7 +26,9 @@ class ReaderProfile extends Model
         'last_name',
         'title',
         'bio',
+        'bio_pending',
         'photo',
+        'photo_pending',
         'max_concurrent_assignments',
         'requests_bypass_capacity',
         'paypal_email',
