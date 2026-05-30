@@ -170,6 +170,17 @@
                             <p class="mt-1 text-xs text-gray-400">Shown as an orange warning box on the customer upload form when this reader is selected. Leave blank for no warning.</p>
                             <x-input-error :messages="$errors->get('upload_warning')" class="mt-1" />
                         </div>
+
+                        <div>
+                            <x-input-label for="bio" value="Website Bio" />
+                            <textarea id="bio" name="bio"
+                                      rows="5"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      maxlength="5000"
+                                      placeholder="Displayed on the public website. HTML is supported.">{{ old('bio', $profile?->bio) }}</textarea>
+                            <p class="mt-1 text-xs text-gray-400">HTML allowed — &lt;b&gt;, &lt;i&gt;, &lt;a href=""&gt;, etc. Max 5000 characters.</p>
+                            <x-input-error :messages="$errors->get('bio')" class="mt-1" />
+                        </div>
                     </div>
 
                     {{-- Account --}}

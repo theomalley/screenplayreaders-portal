@@ -107,12 +107,13 @@ class ReaderProfileController extends Controller
             'title'                      => ['nullable', 'string', 'max:100'],
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
-            'photo'                      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'photo'                      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192', 'dimensions:min_width=600,min_height=600'],
             'email'                      => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password'                   => ['nullable', 'confirmed', Password::defaults()],
             'availability'               => ['required', 'in:available,unavailable'],
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
+            'bio'                        => ['nullable', 'string', 'max:5000'],
         ]);
 
         if ($request->hasFile('photo')) {
