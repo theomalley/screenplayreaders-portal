@@ -43,6 +43,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-100">
@@ -51,15 +52,14 @@
                                     $profile  = $admin->editorProfile;
                                     $initials = $profile?->initials ?? strtoupper(substr($admin->name, 0, 2));
                                     $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+                                    $avail    = $profile?->availability ?? 'available';
+                                    $canEdit  = auth()->user()->isAdmin();
                                 @endphp
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-gray-50 {{ $canEdit ? 'cursor-pointer' : '' }}"
+                                    {{ $canEdit ? 'onclick=window.location.href=\''.route('admin.editors.edit', $admin).'\'' : '' }}>
                                     <td class="px-4 py-3">
                                         <div class="flex items-center gap-3">
-                                            @if(auth()->user()->isAdmin())
-                                                <a href="{{ route('admin.editors.edit', $admin) }}" class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0 hover:ring-2 hover:ring-violet-300 transition">
-                                            @else
-                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0">
-                                            @endif
+                                            <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0">
                                                 @if ($photoUrl)
                                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                                         <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
@@ -70,11 +70,7 @@
                                                 @if($admin->isOnline())
                                                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                 @endif
-                                            @if(auth()->user()->isAdmin())
-                                                </a>
-                                            @else
-                                                </span>
-                                            @endif
+                                            </span>
                                             <div>
                                                 <div class="font-medium text-gray-900">{{ $profile?->displayName() ?? $admin->name }}</div>
                                                 <div class="text-[11px] text-violet-500 font-medium">Admin</div>
@@ -82,7 +78,18 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-3 text-gray-500">
-                                        <a href="mailto:{{ $admin->email }}" class="hover:text-indigo-600 hover:underline">{{ $admin->email }}</a>
+                                        <a href="mailto:{{ $admin->email }}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation()">{{ $admin->email }}</a>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
+                                            <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
+                                            {{ ucfirst($avail) }}
+                                        </span>
+                                        @if ($profile?->availability_message)
+                                            <div class="mt-0.5 text-[11px] text-gray-400 max-w-[160px] truncate" title="{{ $profile->availability_message }}">
+                                                {{ $profile->availability_message }}
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -122,14 +129,11 @@
                                         $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
                                         $avail    = $profile?->availability ?? 'available';
                                     @endphp
-                                    <tr class="hover:bg-gray-50">
+                                    <tr class="hover:bg-gray-50 {{ $canEditEditors ? 'cursor-pointer' : '' }}"
+                                        {{ $canEditEditors ? 'onclick=window.location.href=\''.route('admin.editors.edit', $editor).'\'' : '' }}>
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
-                                                @if($canEditEditors)
-                                                    <a href="{{ route('admin.editors.edit', $editor) }}" class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0 hover:ring-2 hover:ring-indigo-300 transition">
-                                                @else
-                                                    <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0">
-                                                @endif
+                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0">
                                                     @if ($photoUrl)
                                                         <span class="absolute inset-0 rounded-full overflow-hidden">
                                                             <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
@@ -140,11 +144,7 @@
                                                     @if($editor->isOnline())
                                                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
-                                                @if($canEditEditors)
-                                                    </a>
-                                                @else
-                                                    </span>
-                                                @endif
+                                                </span>
                                                 <div class="font-medium text-gray-900">
                                                     {{ $profile?->displayName() ?? $editor->name }}
                                                 </div>
@@ -154,7 +154,7 @@
                                             {{ $profile?->title ?? '—' }}
                                         </td>
                                         <td class="px-4 py-3 text-gray-500">
-                                            <a href="mailto:{{ $editor->email }}" class="hover:text-indigo-600 hover:underline">{{ $editor->email }}</a>
+                                            <a href="mailto:{{ $editor->email }}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation()">{{ $editor->email }}</a>
                                         </td>
                                         <td class="px-4 py-3">
                                             <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
@@ -205,14 +205,11 @@
                                         $photoUrl  = $profile?->photo ? asset('storage/' . $profile->photo) : null;
                                         $avail     = $profile?->availability ?? 'available';
                                     @endphp
-                                    <tr class="hover:bg-gray-50">
+                                    <tr class="hover:bg-gray-50 {{ $canEditReaders ? 'cursor-pointer' : '' }}"
+                                        {{ $canEditReaders ? 'onclick=window.location.href=\''.route('readers.edit', $reader).'\'' : '' }}>
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
-                                                @if($canEditReaders)
-                                                    <a href="{{ route('readers.edit', $reader) }}" class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 hover:ring-2 hover:ring-gray-400 transition {{ $avail !== 'available' ? 'border-2 border-dashed border-red-300' : '' }}">
-                                                @else
-                                                    <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 {{ $avail !== 'available' ? 'border-2 border-dashed border-red-300' : '' }}">
-                                                @endif
+                                                <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 {{ $avail !== 'available' ? 'border-2 border-dashed border-red-300' : '' }}">
                                                     @if ($photoUrl)
                                                         <span class="absolute inset-0 rounded-full overflow-hidden">
                                                             <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
@@ -223,11 +220,7 @@
                                                     @if($reader->isOnline())
                                                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
-                                                @if($canEditReaders)
-                                                    </a>
-                                                @else
-                                                    </span>
-                                                @endif
+                                                </span>
                                                 <div class="font-medium text-gray-900">
                                                     {{ $profile?->displayName() ?? $reader->name }}
                                                 </div>
@@ -237,7 +230,7 @@
                                             {{ $profile?->title ?? '—' }}
                                         </td>
                                         <td class="px-4 py-3 text-gray-500">
-                                            <a href="mailto:{{ $reader->email }}" class="hover:text-indigo-600 hover:underline">{{ $reader->email }}</a>
+                                            <a href="mailto:{{ $reader->email }}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation()">{{ $reader->email }}</a>
                                         </td>
                                         <td class="px-4 py-3">
                                             <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
