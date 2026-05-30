@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-30 | Fix trait: MailerSendTrait (v3 rename from MailerSendModelMixin; namespace MailerSend not Mailersend)
 // v1.3 — 2026-05-30 | Add subject line variants from Settings
 // v1.2 — 2026-05-30 | Read header/body text from Settings (admin-editable)
 // v1.1 — 2026-05-30 | Pre-compute header/body labels; MailerSend does not support nested conditionals
@@ -14,11 +15,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Mailersend\LaravelDriver\MailerSendModelMixin;
+use MailerSend\LaravelDriver\MailerSendTrait;
 
 class NewAssignmentMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels, MailerSendModelMixin;
+    use Queueable, SerializesModels, MailerSendTrait;
 
     public function __construct(
         private readonly Assignment $assignment,
@@ -75,6 +76,6 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
             ],
         );
 
-        return $this->view('emails.empty');
+        return $this;
     }
 }
