@@ -50,9 +50,8 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
         $script_details = $this->assignment->script_title
             . ' by ' . $this->assignment->writer_name
             . ' (' . $this->assignment->page_count . ' pages'
-            . ', $' . number_format((float) $this->assignment->pay_rate, 2)
             . ($rush ? ', RUSH' : '')
-            . ')';
+            . ')  Pay: $' . number_format((float) $this->assignment->pay_rate, 2);
 
         $body_message = $requested
             ? $texts['email_notif_body_request']
