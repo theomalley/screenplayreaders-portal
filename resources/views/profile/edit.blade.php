@@ -73,10 +73,20 @@
                     <form method="POST" action="{{ route('profile.bio') }}" class="space-y-4">
                         @csrf
                         @method('PATCH')
-                        <textarea id="bio" name="bio" rows="6"
-                                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-y"
-                                  maxlength="5000"
-                                  placeholder="Write your bio here. HTML is allowed.">{{ old('bio', $currentBio) }}</textarea>
+                        <div x-data="{
+                            wrap(b,a){const t=this.$refs.ta,s=t.selectionStart,e=t.selectionEnd,v=t.value.slice(s,e);t.value=t.value.slice(0,s)+b+v+a+t.value.slice(e);t.selectionStart=s+b.length;t.selectionEnd=s+b.length+v.length;t.focus()},
+                            link(){const u=prompt('URL (include https://)');if(u)this.wrap('<a href=\''+u+'\'>', '</a>')}
+                        }">
+                            <div class="flex items-center gap-1 mb-1">
+                                <button type="button" @click="wrap('<b>','</b>')" class="px-2 py-0.5 text-xs font-bold border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">B</button>
+                                <button type="button" @click="wrap('<i>','</i>')" class="px-2 py-0.5 text-xs italic border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">I</button>
+                                <button type="button" @click="link()" class="px-2 py-0.5 text-xs border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">Link</button>
+                            </div>
+                            <textarea x-ref="ta" id="bio" name="bio" rows="6"
+                                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-y"
+                                      maxlength="5000"
+                                      placeholder="Write your bio here. HTML is allowed.">{{ old('bio', $currentBio) }}</textarea>
+                        </div>
                         <x-input-error :messages="$errors->get('bio')" class="mt-1" />
                         <div>
                             <x-primary-button>Save Bio</x-primary-button>

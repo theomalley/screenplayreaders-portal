@@ -173,11 +173,21 @@
 
                         <div>
                             <x-input-label for="bio" value="Website Bio" />
-                            <textarea id="bio" name="bio"
-                                      rows="5"
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                      maxlength="5000"
-                                      placeholder="Displayed on the public website. HTML is supported.">{{ old('bio', $profile?->bio) }}</textarea>
+                            <div x-data="{
+                                wrap(b,a){const t=this.$refs.ta,s=t.selectionStart,e=t.selectionEnd,v=t.value.slice(s,e);t.value=t.value.slice(0,s)+b+v+a+t.value.slice(e);t.selectionStart=s+b.length;t.selectionEnd=s+b.length+v.length;t.focus()},
+                                link(){const u=prompt('URL (include https://)');if(u)this.wrap('<a href=\''+u+'\'>', '</a>')}
+                            }">
+                                <div class="flex items-center gap-1 mt-1 mb-1">
+                                    <button type="button" @click="wrap('<b>','</b>')" class="px-2 py-0.5 text-xs font-bold border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">B</button>
+                                    <button type="button" @click="wrap('<i>','</i>')" class="px-2 py-0.5 text-xs italic border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">I</button>
+                                    <button type="button" @click="link()" class="px-2 py-0.5 text-xs border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">Link</button>
+                                </div>
+                                <textarea x-ref="ta" id="bio" name="bio"
+                                          rows="5"
+                                          class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                          maxlength="5000"
+                                          placeholder="Displayed on the public website. HTML is supported.">{{ old('bio', $profile?->bio) }}</textarea>
+                            </div>
                             <p class="mt-1 text-xs text-gray-400">HTML allowed — &lt;b&gt;, &lt;i&gt;, &lt;a href=""&gt;, etc. Max 5000 characters.</p>
                             <x-input-error :messages="$errors->get('bio')" class="mt-1" />
                             <div class="mt-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500 space-y-1">
