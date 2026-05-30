@@ -101,10 +101,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/qc-saved-replies', [SettingController::class, 'updateQcSavedReplies'])->name('settings.qc-saved-replies');
     Route::patch('/settings/email-notifications', [SettingController::class, 'updateEmailNotificationTexts'])->name('settings.email-notifications');
 
-    Route::post('/admin/approvals/bio/{user}',      [AdminApprovalController::class, 'approveBio'])->name('admin.approvals.bio.approve');
-    Route::delete('/admin/approvals/bio/{user}',    [AdminApprovalController::class, 'rejectBio'])->name('admin.approvals.bio.reject');
-    Route::post('/admin/approvals/photo/{user}',    [AdminApprovalController::class, 'approvePhoto'])->name('admin.approvals.photo.approve');
-    Route::delete('/admin/approvals/photo/{user}',  [AdminApprovalController::class, 'rejectPhoto'])->name('admin.approvals.photo.reject');
+    Route::post('/admin/approvals/bio/{user}/approve',   [AdminApprovalController::class, 'approveBio'])->name('admin.approvals.bio.approve');
+    Route::post('/admin/approvals/bio/{user}/reject',    [AdminApprovalController::class, 'rejectBio'])->name('admin.approvals.bio.reject');
+    Route::post('/admin/approvals/photo/{user}/approve', [AdminApprovalController::class, 'approvePhoto'])->name('admin.approvals.photo.approve');
+    Route::post('/admin/approvals/photo/{user}/reject',  [AdminApprovalController::class, 'rejectPhoto'])->name('admin.approvals.photo.reject');
 
     Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
     Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');

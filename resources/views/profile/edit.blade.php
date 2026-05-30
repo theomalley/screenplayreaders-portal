@@ -20,8 +20,10 @@
             @php
                 $meProfile    = auth()->user()->isAdminOrEditor() ? auth()->user()->editorProfile : auth()->user()->readerProfile;
                 $currentPhoto = $meProfile?->photo ? asset('storage/' . $meProfile->photo) : null;
-                $pendingPhoto = $meProfile?->photo_pending ? asset('storage/' . $meProfile->photo_pending) : null;
-                $pendingBio   = $meProfile?->bio_pending;
+                $pendingPhoto        = $meProfile?->photo_pending ? asset('storage/' . $meProfile->photo_pending) : null;
+                $pendingBio         = $meProfile?->bio_pending;
+                $photoRejectionNote = $meProfile?->photo_rejection_note;
+                $bioRejectionNote   = $meProfile?->bio_rejection_note;
             @endphp
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl" x-data="{ preview: null }">
@@ -58,7 +60,12 @@
                                     <span class="ml-3 text-sm text-amber-600">Submitted for admin approval.</span>
                                 @endif
                             </div>
-                            @if ($pendingPhoto)
+                            @if ($photoRejectionNote)
+                                <div class="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                    <p class="font-medium">Photo rejected by admin:</p>
+                                    <p class="mt-0.5">{{ $photoRejectionNote }}</p>
+                                </div>
+                            @elseif ($pendingPhoto)
                                 <div class="mt-3 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
                                     <img src="{{ $pendingPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending photo" />
                                     <span>Photo pending admin approval.</span>
@@ -101,7 +108,12 @@
                                 <span class="ml-3 text-sm text-amber-600">Submitted for admin approval.</span>
                             @endif
                         </div>
-                        @if ($pendingBio)
+                        @if ($bioRejectionNote)
+                            <div class="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                <p class="font-medium">Bio rejected by admin:</p>
+                                <p class="mt-0.5">{{ $bioRejectionNote }}</p>
+                            </div>
+                        @elseif ($pendingBio)
                             <div class="mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
                                 Bio change pending admin approval.
                             </div>

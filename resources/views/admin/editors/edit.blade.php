@@ -61,18 +61,13 @@
                     </div>
 
                     @if ($pendingPhotoUrl)
-                        <div class="flex items-center gap-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded">
-                            <img src="{{ $pendingPhotoUrl }}" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending photo" />
-                            <div class="flex-1 text-xs text-amber-700">Pending photo waiting for approval.</div>
-                            <form method="POST" action="{{ route('admin.approvals.photo.approve', $user) }}">
-                                @csrf
-                                <button type="submit" class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
-                            </form>
-                            <form method="POST" action="{{ route('admin.approvals.photo.reject', $user) }}">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="px-2 py-1 text-xs bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200">Reject</button>
-                            </form>
-                        </div>
+                        @include('partials.approval-panel', [
+                            'type'        => 'photo',
+                            'approveUrl'  => route('admin.approvals.photo.approve', $user),
+                            'rejectUrl'   => route('admin.approvals.photo.reject', $user),
+                            'preview'     => '<img src="'.e($pendingPhotoUrl).'" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending photo" />',
+                            'label'       => 'Pending photo waiting for approval.',
+                        ])
                     @endif
 
                     {{-- Initials --}}
@@ -200,20 +195,13 @@
                                 <p class="text-gray-400 italic">Changes take up to 30 seconds to appear on the website due to caching.</p>
                             </div>
                             @if ($pendingBioContent)
-                                <div class="mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 space-y-2">
-                                    <p class="font-medium">Pending bio waiting for approval:</p>
-                                    <div class="text-gray-600 italic line-clamp-3">{{ strip_tags($pendingBioContent) }}</div>
-                                    <div class="flex gap-2">
-                                        <form method="POST" action="{{ route('admin.approvals.bio.approve', $user) }}">
-                                            @csrf
-                                            <button type="submit" class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
-                                        </form>
-                                        <form method="POST" action="{{ route('admin.approvals.bio.reject', $user) }}">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="px-2 py-1 text-xs bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200">Reject</button>
-                                        </form>
-                                    </div>
-                                </div>
+                                @include('partials.approval-panel', [
+                                    'type'        => 'bio',
+                                    'approveUrl'  => route('admin.approvals.bio.approve', $user),
+                                    'rejectUrl'   => route('admin.approvals.bio.reject', $user),
+                                    'preview'     => '<div class="text-xs text-gray-600 italic line-clamp-3">'.e(strip_tags($pendingBioContent)).'</div>',
+                                    'label'       => 'Pending bio waiting for approval:',
+                                ])
                             @endif
                         </div>
 

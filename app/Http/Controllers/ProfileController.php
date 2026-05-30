@@ -80,10 +80,12 @@ class ProfileController extends Controller
         $bio   = $data['bio'] ?? null;
         $field = $user->isAdmin() ? 'bio' : 'bio_pending';
 
+        $extra = $user->isAdmin() ? [] : ['bio_rejection_note' => null];
+
         if ($user->isReader()) {
-            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], [$field => $bio]);
+            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], array_merge([$field => $bio], $extra));
         } else {
-            $user->editorProfile()->updateOrCreate(['user_id' => $user->id], [$field => $bio]);
+            $user->editorProfile()->updateOrCreate(['user_id' => $user->id], array_merge([$field => $bio], $extra));
         }
 
         return back()->with('status', $user->isAdmin() ? 'bio-updated' : 'bio-pending');
@@ -109,7 +111,7 @@ class ProfileController extends Controller
             } else {
                 $profile = $user->readerProfile;
                 if ($profile?->photo_pending) Storage::disk('public')->delete($profile->photo_pending);
-                $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['photo_pending' => $path]);
+                $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['photo_pending' => $path, 'photo_rejection_note' => null]);
             }
         } else {
             $folder = 'editor-photos';
@@ -122,7 +124,7 @@ class ProfileController extends Controller
             } else {
                 $profile = $user->editorProfile;
                 if ($profile?->photo_pending) Storage::disk('public')->delete($profile->photo_pending);
-                $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['photo_pending' => $path]);
+                $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['photo_pending' => $path, 'photo_rejection_note' => null]);
             }
         }
 
