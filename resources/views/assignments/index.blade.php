@@ -1836,7 +1836,7 @@
                                         <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                         <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider">Assignment</th>
                                         <th class="px-3 py-3 text-center text-xs font-medium text-orange-600 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider">Notes from Admin</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-orange-600 uppercase tracking-wider">Notes from Editor</th>
                                         <th class="px-3 py-3"></th>
                                     </tr>
                                 </thead>
