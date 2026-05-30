@@ -145,10 +145,11 @@
                             <tbody class="bg-white divide-y divide-gray-100">
                                 @foreach ($editors as $editor)
                                     @php
-                                        $profile  = $editor->editorProfile;
-                                        $initials = $profile?->initials ?? strtoupper(substr($editor->name, 0, 2));
-                                        $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
-                                        $avail    = $profile?->availability ?? 'available';
+                                        $profile    = $editor->editorProfile;
+                                        $initials   = $profile?->initials ?? strtoupper(substr($editor->name, 0, 2));
+                                        $photoUrl   = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+                                        $avail      = $profile?->availability ?? 'available';
+                                        $hasPending = $profile?->bio_pending !== null || (bool) $profile?->photo_pending;
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $canEditEditors ? 'cursor-pointer' : '' }}"
                                         {{ $canEditEditors ? 'onclick=window.location.href=\''.route('admin.editors.edit', $editor).'\'' : '' }}>
@@ -166,8 +167,11 @@
                                                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
                                                 </span>
-                                                <div class="font-medium text-gray-900">
+                                                <div class="font-medium text-gray-900 flex items-center gap-1.5">
                                                     {{ $profile?->displayName() ?? $editor->name }}
+                                                    @if ($hasPending)
+                                                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Has pending bio or photo changes"></span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
@@ -227,10 +231,11 @@
                             <tbody class="bg-white divide-y divide-gray-100">
                                 @foreach ($readers as $reader)
                                     @php
-                                        $profile   = $reader->readerProfile;
-                                        $initials  = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
-                                        $photoUrl  = $profile?->photo ? asset('storage/' . $profile->photo) : null;
-                                        $avail     = $profile?->availability ?? 'available';
+                                        $profile      = $reader->readerProfile;
+                                        $initials     = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
+                                        $photoUrl     = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+                                        $avail        = $profile?->availability ?? 'available';
+                                        $hasPending   = $profile?->bio_pending !== null || (bool) $profile?->photo_pending;
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $canEditReaders ? 'cursor-pointer' : '' }}"
                                         {{ $canEditReaders ? 'onclick=window.location.href=\''.route('readers.edit', $reader).'\'' : '' }}>
@@ -248,8 +253,11 @@
                                                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
                                                     @endif
                                                 </span>
-                                                <div class="font-medium text-gray-900">
+                                                <div class="font-medium text-gray-900 flex items-center gap-1.5">
                                                     {{ $profile?->displayName() ?? $reader->name }}
+                                                    @if ($hasPending)
+                                                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Has pending bio or photo changes"></span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
