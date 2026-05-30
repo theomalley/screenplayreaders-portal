@@ -1,5 +1,6 @@
 <?php
 
+// v2.7 — 2026-05-30 | Email notification text settings (headers + body messages per notification type).
 // v2.6 — 2026-05-29 | QC saved replies — admin-customizable quick-insert notes for Send Back modal.
 // v2.5 — 2026-05-28 | Dev autofill toggle per role (admin/editor/reader) for coverage forms.
 // v2.4 — 2026-05-28 | App timezone setting (admin-configurable; used for assignment date display and input).
@@ -62,6 +63,7 @@ class SettingController extends Controller
             'reader' => (bool) Setting::getValue('dev_autofill_reader', false),
         ];
         $qcSavedReplies       = Setting::getSavedReplies();
+        $emailNotifTexts      = Setting::getEmailNotificationTexts();
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
@@ -69,7 +71,7 @@ class SettingController extends Controller
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
-            'devAutofill', 'qcSavedReplies',
+            'devAutofill', 'qcSavedReplies', 'emailNotifTexts',
         ));
     }
 
@@ -264,6 +266,21 @@ class SettingController extends Controller
         Setting::setSavedReplies($replies);
 
         return back()->with('success', 'QC saved replies updated.');
+    }
+
+    public function updateEmailNotificationTexts(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $keys  = array_keys(Setting::EMAIL_NOTIFICATION_DEFAULTS);
+        $rules = array_fill_keys($keys, 'required|string|max:500');
+        $data  = $request->validate($rules);
+
+        foreach ($data as $key => $value) {
+            Setting::setValue($key, trim($value));
+        }
+
+        return back()->with('success', 'Email notification text saved.');
     }
 
     public function updateTimezone(Request $request): RedirectResponse

@@ -1,11 +1,13 @@
 <?php
 
+// v1.2 — 2026-05-30 | Read header/body text from Settings (admin-editable)
 // v1.1 — 2026-05-30 | Pre-compute header/body labels; MailerSend does not support nested conditionals
 // v1.0 — 2026-05-30 | Initial: notify readers of new unassigned assignment via MailerSend template
 
 namespace App\Mail;
 
 use App\Models\Assignment;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,12 +29,13 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
     {
         $rush      = $this->assignment->rush;
         $requested = $this->context === 'request';
+        $texts     = Setting::getEmailNotificationTexts();
 
         $header = match(true) {
-            $requested && $rush => 'Rush Reader Request',
-            $requested          => 'Reader Request',
-            $rush               => 'Rush Assignment Available',
-            default             => 'New Assignment Available',
+            $requested && $rush => $texts['email_notif_header_rush_request'],
+            $requested          => $texts['email_notif_header_request'],
+            $rush               => $texts['email_notif_header_rush'],
+            default             => $texts['email_notif_header_new'],
         };
 
         $script_details = $this->assignment->script_title
@@ -42,8 +45,8 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
             . ')';
 
         $body_message = $requested
-            ? 'You have been specifically requested for this assignment. Head to the portal to accept it -- it may be opened to other readers if not claimed promptly.'
-            : 'This assignment has been added to the assignments list. First reader to accept it gets it.';
+            ? $texts['email_notif_body_request']
+            : $texts['email_notif_body_new'];
 
         $this->mailersend(
             template_id: config('services.mailersend.assignment_template_id'),

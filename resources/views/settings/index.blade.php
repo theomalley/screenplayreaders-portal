@@ -672,6 +672,58 @@
             </div>
             @endif
 
+            @if ($isAdmin)
+            {{-- Email Notification Texts --}}
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Email Notification Text</h3>
+                <p class="text-xs text-gray-500 mb-4">Text sent to readers when a new assignment is available. These map directly to your MailerSend template variables.</p>
+
+                <form method="POST" action="{{ route('settings.email-notifications') }}" class="space-y-5">
+                    @csrf
+                    @method('PATCH')
+
+                    <fieldset>
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Headers <span class="normal-case font-normal text-gray-400">({{ '{{ header }}' }} in template)</span></legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach ([
+                                'email_notif_header_new'          => 'Standard new assignment',
+                                'email_notif_header_rush'         => 'Rush assignment',
+                                'email_notif_header_request'      => 'Reader request',
+                                'email_notif_header_rush_request' => 'Rush reader request',
+                            ] as $key => $label)
+                            <div>
+                                <x-input-label :for="$key" :value="$label" class="mb-1" />
+                                <x-text-input :id="$key" :name="$key" type="text" class="w-full text-sm"
+                                    :value="old($key, $emailNotifTexts[$key])" required maxlength="500" />
+                            </div>
+                            @endforeach
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Body messages <span class="normal-case font-normal text-gray-400">({{ '{{ body_message }}' }} in template)</span></legend>
+                        <div class="space-y-3">
+                            @foreach ([
+                                'email_notif_body_new'     => 'Standard / rush (open pool)',
+                                'email_notif_body_request' => 'Reader request',
+                            ] as $key => $label)
+                            <div>
+                                <x-input-label :for="$key" :value="$label" class="mb-1" />
+                                <textarea :id="$key" id="{{ $key }}" name="{{ $key }}" rows="2" maxlength="500"
+                                    class="w-full text-sm border border-gray-300 rounded px-2.5 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                >{{ old($key, $emailNotifTexts[$key]) }}</textarea>
+                            </div>
+                            @endforeach
+                        </div>
+                    </fieldset>
+
+                    <div class="flex justify-end">
+                        <x-primary-button>Save notification text</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
         </div>
     </div>
 </x-app-layout>

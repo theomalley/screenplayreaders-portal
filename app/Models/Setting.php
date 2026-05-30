@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-05-30 | Add EMAIL_NOTIFICATION_DEFAULTS and getEmailNotificationTexts()
 // v1.2 — 2026-05-28 | Add getAppTimezone() for admin-configurable display timezone
 // v1.1 — 2026-05-27 | Add AGE_THRESHOLD_DEFAULTS and getAgeThresholds() for per-type age colours
 // v1.0 — 2026-05-17 | Key/value settings store; ratesForForms() shapes rates for JS
@@ -130,6 +131,28 @@ class Setting extends Model
         ['name' => 'Unhelpful content',             'body' => 'Please review your coverage with the client in mind. If you can\'t imagine a word, phrase, or line helping the writer, please modify or remove it.'],
         ['name' => 'AI usage suspected',            'body' => 'Please do not use AI or LLM tools to compose any part of your coverage, including synopsis, logline, comments, or notes.'],
     ];
+
+    public const EMAIL_NOTIFICATION_DEFAULTS = [
+        'email_notif_header_new'          => 'New Assignment Available',
+        'email_notif_header_rush'         => 'Rush Assignment Available',
+        'email_notif_header_request'      => 'Reader Request',
+        'email_notif_header_rush_request' => 'Rush Reader Request',
+        'email_notif_body_new'            => 'This assignment has been added to the assignments list. First reader to accept it gets it.',
+        'email_notif_body_request'        => 'You have been specifically requested for this assignment. Head to the portal to accept it -- it may be opened to other readers if not claimed promptly.',
+    ];
+
+    public static function getEmailNotificationTexts(): array
+    {
+        $keys   = array_keys(self::EMAIL_NOTIFICATION_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        $result = [];
+        foreach (self::EMAIL_NOTIFICATION_DEFAULTS as $key => $default) {
+            $result[$key] = $stored[$key] ?? $default;
+        }
+
+        return $result;
+    }
 
     public static function getSavedReplies(): array
     {
