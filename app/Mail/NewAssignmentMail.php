@@ -50,6 +50,7 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
         $script_details = $this->assignment->script_title
             . ' by ' . $this->assignment->writer_name
             . ' (' . $this->assignment->page_count . ' pages'
+            . ', $' . number_format((float) $this->assignment->pay_rate, 2)
             . ($rush ? ', RUSH' : '')
             . ')';
 
