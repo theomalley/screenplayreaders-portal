@@ -180,6 +180,11 @@
                                       placeholder="Displayed on the public website. HTML is supported.">{{ old('bio', $profile?->bio) }}</textarea>
                             <p class="mt-1 text-xs text-gray-400">HTML allowed — &lt;b&gt;, &lt;i&gt;, &lt;a href=""&gt;, etc. Max 5000 characters.</p>
                             <x-input-error :messages="$errors->get('bio')" class="mt-1" />
+                            <div class="mt-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500 space-y-1">
+                                <p class="font-medium text-gray-600">Website shortcodes</p>
+                                <p><code class="bg-white px-1 rounded border border-gray-200">[sr_staff_photo id="{{ $user->id }}"]</code></p>
+                                <p><code class="bg-white px-1 rounded border border-gray-200">[sr_staff_bio id="{{ $user->id }}"]</code></p>
+                            </div>
                         </div>
                     </div>
 
