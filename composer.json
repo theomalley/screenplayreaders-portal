@@ -10,6 +10,7 @@
         "google/apiclient": "^2.19",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
+        "mailersend/laravel-driver": "^3.1",
         "setasign/fpdf": "^1.8",
         "setasign/fpdi": "^2.6"
     },
