@@ -182,8 +182,8 @@
                             <x-input-error :messages="$errors->get('bio')" class="mt-1" />
                             <div class="mt-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500 space-y-1">
                                 <p class="font-medium text-gray-600">Website shortcodes</p>
-                                <p><code class="bg-white px-1 rounded border border-gray-200">[sr_staff_photo id="{{ $user->id }}"]</code></p>
-                                <p><code class="bg-white px-1 rounded border border-gray-200">[sr_staff_bio id="{{ $user->id }}"]</code></p>
+                                <p><code class="bg-white px-1 rounded border border-gray-200 select-all">[sr_staff_photo id="{{ $user->id }}" float="left" width="200" height="200" gap="1.5em"]</code></p>
+                                <p><code class="bg-white px-1 rounded border border-gray-200 select-all">[sr_staff_bio id="{{ $user->id }}"]</code></p>
                             </div>
                         </div>
                     </div>
