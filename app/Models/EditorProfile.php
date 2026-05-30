@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-30 | Add bio to fillable
 // v1.4 — 2026-05-30 | Add title to fillable
 // v1.3 — 2026-05-28 | Add editor_commission and editor_weekly_flat
 // v1.2 — 2026-05-28 | Add timezone to fillable
@@ -20,6 +21,7 @@ class EditorProfile extends Model
         'first_name',
         'last_name',
         'title',
+        'bio',
         'photo',
         'paypal_email',
         'availability',

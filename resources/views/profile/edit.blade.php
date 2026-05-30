@@ -25,7 +25,7 @@
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl" x-data="{ preview: null }">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Profile Photo</h2>
-                    <p class="text-sm text-gray-600 mb-4">Shown as your avatar on announcements and staff views.</p>
+                    <p class="text-sm text-gray-600 mb-4">Used as your avatar throughout the portal and on the public website. Minimum 600×600 px.</p>
 
                     <div class="flex items-center gap-5 mb-4">
                         <div class="relative w-16 h-16 rounded-full bg-gray-200 overflow-hidden shrink-0">
@@ -47,7 +47,7 @@
                                           file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
                                           file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
                                           hover:file:bg-gray-200 cursor-pointer" />
-                            <p class="mt-1 text-xs text-gray-400">JPG, PNG, or WebP · max 4 MB</p>
+                            <p class="mt-1 text-xs text-gray-400">JPG, PNG, or WebP · min 600×600 px · max 8 MB</p>
                             <x-input-error :messages="$errors->get('photo')" class="mt-1" />
                             <div class="mt-3">
                                 <x-primary-button>Upload Photo</x-primary-button>
@@ -57,6 +57,34 @@
                             </div>
                         </form>
                     </div>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    @php
+                        $currentBio = auth()->user()->isAdminOrEditor()
+                            ? auth()->user()->editorProfile?->bio
+                            : auth()->user()->readerProfile?->bio;
+                    @endphp
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Bio</h2>
+                    <p class="text-sm text-gray-600 mb-4">Displayed on the public website. HTML is supported — you can use <code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;a href=""&gt;</code>, etc.</p>
+
+                    <form method="POST" action="{{ route('profile.bio') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <textarea id="bio" name="bio" rows="6"
+                                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-y"
+                                  maxlength="5000"
+                                  placeholder="Write your bio here. HTML is allowed.">{{ old('bio', $currentBio) }}</textarea>
+                        <x-input-error :messages="$errors->get('bio')" class="mt-1" />
+                        <div>
+                            <x-primary-button>Save Bio</x-primary-button>
+                            @if (session('status') === 'bio-updated')
+                                <span class="ml-3 text-sm text-green-600">Saved.</span>
+                            @endif
+                        </div>
+                    </form>
                 </div>
             </div>
             @endif

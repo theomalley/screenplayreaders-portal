@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\HelpScoutConversationController;
 use App\Http\Controllers\Api\IncomingAssignmentController;
 use App\Http\Controllers\Api\OrderRevenueController;
 use App\Http\Controllers\Api\ReadersController;
+use App\Http\Controllers\Api\StaffProfileController;
 use Illuminate\Support\Facades\Route;
 
 // PORTAL INTEGRATION: called by WordPress sr-upload-system.php after customer checkout + script upload
@@ -17,3 +18,6 @@ Route::post('/helpscout-conversation', [HelpScoutConversationController::class, 
 
 // WOOCOMMERCE INTEGRATION: called by woo_order-financials.php (priority 15) on order completion — stores financials
 Route::post('/order-revenue', [OrderRevenueController::class, 'store']);
+
+// PUBLIC STAFF PROFILES: called by WordPress shortcodes to render staff bios and photos on the website
+Route::get('/staff/{user}', [StaffProfileController::class, 'show'])->middleware('throttle:60,1');

@@ -71,12 +71,30 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'notifications-updated');
     }
 
+    public function updateBio(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isAdminOrEditor() || $user->isReader(), 403);
+
+        $data = $request->validate(['bio' => 'nullable|string|max:5000']);
+
+        if ($user->isReader()) {
+            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['bio' => $data['bio'] ?? null]);
+        } else {
+            $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['bio' => $data['bio'] ?? null]);
+        }
+
+        return back()->with('status', 'bio-updated');
+    }
+
     public function uploadPhoto(Request $request): RedirectResponse
     {
         $user = $request->user();
         abort_unless($user->isAdminOrEditor() || $user->isReader(), 403);
 
-        $request->validate(['photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:4096']);
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:8192|dimensions:min_width=600,min_height=600',
+        ]);
 
         if ($user->isReader()) {
             $profile = $user->readerProfile;
