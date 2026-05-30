@@ -168,6 +168,7 @@
                                 <p class="font-medium text-gray-600">Website shortcodes</p>
                                 <p><code class="bg-white px-1 rounded border border-gray-200 select-all">[sr_staff_photo id="{{ $user->id }}" float="left" width="200" height="200" gap="1.5em"]</code></p>
                                 <p><code class="bg-white px-1 rounded border border-gray-200 select-all">[sr_staff_bio id="{{ $user->id }}"]</code></p>
+                                <p class="text-gray-400 italic">Changes take up to 30 seconds to appear on the website due to caching.</p>
                             </div>
                         </div>
 
