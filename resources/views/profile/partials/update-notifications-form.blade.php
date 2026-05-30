@@ -51,6 +51,12 @@
                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                     Reader requests (when I'm specifically requested)
                 </label>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" name="sms_notify_followup" value="1"
+                           {{ auth()->user()->readerProfile?->sms_notify_followup ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                    Followup questions from customers
+                </label>
             </div>
         </div>
 
@@ -96,6 +102,12 @@
                            @change="requests = $event.target.checked"
                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                     Reader requests (when I'm specifically requested)
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input type="checkbox" name="email_notify_followup" value="1"
+                           {{ auth()->user()->readerProfile?->email_notify_followup ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                    Followup questions from customers
                 </label>
             </div>
         </div>

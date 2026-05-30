@@ -20,6 +20,8 @@ use App\Http\Requests\StoreAssignmentRequest;
 use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Client;
+use App\Models\FollowupQuestion;
+use App\Models\FollowupToken;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\InvoiceService;
@@ -115,6 +117,11 @@ class AssignmentController extends Controller
                 ->orderBy('accepted_at', 'desc')
                 ->get();
 
+            $followups = FollowupQuestion::with(['assignment.assignedReader.readerProfile'])
+                ->whereIn('status', [FollowupQuestion::STATUS_PENDING, FollowupQuestion::STATUS_ANSWERED])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
             return view('assignments.index', [
                 'canManage'        => true,
                 'assignments'      => $assignments,
@@ -128,6 +135,7 @@ class AssignmentController extends Controller
                 'myAssignments'    => $myAssignments,
                 'ageThresholds'    => Setting::getAgeThresholds(),
                 'appTimezone'      => Setting::getAppTimezone(),
+                'followups'        => $followups,
             ]);
         }
 
@@ -179,6 +187,12 @@ class AssignmentController extends Controller
             ->filter(fn($u) => $u->isOnline() || $u->id === $user->id)
             ->values();
 
+        $myFollowups = FollowupQuestion::with(['assignment'])
+            ->whereHas('assignment', fn($q) => $q->where('assigned_reader_id', $user->id))
+            ->whereIn('status', [FollowupQuestion::STATUS_UNANSWERED, FollowupQuestion::STATUS_ANSWERED])
+            ->orderBy('unanswered_at', 'asc')
+            ->get();
+
         return view('assignments.index', [
             'canManage'        => false,
             'available'        => $available,
@@ -191,6 +205,7 @@ class AssignmentController extends Controller
             'appTimezone'      => Setting::getAppTimezone(),
             'onlineEditors'    => $onlineEditors,
             'onlineReaders'    => $onlineReaders,
+            'myFollowups'      => $myFollowups,
         ]);
     }
 
@@ -696,6 +711,45 @@ class AssignmentController extends Controller
         ]);
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Generate (or return existing) a followup token URL for an order.
+     * Finds all assignment slots sharing the same order_number and builds one token covering them all.
+     */
+    public function generateFollowupToken(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        $orderNumber  = $assignment->order_number;
+        $assignments  = Assignment::where('order_number', $orderNumber)
+            ->whereNotNull('assigned_reader_id')
+            ->get();
+
+        abort_if($assignments->isEmpty(), 422, 'No assigned reader slots found for this order.');
+
+        $existing = FollowupToken::where('order_number', $orderNumber)
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (! $existing) {
+            $existing = FollowupToken::create([
+                'token'          => bin2hex(random_bytes(32)),
+                'order_number'   => $orderNumber,
+                'assignment_ids' => $assignments->pluck('id')->values()->all(),
+                'customer_email' => null,
+                'expires_at'     => now()->addDays(30),
+            ]);
+        }
+
+        $url = route('followup.show', $existing->token);
+
+        if ($request->expectsJson()) {
+            return response()->json(['url' => $url]);
+        }
+
+        return back()->with('followup_url', $url);
     }
 
     public function destroy(Assignment $assignment)

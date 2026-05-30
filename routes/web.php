@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AdminApprovalController;
+use App\Http\Controllers\FollowupFormController;
+use App\Http\Controllers\FollowupQuestionController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\ArchiveController;
@@ -28,6 +30,10 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\WooOrderController;
 use Illuminate\Support\Facades\Route;
+
+// Public followup form — no auth required
+Route::get('/followup/{token}',  [FollowupFormController::class, 'show'])->name('followup.show');
+Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->name('followup.submit');
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -61,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/remove-pages', [AssignmentController::class, 'removePages'])->name('assignments.removePages');
     Route::post('assignments/{assignment}/add-reader', [AssignmentController::class, 'addReader'])->name('assignments.addReader');
     Route::post('assignments/{assignment}/accept', [AssignmentController::class, 'accept'])->name('assignments.accept');
+    Route::post('assignments/{assignment}/followup-token', [AssignmentController::class, 'generateFollowupToken'])->name('assignments.followup-token');
     Route::post('assignments/{assignment}/decline', [AssignmentController::class, 'decline'])->name('assignments.decline');
     Route::post('assignments/{assignment}/cancel', [AssignmentController::class, 'cancel'])->name('assignments.cancel');
     Route::patch('assignments/{assignment}/status', [AssignmentController::class, 'updateStatus'])->name('assignments.updateStatus');
@@ -100,6 +107,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/dev-autofill', [SettingController::class, 'updateDevAutofill'])->name('settings.dev-autofill');
     Route::patch('/settings/qc-saved-replies', [SettingController::class, 'updateQcSavedReplies'])->name('settings.qc-saved-replies');
     Route::patch('/settings/email-notifications', [SettingController::class, 'updateEmailNotificationTexts'])->name('settings.email-notifications');
+
+    // Followup question management (admin/editor)
+    Route::patch('/followups/{followup}',          [FollowupQuestionController::class, 'update'])->name('followups.update');
+    Route::delete('/followups/{followup}',         [FollowupQuestionController::class, 'destroy'])->name('followups.destroy');
+    Route::post('/followups/{followup}/complete',  [FollowupQuestionController::class, 'complete'])->name('followups.complete');
+    // Reader response
+    Route::post('/followups/{followup}/respond',   [FollowupQuestionController::class, 'respond'])->name('followups.respond');
 
     Route::post('/admin/approvals/bio/{user}/approve',   [AdminApprovalController::class, 'approveBio'])->name('admin.approvals.bio.approve');
     Route::post('/admin/approvals/bio/{user}/reject',    [AdminApprovalController::class, 'rejectBio'])->name('admin.approvals.bio.reject');

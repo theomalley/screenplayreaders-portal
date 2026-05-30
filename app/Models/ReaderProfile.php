@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-05-30 | Add followup notification fields to fillable
 // v1.8 — 2026-05-30 | Add bio_pending and photo_pending to fillable
 // v1.7 — 2026-05-30 | Add bio to fillable
 // v1.6 — 2026-05-30 | Add title to fillable
@@ -43,6 +44,8 @@ class ReaderProfile extends Model
         'email_notify_any',
         'email_notify_rush',
         'email_notify_requests',
+        'email_notify_followup',
+        'sms_notify_followup',
         'availability',
         'availability_message',
         'upload_warning',
@@ -58,7 +61,9 @@ class ReaderProfile extends Model
         'email_notifications'  => 'boolean',
         'email_notify_any'     => 'boolean',
         'email_notify_rush'    => 'boolean',
-        'email_notify_requests'=> 'boolean',
+        'email_notify_requests' => 'boolean',
+        'email_notify_followup' => 'boolean',
+        'sms_notify_followup'   => 'boolean',
     ];
 
     public function user(): BelongsTo

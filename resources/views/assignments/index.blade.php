@@ -79,6 +79,100 @@
             {{-- ===== ADMIN / EDITOR VIEW ===== --}}
             @if ($canManage)
 
+                {{-- ---- Followup Questions panel ---- --}}
+                @if (($followups ?? collect())->isNotEmpty())
+                <div class="mb-5">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        Followup Questions
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">{{ $followups->count() }}</span>
+                    </h3>
+                    <div class="space-y-2">
+                        @foreach ($followups as $fq)
+                            @php
+                                $fqAssignment = $fq->assignment;
+                                $fqReader     = $fqAssignment?->assignedReader;
+                                $fqInitials   = $fqReader?->readerProfile?->initials ?? ($fqReader ? strtoupper(substr($fqReader->name, 0, 2)) : '??');
+                                $fqDeadline   = $fq->deadlineAt();
+                                $fqStatus     = $fq->status;
+                                $fqRowColor   = $fqStatus === 'answered' ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50';
+                            @endphp
+                            <div x-data="{ open: false }" class="border rounded-lg px-4 py-3 {{ $fqRowColor }}">
+                                <div class="flex items-center gap-3 flex-wrap">
+                                    <span class="text-xs font-mono text-gray-500">{{ $fqAssignment?->order_number }}</span>
+                                    <span class="text-sm font-medium text-gray-800">{{ $fqAssignment?->script_title }}</span>
+                                    <span class="text-xs text-gray-500">· Reader {{ $fqInitials }}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                        {{ $fqStatus === 'pending' ? 'bg-gray-100 text-gray-600' : ($fqStatus === 'answered' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700') }}">
+                                        {{ ucfirst($fqStatus) }}
+                                    </span>
+                                    @if ($fqDeadline && $fqStatus === 'unanswered')
+                                        <div x-data="rushCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
+                                             x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs"></div>
+                                    @endif
+                                    <button type="button" @click="open = !open"
+                                            class="ml-auto text-xs text-indigo-500 hover:text-indigo-700 underline">
+                                        <span x-text="open ? 'Hide' : 'Edit / Review'"></span>
+                                    </button>
+                                </div>
+
+                                <div x-show="open" x-cloak class="mt-3 space-y-3 border-t border-gray-200 pt-3">
+                                    <form method="POST" action="{{ route('followups.update', $fq) }}" class="space-y-3">
+                                        @csrf @method('PATCH')
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Customer's questions</label>
+                                            <div class="text-xs text-gray-500 italic bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Edited questions shown to reader</label>
+                                            <textarea name="edited_questions" rows="3"
+                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
+                                        </div>
+
+                                        @if ($fqStatus === 'answered')
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Reader's response</label>
+                                            <div class="text-xs text-gray-500 italic bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->reader_response ?? '—' }}</div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Edited response sent to customer</label>
+                                            <textarea name="edited_response" rows="4"
+                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">{{ old('edited_response', $fq->edited_response ?? $fq->reader_response) }}</textarea>
+                                        </div>
+                                        @endif
+
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <select name="status" class="text-xs border border-gray-300 rounded px-2 py-1">
+                                                @foreach (['pending' => 'Pending', 'unanswered' => 'Unanswered', 'answered' => 'Answered'] as $val => $label)
+                                                    <option value="{{ $val }}" {{ $fq->status === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="submit" class="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Save</button>
+                                        </div>
+                                    </form>
+
+                                    @if ($fqStatus === 'answered')
+                                    <form method="POST" action="{{ route('followups.complete', $fq) }}">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">
+                                            Mark Complete &amp; Create HelpScout Draft
+                                        </button>
+                                    </form>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('followups.destroy', $fq) }}"
+                                          onsubmit="return confirm('Delete this followup question?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="px-3 py-1 text-xs bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
                 {{-- Staff panel: editors first, then readers --}}
                 @if ($editors->isNotEmpty() || $readers->isNotEmpty())
                     <div class="mb-5" x-data="{ activeStaff: null }">
@@ -919,6 +1013,7 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Reader</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Completed</th>
+                                    <th class="px-3 py-2"></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -956,6 +1051,24 @@
                                         <td class="px-3 py-2 whitespace-nowrap text-gray-600 text-xs">{{ $arcType }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap text-gray-600 text-xs">{{ $arcReader }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap text-gray-500 text-xs">{{ $arc->completed_at?->format('M j, Y') ?? '—' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap text-right">
+                                            <button type="button"
+                                                    x-data="{ copied: false }"
+                                                    @click="
+                                                        fetch('{{ route('assignments.followup-token', $arc) }}', {
+                                                            method: 'POST',
+                                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                                        }).then(r => r.json()).then(d => {
+                                                            navigator.clipboard.writeText(d.url);
+                                                            copied = true;
+                                                            setTimeout(() => copied = false, 2000);
+                                                        })
+                                                    "
+                                                    :title="copied ? 'Copied!' : 'Copy followup URL'"
+                                                    class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
+                                                <span x-text="copied ? '✓ Copied' : 'Followup URL'"></span>
+                                            </button>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -1299,6 +1412,16 @@
 
                     {{-- ---- Available Assignments tab ---- --}}
                     <div x-show="tab === 'all'">
+
+                        {{-- Followup questions waiting for this reader --}}
+                        @foreach (($myFollowups ?? collect())->where('status', 'unanswered') as $fq)
+                            @php
+                                $fqA        = $fq->assignment;
+                                $fqDeadline = $fq->deadlineAt();
+                            @endphp
+                            @include('partials.reader-followup-row', ['fq' => $fq, 'fqA' => $fqA, 'fqDeadline' => $fqDeadline, 'appTimezone' => $appTimezone])
+                        @endforeach
+
                         @if($available->isEmpty())
                             <div class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-400 text-sm">
                                 No assignments available right now.
@@ -1500,6 +1623,16 @@
 
                     {{-- ---- My Assignments tab ---- --}}
                     <div x-show="tab === 'mine'">
+
+                        {{-- Followup questions active for this reader --}}
+                        @foreach (($myFollowups ?? collect()) as $fq)
+                            @php
+                                $fqA        = $fq->assignment;
+                                $fqDeadline = $fq->deadlineAt();
+                            @endphp
+                            @include('partials.reader-followup-row', ['fq' => $fq, 'fqA' => $fqA, 'fqDeadline' => $fqDeadline, 'appTimezone' => $appTimezone])
+                        @endforeach
+
                         @php
                             $mineCurrent   = $mine->filter(fn($a) => in_array($a->status, ['assigned', 'qc']));
                             $mineCompleted = $mine->filter(fn($a) =>
@@ -2012,6 +2145,19 @@
                                                             <div class="text-[10px] text-gray-400 tabular-nums mt-0.5">Completed {{ $assignment->completed_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') ?? '—' }}</div>
                                                             @if($rtaStr)
                                                                 <div class="text-[10px] text-gray-400 tabular-nums">Reader turnaround time: {{ $rtaStr }}</div>
+                                                            @endif
+                                                            @php
+                                                                $fqComplete = \App\Models\FollowupQuestion::where('assignment_id', $assignment->id)
+                                                                    ->where('status', \App\Models\FollowupQuestion::STATUS_COMPLETE)
+                                                                    ->exists();
+                                                                $fqPending = \App\Models\FollowupQuestion::where('assignment_id', $assignment->id)
+                                                                    ->whereIn('status', ['unanswered', 'answered'])
+                                                                    ->exists();
+                                                            @endphp
+                                                            @if($fqComplete)
+                                                                <div class="text-[10px] text-green-600 font-medium mt-0.5">✓ Followup questions answered</div>
+                                                            @elseif($fqPending)
+                                                                <div class="text-[10px] text-amber-600 font-medium mt-0.5">Followup questions pending</div>
                                                             @endif
                                                             @if($assignment->coverageSubmission)
                                                                 <button @click="textOpen = true" type="button"
