@@ -26,12 +26,35 @@
         }
         .request-pulse { animation: request-pulse 2.5s ease-in-out infinite; }
 
-        @keyframes rush-due-flash {
-            0%,  49.9% { color: rgb(234, 88, 12); }
-            50%, 100%  { color: transparent; }
+        .rush-due { color: rgb(234, 88, 12); }
+
+        @keyframes rush-countdown-blink {
+            0%, 49.9% { opacity: 1; }
+            50%, 100% { opacity: 0; }
         }
-        .rush-due { animation: rush-due-flash 2s linear infinite; }
+        .rush-countdown { animation: rush-countdown-blink 1s linear infinite; color: rgb(234, 88, 12); }
     </style>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('rushCountdown', (dueAt) => ({
+                display: '',
+                _iv: null,
+                init() {
+                    this._update();
+                    this._iv = setInterval(() => this._update(), 1000);
+                },
+                destroy() { clearInterval(this._iv); },
+                _update() {
+                    const diff = new Date(dueAt) - Date.now();
+                    if (diff <= 0) { this.display = 'Overdue'; clearInterval(this._iv); return; }
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    this.display = 'Due in ' + h + 'h ' + m + 'm ' + s + 's';
+                }
+            }));
+        });
+    </script>
 
     <div class="py-6">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -185,7 +208,7 @@
                                                 @foreach ($editor->assignments as $ra)
                                                     <li class="flex items-center gap-2 text-sm text-gray-700">
                                                         @if ($ra->rush)
-                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span><span class="rush-due text-[9px] ml-1">Due by {{ $ra->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span>
+                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span><span class="rush-due text-[9px] ml-1">Due by {{ $ra->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span><span x-data="rushCountdown('{{ $ra->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px] ml-1"></span>
                                                         @endif
                                                         <span class="font-medium">{{ $ra->script_title }}</span>
                                                         <span class="text-gray-400">{{ $ra->writer_name }}</span>
@@ -265,7 +288,7 @@
                                                 @foreach ($reader->assignments as $ra)
                                                     <li class="flex items-center gap-2 text-sm text-gray-700">
                                                         @if ($ra->rush)
-                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span><span class="rush-due text-[9px] ml-1">Due by {{ $ra->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span>
+                                                            <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span><span class="rush-due text-[9px] ml-1">Due by {{ $ra->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span><span x-data="rushCountdown('{{ $ra->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px] ml-1"></span>
                                                         @endif
                                                         <span class="font-medium">{{ $ra->script_title }}</span>
                                                         <span class="text-gray-400">{{ $ra->writer_name }}</span>
@@ -423,7 +446,7 @@
                                             <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 Age: {{ $ageStr }}
                                                 @if ($assignment->rush)
-                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div><div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px]"></div>
                                                 @endif
                                             </div>
                                             @if ($hsId)
@@ -757,7 +780,7 @@
                                             <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 Age: {{ $ageStr }}
                                                 @if ($assignment->rush)
-                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div><div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px]"></div>
                                                 @endif
                                             </div>
                                             @if ($hsId)
@@ -1035,7 +1058,7 @@
                                             <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                 {{ $ageStr }}
                                                 @if ($assignment->rush)
-                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
+                                                    <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div><div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px]"></div>
                                                 @endif
                                             </div>
                                             @can('update', $assignment)
@@ -1344,7 +1367,7 @@
                                                     <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                         Age: {{ $ageStr }}
                                                         @if ($assignment->rush)
-                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div><div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px]"></div>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -1574,7 +1597,7 @@
                                                     <div class="text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                         Age: {{ $ageStr }}
                                                         @if ($assignment->rush)
-                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div><div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px]"></div>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -1744,7 +1767,7 @@
                                                     <td class="px-3 py-3 whitespace-nowrap">
                                                         <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                                         @if ($assignment->rush)
-                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
+                                                            <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div><div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px]"></div>
                                                         @endif
                                                         <div class="mt-1.5">
                                                             <div class="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Overall Turnaround</div>
@@ -1865,7 +1888,7 @@
                                                 <div class="mt-1 text-xs tabular-nums {{ $ageColor }}" title="{{ $ageTitle }}">
                                                     {{ $ageStr }}
                                                     @if ($assignment->rush)
-                                                        <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div>
+                                                        <div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]">Due by {{ $assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia') }}</span></div><div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}')" x-text="display" class="rush-countdown text-[9px]"></div>
                                                     @endif
                                                 </div>
                                             </td>
