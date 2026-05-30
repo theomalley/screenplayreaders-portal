@@ -683,7 +683,7 @@
                     @method('PATCH')
 
                     <fieldset>
-                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Subject lines <span class="normal-case font-normal text-gray-400">({{ '{{ subject }}' }} in template)</span></legend>
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Subject lines <span class="normal-case font-normal text-gray-400">(@{{ subject }} in template)</span></legend>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             @foreach ([
                                 'email_notif_subject_new'          => 'Standard new assignment',
@@ -701,7 +701,7 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Headers <span class="normal-case font-normal text-gray-400">({{ '{{ header }}' }} in template)</span></legend>
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Headers <span class="normal-case font-normal text-gray-400">(@{{ header }} in template)</span></legend>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             @foreach ([
                                 'email_notif_header_new'          => 'Standard new assignment',
@@ -719,7 +719,7 @@
                     </fieldset>
 
                     <fieldset>
-                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Body messages <span class="normal-case font-normal text-gray-400">({{ '{{ body_message }}' }} in template)</span></legend>
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Body messages <span class="normal-case font-normal text-gray-400">(@{{ body_message }} in template)</span></legend>
                         <div class="space-y-3">
                             @foreach ([
                                 'email_notif_body_new'     => 'Standard / rush (open pool)',
