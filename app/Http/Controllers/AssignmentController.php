@@ -1,5 +1,6 @@
 <?php
 
+// v2.5 — 2026-05-30 | Fire reader notifications on status→unassigned in update() and updateStatus().
 // v2.4 — 2026-05-30 | Email readers on new unassigned assignment via ReaderNotificationService.
 // v2.3 — 2026-05-28 | Reader view: pass onlineEditors + onlineReaders for staff icon panel.
 // v2.2 — 2026-05-28 | Deep-Dive Dev Notes includes a free reader request — exclude request fee from pay rate.
@@ -549,8 +550,10 @@ class AssignmentController extends Controller
         }
         unset($data['date'], $data['time']);
 
-        if ($data['status'] === Assignment::STATUS_UNASSIGNED
-            && $assignment->status !== Assignment::STATUS_UNASSIGNED) {
+        $transitioningToUnassigned = $data['status'] === Assignment::STATUS_UNASSIGNED
+            && $assignment->status !== Assignment::STATUS_UNASSIGNED;
+
+        if ($transitioningToUnassigned) {
             $data['unassigned_at'] = now();
         }
 
@@ -569,6 +572,10 @@ class AssignmentController extends Controller
         }
 
         $assignment->update($data);
+
+        if ($transitioningToUnassigned) {
+            app(ReaderNotificationService::class)->notifyNewAssignment($assignment->fresh());
+        }
 
         if ($newCreatedAt) {
             DB::table('assignments')
@@ -595,8 +602,10 @@ class AssignmentController extends Controller
 
         $data = ['status' => $request->status];
 
-        if ($request->status === Assignment::STATUS_UNASSIGNED
-            && $assignment->status !== Assignment::STATUS_UNASSIGNED) {
+        $transitioningToUnassigned = $request->status === Assignment::STATUS_UNASSIGNED
+            && $assignment->status !== Assignment::STATUS_UNASSIGNED;
+
+        if ($transitioningToUnassigned) {
             $data['unassigned_at'] = now();
         }
 
@@ -617,6 +626,10 @@ class AssignmentController extends Controller
         }
 
         $assignment->update($data);
+
+        if ($transitioningToUnassigned) {
+            app(ReaderNotificationService::class)->notifyNewAssignment($assignment->fresh());
+        }
 
         return back()->with('success', 'Status updated.');
     }
