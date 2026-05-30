@@ -1,5 +1,6 @@
 <?php
 
+// v2.4 — 2026-05-30 | Email readers on new unassigned assignment via ReaderNotificationService.
 // v2.3 — 2026-05-28 | Reader view: pass onlineEditors + onlineReaders for staff icon panel.
 // v2.2 — 2026-05-28 | Deep-Dive Dev Notes includes a free reader request — exclude request fee from pay rate.
 // v2.1 — 2026-05-28 | Parse assignment date input in app timezone; pass $appTimezone to index/edit views.
@@ -22,6 +23,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\InvoiceService;
 use App\Services\GoogleDriveService;
+use App\Services\ReaderNotificationService;
 use App\Support\FilenameGenerator;
 use App\Support\PayPeriod;
 use Illuminate\Http\Request;
@@ -220,7 +222,8 @@ class AssignmentController extends Controller
         ];
         unset($data['num_readers'], $data['requested_reader_id_1'], $data['requested_reader_id_2'], $data['requested_reader_id_3']);
 
-        $firstAssignment = null;
+        $firstAssignment    = null;
+        $createdAssignments = [];
 
         if ($numReaders === 1) {
             $data['requested_reader_id'] = $readerIds[0];
@@ -228,7 +231,8 @@ class AssignmentController extends Controller
             if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
                 $data['unassigned_at'] = now();
             }
-            $firstAssignment = Assignment::create($data);
+            $firstAssignment      = Assignment::create($data);
+            $createdAssignments[] = $firstAssignment;
         } else {
             $rates              = Setting::ratesForForms();
             $pageCount          = (int) ($data['page_count'] ?? 0);
@@ -262,6 +266,7 @@ class AssignmentController extends Controller
                 if ($firstAssignment === null) {
                     $firstAssignment = $created;
                 }
+                $createdAssignments[] = $created;
             }
         }
 
@@ -280,6 +285,11 @@ class AssignmentController extends Controller
         $invoiceMsg = '';
         if ($firstAssignment && $request->boolean('create_invoice') && $request->filled('invoice_client_id')) {
             $invoiceMsg = $this->maybeGenerateInvoice($request, $firstAssignment);
+        }
+
+        $notifier = app(ReaderNotificationService::class);
+        foreach ($createdAssignments as $assignment) {
+            $notifier->notifyNewAssignment($assignment);
         }
 
         $label = $numReaders === 1 ? 'Assignment created.' : "{$numReaders} assignments created.";

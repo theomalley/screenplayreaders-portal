@@ -1,0 +1,1 @@
+{{-- Intentionally empty — MailerSend driver uses the template_id and ignores view content --}}
