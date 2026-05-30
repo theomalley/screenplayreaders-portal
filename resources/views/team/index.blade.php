@@ -109,6 +109,7 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Editor</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
                                 </tr>
@@ -149,6 +150,9 @@
                                                 </div>
                                             </div>
                                         </td>
+                                        <td class="px-4 py-3 text-gray-500 text-sm">
+                                            {{ $profile?->title ?? '—' }}
+                                        </td>
                                         <td class="px-4 py-3 text-gray-500">
                                             <a href="mailto:{{ $editor->email }}" class="hover:text-indigo-600 hover:underline">{{ $editor->email }}</a>
                                         </td>
@@ -188,6 +192,7 @@
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reader</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
                                 </tr>
@@ -227,6 +232,9 @@
                                                     {{ $profile?->displayName() ?? $reader->name }}
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-gray-500 text-sm">
+                                            {{ $profile?->title ?? '—' }}
                                         </td>
                                         <td class="px-4 py-3 text-gray-500">
                                             <a href="mailto:{{ $reader->email }}" class="hover:text-indigo-600 hover:underline">{{ $reader->email }}</a>
