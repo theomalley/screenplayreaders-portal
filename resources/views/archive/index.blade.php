@@ -35,6 +35,7 @@
                                 <th class="px-4 py-3 text-left">Turnaround</th>
                                 <th class="px-4 py-3 text-left">Coverage</th>
                                 <th class="px-4 py-3 text-center">GoBack</th>
+                                <th class="px-4 py-3 text-right">Followup</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -324,6 +325,26 @@
                                         @else
                                             <span class="text-gray-300 text-xs">—</span>
                                         @endif
+                                    </td>
+
+                                    {{-- Followup URL --}}
+                                    <td class="px-4 py-3 text-right">
+                                        <button type="button"
+                                                x-data="{ copied: false }"
+                                                @click="
+                                                    fetch('{{ route('assignments.followup-token', $first) }}', {
+                                                        method: 'POST',
+                                                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                                    }).then(r => r.json()).then(d => {
+                                                        navigator.clipboard.writeText(d.url);
+                                                        copied = true;
+                                                        setTimeout(() => copied = false, 2000);
+                                                    })
+                                                "
+                                                :title="copied ? 'Copied!' : 'Copy followup URL'"
+                                                class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
+                                            <span x-text="copied ? '✓ Copied' : 'Followup URL'"></span>
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
