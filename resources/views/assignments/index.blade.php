@@ -105,15 +105,15 @@
             @if ($canManage)
 
                 {{-- ---- Followup Questions panel (pending only) ---- --}}
-                @php $followupsPending = ($followups ?? collect())->where('status', 'pending'); @endphp
-                @if ($followupsPending->isNotEmpty())
+                @php $followupsTop = ($followups ?? collect())->whereIn('status', ['pending', 'answered']); @endphp
+                @if ($followupsTop->isNotEmpty())
                 <div class="mb-5">
                     <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                         Followup Questions
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">{{ $followupsPending->count() }}</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">{{ $followupsTop->count() }}</span>
                     </h3>
                     <div class="space-y-2">
-                        @foreach ($followupsPending as $fq)
+                        @foreach ($followupsTop as $fq)
                             @php
                                 $fqAssignment = $fq->assignment;
                                 $fqReader     = $fqAssignment?->assignedReader;
@@ -1106,15 +1106,15 @@
                 </div> {{-- /x-data search wrapper --}}
 
                 {{-- ---- Followup Questions panel (unanswered / answered) ---- --}}
-                @php $followupsActive = ($followups ?? collect())->whereIn('status', ['unanswered', 'answered']); @endphp
-                @if ($followupsActive->isNotEmpty())
+                @php $followupsUnanswered = ($followups ?? collect())->where('status', 'unanswered'); @endphp
+                @if ($followupsUnanswered->isNotEmpty())
                 <div class="mt-5 mb-5">
                     <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                        Followup Questions — In Progress
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">{{ $followupsActive->count() }}</span>
+                        Followup Questions — Awaiting Reader Response
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">{{ $followupsUnanswered->count() }}</span>
                     </h3>
                     <div class="space-y-2">
-                        @foreach ($followupsActive as $fq)
+                        @foreach ($followupsUnanswered as $fq)
                             @php
                                 $fqAssignment = $fq->assignment;
                                 $fqReader     = $fqAssignment?->assignedReader;
