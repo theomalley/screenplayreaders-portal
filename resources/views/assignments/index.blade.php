@@ -156,15 +156,25 @@
                                 $aNoteAuthor     = $aNote->author;
                                 $aNoteInitials   = $aNoteAuthor?->readerProfile?->initials
                                     ?? ($aNoteAuthor ? strtoupper(substr($aNoteAuthor->name, 0, 2)) : '??');
+                                $aNotePhotoRaw   = $aNoteAuthor?->readerProfile?->photo ?? $aNoteAuthor?->editorProfile?->photo;
+                                $aNotePhotoUrl   = $aNotePhotoRaw ? asset('storage/' . $aNotePhotoRaw) : null;
                             @endphp
                             <div x-data="{ open: false }"
                                  class="border rounded-lg bg-blue-50 border-blue-200"
                                  id="anote-{{ $aNote->id }}">
                                 <div @click="open = !open"
                                      class="flex items-center gap-3 flex-wrap px-4 py-3 cursor-pointer">
+                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0">
+                                        @if ($aNotePhotoUrl)
+                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                <img src="{{ $aNotePhotoUrl }}" alt="{{ $aNoteInitials }}" class="w-full h-full object-cover" />
+                                            </span>
+                                        @else
+                                            {{ $aNoteInitials }}
+                                        @endif
+                                    </span>
                                     <span class="text-xs font-mono text-gray-500">{{ $aNoteAssignment?->order_number }}</span>
                                     <span class="text-sm font-medium text-gray-800">{{ $aNoteAssignment?->script_title }}</span>
-                                    <span class="text-xs text-gray-500">· {{ $aNoteInitials }}</span>
                                     <span class="text-[10px] text-gray-400">{{ $aNote->created_at->setTimezone($appTimezone)->format('M j, g:ia') }}</span>
                                     <span class="ml-auto flex items-center gap-2">
                                         <button type="button"
@@ -1859,7 +1869,7 @@
                                                     <div x-data="{ open: false }" class="mt-2">
                                                         <button type="button" @click="open = !open"
                                                                 class="text-[10px] text-blue-400 hover:text-blue-600 transition">
-                                                            <span x-text="open ? 'Cancel' : '+ Note to team'"></span>
+                                                            <span x-text="open ? 'Cancel' : '+ Note to editor'"></span>
                                                         </button>
                                                         <div x-show="open" x-cloak class="mt-1.5">
                                                             <form method="POST" action="{{ route('assignment-notes.store', $assignment) }}"
@@ -2156,7 +2166,7 @@
                                                     <div x-data="{ open: false }" class="mt-2">
                                                         <button type="button" @click="open = !open"
                                                                 class="text-[10px] text-blue-400 hover:text-blue-600 transition">
-                                                            <span x-text="open ? 'Cancel' : '+ Note to team'"></span>
+                                                            <span x-text="open ? 'Cancel' : '+ Note to editor'"></span>
                                                         </button>
                                                         <div x-show="open" x-cloak class="mt-1.5">
                                                             <form method="POST" action="{{ route('assignment-notes.store', $assignment) }}"

@@ -124,7 +124,7 @@ class AssignmentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            $assignmentNotes = AssignmentNote::with(['assignment', 'author.readerProfile', 'replies.author'])
+            $assignmentNotes = AssignmentNote::with(['assignment', 'author.readerProfile', 'author.editorProfile', 'replies.author'])
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->filter(fn($n) => ! $n->isDismissedBy($user->id))
@@ -578,7 +578,12 @@ class AssignmentController extends Controller
         $assignableUsers = $this->assignableUsers();
         $appTimezone     = Setting::getAppTimezone();
 
-        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers', 'appTimezone'));
+        $notes = AssignmentNote::with(['author.readerProfile', 'author.editorProfile', 'replies.author'])
+            ->where('assignment_id', $assignment->id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers', 'appTimezone', 'notes'));
     }
 
     public function update(UpdateAssignmentRequest $request, Assignment $assignment)

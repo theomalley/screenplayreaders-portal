@@ -8,11 +8,15 @@ use Illuminate\Http\Request;
 
 class AvailabilityController extends Controller
 {
+    private function profile(): ?\Illuminate\Database\Eloquent\Model
+    {
+        $user = auth()->user();
+        return $user->isReader() ? $user->readerProfile : $user->editorProfile;
+    }
+
     public function edit()
     {
-        abort_unless(auth()->user()->isReader(), 403);
-
-        $profile = auth()->user()->readerProfile;
+        $profile = $this->profile();
         abort_if(! $profile, 404);
 
         return view('availability.edit', compact('profile'));
@@ -20,9 +24,7 @@ class AvailabilityController extends Controller
 
     public function update(Request $request)
     {
-        abort_unless(auth()->user()->isReader(), 403);
-
-        $profile = auth()->user()->readerProfile;
+        $profile = $this->profile();
         abort_if(! $profile, 404);
 
         $data = $request->validate([

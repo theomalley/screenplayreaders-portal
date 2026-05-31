@@ -502,6 +502,48 @@
 
                 </form>
 
+                {{-- Note History --}}
+                @if ($notes->isNotEmpty())
+                <div class="px-6 pb-6 border-t border-gray-100 pt-5">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Note History</h3>
+                    <div class="space-y-3">
+                        @foreach ($notes as $note)
+                            @php
+                                $nAuthor     = $note->author;
+                                $nInitials   = $nAuthor?->readerProfile?->initials ?? ($nAuthor ? strtoupper(substr($nAuthor->name, 0, 2)) : '??');
+                                $nPhotoRaw   = $nAuthor?->readerProfile?->photo ?? $nAuthor?->editorProfile?->photo;
+                                $nPhotoUrl   = $nPhotoRaw ? asset('storage/' . $nPhotoRaw) : null;
+                            @endphp
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 text-[10px] font-mono font-semibold shrink-0">
+                                        @if ($nPhotoUrl)
+                                            <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                <img src="{{ $nPhotoUrl }}" alt="{{ $nInitials }}" class="w-full h-full object-cover" />
+                                            </span>
+                                        @else
+                                            {{ $nInitials }}
+                                        @endif
+                                    </span>
+                                    <span class="text-xs font-medium text-gray-700">{{ $nAuthor?->name }}</span>
+                                    <span class="text-[10px] text-gray-400">{{ $note->created_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}</span>
+                                </div>
+                                <div class="text-sm text-gray-800 whitespace-pre-wrap">{{ $note->body }}</div>
+                                @foreach ($note->replies as $reply)
+                                    <div class="mt-2 ml-4 pl-3 border-l-2 border-indigo-200">
+                                        <div class="flex items-center gap-1.5 mb-0.5">
+                                            <span class="text-[10px] font-medium text-indigo-600">{{ $reply->author?->name }}</span>
+                                            <span class="text-[10px] text-gray-400">{{ $reply->created_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}</span>
+                                        </div>
+                                        <div class="text-sm text-gray-700 whitespace-pre-wrap">{{ $reply->body }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
                 {{-- Actions — outside the edit form so the delete form is never nested --}}
                 <div class="flex items-center justify-between px-6 pb-6 pt-4 border-t border-gray-100">
                     <div class="flex items-center gap-2">
