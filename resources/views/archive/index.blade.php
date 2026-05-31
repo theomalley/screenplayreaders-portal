@@ -295,6 +295,8 @@
                                                                             class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                                 </div>
                                                                 <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
+                                                                        x-ref="txtFrameA{{ $assignment->id }}"
+                                                                        @load="try { $refs['txtFrameA{{ $assignment->id }}'].contentWindow.addEventListener('keydown', e => { if (e.key === 'Escape') textOpen = false; }); } catch(e) {}"
                                                                         class="flex-1 w-full border-0 bg-white"></iframe>
                                                             </div>
                                                         @endif
@@ -319,6 +321,8 @@
                                                                             class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                                 </div>
                                                                 <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
+                                                                        x-ref="txtFrameB{{ $assignment->id }}"
+                                                                        @load="try { $refs['txtFrameB{{ $assignment->id }}'].contentWindow.addEventListener('keydown', e => { if (e.key === 'Escape') textOpen = false; }); } catch(e) {}"
                                                                         class="flex-1 w-full border-0 bg-white"></iframe>
                                                             </div>
                                                         </div>
