@@ -8,6 +8,28 @@
                 @endif
             </h2>
             <div class="flex items-center gap-2">
+                @if(auth()->user()->canManageAssignments())
+                    <div x-data="{ loading: false, error: '' }" class="relative">
+                        <button type="button"
+                                @click="
+                                    loading = true; error = '';
+                                    fetch('{{ route('settings.email-all-readers') }}', {
+                                        method: 'POST',
+                                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                    })
+                                    .then(r => r.json())
+                                    .then(d => { loading = false; if (d.url) window.open(d.url, '_blank'); else error = d.error ?? 'Unknown error'; })
+                                    .catch(e => { loading = false; error = e.message; })
+                                "
+                                :disabled="loading"
+                                :class="loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-teal-600'"
+                                class="inline-flex items-center px-4 py-2 bg-teal-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest transition ease-in-out duration-150">
+                            <span x-text="loading ? 'Opening…' : 'Email All Readers'"></span>
+                        </button>
+                        <p x-show="error" x-cloak x-text="error"
+                           class="absolute right-0 top-full mt-1 text-xs text-red-600 bg-white border border-red-200 rounded px-2 py-1 whitespace-nowrap shadow-sm z-10"></p>
+                    </div>
+                @endif
                 @if(auth()->user()->isAdmin())
                     <a href="{{ route('admin.editors.create') }}"
                        class="inline-flex items-center px-4 py-2 bg-indigo-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 transition ease-in-out duration-150">

@@ -102,15 +102,21 @@ class HelpScoutService
         $token     = $this->getToken();
         $mailboxId = $this->getFirstMailboxId($token);
 
-        // Create the conversation
         $convResponse = Http::withToken($token)
             ->asJson()
             ->post(self::API_BASE . '/conversations', [
-                'subject'   => '',
+                'subject'   => 'Message to all readers',
                 'customer'  => ['email' => 'support@screenplayreaders.com'],
                 'mailboxId' => $mailboxId,
                 'type'      => 'email',
                 'status'    => 'active',
+                'threads'   => [[
+                    'type'     => 'reply',
+                    'customer' => ['email' => 'support@screenplayreaders.com'],
+                    'draft'    => true,
+                    'bcc'      => $bccEmails,
+                    'text'     => '(Write your message here)',
+                ]],
             ]);
 
         if (! $convResponse->successful()) {
@@ -120,24 +126,6 @@ class HelpScoutService
         $conversationId = (string) $convResponse->header('Resource-Id');
         if (! $conversationId) {
             throw new \RuntimeException('HelpScout did not return a conversation ID.');
-        }
-
-        // Add a draft reply with all readers in BCC
-        $replyResponse = Http::withToken($token)
-            ->asJson()
-            ->post(self::API_BASE . "/conversations/{$conversationId}/reply", [
-                'customer' => ['email' => 'support@screenplayreaders.com'],
-                'draft'    => true,
-                'text'     => '',
-                'bcc'      => $bccEmails,
-            ]);
-
-        if (! $replyResponse->successful()) {
-            Log::warning('HelpScout broadcast: draft reply failed, returning bare conversation', [
-                'conversation_id' => $conversationId,
-                'status'          => $replyResponse->status(),
-                'body'            => $replyResponse->body(),
-            ]);
         }
 
         return 'https://secure.helpscout.net/conversation/' . $conversationId . '/';

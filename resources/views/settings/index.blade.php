@@ -800,39 +800,6 @@
             </div>
             @endif
 
-            {{-- Email All Readers --}}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Email All Readers</h3>
-                <p class="text-xs text-gray-500 mb-4">
-                    Opens a new HelpScout draft addressed to <span class="font-mono">support@screenplayreaders.com</span>
-                    with every reader BCC'd. Write your message in HelpScout and send.
-                </p>
-
-                <div x-data="{ loading: false, error: '' }">
-                    <button type="button"
-                            @click="
-                                loading = true; error = '';
-                                fetch('{{ route('settings.email-all-readers') }}', {
-                                    method: 'POST',
-                                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
-                                })
-                                .then(r => r.json())
-                                .then(d => {
-                                    loading = false;
-                                    if (d.url) { window.open(d.url, '_blank'); }
-                                    else { error = d.error ?? 'Unknown error'; }
-                                })
-                                .catch(e => { loading = false; error = e.message; })
-                            "
-                            :disabled="loading"
-                            :class="loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md transition">
-                        <span x-text="loading ? 'Opening…' : 'Email All Readers'"></span>
-                    </button>
-                    <p x-show="error" x-text="'Error: ' + error" class="mt-2 text-xs text-red-600"></p>
-                </div>
-            </div>
-
         </div>
     </div>
 </x-app-layout>
