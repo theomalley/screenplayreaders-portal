@@ -1,6 +1,6 @@
 <?php
 
-// v1.4 — 2026-05-31 | Reopen closed conversations before drafting; fetch conversation once for ID + status
+// v1.4 — 2026-05-31 | Fetch conversation once for ID + status; attempt draft directly on closed conversations
 // v1.3 — 2026-05-23 | Upload attachments separately to thread after draft creation
 // v1.2 — 2026-05-23 | Fetch customer ID from conversation before drafting (required by /reply endpoint)
 // v1.1 — 2026-05-23 | Fix token URL (v2/oauth2/token) and reply endpoint (POST /reply not /threads)
@@ -53,13 +53,6 @@ class HelpScoutService
             'status'          => $convStatus,
             'customer_id'     => $customerId,
         ]);
-
-        // HelpScout rejects draft replies on closed conversations — reopen first.
-        if ($convStatus === 'closed') {
-            Log::info('HelpScout draft: reopening closed conversation', ['conversation_id' => $conversationId]);
-            $this->reopenConversation($conversationId, $token);
-            Log::info('HelpScout draft: conversation reopened', ['conversation_id' => $conversationId]);
-        }
 
         $body = [
             'customer' => ['id' => $customerId],
@@ -152,14 +145,4 @@ class HelpScoutService
         return $id;
     }
 
-    private function reopenConversation(string $conversationId, string $token): void
-    {
-        $response = Http::withToken($token)
-            ->asJson()
-            ->patch(self::API_BASE . "/conversations/{$conversationId}", ['status' => 'active']);
-
-        if (! $response->successful()) {
-            throw new \RuntimeException('HelpScout reopen failed (' . $response->status() . '): ' . $response->body());
-        }
-    }
 }
