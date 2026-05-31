@@ -587,6 +587,15 @@
                         @method('PATCH')
 
                         <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Page heading</label>
+                            <input type="text" name="followup_heading"
+                                   value="{{ old('followup_heading', $followupHeading) }}"
+                                   placeholder="Followup Questions"
+                                   class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <p class="mt-1 text-xs text-gray-400">Defaults to "Followup Questions" if left blank.</p>
+                        </div>
+
+                        <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">HTML before the form</label>
                             <textarea name="followup_before_html" rows="5"
                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500"

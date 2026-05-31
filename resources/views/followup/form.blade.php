@@ -131,6 +131,7 @@
             border-radius: 5px;
             padding: 0.6rem 1.5rem;
             font-size: 0.9rem;
+            font-family: 'Aleo', Georgia, serif;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.15s;
@@ -139,39 +140,25 @@
         .btn-submit:hover {
             background: #1e2f40;
         }
-
-        /* Footer */
-        .page-footer {
-            margin-top: 2.5rem;
-            text-align: center;
-            font-size: 0.78rem;
-            color: #999;
-        }
-        .page-footer a {
-            color: #2b4158;
-            text-decoration: none;
-        }
-        .page-footer a:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
 <div class="wrap">
 
-    <div class="page-header">
-        <h1>Followup Questions</h1>
-        <p class="order-num">Order #{{ $followupToken->order_number }}</p>
-    </div>
-
     @php
-        $beforeHtml = \App\Models\Setting::getValue('followup_before_html', '');
-        $afterHtml  = \App\Models\Setting::getValue('followup_after_html', '');
+        $beforeHtml   = \App\Models\Setting::getValue('followup_before_html', '');
+        $afterHtml    = \App\Models\Setting::getValue('followup_after_html', '');
+        $headingText  = \App\Models\Setting::getValue('followup_heading', 'Followup Questions');
     @endphp
 
     @if ($beforeHtml)
         <div class="followup-inject">{!! $beforeHtml !!}</div>
     @endif
+
+    <div class="page-header">
+        <h1>{{ $headingText }}</h1>
+        <p class="order-num">Order #{{ $followupToken->order_number }}</p>
+    </div>
 
     @if (session('submitted'))
         <div class="notice-success">
@@ -220,10 +207,6 @@
     @if ($afterHtml)
         <div class="followup-inject">{!! $afterHtml !!}</div>
     @endif
-
-    <p class="page-footer">
-        <a href="https://screenplayreaders.com">Screenplay Readers</a>
-    </p>
 
 </div>
 </body>

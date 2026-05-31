@@ -67,6 +67,7 @@ class SettingController extends Controller
         $emailNotifTexts      = Setting::getEmailNotificationTexts();
         $followupBeforeHtml   = Setting::getValue('followup_before_html', '');
         $followupAfterHtml    = Setting::getValue('followup_after_html', '');
+        $followupHeading      = Setting::getValue('followup_heading', '');
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
@@ -75,7 +76,7 @@ class SettingController extends Controller
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'qcSavedReplies', 'emailNotifTexts',
-            'followupBeforeHtml', 'followupAfterHtml',
+            'followupBeforeHtml', 'followupAfterHtml', 'followupHeading',
         ));
     }
 
@@ -303,10 +304,12 @@ class SettingController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
 
         $request->validate([
+            'followup_heading'     => 'nullable|string|max:200',
             'followup_before_html' => 'nullable|string',
             'followup_after_html'  => 'nullable|string',
         ]);
 
+        Setting::setValue('followup_heading',     trim($request->input('followup_heading', '')));
         Setting::setValue('followup_before_html', trim($request->input('followup_before_html', '')));
         Setting::setValue('followup_after_html',  trim($request->input('followup_after_html', '')));
 
