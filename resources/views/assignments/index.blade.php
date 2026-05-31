@@ -135,10 +135,21 @@
                                         <div x-data="followupCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
                                              x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs" @click.stop></div>
                                     @endif
-                                    <button type="button" @click.stop="open = !open"
-                                            class="ml-auto text-xs text-indigo-500 hover:text-indigo-700 underline">
-                                        <span x-text="open ? 'Hide' : 'Edit / Review'"></span>
-                                    </button>
+                                    <span class="ml-auto flex items-center gap-2">
+                                        @if ($fqStatus === 'pending')
+                                            <form method="POST" action="{{ route('followups.destroy', $fq) }}"
+                                                  onsubmit="return confirm('Delete this reader\'s followup question?')"
+                                                  @click.stop>
+                                                @csrf @method('DELETE')
+                                                <button type="submit" title="Delete this reader's question"
+                                                        class="text-red-300 hover:text-red-600 text-sm leading-none transition">✕</button>
+                                            </form>
+                                        @endif
+                                        <button type="button" @click.stop="open = !open"
+                                                class="text-xs text-indigo-500 hover:text-indigo-700 underline">
+                                            <span x-text="open ? 'Hide' : 'Edit / Review'"></span>
+                                        </button>
+                                    </span>
                                 </div>
 
                                 <div x-show="open" x-cloak class="mt-3 space-y-3 border-t border-gray-200 pt-3 px-4 pb-3">

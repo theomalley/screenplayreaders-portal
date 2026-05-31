@@ -327,24 +327,57 @@
                                         @endif
                                     </td>
 
-                                    {{-- Followup URL --}}
+                                    {{-- Reset Followups --}}
+                                    @php
+                                        $readersForReset = $group->filter(fn($a) => $a->assigned_reader_id !== null)->values();
+                                    @endphp
                                     <td class="px-4 py-3 text-right">
-                                        <button type="button"
-                                                x-data="{ copied: false }"
-                                                @click="
-                                                    fetch('{{ route('assignments.followup-token', $first) }}', {
-                                                        method: 'POST',
-                                                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
-                                                    }).then(r => r.json()).then(d => {
-                                                        navigator.clipboard.writeText(d.url);
-                                                        copied = true;
-                                                        setTimeout(() => copied = false, 2000);
-                                                    })
-                                                "
-                                                :title="copied ? 'Copied!' : 'Copy followup URL'"
-                                                class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
-                                            <span x-text="copied ? '✓ Copied' : 'Followup URL'"></span>
-                                        </button>
+                                        @if ($readersForReset->count() <= 1)
+                                            {{-- Single reader: one reset button covering the whole order --}}
+                                            <button type="button"
+                                                    x-data="{ copied: false }"
+                                                    @click="
+                                                        fetch('{{ route('assignments.followup-reset', $first) }}', {
+                                                            method: 'POST',
+                                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                                        }).then(r => r.json()).then(d => {
+                                                            navigator.clipboard.writeText(d.url);
+                                                            copied = true;
+                                                            setTimeout(() => copied = false, 2000);
+                                                        })
+                                                    "
+                                                    :title="copied ? 'Copied!' : 'Copy reset followup URL'"
+                                                    class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
+                                                <span x-text="copied ? '✓ Copied' : 'Reset Followups'"></span>
+                                            </button>
+                                        @else
+                                            {{-- Multi-reader: one reset button per reader --}}
+                                            <div class="flex flex-col items-end gap-1">
+                                                @foreach ($readersForReset as $resetAssignment)
+                                                    @php
+                                                        $resetInitials = $resetAssignment->assignedReader?->readerProfile?->initials
+                                                            ?? ($resetAssignment->assignedReader ? strtoupper(substr($resetAssignment->assignedReader->name, 0, 2)) : '??');
+                                                    @endphp
+                                                    <button type="button"
+                                                            x-data="{ copied: false }"
+                                                            @click="
+                                                                fetch('{{ route('assignments.followup-reset', $first) }}', {
+                                                                    method: 'POST',
+                                                                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ only_assignment_id: {{ $resetAssignment->id }} })
+                                                                }).then(r => r.json()).then(d => {
+                                                                    navigator.clipboard.writeText(d.url);
+                                                                    copied = true;
+                                                                    setTimeout(() => copied = false, 2000);
+                                                                })
+                                                            "
+                                                            :title="copied ? 'Copied!' : 'Copy reset URL for {{ $resetInitials }}'"
+                                                            class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
+                                                        <span x-text="copied ? '✓ Copied' : 'Reset for {{ $resetInitials }}'"></span>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

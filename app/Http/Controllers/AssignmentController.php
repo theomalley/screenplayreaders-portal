@@ -752,6 +752,50 @@ class AssignmentController extends Controller
         return back()->with('followup_url', $url);
     }
 
+    /**
+     * Always create a fresh followup token for an order (or a single reader slot).
+     * Pass only_assignment_id in the JSON body to scope the token to one reader.
+     */
+    public function resetFollowupToken(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        $orderNumber = $assignment->order_number;
+        $onlyId      = $request->input('only_assignment_id');
+
+        if ($onlyId) {
+            $target = Assignment::where('id', (int) $onlyId)
+                ->where('order_number', $orderNumber)
+                ->whereNotNull('assigned_reader_id')
+                ->first();
+            abort_if(! $target, 422, 'Assignment not found for this order.');
+            $assignmentIds = [$target->id];
+        } else {
+            $assignmentIds = Assignment::where('order_number', $orderNumber)
+                ->whereNotNull('assigned_reader_id')
+                ->pluck('id')
+                ->values()
+                ->all();
+            abort_if(empty($assignmentIds), 422, 'No assigned reader slots found for this order.');
+        }
+
+        $token = FollowupToken::create([
+            'token'          => bin2hex(random_bytes(32)),
+            'order_number'   => $orderNumber,
+            'assignment_ids' => $assignmentIds,
+            'customer_email' => null,
+            'expires_at'     => now()->addDays(30),
+        ]);
+
+        $url = route('followup.show', $token->token);
+
+        if ($request->expectsJson()) {
+            return response()->json(['url' => $url]);
+        }
+
+        return back()->with('followup_url', $url);
+    }
+
     public function destroy(Assignment $assignment)
     {
         $this->authorize('delete', $assignment);
