@@ -127,7 +127,7 @@ class AssignmentController extends Controller
             $assignmentNotes = AssignmentNote::with(['assignment', 'author.readerProfile', 'author.editorProfile', 'replies.author'])
                 ->orderBy('created_at', 'desc')
                 ->get()
-                ->filter(fn($n) => ! $n->isDismissedBy($user->id))
+                ->filter(fn($n) => ! $n->isDismissedBy($user->id) && $n->replies->isEmpty())
                 ->values();
 
             return view('assignments.index', [
