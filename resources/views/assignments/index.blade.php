@@ -1351,7 +1351,8 @@
                                             ? route('woo-orders.show', $assignment->order_number)
                                             : null;
                                     @endphp
-                                    <tr class="hover:bg-gray-50 {{ $rowClass }}">
+                                    <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
+                                        @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             @if ($wooOrderUrl)
                                                 <a href="{{ $wooOrderUrl }}" class="font-mono text-gray-700 hover:text-indigo-600 hover:underline">{{ $assignment->order_number }}</a>
