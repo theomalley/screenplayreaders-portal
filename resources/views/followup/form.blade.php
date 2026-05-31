@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Followup Questions — Screenplay Readers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aleo:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         /* SR brand: #f7f4e6 yellow | #2b4158 dark blue | #e4e9f2 light blue */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             background: #f7f4e6;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Aleo', Georgia, serif;
             font-size: 16px;
             line-height: 1.6;
             color: #333;
@@ -97,7 +100,7 @@
             border-radius: 5px;
             padding: 0.6rem 0.75rem;
             font-size: 0.9rem;
-            font-family: inherit;
+            font-family: 'Aleo', Georgia, serif;
             line-height: 1.5;
             resize: vertical;
             color: #333;
