@@ -347,7 +347,7 @@
                                     {{-- Send / Reset Followups --}}
                                     @php
                                         $readersForFollowup = $group->filter(fn($a) => $a->assigned_reader_id !== null)->values();
-                                        $hasExistingToken   = isset($ordersWithTokens[$orderNumber]);
+                                        $hasExistingToken   = isset($ordersWithSubmissions[$orderNumber]);
                                         $isMulti            = $readersForFollowup->count() > 1;
                                         $singleInitials     = ! $isMulti
                                             ? ($readersForFollowup->first()?->assignedReader?->readerProfile?->initials
