@@ -51,7 +51,8 @@
                                         $typeLabel = 'WD ' . $typeLabel;
                                     }
                                 @endphp
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-gray-50 cursor-pointer"
+                                    onclick="if (!event.target.closest('a, button, form')) window.location='{{ route('qc.show', $assignment) }}'">
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
                                         {{ $assignment->order_number }}
                                     </td>
