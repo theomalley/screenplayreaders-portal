@@ -72,7 +72,7 @@ class FollowupQuestionController extends Controller
 
         // All tokens for this order, oldest first (each = one round of followups)
         $tokens = FollowupToken::where('order_number', $orderNumber)
-            ->with(['questions.assignment.assignedReader.readerProfile'])
+            ->with(['followupQuestions.assignment.assignedReader.readerProfile'])
             ->orderBy('created_at', 'asc')
             ->get();
 

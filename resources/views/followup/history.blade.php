@@ -35,7 +35,7 @@
                         </span>
                     </div>
 
-                    @forelse ($token->questions->sortBy('created_at') as $fq)
+                    @forelse ($token->followupQuestions->sortBy('created_at') as $fq)
                         @php
                             $assignment = $fq->assignment;
                             $reader     = $assignment?->assignedReader;
