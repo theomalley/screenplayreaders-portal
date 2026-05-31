@@ -111,6 +111,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/followup-html', [SettingController::class, 'updateFollowupHtml'])->name('settings.followup-html');
 
     // Followup question management (admin/editor)
+    Route::get('/followup-history/{orderNumber}',  [FollowupQuestionController::class, 'history'])->name('followups.history');
     Route::patch('/followups/{followup}',          [FollowupQuestionController::class, 'update'])->name('followups.update');
     Route::delete('/followups/{followup}',         [FollowupQuestionController::class, 'destroy'])->name('followups.destroy');
     Route::post('/followups/{followup}/complete',  [FollowupQuestionController::class, 'complete'])->name('followups.complete');

@@ -4,7 +4,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Assignment;
 use App\Models\FollowupQuestion;
+use App\Models\FollowupToken;
+use App\Models\Setting;
 use App\Services\HelpScoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -58,6 +61,27 @@ class FollowupQuestionController extends Controller
         };
 
         return back()->with('success', $message);
+    }
+
+    /** Admin/editor: full followup history for an order number. */
+    public function history(string $orderNumber): \Illuminate\View\View
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $appTimezone = Setting::getAppTimezone();
+
+        // All tokens for this order, oldest first (each = one round of followups)
+        $tokens = FollowupToken::where('order_number', $orderNumber)
+            ->with(['questions.assignment.assignedReader.readerProfile'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        abort_if($tokens->isEmpty(), 404);
+
+        // Grab the script title / writer from any associated assignment
+        $representative = Assignment::where('order_number', $orderNumber)->first();
+
+        return view('followup.history', compact('orderNumber', 'tokens', 'appTimezone', 'representative'));
     }
 
     /** Admin/editor: delete a followup question at any status. */

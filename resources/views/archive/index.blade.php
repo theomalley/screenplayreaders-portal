@@ -101,6 +101,12 @@
                                                 </a>
                                             </div>
                                         @endif
+                                        <div class="mt-1">
+                                            <a href="{{ route('followups.history', $orderNumber) }}"
+                                               class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
+                                                Followup History
+                                            </a>
+                                        </div>
                                     </td>
                                     @php $viewUrl = $scriptId ? route('assignments.streamScript', $first) : null; @endphp
                                     <td class="px-4 py-3" x-data="{ open: false }">
