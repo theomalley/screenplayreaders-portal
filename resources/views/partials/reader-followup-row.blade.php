@@ -20,7 +20,7 @@
         </div>
 
         @if ($fqDeadline && $fq->status === 'unanswered')
-            <div x-data="rushCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
+            <div x-data="followupCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
                  x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-700'" class="text-xs shrink-0"></div>
         @elseif ($fq->status === 'answered')
             <span class="text-xs text-green-700 font-medium shrink-0">Response submitted</span>

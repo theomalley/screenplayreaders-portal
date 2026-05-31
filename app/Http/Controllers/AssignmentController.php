@@ -118,7 +118,7 @@ class AssignmentController extends Controller
                 ->get();
 
             $followups = FollowupQuestion::with(['assignment.assignedReader.readerProfile'])
-                ->whereIn('status', [FollowupQuestion::STATUS_PENDING, FollowupQuestion::STATUS_ANSWERED])
+                ->whereIn('status', [FollowupQuestion::STATUS_PENDING, FollowupQuestion::STATUS_UNANSWERED, FollowupQuestion::STATUS_ANSWERED])
                 ->orderBy('created_at', 'desc')
                 ->get();
 

@@ -57,6 +57,31 @@
                     this.display = 'Due in ' + h + 'h ' + m + 'm ' + s + 's';
                 }
             }));
+
+            Alpine.data('followupCountdown', (dueAt, dueLabel = '') => ({
+                display: '',
+                overdue: false,
+                dueLabel: dueLabel,
+                _iv: null,
+                init() {
+                    this._update();
+                    this._iv = setInterval(() => this._update(), 60000);
+                },
+                destroy() { clearInterval(this._iv); },
+                _update() {
+                    const diff = new Date(dueAt) - Date.now();
+                    if (diff <= 0) {
+                        this.display = 'Overdue';
+                        this.overdue = true;
+                        clearInterval(this._iv);
+                        return;
+                    }
+                    const d = Math.floor(diff / 86400000);
+                    const h = Math.floor((diff % 86400000) / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    this.display = 'Due in ' + d + 'd ' + h + 'h ' + m + 'm';
+                }
+            }));
         });
     </script>
 
@@ -106,7 +131,7 @@
                                         {{ ucfirst($fqStatus) }}
                                     </span>
                                     @if ($fqDeadline && $fqStatus === 'unanswered')
-                                        <div x-data="rushCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
+                                        <div x-data="followupCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
                                              x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs"></div>
                                     @endif
                                     <button type="button" @click="open = !open"
