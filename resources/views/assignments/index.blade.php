@@ -926,19 +926,11 @@
                                             @endif
                                         </td>
 
-                                        {{-- Accepted by (icon on top, centered) --}}
-                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
-                                            @if ($assignedInitials)
+                                        {{-- Accepted by --}}
+                                        <td class="px-3 py-3 whitespace-nowrap text-center">
+                                            @if ($assignment->assignedReader)
                                                 <div class="flex flex-col items-center gap-0.5 mb-1">
-                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
-                                                        @if ($assignedPhotoUrl)
-                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
-                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
-                                                            </span>
-                                                        @else
-                                                            {{ $assignedInitials }}
-                                                        @endif
-                                                    </span>
+                                                    <x-staff-icon :user="$assignment->assignedReader" size="sm" />
                                                     <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
                                                 </div>
                                             @endif
@@ -1131,18 +1123,10 @@
                                                 </form>
                                             </div>
                                         </td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
-                                            @if ($assignedInitials)
+                                        <td class="px-3 py-3 whitespace-nowrap text-center">
+                                            @if ($assignment->assignedReader)
                                                 <div class="flex flex-col items-center gap-0.5 mb-1">
-                                                    <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold">
-                                                        @if ($assignedPhotoUrl)
-                                                            <span class="absolute inset-0 rounded-full overflow-hidden">
-                                                                <img src="{{ $assignedPhotoUrl }}" alt="{{ $assignedInitials }}" class="w-full h-full object-cover" />
-                                                            </span>
-                                                        @else
-                                                            {{ $assignedInitials }}
-                                                        @endif
-                                                    </span>
+                                                    <x-staff-icon :user="$assignment->assignedReader" size="sm" />
                                                     <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $assignedInitials }}</span>
                                                 </div>
                                             @endif

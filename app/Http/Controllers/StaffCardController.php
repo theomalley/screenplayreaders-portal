@@ -1,0 +1,75 @@
+<?php
+
+// v1.0 — 2026-05-31 | Staff icon popup card — returns rendered HTML for any admin/editor context
+
+namespace App\Http\Controllers;
+
+use App\Models\Assignment;
+use App\Models\Setting;
+use App\Models\User;
+use App\Support\PayPeriod;
+use Illuminate\Http\Response;
+
+class StaffCardController extends Controller
+{
+    public function card(User $user): Response
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $user->loadMissing([
+            'assignments' => fn($q) => $q->whereIn('status', [
+                Assignment::STATUS_INCOMING,
+                Assignment::STATUS_UNASSIGNED,
+                Assignment::STATUS_ASSIGNED,
+                Assignment::STATUS_QC,
+                'needs_attention',
+            ]),
+            'readerProfile',
+            'editorProfile',
+        ]);
+
+        $profile = $user->isReader() ? $user->readerProfile : $user->editorProfile;
+
+        // Weekly pay stats (readers only)
+        $weekStats = null;
+        if ($user->isReader()) {
+            [$thisPeriodStart, $thisPeriodEnd] = PayPeriod::current();
+            $lastPeriodStart = PayPeriod::start($thisPeriodStart->copy()->subDay());
+
+            $periodCompleted = Assignment::where('assigned_reader_id', $user->id)
+                ->where('status', Assignment::STATUS_COMPLETED)
+                ->whereNotNull('completed_at')
+                ->where('completed_at', '>=', $lastPeriodStart)
+                ->get(['completed_at', 'pay_rate']);
+
+            $thisWeek = $periodCompleted->filter(fn($a) => $a->completed_at >= $thisPeriodStart);
+            $lastWeek = $periodCompleted->filter(fn($a) => $a->completed_at < $thisPeriodStart);
+
+            $weekStats = [
+                'this_count' => $thisWeek->count(),
+                'this_pay'   => $thisWeek->sum('pay_rate'),
+                'last_count' => $lastWeek->count(),
+                'last_pay'   => $lastWeek->sum('pay_rate'),
+                'this_label' => PayPeriod::label($thisPeriodStart),
+                'last_label' => PayPeriod::label($lastPeriodStart),
+            ];
+        }
+
+        $appTimezone = Setting::getAppTimezone();
+        $viewer      = auth()->user();
+
+        // Edit profile link — admins are not editable via this popup
+        $editUrl = null;
+        if (! $user->isAdmin()) {
+            if ($viewer->isAdmin() || ($viewer->canManageAssignments() && $user->isReader())) {
+                $editUrl = $user->isReader()
+                    ? route('readers.edit', $user)
+                    : route('admin.editors.edit', $user);
+            }
+        }
+
+        $html = view('partials.staff-card', compact('user', 'profile', 'weekStats', 'appTimezone', 'editUrl'))->render();
+
+        return response($html);
+    }
+}

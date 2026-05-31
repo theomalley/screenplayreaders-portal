@@ -52,7 +52,7 @@ class AssignmentController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->get();
 
-            $formatting = Assignment::with(['helpscoutConversation'])
+            $formatting = Assignment::with(['helpscoutConversation', 'assignedReader.readerProfile', 'assignedReader.editorProfile'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->whereIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'desc')

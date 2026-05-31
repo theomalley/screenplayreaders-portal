@@ -93,25 +93,8 @@
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap">
-                                        @php
-                                            $qcInitials = $assignment->assignedReader?->readerProfile?->initials
-                                                ?? ($assignment->assignedReader ? strtoupper(substr($assignment->assignedReader->name, 0, 2)) : null);
-                                            $qcPhotoRaw = $assignment->assignedReader?->readerProfile?->photo;
-                                            $qcPhotoUrl = $qcPhotoRaw ? asset('storage/' . $qcPhotoRaw) : null;
-                                        @endphp
-                                        @if ($qcInitials)
-                                            <div class="flex items-center gap-2">
-                                                <span class="relative inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0">
-                                                    @if ($qcPhotoUrl)
-                                                        <span class="absolute inset-0 rounded-full overflow-hidden">
-                                                            <img src="{{ $qcPhotoUrl }}" alt="{{ $qcInitials }}" class="w-full h-full object-cover" />
-                                                        </span>
-                                                    @else
-                                                        {{ $qcInitials }}
-                                                    @endif
-                                                </span>
-                                                <span class="text-xs text-gray-600 font-mono">{{ $qcInitials }}</span>
-                                            </div>
+                                        @if ($assignment->assignedReader)
+                                            <x-staff-icon :user="$assignment->assignedReader" size="sm" />
                                         @else
                                             <span class="text-gray-300">—</span>
                                         @endif

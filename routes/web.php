@@ -138,6 +138,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->name('announcements.mark-read');
     Route::post('/announcements/{announcement}/dismiss', [AnnouncementController::class, 'dismiss'])->name('announcements.dismiss');
 
+    Route::get('/staff/{user}/card', [\App\Http\Controllers\StaffCardController::class, 'card'])->name('staff.card');
+
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');
 

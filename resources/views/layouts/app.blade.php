@@ -220,6 +220,34 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                 {{ $slot }}
             </main>
         </div>
+        <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('staffIconPopup', (userId) => ({
+                open: false,
+                loading: false,
+                html: '',
+                async toggle() {
+                    this.open = !this.open;
+                    if (this.open && !this.html) {
+                        this.loading = true;
+                        try {
+                            const r = await fetch('/staff/' + userId + '/card', {
+                                headers: {
+                                    'Accept': 'text/html',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
+                                }
+                            });
+                            this.html = await r.text();
+                        } catch (e) {
+                            this.html = '<p class="text-xs text-red-500">Could not load.</p>';
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }
+            }));
+        });
+        </script>
         @stack('scripts')
     </body>
 </html>
