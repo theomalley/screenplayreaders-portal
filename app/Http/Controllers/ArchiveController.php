@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\FollowupToken;
 use App\Support\Permission;
 
 class ArchiveController extends Controller
@@ -19,6 +20,12 @@ class ArchiveController extends Controller
             ->groupBy('order_number')
             ->sortByDesc(fn($group) => $group->max(fn($a) => $a->completed_at?->timestamp ?? 0));
 
-        return view('archive.index', compact('groups'));
+        $ordersWithTokens = FollowupToken::whereIn('order_number', $groups->keys())
+            ->pluck('order_number')
+            ->unique()
+            ->flip()
+            ->all();
+
+        return view('archive.index', compact('groups', 'ordersWithTokens'));
     }
 }

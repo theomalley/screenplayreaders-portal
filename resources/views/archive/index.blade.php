@@ -327,13 +327,13 @@
                                         @endif
                                     </td>
 
-                                    {{-- Reset Followups --}}
+                                    {{-- Followup URL / Reset Followups --}}
                                     @php
-                                        $readersForReset = $group->filter(fn($a) => $a->assigned_reader_id !== null)->values();
+                                        $readersForReset  = $group->filter(fn($a) => $a->assigned_reader_id !== null)->values();
+                                        $hasExistingToken = isset($ordersWithTokens[$orderNumber]);
                                     @endphp
                                     <td class="px-4 py-3 text-right">
                                         @if ($readersForReset->count() <= 1)
-                                            {{-- Single reader: one reset button covering the whole order --}}
                                             <button type="button"
                                                     x-data="{ copied: false }"
                                                     @click="
@@ -346,17 +346,17 @@
                                                             setTimeout(() => copied = false, 2000);
                                                         })
                                                     "
-                                                    :title="copied ? 'Copied!' : 'Copy reset followup URL'"
+                                                    :title="copied ? 'Copied!' : '{{ $hasExistingToken ? 'Copy reset followup URL' : 'Copy followup URL' }}'"
                                                     class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
-                                                <span x-text="copied ? '✓ Copied' : 'Reset Followups'"></span>
+                                                <span x-text="copied ? '✓ Copied' : '{{ $hasExistingToken ? 'Reset Followups' : 'Send Followup URL' }}'"></span>
                                             </button>
                                         @else
-                                            {{-- Multi-reader: one reset button per reader --}}
                                             <div class="flex flex-col items-end gap-1">
                                                 @foreach ($readersForReset as $resetAssignment)
                                                     @php
                                                         $resetInitials = $resetAssignment->assignedReader?->readerProfile?->initials
                                                             ?? ($resetAssignment->assignedReader ? strtoupper(substr($resetAssignment->assignedReader->name, 0, 2)) : '??');
+                                                        $btnLabel = $hasExistingToken ? "Reset for {$resetInitials}" : "Send for {$resetInitials}";
                                                     @endphp
                                                     <button type="button"
                                                             x-data="{ copied: false }"
@@ -371,9 +371,9 @@
                                                                     setTimeout(() => copied = false, 2000);
                                                                 })
                                                             "
-                                                            :title="copied ? 'Copied!' : 'Copy reset URL for {{ $resetInitials }}'"
+                                                            :title="copied ? 'Copied!' : '{{ $btnLabel }}'"
                                                             class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
-                                                        <span x-text="copied ? '✓ Copied' : 'Reset for {{ $resetInitials }}'"></span>
+                                                        <span x-text="copied ? '✓ Copied' : '{{ $btnLabel }}'"></span>
                                                     </button>
                                                 @endforeach
                                             </div>
