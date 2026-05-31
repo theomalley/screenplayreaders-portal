@@ -327,57 +327,47 @@
                                         @endif
                                     </td>
 
-                                    {{-- Followup URL / Reset Followups --}}
+                                    {{-- Send / Reset Followups --}}
                                     @php
-                                        $readersForReset  = $group->filter(fn($a) => $a->assigned_reader_id !== null)->values();
-                                        $hasExistingToken = isset($ordersWithTokens[$orderNumber]);
+                                        $readersForFollowup = $group->filter(fn($a) => $a->assigned_reader_id !== null)->values();
+                                        $hasExistingToken   = isset($ordersWithTokens[$orderNumber]);
+                                        $isMulti            = $readersForFollowup->count() > 1;
+                                        $singleInitials     = ! $isMulti
+                                            ? ($readersForFollowup->first()?->assignedReader?->readerProfile?->initials
+                                                ?? ($readersForFollowup->first()?->assignedReader ? strtoupper(substr($readersForFollowup->first()->assignedReader->name, 0, 2)) : '??'))
+                                            : '';
                                     @endphp
                                     <td class="px-4 py-3 text-right">
-                                        @if ($readersForReset->count() <= 1)
-                                            <button type="button"
-                                                    x-data="{ copied: false }"
-                                                    @click="
-                                                        fetch('{{ route('assignments.followup-reset', $first) }}', {
-                                                            method: 'POST',
-                                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
-                                                        }).then(r => r.json()).then(d => {
-                                                            navigator.clipboard.writeText(d.url);
-                                                            copied = true;
-                                                            setTimeout(() => copied = false, 2000);
-                                                        })
-                                                    "
-                                                    :title="copied ? 'Copied!' : '{{ $hasExistingToken ? 'Copy reset followup URL' : 'Copy followup URL' }}'"
-                                                    class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
-                                                <span x-text="copied ? '✓ Copied' : '{{ $hasExistingToken ? 'Reset Followups' : 'Send Followup URL' }}'"></span>
+                                        <div x-data="{
+                                                hasToken: {{ $hasExistingToken ? 'true' : 'false' }},
+                                                flash: '',
+                                                async act() {
+                                                    const r = await fetch('{{ route('assignments.followup-reset', $first) }}', {
+                                                        method: 'POST',
+                                                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                                    });
+                                                    const d = await r.json();
+                                                    navigator.clipboard.writeText(d.url);
+                                                    this.flash = this.hasToken ? 'reset' : 'copied';
+                                                    this.hasToken = !this.hasToken;
+                                                    setTimeout(() => this.flash = '', 2000);
+                                                }
+                                            }">
+                                            <button type="button" @click="act()"
+                                                    class="text-[10px] text-indigo-400 hover:text-indigo-600 transition whitespace-nowrap">
+                                                @if ($isMulti)
+                                                    <span x-show="flash === 'reset'" class="text-green-600">Followups reset for all</span>
+                                                    <span x-show="flash === 'copied'" class="text-green-600">✓ Copied</span>
+                                                    <span x-show="flash === '' && hasToken">Reset Followups (all)</span>
+                                                    <span x-show="flash === '' && !hasToken">Send Followups URL (all)</span>
+                                                @else
+                                                    <span x-show="flash === 'reset'" class="text-green-600">Followups reset for {{ $singleInitials }}</span>
+                                                    <span x-show="flash === 'copied'" class="text-green-600">✓ Copied</span>
+                                                    <span x-show="flash === '' && hasToken">Reset Followups for {{ $singleInitials }}</span>
+                                                    <span x-show="flash === '' && !hasToken">Send Followup URL</span>
+                                                @endif
                                             </button>
-                                        @else
-                                            <div class="flex flex-col items-end gap-1">
-                                                @foreach ($readersForReset as $resetAssignment)
-                                                    @php
-                                                        $resetInitials = $resetAssignment->assignedReader?->readerProfile?->initials
-                                                            ?? ($resetAssignment->assignedReader ? strtoupper(substr($resetAssignment->assignedReader->name, 0, 2)) : '??');
-                                                        $btnLabel = $hasExistingToken ? "Reset for {$resetInitials}" : "Send for {$resetInitials}";
-                                                    @endphp
-                                                    <button type="button"
-                                                            x-data="{ copied: false }"
-                                                            @click="
-                                                                fetch('{{ route('assignments.followup-reset', $first) }}', {
-                                                                    method: 'POST',
-                                                                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ only_assignment_id: {{ $resetAssignment->id }} })
-                                                                }).then(r => r.json()).then(d => {
-                                                                    navigator.clipboard.writeText(d.url);
-                                                                    copied = true;
-                                                                    setTimeout(() => copied = false, 2000);
-                                                                })
-                                                            "
-                                                            :title="copied ? 'Copied!' : '{{ $btnLabel }}'"
-                                                            class="text-[10px] text-indigo-400 hover:text-indigo-600 transition">
-                                                        <span x-text="copied ? '✓ Copied' : '{{ $btnLabel }}'"></span>
-                                                    </button>
-                                                @endforeach
-                                            </div>
-                                        @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
