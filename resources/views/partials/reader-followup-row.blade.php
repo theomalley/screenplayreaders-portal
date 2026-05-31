@@ -71,12 +71,11 @@
                         <span x-text="submitting ? 'Submitting…' : 'Submit Response'"></span>
                     </button>
                 </div>
-            @endif
+            </div>
         @elseif ($fq->status === 'answered')
             <div>
                 <p class="text-xs font-medium text-gray-600 mb-1">Your submitted response:</p>
                 <div class="text-sm text-gray-700 whitespace-pre-wrap bg-white border border-gray-200 rounded px-3 py-2">{{ $fq->reader_response }}</div>
-                <p class="mt-1 text-xs text-green-600">Response received — our team is reviewing it before sending to the customer.</p>
             </div>
         @endif
     </div>
