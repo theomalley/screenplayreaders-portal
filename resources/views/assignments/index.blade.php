@@ -47,7 +47,7 @@
                     this.sort();
                 },
                 sort() {
-                    const tbody = this.$el.querySelector('tbody');
+                    const tbody = this.$refs.sortTbody;
                     if (!tbody) return;
                     const rows = [...tbody.querySelectorAll('tr[data-sort-date]')];
                     if (rows.length < 2) return;
@@ -526,7 +526,7 @@
                                     <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-100">
+                            <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
                                 @foreach ($assignments as $assignment)
                                     @php
                                         $diff     = $assignment->created_at ? now()->diff($assignment->created_at) : null;
@@ -1647,7 +1647,7 @@
                                             <th class="px-3 py-3"></th>
                                         </tr>
                                     </thead>
-                                    <tbody class="bg-white divide-y divide-gray-100">
+                                    <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
 
                                         @foreach($available as $assignment)
                                             @php
@@ -1889,7 +1889,7 @@
                                                 <th class="px-3 py-3"></th>
                                             </tr>
                                         </thead>
-                                        <tbody class="bg-white divide-y divide-gray-100">
+                                        <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
                                             @php
                                                 $rMe        = auth()->user();
                                                 $rMeProfile = $rMe->readerProfile;
@@ -2088,7 +2088,7 @@
                                                 <th class="px-3 py-3"></th>
                                             </tr>
                                         </thead>
-                                        <tbody class="bg-white divide-y divide-gray-100">
+                                        <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
                                             @foreach($mineCompleted as $assignment)
                                                 @php
                                                     // Overall turnaround: created_at → completed_at
