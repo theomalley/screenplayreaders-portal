@@ -385,12 +385,14 @@
                                                 @endif
                                             </button>
                                         </div>
+                                        @if (isset($ordersWithSubmissions[$orderNumber]))
                                         <div class="mt-1.5">
                                             <a href="{{ route('followups.history', $orderNumber) }}"
                                                class="text-[10px] text-gray-400 hover:text-indigo-600 transition">
                                                 Followup History
                                             </a>
                                         </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
