@@ -708,9 +708,9 @@
                                                 @endif
                                                 @if($viewUrl)
                                                     <button @click="viewerOpen = true" type="button"
-                                                            class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                                            class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
                                                 @else
-                                                    <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                    <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                 @endif
                                             </div>
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
@@ -893,7 +893,6 @@
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
                                     <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                    <th class="px-3 py-3"></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -997,9 +996,9 @@
                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($downloadUrl)
                                                 <a href="{{ $downloadUrl }}"
-                                                   class="font-medium text-gray-900 hover:text-indigo-600">{{ $assignment->script_title }}</a>
+                                                   class="font-medium text-gray-900 hover:text-indigo-600 block max-w-xs">{{ $assignment->script_title }}</a>
                                             @else
-                                                <span class="font-medium text-gray-400" title="File upload pending">{{ $assignment->script_title }}</span>
+                                                <span class="font-medium text-gray-400 block max-w-xs" title="File upload pending">{{ $assignment->script_title }}</span>
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
@@ -1078,19 +1077,6 @@
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-right">
-                                            @can('delete', $assignment)
-                                                <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
-                                                      onsubmit="return confirm('Delete this assignment? This cannot be undone.')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            class="inline-flex items-center px-2.5 py-1 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                                                        Delete
-                                                    </button>
-                                                </form>
-                                            @endcan
-                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -1144,7 +1130,7 @@
                                             <a href="{{ route('assignments.show', $arc) }}" class="hover:text-indigo-600">{{ $arc->order_number }}</a>
                                         </td>
                                         <td class="px-3 py-2">
-                                            <div class="font-medium text-gray-900">{{ $arc->script_title }}</div>
+                                            <div class="font-medium text-gray-900 max-w-xs">{{ $arc->script_title }}</div>
                                             <div class="text-xs text-gray-500">{{ $arc->writer_name }}</div>
                                         </td>
                                         <td class="px-3 py-2 whitespace-nowrap text-gray-600 text-xs">{{ $arcType }}</td>
@@ -1401,7 +1387,7 @@
                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($viewUrl)
                                                 <button @click="open = true" type="button"
-                                                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
                                                 <div x-show="open" x-cloak
                                                      @keydown.escape.window="open = false"
                                                      tabindex="-1"
@@ -1417,7 +1403,7 @@
                                                             allowfullscreen></iframe>
                                                 </div>
                                             @else
-                                                <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ $meUser->isAdmin() ? '0.00' : number_format($assignment->pay_rate, 2) }}</div>
@@ -1719,7 +1705,7 @@
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
-                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
                                                              x-ref="modal"
@@ -1748,7 +1734,7 @@
                                                             </div>
                                                         </div>
                                                     @else
-                                                        <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                        <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
@@ -1974,7 +1960,7 @@
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
-                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug">{{ $assignment->script_title }}</button>
+                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
                                                              x-ref="modal"
@@ -2003,7 +1989,7 @@
                                                             </div>
                                                         </div>
                                                     @else
-                                                        <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                        <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
@@ -2164,7 +2150,7 @@
                                                     </td>
                                                     <td class="px-3 py-3" x-data="{ textOpen: false }">
                                                         <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
-                                                        <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                        <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                         <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                         <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
                                                         @if($assignment->coverageSubmission)
@@ -2278,7 +2264,7 @@
                                             </td>
                                             <td class="px-3 py-3">
                                                 <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
-                                                <div class="font-medium text-gray-900">{{ $assignment->script_title }}</div>
+                                                <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                 <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                 <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
                                             </td>

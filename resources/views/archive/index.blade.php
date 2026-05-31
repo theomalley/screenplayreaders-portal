@@ -106,7 +106,7 @@
                                     <td class="px-4 py-3" x-data="{ open: false }">
                                         @if($viewUrl)
                                             <button @click="open = true" type="button"
-                                                    class="font-medium text-gray-800 hover:text-indigo-600 text-left leading-snug">{{ $first->script_title }}</button>
+                                                    class="font-medium text-gray-800 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $first->script_title }}</button>
                                             <div x-show="open" x-cloak
                                                  @keydown.escape.window="open = false"
                                                  tabindex="-1"
@@ -154,7 +154,7 @@
                                                         allowfullscreen></iframe>
                                             </div>
                                         @else
-                                            <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
+                                            <div class="font-medium text-gray-800 max-w-xs">{{ $first->script_title }}</div>
                                         @endif
                                         <div class="text-gray-400 text-xs">{{ $first->writer_name }}</div>
                                         <a href="{{ route('assignments.show', $first) }}"
