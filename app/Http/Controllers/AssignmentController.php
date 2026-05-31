@@ -24,6 +24,7 @@ use App\Models\FollowupQuestion;
 use App\Models\FollowupToken;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\HelpScoutService;
 use App\Services\InvoiceService;
 use App\Services\GoogleDriveService;
 use App\Services\ReaderNotificationService;
@@ -585,6 +586,22 @@ class AssignmentController extends Controller
 
         if (!empty($data['assigned_reader_id'])) {
             abort_unless($this->canAssign((int) $data['assigned_reader_id']), 403);
+        }
+
+        // If a short conversation number was entered (< 10,000,000), resolve it to
+        // the large internal HelpScout ID so the URL link works correctly.
+        if (! empty($data['helpscout_ticket_number'])
+            && is_numeric($data['helpscout_ticket_number'])
+            && (int) $data['helpscout_ticket_number'] < 10_000_000) {
+            try {
+                $resolved = app(HelpScoutService::class)
+                    ->findConversationIdByTicketNumber($data['helpscout_ticket_number']);
+                if ($resolved) {
+                    $data['helpscout_ticket_number'] = $resolved;
+                }
+            } catch (\Throwable) {
+                // Keep whatever the admin entered if the lookup fails
+            }
         }
 
         $assignment->update($data);
