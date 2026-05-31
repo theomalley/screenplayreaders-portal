@@ -154,13 +154,9 @@ class HelpScoutService
 
     private function reopenConversation(string $conversationId, string $token): void
     {
-        $body = json_encode([
-            ['op' => 'replace', 'path' => '/status', 'value' => 'active'],
-        ]);
-
         $response = Http::withToken($token)
-            ->withBody($body, 'application/json-patch+json')
-            ->patch(self::API_BASE . "/conversations/{$conversationId}");
+            ->asJson()
+            ->patch(self::API_BASE . "/conversations/{$conversationId}", ['status' => 'active']);
 
         if (! $response->successful()) {
             throw new \RuntimeException('HelpScout reopen failed (' . $response->status() . '): ' . $response->body());
