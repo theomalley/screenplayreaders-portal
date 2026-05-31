@@ -23,8 +23,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\User;
+use App\Services\HelpScoutService;
 use App\Support\FilenameGenerator;
 use App\Support\Permission;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -297,6 +300,29 @@ class SettingController extends Controller
         Setting::setValue('app_timezone', $request->input('app_timezone'));
 
         return back()->with('success', 'Timezone updated.');
+    }
+
+    public function emailAllReaders(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $emails = User::where('role', 'reader')
+            ->whereNotNull('email')
+            ->pluck('email')
+            ->filter()
+            ->values()
+            ->all();
+
+        if (empty($emails)) {
+            return response()->json(['error' => 'No reader email addresses found.'], 422);
+        }
+
+        try {
+            $url = app(HelpScoutService::class)->createReaderBroadcastDraft($emails);
+            return response()->json(['url' => $url]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function updateFollowupHtml(Request $request): RedirectResponse

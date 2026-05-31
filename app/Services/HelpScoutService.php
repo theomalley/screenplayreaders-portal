@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-05-31 | createReaderBroadcastDraft — new outgoing draft with BCC list for reader broadcasts
 // v1.4 — 2026-05-31 | Fetch conversation once for ID + status; attempt draft directly on closed conversations
 // v1.3 — 2026-05-23 | Upload attachments separately to thread after draft creation
 // v1.2 — 2026-05-23 | Fetch customer ID from conversation before drafting (required by /reply endpoint)
@@ -90,6 +91,73 @@ class HelpScoutService
                 ]);
             }
         }
+    }
+
+    /**
+     * Create a new outgoing conversation as a draft with all $bccEmails in BCC.
+     * Returns the HelpScout web URL for the created conversation.
+     */
+    public function createReaderBroadcastDraft(array $bccEmails): string
+    {
+        $token     = $this->getToken();
+        $mailboxId = $this->getFirstMailboxId($token);
+
+        // Create the conversation
+        $convResponse = Http::withToken($token)
+            ->asJson()
+            ->post(self::API_BASE . '/conversations', [
+                'subject'   => '',
+                'customer'  => ['email' => 'support@screenplayreaders.com'],
+                'mailboxId' => $mailboxId,
+                'type'      => 'email',
+                'status'    => 'active',
+            ]);
+
+        if (! $convResponse->successful()) {
+            throw new \RuntimeException('HelpScout conversation create failed (' . $convResponse->status() . '): ' . $convResponse->body());
+        }
+
+        $conversationId = (string) $convResponse->header('Resource-Id');
+        if (! $conversationId) {
+            throw new \RuntimeException('HelpScout did not return a conversation ID.');
+        }
+
+        // Add a draft reply with all readers in BCC
+        $replyResponse = Http::withToken($token)
+            ->asJson()
+            ->post(self::API_BASE . "/conversations/{$conversationId}/reply", [
+                'customer' => ['email' => 'support@screenplayreaders.com'],
+                'draft'    => true,
+                'text'     => '',
+                'bcc'      => $bccEmails,
+            ]);
+
+        if (! $replyResponse->successful()) {
+            Log::warning('HelpScout broadcast: draft reply failed, returning bare conversation', [
+                'conversation_id' => $conversationId,
+                'status'          => $replyResponse->status(),
+                'body'            => $replyResponse->body(),
+            ]);
+        }
+
+        return 'https://secure.helpscout.net/conversation/' . $conversationId . '/';
+    }
+
+    private function getFirstMailboxId(string $token): int
+    {
+        $response = Cache::remember('helpscout_first_mailbox_id', 60 * 60, function () use ($token) {
+            $r = Http::withToken($token)->get(self::API_BASE . '/mailboxes');
+            if (! $r->ok()) {
+                throw new \RuntimeException('HelpScout mailboxes fetch failed: ' . $r->body());
+            }
+            $id = $r->json('_embedded.mailboxes.0.id');
+            if (! $id) {
+                throw new \RuntimeException('No HelpScout mailboxes found.');
+            }
+            return (int) $id;
+        });
+
+        return (int) $response;
     }
 
     public function findConversationIdByTicketNumber(string $ticketNumber): ?string
