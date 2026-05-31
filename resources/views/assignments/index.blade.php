@@ -518,12 +518,12 @@
                             @endforeach
                         </div>
                         <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-44">Accepted by</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
@@ -887,12 +887,12 @@
                 <div class="mt-6">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Formatting / Proofreading</h3>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-44">Accepted by</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -1282,13 +1282,13 @@
                         <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold normal-case">{{ $myAssignments->count() }}</span>
                     </h3>
                     <div class="bg-white rounded-lg shadow-sm border border-indigo-200 overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
                             <thead class="bg-indigo-50">
                                 <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap">Accepted by</th>
-                                    <th class="px-3 py-3"></th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap w-44">Accepted by</th>
+                                    <th class="px-3 py-3 w-36"></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
