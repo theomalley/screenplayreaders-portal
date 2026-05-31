@@ -190,9 +190,15 @@
                                     </form>
 
                                     @if ($fqStatus === 'answered')
+                                    @php
+                                        $fqHsId = $fqAssignment?->helpscout_ticket_number
+                                            ?: $fqAssignment?->helpscoutConversation?->helpscout_conversation_id;
+                                    @endphp
                                     <form method="POST" action="{{ route('followups.complete', $fq) }}">
                                         @csrf
-                                        <button type="submit" class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">
+                                        <button type="submit"
+                                                class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                @if ($fqHsId) onclick="window.open('https://secure.helpscout.net/conversation/{{ $fqHsId }}/', '_blank')" @endif>
                                             Mark Complete &amp; Create HelpScout Draft
                                         </button>
                                     </form>
@@ -1191,9 +1197,15 @@
                                     </form>
 
                                     @if ($fqStatus === 'answered')
+                                    @php
+                                        $fqHsId = $fqAssignment?->helpscout_ticket_number
+                                            ?: $fqAssignment?->helpscoutConversation?->helpscout_conversation_id;
+                                    @endphp
                                     <form method="POST" action="{{ route('followups.complete', $fq) }}">
                                         @csrf
-                                        <button type="submit" class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">
+                                        <button type="submit"
+                                                class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                @if ($fqHsId) onclick="window.open('https://secure.helpscout.net/conversation/{{ $fqHsId }}/', '_blank')" @endif>
                                             Mark Complete &amp; Create HelpScout Draft
                                         </button>
                                     </form>
