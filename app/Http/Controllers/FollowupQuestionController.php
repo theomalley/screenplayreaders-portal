@@ -50,9 +50,13 @@ class FollowupQuestionController extends Controller
 
         $followup->update(['status' => FollowupQuestion::STATUS_COMPLETE]);
 
-        $this->createHelpScoutDraft($followup);
+        $drafted = $this->createHelpScoutDraft($followup);
 
-        return back()->with('success', 'Followup marked complete. HelpScout draft created.');
+        $message = $drafted
+            ? 'Followup marked complete. HelpScout draft created.'
+            : 'Followup marked complete. No HelpScout draft — ticket not found (may be closed or missing a ticket number).';
+
+        return back()->with('success', $message);
     }
 
     /** Admin/editor: delete a followup question at any status. */
@@ -101,18 +105,18 @@ class FollowupQuestionController extends Controller
         // SMS notification handled by future Twilio integration using sms_notify_followup flag
     }
 
-    private function createHelpScoutDraft(FollowupQuestion $followup): void
+    private function createHelpScoutDraft(FollowupQuestion $followup): bool
     {
         $assignment = $followup->assignment;
         if (! $assignment?->helpscout_ticket_number) {
-            return;
+            return false;
         }
 
         $service = app(HelpScoutService::class);
 
         try {
             $conversationId = $service->findConversationIdByTicketNumber($assignment->helpscout_ticket_number);
-            if (! $conversationId) return;
+            if (! $conversationId) return false;
 
             $typeLabel = match($assignment->assignment_type) {
                 'script_coverage' => 'Script Coverage',
@@ -134,11 +138,13 @@ class FollowupQuestionController extends Controller
                   . "</blockquote>";
 
             $service->createDraftReply($conversationId, $html);
+            return true;
         } catch (\Throwable $e) {
             Log::error('Followup HelpScout draft failed', [
                 'followup_id' => $followup->id,
                 'error'       => $e->getMessage(),
             ]);
+            return false;
         }
     }
 }

@@ -86,7 +86,10 @@ class HelpScoutService
     {
         $token    = $this->getToken();
         $response = Http::withToken($token)
-            ->get(self::API_BASE . '/conversations', ['number' => $ticketNumber]);
+            ->get(self::API_BASE . '/conversations', [
+                'number' => $ticketNumber,
+                'status' => 'all',
+            ]);
 
         if (! $response->ok()) {
             return null;
