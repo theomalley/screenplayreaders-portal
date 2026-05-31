@@ -25,14 +25,26 @@
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
 
                     {{-- Round header --}}
-                    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-4">
                         <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Round {{ $round + 1 }}
                         </span>
-                        <span class="text-xs text-gray-400">
-                            Token generated {{ $token->created_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}
-                            &middot; expires {{ $token->expires_at->setTimezone($appTimezone)->format('M j, Y') }}
-                        </span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-gray-400">
+                                Token generated {{ $token->created_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}
+                                &middot; expires {{ $token->expires_at->setTimezone($appTimezone)->format('M j, Y') }}
+                            </span>
+                            @if(auth()->user()->isAdmin())
+                            <form method="POST" action="{{ route('followupTokens.destroy', $token) }}"
+                                  onsubmit="return confirm('Delete this entire round including all questions and responses?')">
+                                @csrf @method('DELETE')
+                                <button type="submit"
+                                        class="text-xs text-red-400 hover:text-red-600 transition">
+                                    Delete round
+                                </button>
+                            </form>
+                            @endif
+                        </div>
                     </div>
 
                     @forelse ($token->followupQuestions->sortBy('created_at') as $fq)

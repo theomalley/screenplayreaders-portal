@@ -63,6 +63,19 @@ class FollowupQuestionController extends Controller
         return back()->with('success', $message);
     }
 
+    /** Admin only: delete an entire followup round (token + all its questions). */
+    public function destroyToken(FollowupToken $followupToken): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $orderNumber = $followupToken->order_number;
+        $followupToken->followupQuestions()->delete();
+        $followupToken->delete();
+
+        return redirect()->route('followups.history', $orderNumber)
+            ->with('success', 'Followup round deleted.');
+    }
+
     /** Admin/editor: full followup history for an order number. */
     public function history(string $orderNumber): \Illuminate\View\View
     {
