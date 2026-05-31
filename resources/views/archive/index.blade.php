@@ -82,9 +82,10 @@
                                     $archiveHsId = $group->first(fn($a) => !empty($a->helpscout_ticket_number))?->helpscout_ticket_number
                                         ?: $first->helpscoutConversation?->helpscout_conversation_id;
                                 @endphp
-                                <tr class="hover:bg-gray-50 align-top"
+                                <tr class="hover:bg-gray-50 align-top cursor-pointer"
                                     x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
-                                    data-search="{{ $searchStr }}">
+                                    data-search="{{ $searchStr }}"
+                                    @click="if (!$event.target.closest('a,button,form')) window.location='{{ route('assignments.edit', $first) }}'">
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
                                         <a href="{{ route('assignments.show', $first) }}"
                                            class="hover:text-indigo-600">{{ $orderNumber }}</a>
