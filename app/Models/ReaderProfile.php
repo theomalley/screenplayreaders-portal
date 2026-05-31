@@ -35,6 +35,7 @@ class ReaderProfile extends Model
         'max_concurrent_assignments',
         'requests_bypass_capacity',
         'paypal_email',
+        'is_1099',
         'phone',
         'sms_notifications',
         'sms_notify_any',
@@ -53,6 +54,7 @@ class ReaderProfile extends Model
     ];
 
     protected $casts = [
+        'is_1099'                  => 'boolean',
         'requests_bypass_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',

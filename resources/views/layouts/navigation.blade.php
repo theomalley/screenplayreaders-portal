@@ -94,7 +94,7 @@
 
                         {{-- Admin-only top-level tabs --}}
                         @if(auth()->user()?->isAdmin())
-                            @php $revenueActive = request()->routeIs('revenue.*') || request()->routeIs('statistics.*'); @endphp
+                            @php $revenueActive = request()->routeIs('revenue.*') || request()->routeIs('statistics.*') || request()->routeIs('payroll.*'); @endphp
                             <div class="relative flex items-center"
                                  x-data="{ revenueOpen: false }"
                                  @mouseenter="revenueOpen = true"
@@ -115,6 +115,10 @@
                                     <a href="{{ route('statistics.index') }}"
                                        class="block px-4 py-2 text-sm {{ request()->routeIs('statistics.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Statistics
+                                    </a>
+                                    <a href="{{ route('payroll.index') }}"
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('payroll.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Payroll
                                     </a>
                                 </div>
                             </div>

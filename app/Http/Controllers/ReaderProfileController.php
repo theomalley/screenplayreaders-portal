@@ -136,6 +136,7 @@ class ReaderProfileController extends Controller
         $user->update($userUpdate);
 
         $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
+        $data['is_1099']                  = $request->boolean('is_1099');
 
         $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],
