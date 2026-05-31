@@ -7,6 +7,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AssignmentNoteController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\EditorPayController;
@@ -111,6 +112,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/email-notifications', [SettingController::class, 'updateEmailNotificationTexts'])->name('settings.email-notifications');
     Route::patch('/settings/followup-html', [SettingController::class, 'updateFollowupHtml'])->name('settings.followup-html');
     Route::post('/settings/email-all-readers', [SettingController::class, 'emailAllReaders'])->name('settings.email-all-readers');
+
+    // Assignment notes (reader → admin messaging)
+    Route::post('/assignments/{assignment}/notes',          [AssignmentNoteController::class, 'store'])->name('assignment-notes.store');
+    Route::post('/assignment-notes/{note}/reply',           [AssignmentNoteController::class, 'reply'])->name('assignment-notes.reply');
+    Route::post('/assignment-notes/{note}/dismiss',         [AssignmentNoteController::class, 'dismiss'])->name('assignment-notes.dismiss');
+    Route::post('/assignment-note-replies/{reply}/dismiss', [AssignmentNoteController::class, 'dismissReply'])->name('assignment-note-replies.dismiss');
 
     // Followup question management (admin/editor)
     Route::get('/followup-history/{orderNumber}',       [FollowupQuestionController::class, 'history'])->name('followups.history');

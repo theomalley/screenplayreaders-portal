@@ -32,6 +32,6 @@ class AvailabilityController extends Controller
 
         $profile->update($data);
 
-        return back()->with('success', 'Availability updated.');
+        return redirect()->route('profile.edit')->with('availability_success', 'Availability updated.');
     }
 }

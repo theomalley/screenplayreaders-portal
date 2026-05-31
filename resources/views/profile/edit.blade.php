@@ -135,6 +135,58 @@
                 </div>
             </div>
 
+            @if(auth()->user()->isReader())
+            @php $availProfile = auth()->user()->readerProfile; @endphp
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">My Availability</h2>
+                    <p class="text-sm text-gray-600 mb-4">Visible to the assignments team — not shown to customers.</p>
+
+                    @if (session('availability_success'))
+                        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                            {{ session('availability_success') }}
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('availability.update') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div>
+                            <x-input-label value="Status" />
+                            <div class="mt-2 flex gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="availability" value="available"
+                                           {{ old('availability', $availProfile?->availability ?? 'available') === 'available' ? 'checked' : '' }}
+                                           class="text-green-600 focus:ring-green-500" />
+                                    <span class="text-sm font-medium text-green-700">Available</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="availability" value="unavailable"
+                                           {{ old('availability', $availProfile?->availability ?? 'available') === 'unavailable' ? 'checked' : '' }}
+                                           class="text-red-600 focus:ring-red-500" />
+                                    <span class="text-sm font-medium text-red-700">Unavailable</span>
+                                </label>
+                            </div>
+                            <x-input-error :messages="$errors->get('availability')" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="avail_message" value="Note (optional)" />
+                            <textarea id="avail_message" name="availability_message" rows="2"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="e.g. Back Jan 15, on vacation through end of month…">{{ old('availability_message', $availProfile?->availability_message) }}</textarea>
+                            <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Availability</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             @unless(auth()->user()->isReader())
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">

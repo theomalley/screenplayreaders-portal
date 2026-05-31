@@ -83,6 +83,7 @@ class StoreCoverageSubmissionRequest extends FormRequest
             'sr_diversity'     => ['required', 'in:Not applicable,Diverse,Moderately Diverse,Could use more Diversity'],
             'sr_recommendation'=> ['required', 'in:Pass,Consider,Consider with Reservations,Recommend'],
             'quality_checked'  => ['required', 'accepted'],
+            'note_to_team'     => ['nullable', 'string', 'max:1000'],
         ];
     }
 

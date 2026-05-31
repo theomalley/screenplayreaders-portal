@@ -4,12 +4,14 @@
 // v1.3 — 2026-05-25 | Add coverage preview endpoint (text-only HTML view for admins/editors and reader's own)
 // v1.2 — 2026-05-24 | Submit button spinner; redirect to dedicated submitted page with custom HTML
 // v1.1 — 2026-05-22 | Fire GoogleDocsService after submission to create coverage doc + draft PDF
+// v1.5 — 2026-05-31 | Create AssignmentNote from note_to_team field on submission
 // v1.0 — 2026-05-17 | Coverage form show + store for SR and WD vendors
 
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCoverageSubmissionRequest;
 use App\Models\Assignment;
+use App\Models\AssignmentNote;
 use App\Models\Setting;
 use App\Services\GoogleDocsService;
 use App\Support\FilenameGenerator;
@@ -54,6 +56,17 @@ class CoverageSubmissionController extends Controller
                 'status'       => Assignment::STATUS_QC,
                 'submitted_at' => now(),
             ]);
+
+            // Create a team note if the reader included one
+            $noteBody = trim($request->input('note_to_team', ''));
+            if ($noteBody !== '') {
+                AssignmentNote::create([
+                    'assignment_id' => $assignment->id,
+                    'user_id'       => auth()->id(),
+                    'body'          => $noteBody,
+                    'dismissed_by'  => [],
+                ]);
+            }
         });
 
         // Create the coverage Google Doc and draft PDF outside the transaction

@@ -142,6 +142,73 @@
             {{-- ===== ADMIN / EDITOR VIEW ===== --}}
             @if ($canManage)
 
+                {{-- ---- Assignment Notes panel ---- --}}
+                @if (($assignmentNotes ?? collect())->isNotEmpty())
+                <div class="mb-5">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        Reader Notes
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">{{ $assignmentNotes->count() }}</span>
+                    </h3>
+                    <div class="space-y-2">
+                        @foreach ($assignmentNotes as $aNote)
+                            @php
+                                $aNoteAssignment = $aNote->assignment;
+                                $aNoteAuthor     = $aNote->author;
+                                $aNoteInitials   = $aNoteAuthor?->readerProfile?->initials
+                                    ?? ($aNoteAuthor ? strtoupper(substr($aNoteAuthor->name, 0, 2)) : '??');
+                            @endphp
+                            <div x-data="{ open: false }"
+                                 class="border rounded-lg bg-blue-50 border-blue-200"
+                                 id="anote-{{ $aNote->id }}">
+                                <div @click="open = !open"
+                                     class="flex items-center gap-3 flex-wrap px-4 py-3 cursor-pointer">
+                                    <span class="text-xs font-mono text-gray-500">{{ $aNoteAssignment?->order_number }}</span>
+                                    <span class="text-sm font-medium text-gray-800">{{ $aNoteAssignment?->script_title }}</span>
+                                    <span class="text-xs text-gray-500">· {{ $aNoteInitials }}</span>
+                                    <span class="text-[10px] text-gray-400">{{ $aNote->created_at->setTimezone($appTimezone)->format('M j, g:ia') }}</span>
+                                    <span class="ml-auto flex items-center gap-2">
+                                        <button type="button"
+                                                @click.stop
+                                                x-data
+                                                @click="fetch('{{ route('assignment-notes.dismiss', $aNote) }}', {
+                                                    method: 'POST',
+                                                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                                }).then(() => document.getElementById('anote-{{ $aNote->id }}').remove())"
+                                                class="text-blue-300 hover:text-blue-600 text-sm leading-none transition"
+                                                title="Dismiss">✕</button>
+                                        <button type="button" @click.stop="open = !open"
+                                                class="text-xs text-indigo-500 hover:text-indigo-700 underline">
+                                            <span x-text="open ? 'Hide' : 'Reply / View'"></span>
+                                        </button>
+                                    </span>
+                                </div>
+
+                                <div x-show="open" x-cloak class="border-t border-blue-200 px-4 py-3 space-y-3">
+                                    <div class="text-sm text-gray-800 whitespace-pre-wrap bg-white border border-blue-100 rounded px-3 py-2">{{ $aNote->body }}</div>
+
+                                    @foreach ($aNote->replies as $aNoteReply)
+                                        <div class="ml-4 border-l-2 border-indigo-200 pl-3">
+                                            <div class="text-[10px] text-gray-400 mb-0.5">
+                                                {{ $aNoteReply->author?->name }} · {{ $aNoteReply->created_at->setTimezone($appTimezone)->format('M j, g:ia') }}
+                                            </div>
+                                            <div class="text-sm text-gray-700 whitespace-pre-wrap">{{ $aNoteReply->body }}</div>
+                                        </div>
+                                    @endforeach
+
+                                    <form method="POST" action="{{ route('assignment-notes.reply', $aNote) }}" class="flex gap-2 pt-1">
+                                        @csrf
+                                        <textarea name="body" rows="2" maxlength="1000" required
+                                                  placeholder="Reply to reader…"
+                                                  class="flex-1 text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-y"></textarea>
+                                        <button type="submit" class="self-end px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 whitespace-nowrap">Send Reply</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
                 {{-- ---- Followup Questions panel (pending only) ---- --}}
                 @php $followupsTop = ($followups ?? collect())->whereIn('status', ['pending', 'answered']); @endphp
                 @if ($followupsTop->isNotEmpty())
@@ -1595,6 +1662,42 @@
                     {{-- ---- Available Assignments tab ---- --}}
                     <div x-show="tab === 'all'">
 
+                        {{-- Replies to this reader's notes --}}
+                        @foreach (($myNoteReplies ?? collect()) as $nrItem)
+                            @php
+                                $nrNote       = $nrItem['note'];
+                                $nrAssignment = $nrNote->assignment;
+                            @endphp
+                            @foreach ($nrItem['replies'] as $nrReply)
+                            <div class="mb-3 rounded-lg border-2 border-blue-300 bg-blue-50"
+                                 id="nreply-{{ $nrReply->id }}">
+                                <div class="flex items-center gap-3 px-4 py-3 flex-wrap">
+                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-400 text-blue-900 uppercase leading-none">Team Reply</span>
+                                    <span class="text-sm font-medium text-gray-800">{{ $nrAssignment?->script_title ?? '—' }}</span>
+                                    <span class="text-xs text-gray-400">{{ $nrReply->created_at->setTimezone($appTimezone)->format('M j, g:ia') }}</span>
+                                    <button type="button"
+                                            x-data
+                                            @click="fetch('{{ route('assignment-note-replies.dismiss', $nrReply) }}', {
+                                                method: 'POST',
+                                                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                            }).then(() => document.getElementById('nreply-{{ $nrReply->id }}').remove())"
+                                            class="ml-auto text-blue-300 hover:text-blue-600 text-sm leading-none transition"
+                                            title="Dismiss">✕</button>
+                                </div>
+                                <div class="border-t border-blue-200 px-4 py-3 space-y-2">
+                                    <div>
+                                        <p class="text-[10px] text-gray-400 mb-0.5">Your note:</p>
+                                        <div class="text-xs text-gray-600 italic whitespace-pre-wrap bg-white border border-blue-100 rounded px-2 py-1.5">{{ $nrNote->body }}</div>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-gray-400 mb-0.5">Reply from team:</p>
+                                        <div class="text-sm text-gray-800 whitespace-pre-wrap bg-white border border-blue-200 rounded px-2 py-1.5">{{ $nrReply->body }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        @endforeach
+
                         {{-- Followup questions waiting for this reader --}}
                         @foreach (($myFollowups ?? collect())->where('status', 'unanswered') as $fq)
                             @php
@@ -1751,6 +1854,29 @@
                                                     <div class="mt-1.5">
                                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
                                                     </div>
+                                                    @php $availNoteCount = ($myNotesByAssignment ?? collect())->get($assignment->id, 0); @endphp
+                                                    @if ($availNoteCount < 3)
+                                                    <div x-data="{ open: false }" class="mt-2">
+                                                        <button type="button" @click="open = !open"
+                                                                class="text-[10px] text-blue-400 hover:text-blue-600 transition">
+                                                            <span x-text="open ? 'Cancel' : '+ Note to team'"></span>
+                                                        </button>
+                                                        <div x-show="open" x-cloak class="mt-1.5">
+                                                            <form method="POST" action="{{ route('assignment-notes.store', $assignment) }}"
+                                                                  x-data="{ body: '' }" class="flex flex-col gap-1">
+                                                                @csrf
+                                                                <textarea name="body" x-model="body" rows="2" maxlength="1000" required
+                                                                          placeholder="Note to the team…"
+                                                                          class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-y"></textarea>
+                                                                <button type="submit"
+                                                                        :disabled="body.trim() === ''"
+                                                                        class="self-end px-2 py-1 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+                                                                    Send
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                    @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                                     <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
@@ -1820,6 +1946,39 @@
 
                     {{-- ---- My Assignments tab ---- --}}
                     <div x-show="tab === 'mine'">
+
+                        {{-- Replies to this reader's notes --}}
+                        @foreach (($myNoteReplies ?? collect()) as $nrItem)
+                            @php $nrNote = $nrItem['note']; $nrAssignment = $nrNote->assignment; @endphp
+                            @foreach ($nrItem['replies'] as $nrReply)
+                            <div class="mb-3 rounded-lg border-2 border-blue-300 bg-blue-50"
+                                 id="nreply-mine-{{ $nrReply->id }}">
+                                <div class="flex items-center gap-3 px-4 py-3 flex-wrap">
+                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-400 text-blue-900 uppercase leading-none">Team Reply</span>
+                                    <span class="text-sm font-medium text-gray-800">{{ $nrAssignment?->script_title ?? '—' }}</span>
+                                    <span class="text-xs text-gray-400">{{ $nrReply->created_at->setTimezone($appTimezone)->format('M j, g:ia') }}</span>
+                                    <button type="button"
+                                            x-data
+                                            @click="fetch('{{ route('assignment-note-replies.dismiss', $nrReply) }}', {
+                                                method: 'POST',
+                                                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                            }).then(() => { document.getElementById('nreply-mine-{{ $nrReply->id }}')?.remove(); document.getElementById('nreply-{{ $nrReply->id }}')?.remove(); })"
+                                            class="ml-auto text-blue-300 hover:text-blue-600 text-sm leading-none transition"
+                                            title="Dismiss">✕</button>
+                                </div>
+                                <div class="border-t border-blue-200 px-4 py-3 space-y-2">
+                                    <div>
+                                        <p class="text-[10px] text-gray-400 mb-0.5">Your note:</p>
+                                        <div class="text-xs text-gray-600 italic whitespace-pre-wrap bg-white border border-blue-100 rounded px-2 py-1.5">{{ $nrNote->body }}</div>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-gray-400 mb-0.5">Reply from team:</p>
+                                        <div class="text-sm text-gray-800 whitespace-pre-wrap bg-white border border-blue-200 rounded px-2 py-1.5">{{ $nrReply->body }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        @endforeach
 
                         {{-- Followup questions active for this reader --}}
                         @foreach (($myFollowups ?? collect()) as $fq)
@@ -1992,6 +2151,29 @@
                                                     <div class="mt-1.5">
                                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                                     </div>
+                                                    @php $mineNoteCount = ($myNotesByAssignment ?? collect())->get($assignment->id, 0); @endphp
+                                                    @if ($mineNoteCount < 3)
+                                                    <div x-data="{ open: false }" class="mt-2">
+                                                        <button type="button" @click="open = !open"
+                                                                class="text-[10px] text-blue-400 hover:text-blue-600 transition">
+                                                            <span x-text="open ? 'Cancel' : '+ Note to team'"></span>
+                                                        </button>
+                                                        <div x-show="open" x-cloak class="mt-1.5">
+                                                            <form method="POST" action="{{ route('assignment-notes.store', $assignment) }}"
+                                                                  x-data="{ body: '' }" class="flex flex-col gap-1">
+                                                                @csrf
+                                                                <textarea name="body" x-model="body" rows="2" maxlength="1000" required
+                                                                          placeholder="Note to the team…"
+                                                                          class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-y"></textarea>
+                                                                <button type="submit"
+                                                                        :disabled="body.trim() === ''"
+                                                                        class="self-end px-2 py-1 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+                                                                    Send
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                    @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                                     <div class="flex flex-col items-center gap-0.5 mb-1">

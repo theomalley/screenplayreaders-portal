@@ -212,12 +212,6 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
-                        @if(auth()->user()?->isReader())
-                            <x-dropdown-link :href="route('availability.edit')">
-                                {{ __('My Availability') }}
-                            </x-dropdown-link>
-                        @endif
-
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <x-dropdown-link :href="route('logout')"
@@ -333,12 +327,6 @@
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
-
-                @if(auth()->user()?->isReader())
-                    <x-responsive-nav-link :href="route('availability.edit')">
-                        {{ __('My Availability') }}
-                    </x-responsive-nav-link>
-                @endif
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

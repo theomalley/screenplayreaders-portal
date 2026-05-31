@@ -20,6 +20,7 @@ use App\Http\Requests\StoreAssignmentRequest;
 use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Client;
+use App\Models\AssignmentNote;
 use App\Models\FollowupQuestion;
 use App\Models\FollowupToken;
 use App\Models\Setting;
@@ -123,6 +124,12 @@ class AssignmentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
+            $assignmentNotes = AssignmentNote::with(['assignment', 'author.readerProfile', 'replies.author'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->filter(fn($n) => ! $n->isDismissedBy($user->id))
+                ->values();
+
             return view('assignments.index', [
                 'canManage'        => true,
                 'assignments'      => $assignments,
@@ -137,6 +144,7 @@ class AssignmentController extends Controller
                 'ageThresholds'    => Setting::getAgeThresholds(),
                 'appTimezone'      => Setting::getAppTimezone(),
                 'followups'        => $followups,
+                'assignmentNotes'  => $assignmentNotes,
             ]);
         }
 
@@ -194,19 +202,40 @@ class AssignmentController extends Controller
             ->orderBy('unanswered_at', 'asc')
             ->get();
 
+        // Undismissed replies to this reader's notes
+        $myNoteReplies = AssignmentNote::with(['assignment', 'replies.author'])
+            ->where('user_id', $user->id)
+            ->whereHas('replies')
+            ->get()
+            ->map(fn($note) => [
+                'note'    => $note,
+                'replies' => $note->replies->filter(fn($r) => ! $r->isDismissedBy($user->id))->values(),
+            ])
+            ->filter(fn($item) => $item['replies']->isNotEmpty())
+            ->values();
+
+        // Notes the reader has sent (per assignment, for the "Add note" button state)
+        $myNotesByAssignment = AssignmentNote::where('user_id', $user->id)
+            ->select('assignment_id')
+            ->selectRaw('COUNT(*) as note_count')
+            ->groupBy('assignment_id')
+            ->pluck('note_count', 'assignment_id');
+
         return view('assignments.index', [
-            'canManage'        => false,
-            'available'        => $available,
-            'mine'             => $mine,
-            'readerMax'        => $readerMax,
-            'periodStart'      => $periodStart,
-            'periodEnd'        => $periodEnd,
-            'archivedByPeriod' => $archivedByPeriod,
-            'ageThresholds'    => Setting::getAgeThresholds(),
-            'appTimezone'      => Setting::getAppTimezone(),
-            'onlineEditors'    => $onlineEditors,
-            'onlineReaders'    => $onlineReaders,
-            'myFollowups'      => $myFollowups,
+            'canManage'              => false,
+            'available'              => $available,
+            'mine'                   => $mine,
+            'readerMax'              => $readerMax,
+            'periodStart'            => $periodStart,
+            'periodEnd'              => $periodEnd,
+            'archivedByPeriod'       => $archivedByPeriod,
+            'ageThresholds'          => Setting::getAgeThresholds(),
+            'appTimezone'            => Setting::getAppTimezone(),
+            'onlineEditors'          => $onlineEditors,
+            'onlineReaders'          => $onlineReaders,
+            'myFollowups'            => $myFollowups,
+            'myNoteReplies'          => $myNoteReplies,
+            'myNotesByAssignment'    => $myNotesByAssignment,
         ]);
     }
 
