@@ -33,6 +33,44 @@
     </style>
     <script>
         document.addEventListener('alpine:init', () => {
+            Alpine.data('tableSort', (defaultField = 'date', defaultDir = 'desc') => ({
+                sortBy: defaultField,
+                sortDir: defaultDir,
+                init() { this.$nextTick(() => this.sort()); },
+                setSort(field) {
+                    if (this.sortBy === field) {
+                        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.sortBy = field;
+                        this.sortDir = (field === 'rush' || field === 'rate') ? 'desc' : (field === 'age' ? 'desc' : 'desc');
+                    }
+                    this.sort();
+                },
+                sort() {
+                    const tbody = this.$el.querySelector('tbody');
+                    if (!tbody) return;
+                    const rows = [...tbody.querySelectorAll('tr[data-sort-date]')];
+                    if (rows.length < 2) return;
+                    const numericFields = new Set(['date', 'age', 'rush', 'rate']);
+                    // 'age' sorts by date in the opposite direction
+                    const actualField = this.sortBy === 'age' ? 'date' : this.sortBy;
+                    const actualDir   = this.sortBy === 'age'
+                        ? (this.sortDir === 'asc' ? 'desc' : 'asc')
+                        : this.sortDir;
+                    rows.sort((a, b) => {
+                        const key = 'sort' + actualField.charAt(0).toUpperCase() + actualField.slice(1);
+                        let av = a.dataset[key] ?? '';
+                        let bv = b.dataset[key] ?? '';
+                        if (numericFields.has(actualField)) { av = +av || 0; bv = +bv || 0; }
+                        else { av = (av || '').toLowerCase(); bv = (bv || '').toLowerCase(); }
+                        if (av < bv) return actualDir === 'asc' ? -1 : 1;
+                        if (av > bv) return actualDir === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                    rows.forEach(r => tbody.appendChild(r));
+                }
+            }));
+
             Alpine.data('rushCountdown', (dueAt, dueLabel = '') => ({
                 display: '',
                 overdue: false,
@@ -468,7 +506,18 @@
                         No assignments yet.
                     </div>
                 @else
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="tableSort()">
+                        <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-gray-50 border-b border-gray-200">
+                            <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mr-1">Sort:</span>
+                            @foreach (['date' => 'Date', 'age' => 'Age', 'rush' => 'Rush', 'type' => 'Type', 'rate' => 'Rate', 'status' => 'Status', 'acceptedby' => 'Accepted by'] as $sf => $sl)
+                                <button type="button" @click="setSort('{{ $sf }}')"
+                                        :class="sortBy === '{{ $sf }}' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'"
+                                        class="inline-flex items-center px-2 py-0.5 rounded border text-[11px] transition-colors whitespace-nowrap">
+                                    {{ $sl }}<span x-show="sortBy === '{{ $sf }}'" x-text="sortDir === 'asc' ? ' ↑' : ' ↓'" class="ml-0.5"></span>
+                                </button>
+                            @endforeach
+                        </div>
+                        <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -569,6 +618,12 @@
                                     <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
                                         x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
+                                        data-sort-date="{{ $assignment->created_at?->timestamp ?? 0 }}"
+                                        data-sort-rush="{{ $assignment->rush ? 1 : 0 }}"
+                                        data-sort-type="{{ $assignment->assignment_type ?? '' }}"
+                                        data-sort-rate="{{ $assignment->pay_rate ?? 0 }}"
+                                        data-sort-status="{{ $assignment->status ?? '' }}"
+                                        data-sort-acceptedby="{{ strtolower($assignedInitials ?? '') }}"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
                                         {{-- Order Details (first): portal link, age, HelpScout --}}
                                         @php
@@ -823,6 +878,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </div>{{-- /overflow-x-auto --}}
                     </div>
                 @endif
 
@@ -1571,7 +1627,17 @@
                                 No assignments available right now.
                             </div>
                         @else
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="tableSort('date', 'asc')">
+                                <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-gray-50 border-b border-gray-200">
+                                    <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mr-1">Sort:</span>
+                                    @foreach (['date' => 'Date', 'age' => 'Age', 'rush' => 'Rush', 'type' => 'Type', 'rate' => 'Rate', 'status' => 'Status'] as $sf => $sl)
+                                        <button type="button" @click="setSort('{{ $sf }}')"
+                                                :class="sortBy === '{{ $sf }}' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'"
+                                                class="inline-flex items-center px-2 py-0.5 rounded border text-[11px] transition-colors whitespace-nowrap">
+                                            {{ $sl }}<span x-show="sortBy === '{{ $sf }}'" x-text="sortDir === 'asc' ? ' ↑' : ' ↓'" class="ml-0.5"></span>
+                                        </button>
+                                    @endforeach
+                                </div>
                                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                                     <thead class="bg-gray-50">
                                         <tr>
@@ -1633,7 +1699,12 @@
                                                     $typeLabel = 'WD ' . $typeLabel;
                                                 }
                                             @endphp
-                                            <tr class="hover:bg-gray-50 {{ $rowClass }}">
+                                            <tr class="hover:bg-gray-50 {{ $rowClass }}"
+                                                data-sort-date="{{ $assignment->created_at?->timestamp ?? 0 }}"
+                                                data-sort-rush="{{ $assignment->rush ? 1 : 0 }}"
+                                                data-sort-type="{{ $assignment->assignment_type ?? '' }}"
+                                                data-sort-rate="{{ $assignment->pay_rate ?? 0 }}"
+                                                data-sort-status="{{ $assignment->status ?? '' }}">
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                                     <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
@@ -1798,7 +1869,17 @@
                                     No active assignments right now.
                                 </div>
                             @else
-                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="tableSort()">
+                                    <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-gray-50 border-b border-gray-200">
+                                        <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mr-1">Sort:</span>
+                                        @foreach (['date' => 'Date', 'age' => 'Age', 'rush' => 'Rush', 'type' => 'Type', 'rate' => 'Rate', 'status' => 'Status'] as $sf => $sl)
+                                            <button type="button" @click="setSort('{{ $sf }}')"
+                                                    :class="sortBy === '{{ $sf }}' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'"
+                                                    class="inline-flex items-center px-2 py-0.5 rounded border text-[11px] transition-colors whitespace-nowrap">
+                                                {{ $sl }}<span x-show="sortBy === '{{ $sf }}'" x-text="sortDir === 'asc' ? ' ↑' : ' ↓'" class="ml-0.5"></span>
+                                            </button>
+                                        @endforeach
+                                    </div>
                                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
@@ -1873,7 +1954,12 @@
                                                     $typeLabel = 'WD ' . $typeLabel;
                                                 }
                                             @endphp
-                                            <tr class="hover:bg-gray-50 {{ $rowClass }}">
+                                            <tr class="hover:bg-gray-50 {{ $rowClass }}"
+                                                data-sort-date="{{ $assignment->created_at?->timestamp ?? 0 }}"
+                                                data-sort-rush="{{ $assignment->rush ? 1 : 0 }}"
+                                                data-sort-type="{{ $assignment->assignment_type ?? '' }}"
+                                                data-sort-rate="{{ $assignment->pay_rate ?? 0 }}"
+                                                data-sort-status="{{ $assignment->status ?? '' }}">
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                                     <div class="mt-1 text-[10px] text-gray-400 tabular-nums">{{ $assignment->created_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') }}</div>
@@ -1982,7 +2068,17 @@
                                     </h3>
                                     <span class="text-sm font-semibold text-green-700">${{ number_format($weekPayTotal, 2) }}</span>
                                 </div>
-                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="tableSort()">
+                                    <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-gray-50 border-b border-gray-200">
+                                        <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mr-1">Sort:</span>
+                                        @foreach (['date' => 'Date', 'age' => 'Age', 'rush' => 'Rush', 'type' => 'Type', 'rate' => 'Rate', 'status' => 'Status'] as $sf => $sl)
+                                            <button type="button" @click="setSort('{{ $sf }}')"
+                                                    :class="sortBy === '{{ $sf }}' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'"
+                                                    class="inline-flex items-center px-2 py-0.5 rounded border text-[11px] transition-colors whitespace-nowrap">
+                                                {{ $sl }}<span x-show="sortBy === '{{ $sf }}'" x-text="sortDir === 'asc' ? ' ↑' : ' ↓'" class="ml-0.5"></span>
+                                            </button>
+                                        @endforeach
+                                    </div>
                                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead class="bg-gray-50">
                                             <tr>
@@ -2046,7 +2142,12 @@
                                                         $typeLabel = 'WD ' . $typeLabel;
                                                     }
                                                 @endphp
-                                                <tr class="hover:bg-gray-50 {{ $rowClass }}">
+                                                <tr class="hover:bg-gray-50 {{ $rowClass }}"
+                                                    data-sort-date="{{ $assignment->created_at?->timestamp ?? 0 }}"
+                                                    data-sort-rush="{{ $assignment->rush ? 1 : 0 }}"
+                                                    data-sort-type="{{ $assignment->assignment_type ?? '' }}"
+                                                    data-sort-rate="{{ $assignment->pay_rate ?? 0 }}"
+                                                    data-sort-status="{{ $assignment->status ?? '' }}">
                                                     <td class="px-3 py-3 whitespace-nowrap">
                                                         <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                                         @if ($assignment->rush)
