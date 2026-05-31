@@ -4,10 +4,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Assignment;
 use App\Models\FollowupQuestion;
 use App\Services\HelpScoutService;
-use App\Services\ReaderNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -111,14 +109,22 @@ class FollowupQuestionController extends Controller
     private function createHelpScoutDraft(FollowupQuestion $followup): bool|string
     {
         $assignment = $followup->assignment;
-        if (! $assignment?->helpscout_ticket_number) {
-            return 'no_ticket';
+        if (! $assignment) {
+            return 'no_assignment';
         }
 
         $service = app(HelpScoutService::class);
 
         try {
-            $conversationId = $service->findConversationIdByTicketNumber($assignment->helpscout_ticket_number);
+            // Prefer the Zapier-populated conversation ID (auto-set for all SR orders).
+            // Fall back to searching by the manually-entered ticket number.
+            $conversationId = $assignment->helpscoutConversation?->helpscout_conversation_id
+                ?? null;
+
+            if (! $conversationId && $assignment->helpscout_ticket_number) {
+                $conversationId = $service->findConversationIdByTicketNumber($assignment->helpscout_ticket_number);
+            }
+
             if (! $conversationId) return 'not_found';
 
             $typeLabel = match($assignment->assignment_type) {
