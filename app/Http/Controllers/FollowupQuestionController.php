@@ -165,21 +165,14 @@ class FollowupQuestionController extends Controller
 
             if (! $conversationId) return 'not_found';
 
-            $typeLabel = match($assignment->assignment_type) {
-                'script_coverage' => 'Script Coverage',
-                'notes_only'      => 'Notes-Only',
-                'deep_dive'       => 'Deep-Dive Dev Notes',
-                'short'           => 'Short Script Coverage',
-                default           => ucwords(str_replace('_', ' ', $assignment->assignment_type)),
-            };
-
-            $reader   = $assignment->assignedReader;
-            $initials = $reader?->readerProfile?->initials
+            $reader      = $assignment->assignedReader;
+            $initials    = $reader?->readerProfile?->initials
                 ?? ($reader ? strtoupper(substr($reader->name, 0, 2)) : 'Your reader');
+            $scriptTitle = $assignment->script_title ?? 'your script';
 
             $response = nl2br(e($followup->responseForCustomer() ?? ''));
 
-            $html = "<p><strong>Your {$typeLabel} reader ({$initials}) has responded to your followup questions:</strong></p>"
+            $html = "<p><strong>Your Reader {$initials} for {$scriptTitle} has responded to your followup questions:</strong></p>"
                   . "<blockquote style=\"border-left:3px solid #ccc;padding-left:1em;margin:1em 0;color:#555;\">"
                   . $response
                   . "</blockquote>";
