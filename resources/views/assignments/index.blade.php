@@ -1281,7 +1281,7 @@
                         My Assignments
                         <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold normal-case">{{ $myAssignments->count() }}</span>
                     </h3>
-                    <div class="bg-white rounded-lg shadow-sm border border-indigo-200 overflow-hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-indigo-200 overflow-hidden" x-data>
                         <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
                             <thead class="bg-indigo-50">
                                 <tr>
