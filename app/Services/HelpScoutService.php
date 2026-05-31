@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-05-31 | Reopen closed conversations before drafting; fetch conversation once for ID + status
 // v1.3 — 2026-05-23 | Upload attachments separately to thread after draft creation
 // v1.2 — 2026-05-23 | Fetch customer ID from conversation before drafting (required by /reply endpoint)
 // v1.1 — 2026-05-23 | Fix token URL (v2/oauth2/token) and reply endpoint (POST /reply not /threads)
@@ -42,9 +43,14 @@ class HelpScoutService
      */
     public function createDraftReply(string $conversationId, string $html, array $attachments = []): void
     {
-        $token = $this->getToken();
+        $token        = $this->getToken();
+        $conversation = $this->fetchConversation($conversationId, $token);
+        $customerId   = $this->extractCustomerId($conversation, $conversationId);
 
-        $customerId = $this->getCustomerId($conversationId, $token);
+        // HelpScout rejects draft replies on closed conversations — reopen first.
+        if (($conversation['status'] ?? '') === 'closed') {
+            $this->reopenConversation($conversationId, $token);
+        }
 
         $body = [
             'customer' => ['id' => $customerId],
@@ -100,7 +106,7 @@ class HelpScoutService
             : null;
     }
 
-    private function getCustomerId(string $conversationId, string $token): int
+    private function fetchConversation(string $conversationId, string $token): array
     {
         $response = Http::withToken($token)
             ->get(self::API_BASE . "/conversations/{$conversationId}");
@@ -109,8 +115,12 @@ class HelpScoutService
             throw new \RuntimeException('HelpScout conversation lookup failed (' . $response->status() . '): ' . $response->body());
         }
 
-        $json = $response->json();
-        $href = $json['_links']['primaryCustomer']['href'] ?? '';
+        return $response->json();
+    }
+
+    private function extractCustomerId(array $conversation, string $conversationId): int
+    {
+        $href = $conversation['_links']['primaryCustomer']['href'] ?? '';
         $id   = (int) basename($href);
 
         if (! $id) {
@@ -118,5 +128,18 @@ class HelpScoutService
         }
 
         return $id;
+    }
+
+    private function reopenConversation(string $conversationId, string $token): void
+    {
+        $response = Http::withToken($token)
+            ->withHeaders(['Content-Type' => 'application/json-patch+json'])
+            ->patch(self::API_BASE . "/conversations/{$conversationId}", [
+                ['op' => 'replace', 'path' => '/status', 'value' => 'active'],
+            ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('HelpScout reopen failed (' . $response->status() . '): ' . $response->body());
+        }
     }
 }
