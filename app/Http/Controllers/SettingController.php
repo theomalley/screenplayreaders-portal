@@ -1,5 +1,6 @@
 <?php
 
+// v2.8 — 2026-05-31 | Followup form HTML — before/after injection via settings.
 // v2.7 — 2026-05-30 | Email notification text settings (headers + body messages per notification type).
 // v2.6 — 2026-05-29 | QC saved replies — admin-customizable quick-insert notes for Send Back modal.
 // v2.5 — 2026-05-28 | Dev autofill toggle per role (admin/editor/reader) for coverage forms.
@@ -64,6 +65,8 @@ class SettingController extends Controller
         ];
         $qcSavedReplies       = Setting::getSavedReplies();
         $emailNotifTexts      = Setting::getEmailNotificationTexts();
+        $followupBeforeHtml   = Setting::getValue('followup_before_html', '');
+        $followupAfterHtml    = Setting::getValue('followup_after_html', '');
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
@@ -72,6 +75,7 @@ class SettingController extends Controller
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'qcSavedReplies', 'emailNotifTexts',
+            'followupBeforeHtml', 'followupAfterHtml',
         ));
     }
 
@@ -292,5 +296,20 @@ class SettingController extends Controller
         Setting::setValue('app_timezone', $request->input('app_timezone'));
 
         return back()->with('success', 'Timezone updated.');
+    }
+
+    public function updateFollowupHtml(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate([
+            'followup_before_html' => 'nullable|string',
+            'followup_after_html'  => 'nullable|string',
+        ]);
+
+        Setting::setValue('followup_before_html', trim($request->input('followup_before_html', '')));
+        Setting::setValue('followup_after_html',  trim($request->input('followup_after_html', '')));
+
+        return back()->with('success', 'Followup form HTML saved.');
     }
 }

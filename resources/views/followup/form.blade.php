@@ -164,6 +164,15 @@
         <p class="order-num">Order #{{ $followupToken->order_number }}</p>
     </div>
 
+    @php
+        $beforeHtml = \App\Models\Setting::getValue('followup_before_html', '');
+        $afterHtml  = \App\Models\Setting::getValue('followup_after_html', '');
+    @endphp
+
+    @if ($beforeHtml)
+        <div class="followup-inject">{!! $beforeHtml !!}</div>
+    @endif
+
     @if (session('submitted'))
         <div class="notice-success">
             Your questions have been submitted.
@@ -207,6 +216,10 @@
         @endif
 
     </form>
+
+    @if ($afterHtml)
+        <div class="followup-inject">{!! $afterHtml !!}</div>
+    @endif
 
     <p class="page-footer">
         <a href="https://screenplayreaders.com">Screenplay Readers</a>

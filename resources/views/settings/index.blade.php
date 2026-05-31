@@ -574,6 +574,55 @@
                     </form>
                 </div>
 
+                {{-- Followup Form HTML --}}
+                @if($isAdmin)
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Followup Questions Form</h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        Optional HTML injected into the public followup form sent to customers. Accepts raw HTML. Leave blank for none.
+                    </p>
+
+                    <form method="POST" action="{{ route('settings.followup-html') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">HTML before the form</label>
+                            <textarea name="followup_before_html" rows="5"
+                                      class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="<p>Your HTML here...</p>">{{ old('followup_before_html', $followupBeforeHtml) }}</textarea>
+                            @if($followupBeforeHtml)
+                                <details class="mt-2">
+                                    <summary class="text-xs text-gray-400 cursor-pointer select-none hover:text-gray-600">Preview</summary>
+                                    <div class="mt-2 p-4 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 prose prose-sm max-w-none">
+                                        {!! $followupBeforeHtml !!}
+                                    </div>
+                                </details>
+                            @endif
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">HTML after the form</label>
+                            <textarea name="followup_after_html" rows="5"
+                                      class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="<p>Your HTML here...</p>">{{ old('followup_after_html', $followupAfterHtml) }}</textarea>
+                            @if($followupAfterHtml)
+                                <details class="mt-2">
+                                    <summary class="text-xs text-gray-400 cursor-pointer select-none hover:text-gray-600">Preview</summary>
+                                    <div class="mt-2 p-4 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 prose prose-sm max-w-none">
+                                        {!! $followupAfterHtml !!}
+                                    </div>
+                                </details>
+                            @endif
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-primary-button>Save</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+                @endif
+
                 {{-- Dev Autofill --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-sm font-semibold text-gray-800 mb-1">Coverage Form — Dev Autofill</h3>
