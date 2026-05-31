@@ -1483,18 +1483,13 @@
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
                             <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700"
-                                  title="{{ $eProfile?->displayName() ?? $editor->name }}{{ $eProfile?->title ? ' · ' . $eProfile->title : '' }} (Editor){{ $eOnline ? ' · Online' : '' }} — {{ $eActive }} active">
+                                  title="{{ $eProfile?->displayName() ?? $editor->name }}{{ $eProfile?->title ? ' · ' . $eProfile->title : '' }} (Editor){{ $eOnline ? ' · Online' : '' }}">
                                 @if ($ePhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="w-full h-full object-cover" />
                                     </span>
                                 @else
                                     {{ $eInitials }}
-                                @endif
-                                @if ($eActive > 0)
-                                    <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-indigo-500 text-white">
-                                        {{ $eActive }}
-                                    </span>
                                 @endif
                                 @if ($eOnline)
                                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
@@ -1533,7 +1528,7 @@
                                 @else
                                     {{ $rInitials }}
                                 @endif
-                                @if ($rActive > 0)
+                                @if ($rActive > 0 && $reader->id === auth()->id())
                                     <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
                                         {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
                                         {{ $rActive }}
