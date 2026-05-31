@@ -25,13 +25,13 @@ class AssignmentNoteReply extends Model
 
     public function isDismissedBy(int $userId): bool
     {
-        return in_array($userId, $this->dismissed_by ?? []);
+        return \in_array($userId, $this->dismissed_by ?: []);
     }
 
     public function dismiss(int $userId): void
     {
         $ids = $this->dismissed_by ?? [];
-        if (! in_array($userId, $ids)) {
+        if (! \in_array($userId, $ids)) {
             $ids[] = $userId;
             $this->update(['dismissed_by' => $ids]);
         }

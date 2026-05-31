@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('assignment_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->text('body');
-            $table->json('dismissed_by')->default('[]');
+            $table->json('dismissed_by')->nullable();
             $table->timestamps();
         });
 
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('assignment_note_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->text('body');
-            $table->json('dismissed_by')->default('[]');
+            $table->json('dismissed_by')->nullable();
             $table->timestamps();
         });
     }
