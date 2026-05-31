@@ -164,45 +164,56 @@
         <div class="notice-success">
             Your questions have been submitted.
         </div>
-    @endif
-
-    <form method="POST" action="{{ route('followup.submit', $token) }}">
-        @csrf
-
         @foreach ($slots as $slot)
-            <div class="slot-card">
-                <p class="slot-label">
-                    Your questions for reader <span class="reader-id">{{ $slot['initials'] }}</span>
-                    <span class="type-label">({{ $slot['type_label'] }})</span>
-                </p>
-
-                @if ($slot['locked'])
+            @if ($slot['existing_text'])
+                <div class="slot-card">
+                    <p class="slot-label">
+                        Your questions for reader <span class="reader-id">{{ $slot['initials'] }}</span>
+                        <span class="type-label">({{ $slot['type_label'] }})</span>
+                    </p>
                     <div class="locked-text">{{ $slot['existing_text'] }}</div>
-                    <p class="locked-note">These questions have already been sent to your reader and can no longer be edited.</p>
-                    <input type="hidden" name="questions[{{ $slot['assignment_id'] }}]" value="" />
-                @else
-                    <textarea
-                        name="questions[{{ $slot['assignment_id'] }}]"
-                        rows="5"
-                        maxlength="3000"
-                        placeholder="Type your questions here…"
-                    >{{ old('questions.'.$slot['assignment_id'], $slot['existing_text']) }}</textarea>
-                    @error('questions.'.$slot['assignment_id'])
-                        <p class="field-error">{{ $message }}</p>
-                    @enderror
-                @endif
-            </div>
+                </div>
+            @endif
         @endforeach
+    @else
+        <form method="POST" action="{{ route('followup.submit', $token) }}">
+            @csrf
 
-        @php $anyEditable = collect($slots)->contains(fn($s) => ! $s['locked']); @endphp
+            @foreach ($slots as $slot)
+                <div class="slot-card">
+                    <p class="slot-label">
+                        Your questions for reader <span class="reader-id">{{ $slot['initials'] }}</span>
+                        <span class="type-label">({{ $slot['type_label'] }})</span>
+                    </p>
 
-        @if ($anyEditable)
-            <div class="form-footer">
-                <button type="submit" class="btn-submit">Submit Questions</button>
-            </div>
-        @endif
+                    @if ($slot['locked'])
+                        <div class="locked-text">{{ $slot['existing_text'] }}</div>
+                        <p class="locked-note">These questions have already been sent to your reader and can no longer be edited.</p>
+                        <input type="hidden" name="questions[{{ $slot['assignment_id'] }}]" value="" />
+                    @else
+                        <textarea
+                            name="questions[{{ $slot['assignment_id'] }}]"
+                            rows="5"
+                            maxlength="3000"
+                            placeholder="Type your questions here…"
+                        >{{ old('questions.'.$slot['assignment_id'], $slot['existing_text']) }}</textarea>
+                        @error('questions.'.$slot['assignment_id'])
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
+                    @endif
+                </div>
+            @endforeach
 
-    </form>
+            @php $anyEditable = collect($slots)->contains(fn($s) => ! $s['locked']); @endphp
+
+            @if ($anyEditable)
+                <div class="form-footer">
+                    <button type="submit" class="btn-submit">Submit Questions</button>
+                </div>
+            @endif
+
+        </form>
+    @endif
 
     @if ($afterHtml)
         <div class="followup-inject">{!! $afterHtml !!}</div>
