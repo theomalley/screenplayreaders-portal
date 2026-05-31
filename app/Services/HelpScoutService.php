@@ -46,10 +46,19 @@ class HelpScoutService
         $token        = $this->getToken();
         $conversation = $this->fetchConversation($conversationId, $token);
         $customerId   = $this->extractCustomerId($conversation, $conversationId);
+        $convStatus   = $conversation['status'] ?? 'unknown';
+
+        Log::info('HelpScout draft: conversation fetched', [
+            'conversation_id' => $conversationId,
+            'status'          => $convStatus,
+            'customer_id'     => $customerId,
+        ]);
 
         // HelpScout rejects draft replies on closed conversations — reopen first.
-        if (($conversation['status'] ?? '') === 'closed') {
+        if ($convStatus === 'closed') {
+            Log::info('HelpScout draft: reopening closed conversation', ['conversation_id' => $conversationId]);
             $this->reopenConversation($conversationId, $token);
+            Log::info('HelpScout draft: conversation reopened', ['conversation_id' => $conversationId]);
         }
 
         $body = [
@@ -58,13 +67,15 @@ class HelpScoutService
             'text'     => $html,
         ];
 
+        Log::info('HelpScout draft: posting reply', ['conversation_id' => $conversationId]);
+
         $response = Http::withToken($token)
             ->post(self::API_BASE . "/conversations/{$conversationId}/reply", $body);
 
         if (! $response->successful()) {
             Log::error('HelpScout draft creation failed', [
                 'conversation_id' => $conversationId,
-                'status'          => $response->status(),
+                'http_status'     => $response->status(),
                 'body'            => $response->body(),
             ]);
             throw new \RuntimeException('HelpScout draft creation failed (' . $response->status() . '): ' . $response->body());
@@ -98,12 +109,23 @@ class HelpScoutService
             ]);
 
         if (! $response->ok()) {
+            Log::error('HelpScout conversation search failed', [
+                'ticket_number' => $ticketNumber,
+                'http_status'   => $response->status(),
+                'body'          => $response->body(),
+            ]);
             return null;
         }
 
-        return $response->json('_embedded.conversations.0.id')
-            ? (string) $response->json('_embedded.conversations.0.id')
-            : null;
+        $id = $response->json('_embedded.conversations.0.id');
+
+        Log::info('HelpScout conversation search', [
+            'ticket_number'   => $ticketNumber,
+            'conversation_id' => $id ?? 'not found',
+            'total_results'   => $response->json('page.totalElements') ?? 'unknown',
+        ]);
+
+        return $id ? (string) $id : null;
     }
 
     private function fetchConversation(string $conversationId, string $token): array

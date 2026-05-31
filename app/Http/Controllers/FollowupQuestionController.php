@@ -52,9 +52,12 @@ class FollowupQuestionController extends Controller
 
         $drafted = $this->createHelpScoutDraft($followup);
 
-        $message = $drafted
-            ? 'Followup marked complete. HelpScout draft created.'
-            : 'Followup marked complete. No HelpScout draft — ticket not found (may be closed or missing a ticket number).';
+        $message = match(true) {
+            $drafted === true       => 'Followup marked complete. HelpScout draft created.',
+            $drafted === 'no_ticket'=> 'Followup marked complete. No HelpScout ticket number on this assignment.',
+            $drafted === 'not_found'=> 'Followup marked complete. HelpScout ticket not found — check the ticket number.',
+            default                 => 'Followup marked complete. HelpScout draft failed: ' . $drafted,
+        };
 
         return back()->with('success', $message);
     }
@@ -105,18 +108,18 @@ class FollowupQuestionController extends Controller
         // SMS notification handled by future Twilio integration using sms_notify_followup flag
     }
 
-    private function createHelpScoutDraft(FollowupQuestion $followup): bool
+    private function createHelpScoutDraft(FollowupQuestion $followup): bool|string
     {
         $assignment = $followup->assignment;
         if (! $assignment?->helpscout_ticket_number) {
-            return false;
+            return 'no_ticket';
         }
 
         $service = app(HelpScoutService::class);
 
         try {
             $conversationId = $service->findConversationIdByTicketNumber($assignment->helpscout_ticket_number);
-            if (! $conversationId) return false;
+            if (! $conversationId) return 'not_found';
 
             $typeLabel = match($assignment->assignment_type) {
                 'script_coverage' => 'Script Coverage',
@@ -141,10 +144,11 @@ class FollowupQuestionController extends Controller
             return true;
         } catch (\Throwable $e) {
             Log::error('Followup HelpScout draft failed', [
-                'followup_id' => $followup->id,
-                'error'       => $e->getMessage(),
+                'followup_id'   => $followup->id,
+                'ticket_number' => $assignment->helpscout_ticket_number ?? 'none',
+                'error'         => $e->getMessage(),
             ]);
-            return false;
+            return $e->getMessage();
         }
     }
 }
