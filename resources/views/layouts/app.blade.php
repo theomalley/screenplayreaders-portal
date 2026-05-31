@@ -226,9 +226,18 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                 open: false,
                 loading: false,
                 html: '',
+                top: 0,
+                left: 0,
                 async toggle() {
-                    this.open = !this.open;
-                    if (this.open && !this.html) {
+                    if (this.open) { this.open = false; return; }
+                    // Position using fixed coords so overflow:hidden ancestors can't clip it
+                    const btn = this.$el.querySelector('button');
+                    const rect = btn.getBoundingClientRect();
+                    const popupW = 288; // w-72
+                    this.top  = rect.bottom + 6 + window.scrollY;
+                    this.left = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
+                    this.open = true;
+                    if (!this.html) {
                         this.loading = true;
                         try {
                             const r = await fetch('/staff/' + userId + '/card', {

@@ -51,7 +51,14 @@
                         <tbody class="divide-y divide-gray-100">
                             @foreach($readerStats as $stats)
                             <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 font-medium text-gray-800">{{ $stats['reader_name'] }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        @if ($stats['reader_user'])
+                                            <x-staff-icon :user="$stats['reader_user']" size="sm" />
+                                        @endif
+                                        <span class="font-medium text-gray-800">{{ $stats['reader_name'] }}</span>
+                                    </div>
+                                </td>
                                 <td class="px-4 py-3 text-center text-gray-700">{{ $stats['count'] }}</td>
                                 <td class="px-4 py-3 text-center text-gray-600">
                                     {{ $stats['avg_turnaround_days'] !== null ? $stats['avg_turnaround_days'] . ' days' : '—' }}

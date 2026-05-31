@@ -128,6 +128,7 @@ class StatisticsController extends Controller
 
         return [
             'reader_name'          => $readerName,
+            'reader_user'          => $first->assignedReader,
             'count'                => $count,
             'avg_turnaround_days'  => $avgTurnaround,
             'avg_score'            => $avgScore,

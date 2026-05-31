@@ -56,7 +56,8 @@
          x-transition:enter-end="opacity-100 scale-100"
          @click.outside="open = false"
          @keydown.escape.window="open = false"
-         class="absolute left-0 top-full mt-1 z-50 w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-h-[3rem]">
+         :style="'position:fixed;top:'+top+'px;left:'+left+'px'"
+         class="z-[9999] w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-h-[3rem]">
         <div x-show="loading" class="text-xs text-gray-400 text-center py-2">Loading…</div>
         <div x-show="!loading" x-html="html"></div>
     </div>
