@@ -33,7 +33,7 @@ class AssignmentNoteController extends Controller
             'dismissed_by'  => [],
         ]);
 
-        return back()->with('success', 'Note sent to the team.');
+        return back()->with('success', 'Note sent to editor.');
     }
 
     public function reply(Request $request, AssignmentNote $note): RedirectResponse

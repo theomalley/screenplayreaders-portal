@@ -1876,7 +1876,7 @@
                                                                   x-data="{ body: '' }" class="flex flex-col gap-1">
                                                                 @csrf
                                                                 <textarea name="body" x-model="body" rows="2" maxlength="1000" required
-                                                                          placeholder="Note to the team…"
+                                                                          placeholder="Note to editor…"
                                                                           class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-y"></textarea>
                                                                 <button type="submit"
                                                                         :disabled="body.trim() === ''"
@@ -2173,7 +2173,7 @@
                                                                   x-data="{ body: '' }" class="flex flex-col gap-1">
                                                                 @csrf
                                                                 <textarea name="body" x-model="body" rows="2" maxlength="1000" required
-                                                                          placeholder="Note to the team…"
+                                                                          placeholder="Note to editor…"
                                                                           class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-y"></textarea>
                                                                 <button type="submit"
                                                                         :disabled="body.trim() === ''"
