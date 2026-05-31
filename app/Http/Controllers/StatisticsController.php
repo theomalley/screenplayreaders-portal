@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\CoverageSubmission;
+use App\Models\FollowupQuestion;
 use App\Models\User;
 use App\Support\Permission;
 use Carbon\Carbon;
@@ -57,7 +58,10 @@ class StatisticsController extends Controller
         // Volume over recent windows (counts only — ignore the period selector)
         $volumeStats = $this->volumeStats();
 
-        return view('statistics.index', compact('readerStats', 'combined', 'volumeStats', 'period'));
+        // Followup response speed stats
+        $followupStats = $this->followupStats($start, $end);
+
+        return view('statistics.index', compact('readerStats', 'combined', 'volumeStats', 'period', 'followupStats'));
     }
 
     private function computeStats(Collection $assignments): array
@@ -158,6 +162,54 @@ class StatisticsController extends Controller
                 ->when($end,   fn($q) => $q->where('completed_at', '<=', $end))
                 ->count();
         })->all();
+    }
+
+    private function followupStats(?Carbon $start, ?Carbon $end): array
+    {
+        $base = FollowupQuestion::with(['assignment.assignedReader.readerProfile'])
+            ->when($start, fn($q) => $q->where('followup_questions.created_at', '>=', $start))
+            ->when($end,   fn($q) => $q->where('followup_questions.created_at', '<=', $end));
+
+        // Metric 1: total speed — customer submission → HelpScout draft (completed_at)
+        $totalSpeeds = (clone $base)
+            ->whereNotNull('completed_at')
+            ->get()
+            ->map(fn($fq) => $fq->created_at->diffInHours($fq->completed_at));
+
+        // Metric 2: reader speed — sent to reader (unanswered_at) → reader answered (answered_at)
+        $readerSpeeds = (clone $base)
+            ->whereNotNull('unanswered_at')
+            ->whereNotNull('answered_at')
+            ->get();
+
+        $readerSpeedHours = $readerSpeeds->map(
+            fn($fq) => $fq->unanswered_at->diffInHours($fq->answered_at)
+        );
+
+        // Per-reader breakdown of reader response speed
+        $perReader = $readerSpeeds
+            ->groupBy(fn($fq) => $fq->assignment?->assigned_reader_id)
+            ->map(function ($group) {
+                $first    = $group->first();
+                $reader   = $first->assignment?->assignedReader;
+                $name     = $reader?->readerProfile?->displayName() ?? $reader?->name ?? 'Unknown';
+                $hours    = $group->map(fn($fq) => $fq->unanswered_at->diffInHours($fq->answered_at));
+                return [
+                    'reader_name' => $name,
+                    'count'       => $group->count(),
+                    'avg_hours'   => round($hours->average(), 1),
+                ];
+            })
+            ->sortBy('reader_name')
+            ->values();
+
+        return [
+            'avg_total_hours'  => $totalSpeeds->isNotEmpty()  ? round($totalSpeeds->average(), 1)      : null,
+            'avg_reader_hours' => $readerSpeedHours->isNotEmpty() ? round($readerSpeedHours->average(), 1) : null,
+            'total_count'      => $totalSpeeds->count(),
+            'reader_count'     => $readerSpeedHours->count(),
+            'per_reader'       => $perReader,
+        ];
     }
 
     private function dateRange(string $period): array

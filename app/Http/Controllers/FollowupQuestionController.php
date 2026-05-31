@@ -49,7 +49,7 @@ class FollowupQuestionController extends Controller
     {
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
 
-        $followup->update(['status' => FollowupQuestion::STATUS_COMPLETE]);
+        $followup->update(['status' => FollowupQuestion::STATUS_COMPLETE, 'completed_at' => now()]);
 
         $drafted = $this->createHelpScoutDraft($followup);
 
@@ -120,6 +120,7 @@ class FollowupQuestionController extends Controller
         $followup->update([
             'reader_response' => $data['response'],
             'status'          => FollowupQuestion::STATUS_ANSWERED,
+            'answered_at'     => now(),
         ]);
 
         return response()->json(['status' => 'answered']);

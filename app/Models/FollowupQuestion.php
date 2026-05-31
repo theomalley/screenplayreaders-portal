@@ -24,10 +24,14 @@ class FollowupQuestion extends Model
         'edited_response',
         'status',
         'unanswered_at',
+        'answered_at',
+        'completed_at',
     ];
 
     protected $casts = [
         'unanswered_at' => 'datetime',
+        'answered_at'   => 'datetime',
+        'completed_at'  => 'datetime',
     ];
 
     public function token(): BelongsTo

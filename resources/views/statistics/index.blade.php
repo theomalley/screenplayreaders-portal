@@ -108,6 +108,81 @@
                 </div>
             @endif
 
+            {{-- Followup Response Speed --}}
+            @if ($followupStats['total_count'] > 0 || $followupStats['reader_count'] > 0)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Followup Response Speed</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Based on completed followup cycles in the selected period</p>
+                </div>
+
+                <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-gray-100">
+                    <div class="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3">
+                        <div class="text-xs font-medium text-indigo-500 uppercase tracking-wide">Avg Total Response Speed</div>
+                        <div class="text-xs text-indigo-400 mt-0.5">Customer submission → HelpScout draft</div>
+                        <div class="mt-2 text-2xl font-bold text-indigo-700">
+                            @if ($followupStats['avg_total_hours'] !== null)
+                                @php
+                                    $h = $followupStats['avg_total_hours'];
+                                    $days = floor($h / 24); $hrs = round(fmod($h, 24), 1);
+                                @endphp
+                                {{ $days > 0 ? $days.'d ' : '' }}{{ $hrs }}h
+                            @else
+                                —
+                            @endif
+                        </div>
+                        <div class="text-xs text-indigo-300 mt-0.5">{{ $followupStats['total_count'] }} completed {{ Str::plural('cycle', $followupStats['total_count']) }}</div>
+                    </div>
+
+                    <div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
+                        <div class="text-xs font-medium text-amber-600 uppercase tracking-wide">Avg Reader Response Speed</div>
+                        <div class="text-xs text-amber-400 mt-0.5">Sent to reader → reader submitted answer</div>
+                        <div class="mt-2 text-2xl font-bold text-amber-700">
+                            @if ($followupStats['avg_reader_hours'] !== null)
+                                @php
+                                    $h = $followupStats['avg_reader_hours'];
+                                    $days = floor($h / 24); $hrs = round(fmod($h, 24), 1);
+                                @endphp
+                                {{ $days > 0 ? $days.'d ' : '' }}{{ $hrs }}h
+                            @else
+                                —
+                            @endif
+                        </div>
+                        <div class="text-xs text-amber-300 mt-0.5">{{ $followupStats['reader_count'] }} {{ Str::plural('response', $followupStats['reader_count']) }}</div>
+                    </div>
+                </div>
+
+                @if ($followupStats['per_reader']->isNotEmpty())
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            <tr>
+                                <th class="px-4 py-3 text-left">Reader</th>
+                                <th class="px-4 py-3 text-center">Responses</th>
+                                <th class="px-4 py-3 text-center">Avg Reader Response Speed</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach ($followupStats['per_reader'] as $row)
+                            <tr>
+                                <td class="px-4 py-3 font-medium text-gray-800">{{ $row['reader_name'] }}</td>
+                                <td class="px-4 py-3 text-center text-gray-600">{{ $row['count'] }}</td>
+                                <td class="px-4 py-3 text-center text-gray-600">
+                                    @php
+                                        $h = $row['avg_hours'];
+                                        $days = floor($h / 24); $hrs = round(fmod($h, 24), 1);
+                                    @endphp
+                                    {{ $days > 0 ? $days.'d ' : '' }}{{ $hrs }}h
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @endif
+            </div>
+            @endif
+
         </div>
     </div>
 </x-app-layout>
