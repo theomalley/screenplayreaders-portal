@@ -122,8 +122,8 @@
                                 $fqStatus     = $fq->status;
                                 $fqRowColor   = $fqStatus === 'answered' ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50';
                             @endphp
-                            <div x-data="{ open: false }" class="border rounded-lg px-4 py-3 {{ $fqRowColor }}">
-                                <div class="flex items-center gap-3 flex-wrap">
+                            <div x-data="{ open: false }" class="border rounded-lg {{ $fqRowColor }}">
+                                <div @click="open = !open" class="flex items-center gap-3 flex-wrap px-4 py-3 cursor-pointer">
                                     <span class="text-xs font-mono text-gray-500">{{ $fqAssignment?->order_number }}</span>
                                     <span class="text-sm font-medium text-gray-800">{{ $fqAssignment?->script_title }}</span>
                                     <span class="text-xs text-gray-500">· Reader {{ $fqInitials }}</span>
@@ -133,15 +133,15 @@
                                     </span>
                                     @if ($fqDeadline && $fqStatus === 'unanswered')
                                         <div x-data="followupCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
-                                             x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs"></div>
+                                             x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs" @click.stop></div>
                                     @endif
-                                    <button type="button" @click="open = !open"
+                                    <button type="button" @click.stop="open = !open"
                                             class="ml-auto text-xs text-indigo-500 hover:text-indigo-700 underline">
                                         <span x-text="open ? 'Hide' : 'Edit / Review'"></span>
                                     </button>
                                 </div>
 
-                                <div x-show="open" x-cloak class="mt-3 space-y-3 border-t border-gray-200 pt-3">
+                                <div x-show="open" x-cloak class="mt-3 space-y-3 border-t border-gray-200 pt-3 px-4 pb-3">
                                     <form method="POST" action="{{ route('followups.update', $fq) }}" class="space-y-3">
                                         @csrf @method('PATCH')
 
@@ -1123,8 +1123,8 @@
                                 $fqStatus     = $fq->status;
                                 $fqRowColor   = $fqStatus === 'answered' ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50';
                             @endphp
-                            <div x-data="{ open: false }" class="border rounded-lg px-4 py-3 {{ $fqRowColor }}">
-                                <div class="flex items-center gap-3 flex-wrap">
+                            <div x-data="{ open: false }" class="border rounded-lg {{ $fqRowColor }}">
+                                <div @click="open = !open" class="flex items-center gap-3 flex-wrap px-4 py-3 cursor-pointer">
                                     <span class="text-xs font-mono text-gray-500">{{ $fqAssignment?->order_number }}</span>
                                     <span class="text-sm font-medium text-gray-800">{{ $fqAssignment?->script_title }}</span>
                                     <span class="text-xs text-gray-500">· Reader {{ $fqInitials }}</span>
@@ -1134,15 +1134,15 @@
                                     </span>
                                     @if ($fqDeadline && $fqStatus === 'unanswered')
                                         <div x-data="followupCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
-                                             x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs"></div>
+                                             x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs" @click.stop></div>
                                     @endif
-                                    <button type="button" @click="open = !open"
+                                    <button type="button" @click.stop="open = !open"
                                             class="ml-auto text-xs text-indigo-500 hover:text-indigo-700 underline">
                                         <span x-text="open ? 'Hide' : 'Edit / Review'"></span>
                                     </button>
                                 </div>
 
-                                <div x-show="open" x-cloak class="mt-3 space-y-3 border-t border-gray-200 pt-3">
+                                <div x-show="open" x-cloak class="mt-3 space-y-3 border-t border-gray-200 pt-3 px-4 pb-3">
                                     <form method="POST" action="{{ route('followups.update', $fq) }}" class="space-y-3">
                                         @csrf @method('PATCH')
 
