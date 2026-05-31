@@ -181,7 +181,7 @@
 
                                         <div class="flex items-center gap-2 flex-wrap">
                                             <select name="status" class="text-xs border border-gray-300 rounded px-2 py-1">
-                                                @foreach (['pending' => 'Pending', 'unanswered' => 'Unanswered', 'answered' => 'Answered'] as $val => $label)
+                                                @foreach (['pending' => 'Pending', 'unanswered' => 'Send to reader', 'answered' => 'Answered'] as $val => $label)
                                                     <option value="{{ $val }}" {{ $fq->status === $val ? 'selected' : '' }}>{{ $label }}</option>
                                                 @endforeach
                                             </select>
@@ -1182,7 +1182,7 @@
 
                                         <div class="flex items-center gap-2 flex-wrap">
                                             <select name="status" class="text-xs border border-gray-300 rounded px-2 py-1">
-                                                @foreach (['pending' => 'Pending', 'unanswered' => 'Unanswered', 'answered' => 'Answered'] as $val => $label)
+                                                @foreach (['pending' => 'Pending', 'unanswered' => 'Send to reader', 'answered' => 'Answered'] as $val => $label)
                                                     <option value="{{ $val }}" {{ $fq->status === $val ? 'selected' : '' }}>{{ $label }}</option>
                                                 @endforeach
                                             </select>

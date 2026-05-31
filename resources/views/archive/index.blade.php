@@ -78,12 +78,28 @@
                                         $group->map(fn($a) => $a->assignedReader?->readerProfile?->displayName() ?? $a->assignedReader?->name)->filter()->values()->toArray()
                                     ))));
                                 @endphp
+                                @php
+                                    $archiveHsId = $group->first(fn($a) => !empty($a->helpscout_ticket_number))?->helpscout_ticket_number
+                                        ?: $first->helpscoutConversation?->helpscout_conversation_id;
+                                @endphp
                                 <tr class="hover:bg-gray-50 align-top"
                                     x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                     data-search="{{ $searchStr }}">
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
                                         <a href="{{ route('assignments.show', $first) }}"
                                            class="hover:text-indigo-600">{{ $orderNumber }}</a>
+                                        @if ($archiveHsId)
+                                            <div class="mt-1">
+                                                <a href="https://secure.helpscout.net/conversation/{{ $archiveHsId }}/"
+                                                   target="_blank" rel="noopener noreferrer"
+                                                   title="Open in HelpScout"
+                                                   class="inline-flex text-gray-400 hover:text-indigo-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                                                        <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H6l-4 4V5z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        @endif
                                     </td>
                                     @php $viewUrl = $scriptId ? route('assignments.streamScript', $first) : null; @endphp
                                     <td class="px-4 py-3" x-data="{ open: false }">
