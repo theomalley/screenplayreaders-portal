@@ -2387,6 +2387,9 @@
                                                                 <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-semibold ring-1 ring-gray-200">{{ $meInitials }}</div>
                                                             @endif
                                                             <span class="text-xs text-gray-500">Me</span>
+                                                            @if($assignment->completed_at)
+                                                                <span class="text-[10px] text-gray-400 tabular-nums leading-tight">on {{ $assignment->completed_at->copy()->setTimezone($appTimezone ?? 'UTC')->format('M j, Y g:ia') }}</span>
+                                                            @endif
                                                         </div>
                                                     </td>
                                                     <td class="px-3 py-3"></td>
