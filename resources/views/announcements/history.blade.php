@@ -23,11 +23,21 @@
                                 {{ $annExpired ? 'opacity-70' : '' }}">
                         <div class="flex items-start justify-between gap-4">
                             <p class="text-sm text-gray-800 leading-relaxed flex-1">{{ $ann->body }}</p>
-                            @if(!$annExpired && !$wasDismissed)
-                                <span class="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">Active</span>
-                            @elseif($annExpired)
-                                <span class="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">Expired</span>
-                            @endif
+                            <div class="flex items-center gap-2 shrink-0">
+                                @if(!$annExpired && !$wasDismissed)
+                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">Active</span>
+                                @elseif($annExpired)
+                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">Expired</span>
+                                @endif
+                                @if(auth()->user()->canManageAssignments())
+                                    <form method="POST" action="{{ route('announcements.destroy', $ann) }}"
+                                          onsubmit="return confirm('Delete this announcement for all readers?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs underline whitespace-nowrap">Delete</button>
+                                    </form>
+                                @endif
+                            </div>
                         </div>
 
                         <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
