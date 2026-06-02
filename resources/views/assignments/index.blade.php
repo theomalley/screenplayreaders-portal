@@ -456,8 +456,15 @@
                                             @if ($eProfile?->paypal_email)
                                                 <span class="text-xs text-gray-400">PayPal: {{ $eProfile->paypal_email }}</span>
                                             @endif
-                                            <a href="{{ route('admin.editors.edit', $editor) }}"
-                                               class="text-xs text-indigo-500 hover:text-indigo-700 underline ml-auto">Edit Profile</a>
+                                            <div class="ml-auto flex items-center gap-3">
+                                                <a href="{{ route('staff.draft-email', $editor) }}" target="_blank"
+                                                   class="text-xs text-gray-400 hover:text-indigo-600 transition"
+                                                   title="Create HelpScout draft to {{ $editor->email }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>Email
+                                                </a>
+                                                <a href="{{ route('admin.editors.edit', $editor) }}"
+                                                   class="text-xs text-indigo-500 hover:text-indigo-700 underline">Edit Profile</a>
+                                            </div>
                                         </div>
                                         @if ($editor->assignments->isNotEmpty())
                                             <ul class="mt-2 space-y-1">
@@ -516,8 +523,15 @@
                                             @if ($rProfile?->paypal_email)
                                                 <span class="text-xs text-gray-400">PayPal: {{ $rProfile->paypal_email }}</span>
                                             @endif
-                                            <a href="{{ route('readers.edit', $reader) }}"
-                                               class="text-xs text-indigo-500 hover:text-indigo-700 underline ml-auto">Edit Profile</a>
+                                            <div class="ml-auto flex items-center gap-3">
+                                                <a href="{{ route('staff.draft-email', $reader) }}" target="_blank"
+                                                   class="text-xs text-gray-400 hover:text-indigo-600 transition"
+                                                   title="Create HelpScout draft to {{ $reader->email }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>Email
+                                                </a>
+                                                <a href="{{ route('readers.edit', $reader) }}"
+                                                   class="text-xs text-indigo-500 hover:text-indigo-700 underline">Edit Profile</a>
+                                            </div>
                                         </div>
 
                                         {{-- Weekly pay stats --}}

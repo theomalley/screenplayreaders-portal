@@ -26,13 +26,46 @@
                . ($profile?->title ? ' · ' . $profile->title : '')
                . ($online ? ' · Online' : '')
                . ($active !== null ? ' — ' . $active . ($max ? '/' . $max : '') . ' active' : '');
+    $cardUrl   = route('staff.card', $user);
 @endphp
 
-<div class="relative inline-block" x-data="staffIconPopup({{ $user->id }})">
+<div class="relative inline-block"
+     x-data="{
+         open: false,
+         loading: false,
+         html: '',
+         top: 0,
+         left: 0,
+         async toggle() {
+             if (this.open) { this.open = false; return; }
+             const btn = this.$el.querySelector('button');
+             const rect = btn.getBoundingClientRect();
+             const popupW = 288;
+             this.top  = rect.bottom + 6;
+             this.left = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
+             this.open = true;
+             if (!this.html) {
+                 this.loading = true;
+                 try {
+                     const r = await fetch('{{ $cardUrl }}', {
+                         headers: {
+                             'Accept': 'text/html',
+                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? ''
+                         }
+                     });
+                     this.html = await r.text();
+                 } catch(e) {
+                     this.html = '<p class=\'text-xs text-red-500\'>Could not load.</p>';
+                 } finally {
+                     this.loading = false;
+                 }
+             }
+         }
+     }">
     <button type="button"
             @click.stop="toggle()"
             title="{{ $titleAttr }}"
-            class="relative inline-flex items-center justify-center {{ $sizeClass }} rounded-full {{ $bgClass }} font-mono font-semibold focus:outline-none">
+            class="relative inline-flex items-center justify-center {{ $sizeClass }} rounded-full {{ $bgClass }} font-mono font-semibold cursor-pointer focus:outline-none">
         @if ($photoUrl)
             <span class="absolute inset-0 rounded-full overflow-hidden">
                 <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
