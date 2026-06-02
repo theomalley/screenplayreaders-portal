@@ -127,12 +127,10 @@
                                                 {{ $profile->availability_message }}
                                             </div>
                                         @endif
-                                    </td>
-                                    <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">
                                         @if($authUser->isAdmin())
-                                        <form method="POST" action="{{ route('team.toggle-visibility', $admin) }}">
+                                        <form method="POST" action="{{ route('team.toggle-visibility', $admin) }}" onclick="event.stopPropagation()" class="mt-1.5">
                                             @csrf
-                                            <button type="submit" class="text-[10px] px-2 py-1 rounded border {{ $admin->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
+                                            <button type="submit" class="text-[10px] px-2 py-0.5 rounded border {{ $admin->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
                                                 {{ $admin->hidden_from_staff ? 'Hidden' : 'Visible' }}
                                             </button>
                                         </form>
@@ -223,12 +221,10 @@
                                                     {{ $profile->availability_message }}
                                                 </div>
                                             @endif
-                                        </td>
-                                        <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">
                                             @if($authUser->isAdmin())
-                                            <form method="POST" action="{{ route('team.toggle-visibility', $editor) }}">
+                                            <form method="POST" action="{{ route('team.toggle-visibility', $editor) }}" onclick="event.stopPropagation()" class="mt-1.5">
                                                 @csrf
-                                                <button type="submit" class="text-[10px] px-2 py-1 rounded border {{ $editor->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
+                                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded border {{ $editor->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
                                                     {{ $editor->hidden_from_staff ? 'Hidden' : 'Visible' }}
                                                 </button>
                                             </form>
@@ -319,12 +315,10 @@
                                                     {{ $profile->availability_message }}
                                                 </div>
                                             @endif
-                                        </td>
-                                        <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">
                                             @if($authUser->isAdmin())
-                                            <form method="POST" action="{{ route('team.toggle-visibility', $reader) }}">
+                                            <form method="POST" action="{{ route('team.toggle-visibility', $reader) }}" onclick="event.stopPropagation()" class="mt-1.5">
                                                 @csrf
-                                                <button type="submit" class="text-[10px] px-2 py-1 rounded border {{ $reader->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
+                                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded border {{ $reader->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
                                                     {{ $reader->hidden_from_staff ? 'Hidden' : 'Visible' }}
                                                 </button>
                                             </form>
