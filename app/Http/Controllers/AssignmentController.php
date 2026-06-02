@@ -583,7 +583,12 @@ class AssignmentController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers', 'appTimezone', 'notes'));
+        $editorNotes = \App\Models\AssignmentEditorNote::with('author.editorProfile')
+            ->where('assignment_id', $assignment->id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers', 'appTimezone', 'notes', 'editorNotes'));
     }
 
     public function update(UpdateAssignmentRequest $request, Assignment $assignment)

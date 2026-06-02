@@ -10,6 +10,16 @@
 
     <div class="py-6">
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            {{-- Assignment identity heading --}}
+            <div class="mb-3 px-1">
+                <div class="text-2xl font-bold text-gray-900 leading-tight">
+                    #{{ $assignment->order_number }}
+                    &nbsp;·&nbsp;
+                    {{ $assignment->script_title }}
+                </div>
+                <div class="text-base text-gray-500 mt-0.5">by {{ $assignment->writer_name }}</div>
+            </div>
+
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 @php
                     $isOld        = session()->hasOldInput();
@@ -568,6 +578,63 @@
                     </div>
                 </div>
                 @endif
+
+                {{-- Editor Notes (admin/editor only — not visible to readers) --}}
+                <div class="px-6 pb-6 border-t border-gray-100 pt-5">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                        Internal Notes
+                        <span class="ml-1 text-[10px] font-normal text-gray-400 normal-case tracking-normal">(admin &amp; editors only)</span>
+                    </h3>
+
+                    @if ($editorNotes->isNotEmpty())
+                    <div class="space-y-2 mb-4">
+                        @foreach ($editorNotes as $eNote)
+                        @php
+                            $eAuthor   = $eNote->author;
+                            $ePhotoRaw = $eAuthor?->editorProfile?->photo;
+                            $ePhotoUrl = $ePhotoRaw ? asset('storage/' . $ePhotoRaw) : null;
+                            $eInitials = $eAuthor?->editorProfile?->initials
+                                ?? ($eAuthor ? strtoupper(substr($eAuthor->name, 0, 2)) : '??');
+                        @endphp
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                            <div class="flex items-start gap-2">
+                                <div class="flex items-center gap-2 shrink-0 mt-0.5">
+                                    <span class="relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-200 text-amber-800 text-[10px] font-mono font-semibold overflow-hidden">
+                                        @if ($ePhotoUrl)
+                                            <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="absolute inset-0 w-full h-full object-cover" />
+                                        @else
+                                            {{ $eInitials }}
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-xs font-medium text-gray-700">{{ $eAuthor?->name }}</span>
+                                        <span class="text-[10px] text-gray-400">{{ $eNote->created_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}</span>
+                                    </div>
+                                    <div class="text-sm text-gray-800 whitespace-pre-wrap">{{ $eNote->body }}</div>
+                                </div>
+                                <form method="POST" action="{{ route('assignment-editor-notes.destroy', $eNote) }}"
+                                      onsubmit="return confirm('Delete this note?')" class="shrink-0">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="text-amber-400 hover:text-red-500 text-xs underline whitespace-nowrap">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('assignment-editor-notes.store', $assignment) }}" class="flex gap-2 items-end">
+                        @csrf
+                        <textarea name="body" rows="2" placeholder="Add an internal note…" maxlength="2000" required
+                                  class="flex-1 text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        <button type="submit"
+                                class="px-3 py-1.5 text-xs font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-md shadow-sm whitespace-nowrap">
+                            Add Note
+                        </button>
+                    </form>
+                </div>
 
                 {{-- Actions — outside the edit form so the delete form is never nested --}}
                 <div class="flex items-center justify-between px-6 pb-6 pt-4 border-t border-gray-100">

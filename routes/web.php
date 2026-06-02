@@ -8,6 +8,7 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AssignmentNoteController;
+use App\Http\Controllers\AssignmentEditorNoteController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CoverageSubmissionController;
 use App\Http\Controllers\EditorPayController;
@@ -119,6 +120,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/assignment-notes/{note}/reply',           [AssignmentNoteController::class, 'reply'])->name('assignment-notes.reply');
     Route::post('/assignment-notes/{note}/dismiss',         [AssignmentNoteController::class, 'dismiss'])->name('assignment-notes.dismiss');
     Route::post('/assignment-note-replies/{reply}/dismiss', [AssignmentNoteController::class, 'dismissReply'])->name('assignment-note-replies.dismiss');
+
+    // Assignment editor notes (admin/editor internal — not visible to readers)
+    Route::post('/assignments/{assignment}/editor-notes',        [AssignmentEditorNoteController::class, 'store'])->name('assignment-editor-notes.store');
+    Route::delete('/assignment-editor-notes/{note}',             [AssignmentEditorNoteController::class, 'destroy'])->name('assignment-editor-notes.destroy');
 
     // Followup question management (admin/editor)
     Route::get('/followup-history/{orderNumber}',       [FollowupQuestionController::class, 'history'])->name('followups.history');
