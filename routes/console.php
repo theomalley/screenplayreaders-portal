@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 // Release assignments to Available when their scheduled available_at time has passed.
 Schedule::command('assignments:release-scheduled')->everyMinute()->withoutOverlapping();
+// 2026-06-02
