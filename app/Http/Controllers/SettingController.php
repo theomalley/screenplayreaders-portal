@@ -197,7 +197,7 @@ class SettingController extends Controller
     {
         abort_unless(auth()->user()->canManageAssignments(), 403);
 
-        $request->validate(['portal_theme' => 'required|in:default,midnight,forest,warm']);
+        $request->validate(['portal_theme' => 'required|in:default,midnight,forest,warm,ocean,slate,rose,dusk,crimson,steel,teal,mocha,arctic,noir']);
 
         Setting::setValue('portal_theme', $request->input('portal_theme'));
 

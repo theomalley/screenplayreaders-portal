@@ -125,6 +125,16 @@
                         'midnight' => ['label' => 'Midnight', 'nav' => '#16213e', 'border_nav' => '#0f3460', 'body' => '#1c1c2e', 'accent' => '#e94560'],
                         'forest'   => ['label' => 'Forest',   'nav' => '#1e3a2f', 'border_nav' => '#2d5440', 'body' => '#f0f4f0', 'accent' => '#4caf50'],
                         'warm'     => ['label' => 'Warm',     'nav' => '#5c3317', 'border_nav' => '#7a4520', 'body' => '#faf6f1', 'accent' => '#d4793b'],
+                        'ocean'    => ['label' => 'Ocean',    'nav' => '#1a3a5c', 'border_nav' => '#0f2840', 'body' => '#eef3f8', 'accent' => '#0ea5e9'],
+                        'slate'    => ['label' => 'Slate',    'nav' => '#334155', 'border_nav' => '#1e293b', 'body' => '#f8f7f5', 'accent' => '#f59e0b'],
+                        'rose'     => ['label' => 'Rose',     'nav' => '#6b2040', 'border_nav' => '#4a1530', 'body' => '#fff5f7', 'accent' => '#e11d48'],
+                        'dusk'     => ['label' => 'Dusk',     'nav' => '#2d1f5e', 'border_nav' => '#1f1342', 'body' => '#f3f0ff', 'accent' => '#8b5cf6'],
+                        'crimson'  => ['label' => 'Crimson',  'nav' => '#7f1d1d', 'border_nav' => '#5a1212', 'body' => '#fef9f0', 'accent' => '#b45309'],
+                        'steel'    => ['label' => 'Steel',    'nav' => '#374151', 'border_nav' => '#1f2937', 'body' => '#f9fafb', 'accent' => '#3b82f6'],
+                        'teal'     => ['label' => 'Teal',     'nav' => '#134e4a', 'border_nav' => '#0f3d3a', 'body' => '#f0fdfb', 'accent' => '#0d9488'],
+                        'mocha'    => ['label' => 'Mocha',    'nav' => '#4a2c1a', 'border_nav' => '#3a1f0e', 'body' => '#fdf8f3', 'accent' => '#c2853a'],
+                        'arctic'   => ['label' => 'Arctic',   'nav' => '#f0f4f8', 'border_nav' => '#dde3ea', 'body' => '#ffffff', 'accent' => '#4f46e5'],
+                        'noir'     => ['label' => 'Noir',     'nav' => '#0a0a0a', 'border_nav' => '#1a1a1a', 'body' => '#121212', 'accent' => '#fbbf24'],
                     ] as $slug => $theme)
                         <form method="POST" action="{{ route('settings.theme') }}">
                             @csrf
