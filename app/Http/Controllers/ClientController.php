@@ -1,6 +1,6 @@
 <?php
 
-// v1.1 — 2026-05-26 | Add batch_invoicing field; pass open batch draft to show view
+// v1.2 — 2026-06-02 | Remove batch invoicing — clean up show() and validate()
 // v1.0 — 2026-05-26 | Client management — CRUD for invoicing clients
 
 namespace App\Http\Controllers;
@@ -47,19 +47,7 @@ class ClientController extends Controller
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
-        // For batch clients, find the open accumulating draft
-        $batchDraft = null;
-        if ($client->batch_invoicing) {
-            $batchDraft = $client->invoices()
-                ->where('status', 'draft')
-                ->whereNull('stripe_invoice_id')
-                ->whereNull('google_doc_id')
-                ->with('lineItems.assignment')
-                ->latest()
-                ->first();
-        }
-
-        return view('clients.show', compact('client', 'batchDraft'));
+        return view('clients.show', compact('client'));
     }
 
     public function edit(Client $client)
@@ -112,7 +100,6 @@ class ClientController extends Controller
             'notes'               => 'nullable|string',
             'last_invoice_number' => 'required|integer|min:0',
             'invoice_type'        => 'required|in:pdf,stripe',
-            'batch_invoicing'     => 'boolean',
         ]);
     }
 }

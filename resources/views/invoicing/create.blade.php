@@ -21,15 +21,26 @@
 
             @php
                 $clientMeta = $clients->mapWithKeys(fn($c) => [
-                    $c->id => ['invoice_type' => $c->invoice_type, 'batch' => (bool) $c->batch_invoicing]
+                    $c->id => ['invoice_type' => $c->invoice_type]
                 ])->toJson();
             @endphp
+
             <div class="bg-white shadow-sm sm:rounded-lg"
                  x-data="{
                      recipientType: '{{ old('recipient_type', 'client') }}',
                      clientId: '{{ old('client_id', request('client')) }}',
                      clientMeta: {{ $clientMeta }},
-                     get selectedClient() { return this.clientId ? this.clientMeta[this.clientId] : null; }
+                     get selectedClient() { return this.clientId ? this.clientMeta[this.clientId] : null; },
+                     items: @json(old('items', [['description' => '', 'amount' => '']])),
+                     get total() {
+                         return this.items.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+                     },
+                     addItem() {
+                         if (this.items.length < 8) this.items.push({ description: '', amount: '' });
+                     },
+                     removeItem(idx) {
+                         if (this.items.length > 1) this.items.splice(idx, 1);
+                     }
                  }">
 
                 {{-- Recipient type toggle --}}
@@ -53,18 +64,16 @@
                             Customer
                         </button>
                     </div>
-                    <p class="text-xs text-gray-400 mt-2"
-                       x-show="recipientType === 'client'">
+                    <p class="text-xs text-gray-400 mt-2" x-show="recipientType === 'client'">
                         Sends via Stripe or PDF depending on the client's invoice type.
                     </p>
-                    <p class="text-xs text-gray-400 mt-2"
-                       x-show="recipientType === 'customer'">
+                    <p class="text-xs text-gray-400 mt-2" x-show="recipientType === 'customer'">
                         Sends via Stripe. Optionally opens a draft on a HelpScout ticket.
                     </p>
                 </div>
 
                 <div class="px-4 py-5">
-                    <form method="POST" action="{{ route('invoicing.store') }}" class="space-y-4"
+                    <form method="POST" action="{{ route('invoicing.store') }}" class="space-y-5"
                           onsubmit="return confirm('Generate and send this invoice now?')">
                         @csrf
                         <input type="hidden" name="recipient_type" :value="recipientType">
@@ -89,22 +98,14 @@
                                             </option>
                                         @endforeach
                                     </select>
-
-                                    {{-- Dynamic invoice type hint --}}
                                     <div class="mt-1.5 min-h-[1.25rem]">
                                         <template x-if="selectedClient">
                                             <p class="text-xs font-medium"
                                                :class="selectedClient.invoice_type === 'stripe' ? 'text-indigo-600' : 'text-gray-500'">
-                                                <template x-if="selectedClient.invoice_type === 'stripe'">
-                                                    <span>&#x2192; Stripe invoice<span x-show="selectedClient.batch"> (batched)</span></span>
-                                                </template>
-                                                <template x-if="selectedClient.invoice_type !== 'stripe'">
-                                                    <span>&#x2192; PDF invoice</span>
-                                                </template>
+                                                <span x-text="selectedClient.invoice_type === 'stripe' ? '→ Stripe invoice' : '→ PDF invoice'"></span>
                                             </p>
                                         </template>
                                     </div>
-
                                     <x-input-error :messages="$errors->get('client_id')" class="mt-1" />
                                 </div>
                             @endif
@@ -145,32 +146,71 @@
                                     class="mt-1 block w-full"
                                     placeholder="e.g. 12345"
                                     value="{{ old('helpscout_ticket') }}" />
-                                <p class="mt-1 text-xs text-gray-400">If provided, a draft reply will be opened on that ticket with a saved-reply placeholder.</p>
+                                <p class="mt-1 text-xs text-gray-400">If provided, a draft reply will be opened on that ticket.</p>
                                 <x-input-error :messages="$errors->get('helpscout_ticket')" class="mt-1" />
                             </div>
                         </div>
 
-                        {{-- ---- Shared fields ---- --}}
+                        {{-- ---- Line items ---- --}}
                         <div>
-                            <x-input-label for="description" value="Description / Line Item" />
-                            <x-text-input id="description" name="description" type="text"
-                                class="mt-1 block w-full"
-                                placeholder="e.g. Script Coverage — The Dark Knight"
-                                value="{{ old('description') }}" required />
-                            <x-input-error :messages="$errors->get('description')" class="mt-1" />
+                            <div class="flex items-center justify-between mb-2">
+                                <x-input-label value="Line Items" />
+                                <span class="text-xs text-gray-400" x-text="items.length + '/8 items'"></span>
+                            </div>
+
+                            <div class="space-y-2">
+                                <template x-for="(item, idx) in items" :key="idx">
+                                    <div class="flex gap-2 items-start">
+                                        <div class="flex-1">
+                                            <input type="text"
+                                                   :name="'items[' + idx + '][description]'"
+                                                   x-model="item.description"
+                                                   placeholder="Description"
+                                                   maxlength="1000"
+                                                   required
+                                                   class="block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                                        </div>
+                                        <div class="relative w-28 shrink-0">
+                                            <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm pointer-events-none">$</span>
+                                            <input type="number"
+                                                   :name="'items[' + idx + '][amount]'"
+                                                   x-model="item.amount"
+                                                   placeholder="0.00"
+                                                   step="0.01" min="0.01"
+                                                   required
+                                                   class="block w-full pl-7 text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                                        </div>
+                                        <button type="button"
+                                                @click="removeItem(idx)"
+                                                x-show="items.length > 1"
+                                                class="mt-1 text-gray-300 hover:text-red-400 transition text-lg leading-none shrink-0"
+                                                title="Remove line item">&times;</button>
+                                        <span x-show="items.length <= 1" class="w-5 shrink-0"></span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="flex items-center justify-between mt-3">
+                                <button type="button"
+                                        @click="addItem()"
+                                        x-show="items.length < 8"
+                                        class="text-xs text-indigo-600 hover:text-indigo-800 transition">
+                                    + Add line item
+                                </button>
+                                <span x-show="items.length >= 8" class="text-xs text-gray-400">Maximum 8 line items</span>
+
+                                <div class="text-sm font-semibold text-gray-700 ml-auto">
+                                    Total: <span class="text-green-700" x-text="'$' + total.toFixed(2)"></span>
+                                </div>
+                            </div>
+
+                            @if($errors->has('items') || $errors->has('items.*.description') || $errors->has('items.*.amount'))
+                                <p class="mt-1 text-xs text-red-600">{{ $errors->first('items') ?: $errors->first('items.*.description') ?: $errors->first('items.*.amount') }}</p>
+                            @endif
                         </div>
 
+                        {{-- ---- Shared fields ---- --}}
                         <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <x-input-label for="amount" value="Amount ($)" />
-                                <div class="mt-1 relative">
-                                    <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">$</span>
-                                    <x-text-input id="amount" name="amount" type="number" step="0.01" min="0.01"
-                                        class="block w-full pl-7"
-                                        value="{{ old('amount') }}" required />
-                                </div>
-                                <x-input-error :messages="$errors->get('amount')" class="mt-1" />
-                            </div>
                             <div>
                                 <x-input-label for="due_date" value="Due Date (optional)" />
                                 <x-text-input id="due_date" name="due_date" type="date"

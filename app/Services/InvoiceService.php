@@ -1,11 +1,10 @@
 <?php
 
+// v2.0 — 2026-06-02 | Remove batch invoicing; all invoices now take array of line items and send immediately
 // v1.6 — 2026-05-26 | Add generateForCustomer(): direct Stripe + optional HelpScout draft for ad-hoc customer invoices
 // v1.5 — 2026-05-26 | Wire up real Google Docs invoice template; rework buildPdfPlaceholders() to match actual template tokens
 // v1.4 — 2026-05-26 | Let logToOrderRevenue exceptions propagate so errors surface to the user
 // v1.3 — 2026-05-26 | Log invoices to order_revenues on payment, not on send; expose as public method
-// v1.2 — 2026-05-26 | Log sent invoices to order_revenues for Order Log + Revenue visibility
-// v1.1 — 2026-05-26 | Add batch invoicing path — addToBatchInvoice(), send()
 // v1.0 — 2026-05-26 | Invoice generation orchestrator — PDF (Google Docs) and Stripe paths
 
 namespace App\Services;
@@ -30,36 +29,34 @@ class InvoiceService
     ) {}
 
     /**
-     * Generate an invoice for a client, optionally tied to an assignment.
+     * Generate and immediately send an invoice for a client.
      *
-     * For batch clients: finds (or creates) an open draft invoice for the client
-     * and appends a line item. Does NOT send — the editor sends manually later.
-     *
-     * For standard clients: creates the Invoice record, fires the appropriate
-     * delivery path (Stripe or PDF), and posts to Help Scout if a ticket exists.
+     * $lineItems — array of ['description' => string, 'amount' => float], up to 8 items.
+     * The invoice is sent straight away (Stripe or PDF) regardless of client settings.
      */
     public function generate(
         Client      $client,
-        string      $description,
-        float       $amount,
+        array       $lineItems,
         ?Assignment $assignment = null,
         ?string     $notes      = null,
         ?string     $dueDate    = null,
     ): Invoice {
-        if ($client->batch_invoicing) {
-            return $this->addToBatchInvoice($client, $description, $amount, $assignment);
+        if (empty($lineItems)) {
+            throw new RuntimeException('At least one line item is required.');
         }
 
-        // Standard (non-batch) path — allocate invoice number atomically
         $client->increment('last_invoice_number');
         $client->refresh();
+
+        $total       = array_sum(array_column($lineItems, 'amount'));
+        $description = $lineItems[0]['description'];
 
         $invoice = Invoice::create([
             'client_id'      => $client->id,
             'assignment_id'  => $assignment?->id,
             'invoice_number' => (string) $client->last_invoice_number,
             'description'    => $description,
-            'amount'         => $amount,
+            'amount'         => $total,
             'status'         => 'draft',
             'invoice_type'   => $client->invoice_type,
             'notes'          => $notes,
@@ -67,11 +64,20 @@ class InvoiceService
             'issued_at'      => now(),
         ]);
 
+        foreach ($lineItems as $item) {
+            InvoiceLineItem::create([
+                'invoice_id'    => $invoice->id,
+                'assignment_id' => $assignment?->id,
+                'description'   => $item['description'],
+                'amount'        => $item['amount'],
+            ]);
+        }
+
         try {
             if ($client->invoice_type === 'stripe') {
-                $this->generateStripe($invoice, $client, $assignment);
+                $this->sendStripe($invoice, $client, $lineItems, $assignment);
             } else {
-                $this->generatePdf($invoice, $client, $assignment);
+                $this->sendPdf($invoice, $client, $lineItems, $assignment);
             }
         } catch (\Throwable $e) {
             Log::error('InvoiceService generation failed', [
@@ -87,25 +93,33 @@ class InvoiceService
     /**
      * Create and send a Stripe invoice for a one-off customer (no Client record).
      * Optionally posts a HelpScout draft to the given ticket number.
-     * Returns the created Invoice.
      */
     public function generateForCustomer(
         string  $email,
         string  $firstName,
         string  $lastName,
-        string  $description,
-        float   $amount,
+        array   $lineItems,
         ?string $helpscoutTicket = null,
         ?string $dueDate         = null,
     ): Invoice {
+        if (empty($lineItems)) {
+            throw new RuntimeException('At least one line item is required.');
+        }
+
         $name             = trim("{$firstName} {$lastName}");
         $stripeCustomerId = $this->stripe->ensureCustomer($email, $name);
+        $dueDateTs        = $dueDate ? \Carbon\Carbon::parse($dueDate)->startOfDay()->timestamp : null;
+        $total            = array_sum(array_column($lineItems, 'amount'));
+        $description      = $lineItems[0]['description'];
 
-        $dueDateTs = $dueDate ? \Carbon\Carbon::parse($dueDate)->startOfDay()->timestamp : null;
+        $stripeLineItems = array_map(fn ($item) => [
+            'description'  => $item['description'],
+            'amount_cents' => (int) round($item['amount'] * 100),
+        ], $lineItems);
 
         $result = $this->stripe->createAndSendInvoice(
             stripeCustomerId: $stripeCustomerId,
-            lineItems: [['description' => $description, 'amount_cents' => (int) round($amount * 100)]],
+            lineItems:        $stripeLineItems,
             dueDateTimestamp: $dueDateTs,
         );
 
@@ -115,7 +129,7 @@ class InvoiceService
             'customer_email'     => $email,
             'invoice_number'     => $result['invoice_number'],
             'description'        => $description,
-            'amount'             => $amount,
+            'amount'             => $total,
             'status'             => 'sent',
             'invoice_type'       => 'stripe',
             'stripe_invoice_id'  => $result['invoice_id'],
@@ -123,6 +137,14 @@ class InvoiceService
             'issued_at'          => now(),
             'due_date'           => $dueDate,
         ]);
+
+        foreach ($lineItems as $item) {
+            InvoiceLineItem::create([
+                'invoice_id'  => $invoice->id,
+                'description' => $item['description'],
+                'amount'      => $item['amount'],
+            ]);
+        }
 
         if ($helpscoutTicket) {
             try {
@@ -132,7 +154,7 @@ class InvoiceService
                     $html = '<p>Hi ' . htmlspecialchars($firstName) . ',</p>'
                         . '<p>[Insert saved reply here]</p>'
                         . '<p><em>Note: Stripe invoice ' . htmlspecialchars($result['invoice_number'])
-                        . ' for $' . number_format($amount, 2)
+                        . ' for $' . number_format($total, 2)
                         . ' was sent to ' . htmlspecialchars($email) . '.</em></p>';
                     $this->helpscout->createDraftReply($conversationId, $html);
                 }
@@ -147,93 +169,11 @@ class InvoiceService
         return $invoice->fresh();
     }
 
-    /**
-     * Manually send a batch draft invoice.
-     * Compiles all accumulated line items and fires the appropriate delivery path.
-     */
-    public function send(Invoice $invoice): void
-    {
-        $client    = $invoice->client;
-        $lineItems = $invoice->lineItems()->with('assignment')->get();
-
-        if ($lineItems->isEmpty()) {
-            throw new RuntimeException('Cannot send an invoice with no line items.');
-        }
-
-        // Build Stripe line items payload
-        $stripeLineItems = $lineItems->map(fn ($item) => [
-            'description'  => $item->description,
-            'amount_cents' => (int) round((float) $item->amount * 100),
-        ])->all();
-
-        // Use the first line item's assignment for Help Scout, if available
-        $primaryAssignment = $lineItems->first()?->assignment;
-
-        $invoice->update(['issued_at' => $invoice->issued_at ?? now()]);
-
-        try {
-            if ($invoice->invoice_type === 'stripe') {
-                $this->sendBatchStripe($invoice, $client, $stripeLineItems, $primaryAssignment);
-            } else {
-                $this->sendBatchPdf($invoice, $client, $primaryAssignment);
-            }
-        } catch (\Throwable $e) {
-            Log::error('InvoiceService::send failed', [
-                'invoice_id' => $invoice->id,
-                'error'      => $e->getMessage(),
-            ]);
-            throw $e;
-        }
-
-    }
-
     // -------------------------------------------------------------------------
-    // Batch helpers
+    // Stripe send path
     // -------------------------------------------------------------------------
 
-    private function addToBatchInvoice(Client $client, string $description, float $amount, ?Assignment $assignment): Invoice
-    {
-        // Find the open accumulating draft for this client, or create one
-        $invoice = Invoice::where('client_id', $client->id)
-            ->where('status', 'draft')
-            ->whereNull('stripe_invoice_id')
-            ->whereNull('google_doc_id')
-            ->latest()
-            ->first();
-
-        if (! $invoice) {
-            $client->increment('last_invoice_number');
-            $client->refresh();
-
-            $invoice = Invoice::create([
-                'client_id'      => $client->id,
-                'invoice_number' => (string) $client->last_invoice_number,
-                'description'    => 'Weekly batch invoice',
-                'amount'         => 0,
-                'status'         => 'draft',
-                'invoice_type'   => $client->invoice_type,
-                'issued_at'      => now(),
-            ]);
-        }
-
-        InvoiceLineItem::create([
-            'invoice_id'    => $invoice->id,
-            'assignment_id' => $assignment?->id,
-            'description'   => $description,
-            'amount'        => $amount,
-        ]);
-
-        // Keep invoice amount in sync with the sum of all line items
-        $invoice->update(['amount' => $invoice->lineItems()->sum('amount')]);
-
-        return $invoice->fresh();
-    }
-
-    // -------------------------------------------------------------------------
-    // Standard (single-item) Stripe path
-    // -------------------------------------------------------------------------
-
-    private function generateStripe(Invoice $invoice, Client $client, ?Assignment $assignment): void
+    private function sendStripe(Invoice $invoice, Client $client, array $lineItems, ?Assignment $assignment): void
     {
         $stripeCustomerId = $client->stripe_customer_id;
 
@@ -242,14 +182,14 @@ class InvoiceService
             $client->update(['stripe_customer_id' => $stripeCustomerId]);
         }
 
-        $singleLineItem = [
-            'description'  => $invoice->description,
-            'amount_cents' => (int) round((float) $invoice->amount * 100),
-        ];
+        $stripeLineItems = array_map(fn ($item) => [
+            'description'  => $item['description'],
+            'amount_cents' => (int) round((float) $item['amount'] * 100),
+        ], $lineItems);
 
         $result = $this->stripe->createAndSendInvoice(
             stripeCustomerId: $stripeCustomerId,
-            lineItems: [$singleLineItem],
+            lineItems:        $stripeLineItems,
             dueDateTimestamp: $invoice->due_date ? $invoice->due_date->timestamp : null,
         );
 
@@ -261,36 +201,6 @@ class InvoiceService
 
         if ($assignment?->helpscout_ticket_number) {
             $this->postStripeHelpScoutReply($invoice, $assignment, $result['hosted_invoice_url']);
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Batch Stripe send path
-    // -------------------------------------------------------------------------
-
-    private function sendBatchStripe(Invoice $invoice, Client $client, array $lineItems, ?Assignment $primaryAssignment): void
-    {
-        $stripeCustomerId = $client->stripe_customer_id;
-
-        if (! $stripeCustomerId) {
-            $stripeCustomerId = $this->stripe->ensureCustomer($client->email ?? '', $client->name);
-            $client->update(['stripe_customer_id' => $stripeCustomerId]);
-        }
-
-        $result = $this->stripe->createAndSendInvoice(
-            stripeCustomerId: $stripeCustomerId,
-            lineItems: $lineItems,
-            dueDateTimestamp: $invoice->due_date ? $invoice->due_date->timestamp : null,
-        );
-
-        $invoice->update([
-            'status'             => 'sent',
-            'stripe_invoice_id'  => $result['invoice_id'],
-            'stripe_invoice_url' => $result['hosted_invoice_url'],
-        ]);
-
-        if ($primaryAssignment?->helpscout_ticket_number) {
-            $this->postStripeHelpScoutReply($invoice, $primaryAssignment, $result['hosted_invoice_url']);
         }
     }
 
@@ -319,15 +229,14 @@ class InvoiceService
     }
 
     // -------------------------------------------------------------------------
-    // Standard (single-item) PDF path
+    // PDF send path
     // -------------------------------------------------------------------------
 
-    private function generatePdf(Invoice $invoice, Client $client, ?Assignment $assignment): void
+    private function sendPdf(Invoice $invoice, Client $client, array $lineItems, ?Assignment $assignment): void
     {
         $srAddress    = Setting::getValue('sr_invoice_address', '');
         $emailBody    = Setting::getValue('invoice_email_body', '');
-        $lineItemsData = [['description' => $invoice->description, 'amount' => (float) $invoice->amount]];
-        $placeholders  = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $lineItemsData);
+        $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $lineItems);
 
         $folderId = config('services.google.drive_coverage_folder_id');
         $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
@@ -344,35 +253,6 @@ class InvoiceService
         $invoice->update(['status' => 'sent']);
     }
 
-    // -------------------------------------------------------------------------
-    // Batch PDF send path
-    // -------------------------------------------------------------------------
-
-    private function sendBatchPdf(Invoice $invoice, Client $client, ?Assignment $primaryAssignment): void
-    {
-        $srAddress    = Setting::getValue('sr_invoice_address', '');
-        $emailBody    = Setting::getValue('invoice_email_body', '');
-        $lineItemsData = $invoice->lineItems()->get()->map(fn ($item) => [
-            'description' => $item->description,
-            'amount'      => (float) $item->amount,
-        ])->values()->all();
-        $placeholders  = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $lineItemsData);
-
-        $folderId = config('services.google.drive_coverage_folder_id');
-        $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
-
-        $docId = $this->docs->createInvoiceDoc(self::INVOICE_TEMPLATE_ID, $filename, $folderId, $placeholders);
-        $invoice->update(['google_doc_id' => $docId]);
-
-        $pdfBytes = $this->docs->exportDocToPdfBytes($docId);
-
-        if ($primaryAssignment?->helpscout_ticket_number) {
-            $this->postPdfHelpScoutDraft($invoice, $primaryAssignment, $pdfBytes, $filename, $emailBody);
-        }
-
-        $invoice->update(['status' => 'sent']);
-    }
-
     /**
      * Build the find-replace map keyed by the actual Google Docs template tokens.
      * $lineItemsData is an array of ['description' => string, 'amount' => float].
@@ -384,16 +264,16 @@ class InvoiceService
         $addrLine2 = trim(implode(', ', array_filter([$client->city, $client->state, $client->postcode, $client->country])));
 
         $placeholders = [
-            '{{SR_ADDRESS}}'   => $srAddress,
-            '{{INVOICENUMBER}}'=> $invoice->invoice_number,
-            '{{DATE}}'         => now()->format('F j, Y'),
-            '{{name}}'         => $client->name,
-            '{{company}}'      => '',
-            '{{addressline1}}' => $addrLine1,
-            '{{addressline2}}' => $addrLine2,
-            '{{notes}}'        => $invoice->notes ?? '',
-            '{{TOTAL}}'        => number_format((float) $invoice->amount, 2),
-            '{{URL}}'          => '',
+            '{{SR_ADDRESS}}'    => $srAddress,
+            '{{INVOICENUMBER}}' => $invoice->invoice_number,
+            '{{DATE}}'          => now()->format('F j, Y'),
+            '{{name}}'          => $client->name,
+            '{{company}}'       => '',
+            '{{addressline1}}'  => $addrLine1,
+            '{{addressline2}}'  => $addrLine2,
+            '{{notes}}'         => $invoice->notes ?? '',
+            '{{TOTAL}}'         => number_format((float) $invoice->amount, 2),
+            '{{URL}}'           => '',
         ];
 
         for ($i = 1; $i <= 8; $i++) {
@@ -417,7 +297,6 @@ class InvoiceService
         $client = $invoice->client;
         $code   = strtoupper($client->code ?? 'INV');
 
-        // Build description from line items (batch) or invoice description (single)
         $lineItems = $invoice->lineItems()->get();
         if ($lineItems->count() > 1) {
             $description = $lineItems->values()->map(

@@ -63,14 +63,6 @@ $statusColors = [
                             <button type="submit" class="text-red-500 hover:underline">Delete</button>
                         </form>
                     @elseif($invoice->status !== 'void')
-                        @if($invoice->status === 'draft')
-                            @php $sendTo = $invoice->client_id ? $invoice->client->name : $invoice->customer_email; @endphp
-                            <form method="POST" action="{{ route('invoices.send', $invoice) }}" class="inline"
-                                  onsubmit="return confirm('Send invoice #{{ $invoice->invoice_number }} to {{ $sendTo }} now?')">
-                                @csrf
-                                <button type="submit" class="text-indigo-600 hover:underline">Send</button>
-                            </form>
-                        @endif
                         <form method="POST" action="{{ route('invoices.mark-paid', $invoice) }}" class="inline">
                             @csrf
                             <button type="submit" class="text-green-600 hover:underline">Mark Paid</button>

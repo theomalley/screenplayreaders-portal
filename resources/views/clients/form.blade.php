@@ -146,16 +146,6 @@
                         </div>
                     </div>
 
-                    <div class="flex items-start gap-3 pt-1">
-                        <input type="hidden" name="batch_invoicing" value="0">
-                        <input type="checkbox" id="batch_invoicing" name="batch_invoicing" value="1"
-                               {{ old('batch_invoicing', $client?->batch_invoicing) ? 'checked' : '' }}
-                               class="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                        <div>
-                            <label for="batch_invoicing" class="text-sm font-medium text-gray-700 cursor-pointer">Batch invoicing</label>
-                            <p class="text-xs text-gray-400 mt-0.5">Assignments accumulate into one open draft invoice. Send manually on Friday (or whenever ready).</p>
-                        </div>
-                    </div>
                 </div>
 
                 {{-- NOTES --}}

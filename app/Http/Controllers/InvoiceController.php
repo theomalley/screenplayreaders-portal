@@ -1,9 +1,7 @@
 <?php
 
+// v2.0 — 2026-06-02 | Remove batch invoicing; store() accepts up to 8 line items and sends immediately
 // v1.4 — 2026-05-26 | Add customer invoice path (no client record; Stripe + optional HelpScout draft)
-// v1.3 — 2026-05-26 | Surface logToOrderRevenue errors instead of silently swallowing them
-// v1.2 — 2026-05-26 | Split index (all invoices) from create (standalone form)
-// v1.1 — 2026-05-26 | Add send() for batch draft invoices
 // v1.0 — 2026-05-26 | Invoice creation, status management, and standalone invoicing tab
 
 namespace App\Http\Controllers;
@@ -53,9 +51,10 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Create a standalone invoice from the Invoicing tab.
-     * Branches on recipient_type: 'customer' (Stripe-only, no client record)
-     * or 'client' (existing client workflow).
+     * Create and immediately send an invoice from the Invoicing tab.
+     * Accepts up to 8 line items. Branches on recipient_type:
+     *   'customer' — Stripe-only, no client record
+     *   'client'   — existing client workflow (Stripe or PDF)
      */
     public function store(Request $request)
     {
@@ -66,23 +65,27 @@ class InvoiceController extends Controller
         }
 
         $data = $request->validate([
-            'client_id'   => 'required|exists:clients,id',
-            'description' => 'required|string|max:1000',
-            'amount'      => 'required|numeric|min:0.01',
-            'due_date'    => 'nullable|date',
-            'notes'       => 'nullable|string|max:2000',
+            'client_id'                  => 'required|exists:clients,id',
+            'items'                      => 'required|array|min:1|max:8',
+            'items.*.description'        => 'required|string|max:1000',
+            'items.*.amount'             => 'required|numeric|min:0.01',
+            'due_date'                   => 'nullable|date',
+            'notes'                      => 'nullable|string|max:2000',
         ]);
 
-        $client = Client::findOrFail($data['client_id']);
+        $client    = Client::findOrFail($data['client_id']);
+        $lineItems = array_map(fn ($item) => [
+            'description' => $item['description'],
+            'amount'      => (float) $item['amount'],
+        ], $data['items']);
 
         try {
             $invoice = $this->invoiceService->generate(
-                client:      $client,
-                description: $data['description'],
-                amount:      (float) $data['amount'],
-                assignment:  null,
-                notes:       $data['notes'] ?? null,
-                dueDate:     $data['due_date'] ?? null,
+                client:     $client,
+                lineItems:  $lineItems,
+                assignment: null,
+                notes:      $data['notes'] ?? null,
+                dueDate:    $data['due_date'] ?? null,
             );
         } catch (\Throwable $e) {
             return back()->withErrors(['invoice' => $e->getMessage()])->withInput();
@@ -95,22 +98,27 @@ class InvoiceController extends Controller
     private function storeForCustomer(Request $request)
     {
         $data = $request->validate([
-            'customer_first_name' => 'required|string|max:100',
-            'customer_last_name'  => 'required|string|max:100',
-            'customer_email'      => 'required|email|max:255',
-            'helpscout_ticket'    => 'nullable|string|max:50',
-            'description'         => 'required|string|max:1000',
-            'amount'              => 'required|numeric|min:0.01',
-            'due_date'            => 'nullable|date',
+            'customer_first_name'        => 'required|string|max:100',
+            'customer_last_name'         => 'required|string|max:100',
+            'customer_email'             => 'required|email|max:255',
+            'helpscout_ticket'           => 'nullable|string|max:50',
+            'items'                      => 'required|array|min:1|max:8',
+            'items.*.description'        => 'required|string|max:1000',
+            'items.*.amount'             => 'required|numeric|min:0.01',
+            'due_date'                   => 'nullable|date',
         ]);
+
+        $lineItems = array_map(fn ($item) => [
+            'description' => $item['description'],
+            'amount'      => (float) $item['amount'],
+        ], $data['items']);
 
         try {
             $invoice = $this->invoiceService->generateForCustomer(
                 email:           $data['customer_email'],
                 firstName:       $data['customer_first_name'],
                 lastName:        $data['customer_last_name'],
-                description:     $data['description'],
-                amount:          (float) $data['amount'],
+                lineItems:       $lineItems,
                 helpscoutTicket: $data['helpscout_ticket'] ?? null,
                 dueDate:         $data['due_date'] ?? null,
             );
@@ -149,10 +157,9 @@ class InvoiceController extends Controller
         $description = "{$typeLabel} — {$assignment->script_title} (Order #{$assignment->order_number})";
 
         return $this->invoiceService->generate(
-            client:      $client,
-            description: $description,
-            amount:      $amount,
-            assignment:  $assignment,
+            client:     $client,
+            lineItems:  [['description' => $description, 'amount' => $amount]],
+            assignment: $assignment,
         );
     }
 
@@ -168,7 +175,6 @@ class InvoiceController extends Controller
             'paid_at' => now(),
         ]);
 
-        // Customer invoices (no client record) are not logged to the order revenue table
         if (! $invoice->client_id) {
             return redirect()->route('invoicing.index')
                 ->with('success', "Invoice #{$invoice->invoice_number} marked as paid.");
@@ -203,7 +209,6 @@ class InvoiceController extends Controller
 
         $invoiceNumber = $invoice->invoice_number;
 
-        // Only client invoices are logged to order_revenues
         if ($invoice->client_id) {
             $code = strtoupper($invoice->client->code ?? 'INV');
             OrderRevenue::where('order_number', "INV-{$code}-{$invoiceNumber}")->delete();
@@ -213,27 +218,6 @@ class InvoiceController extends Controller
 
         return redirect()->route('invoicing.index')
             ->with('success', "Invoice #{$invoiceNumber} deleted.");
-    }
-
-    /**
-     * Send a batch draft invoice — compiles all line items and fires delivery.
-     */
-    public function send(Invoice $invoice)
-    {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
-
-        if ($invoice->status !== 'draft') {
-            return back()->withErrors(['invoice' => 'Only draft invoices can be sent.']);
-        }
-
-        try {
-            $this->invoiceService->send($invoice);
-        } catch (\Throwable $e) {
-            return back()->withErrors(['invoice' => $e->getMessage()]);
-        }
-
-        return redirect()->route('invoicing.index')
-            ->with('success', "Invoice #{$invoice->invoice_number} sent.");
     }
 
     /**

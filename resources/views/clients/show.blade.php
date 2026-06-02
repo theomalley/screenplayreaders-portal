@@ -62,65 +62,6 @@
                 </div>
             </div>
 
-            {{-- Batch draft invoice panel --}}
-            @if($batchDraft)
-                <div class="bg-amber-50 border border-amber-200 shadow-sm sm:rounded-lg">
-                    <div class="px-4 py-3 border-b border-amber-200 flex items-center justify-between">
-                        <div>
-                            <h3 class="text-sm font-semibold text-amber-800">Open Weekly Invoice #{{ $batchDraft->invoice_number }}</h3>
-                            <p class="text-xs text-amber-600 mt-0.5">Accumulating — send when ready</p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-semibold text-amber-800">${{ number_format((float) $batchDraft->amount, 2) }} total</span>
-                            <form method="POST" action="{{ route('invoices.send', $batchDraft) }}"
-                                  onsubmit="return confirm('Send invoice #{{ $batchDraft->invoice_number }} to {{ $client->name }} now?')">
-                                @csrf
-                                <button type="submit"
-                                        class="inline-flex items-center px-3 py-1.5 bg-amber-600 border border-transparent rounded text-xs font-medium text-white hover:bg-amber-700 transition">
-                                    Send Invoice
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    @if($batchDraft->lineItems->isEmpty())
-                        <div class="px-4 py-4 text-sm text-amber-700 italic">No line items yet.</div>
-                    @else
-                        <table class="w-full text-sm">
-                            <thead class="bg-amber-100">
-                                <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-amber-700 uppercase tracking-wide">Description</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-amber-700 uppercase tracking-wide">Assignment</th>
-                                    <th class="px-4 py-2 text-right text-xs font-medium text-amber-700 uppercase tracking-wide">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-amber-100">
-                                @foreach($batchDraft->lineItems as $item)
-                                    <tr>
-                                        <td class="px-4 py-2 text-gray-700">{{ $item->description }}</td>
-                                        <td class="px-4 py-2 text-gray-500 text-xs">
-                                            @if($item->assignment)
-                                                <a href="{{ route('assignments.show', $item->assignment) }}" class="text-indigo-600 hover:underline">
-                                                    #{{ $item->assignment->id }}
-                                                </a>
-                                            @else
-                                                —
-                                            @endif
-                                        </td>
-                                        <td class="px-4 py-2 text-right font-mono text-gray-800">${{ number_format((float) $item->amount, 2) }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot class="border-t border-amber-200 bg-amber-50">
-                                <tr>
-                                    <td colspan="2" class="px-4 py-2 text-right text-xs font-semibold text-amber-800 uppercase">Total</td>
-                                    <td class="px-4 py-2 text-right font-mono font-semibold text-amber-800">${{ number_format((float) $batchDraft->amount, 2) }}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    @endif
-                </div>
-            @endif
 
             {{-- Invoices link --}}
             <div class="bg-white shadow-sm sm:rounded-lg px-4 py-3 flex items-center justify-between text-sm">
