@@ -616,6 +616,18 @@ class AssignmentController extends Controller
             $data['assigned_reader_id'] = null;
             $data['accepted_at']        = null;
             $data['reader_declined']    = false;
+            $data['available_at']       = null; // clear any pending auto-release when manually set to Available
+        }
+
+        // Convert the datetime-local string to UTC, or clear if empty
+        if (! empty($data['available_at'])) {
+            $data['available_at'] = Carbon::createFromFormat(
+                'Y-m-d\TH:i',
+                $data['available_at'],
+                Setting::getAppTimezone()
+            )->utc();
+        } else {
+            $data['available_at'] = null;
         }
 
         if (!empty($data['assigned_reader_id'])) {

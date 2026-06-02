@@ -41,6 +41,7 @@ class UpdateAssignmentRequest extends FormRequest
             'date'                 => ['nullable', 'date_format:Y-m-d'],
             'time'                 => ['nullable', 'date_format:H:i'],
             'status'               => ['required', 'in:' . $allStatuses],
+            'available_at'         => ['nullable', 'date_format:Y-m-d\TH:i'],
         ];
     }
 }

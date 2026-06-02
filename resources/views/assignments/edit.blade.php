@@ -480,6 +480,31 @@
                             <x-input-error :messages="$errors->get('status')" class="mt-1" />
                         </div>
 
+                        {{-- Auto-release to Available --}}
+                        @if ($assignment->status !== \App\Models\Assignment::STATUS_UNASSIGNED)
+                        <div>
+                            <x-input-label for="available_at" value="Auto-release to Available" />
+                            @php
+                                $availableAtLocal = $assignment->available_at
+                                    ? $assignment->available_at->copy()->setTimezone($appTimezone)->format('Y-m-d\TH:i')
+                                    : '';
+                            @endphp
+                            <input type="datetime-local" id="available_at" name="available_at"
+                                value="{{ old('available_at', $availableAtLocal) }}"
+                                class="mt-1 block w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <p class="mt-1 text-xs text-gray-400">
+                                Status will be set to Available automatically at this date/time ({{ $appTimezone }}).
+                                Clear the field to cancel.
+                                @if ($assignment->available_at)
+                                    <span class="text-amber-600 font-medium">
+                                        Scheduled: {{ $assignment->available_at->copy()->setTimezone($appTimezone)->format('D M j, Y g:i A') }}
+                                    </span>
+                                @endif
+                            </p>
+                            <x-input-error :messages="$errors->get('available_at')" class="mt-1" />
+                        </div>
+                        @endif
+
                         <div>
                             <x-input-label for="notes" value="Notes" />
                             <textarea id="notes" name="notes" rows="3"

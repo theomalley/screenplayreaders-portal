@@ -1,5 +1,6 @@
 <?php
 
+// v1.11 — 2026-06-02 | Add available_at to fillable and casts (scheduled auto-release to Available)
 // v1.10 — 2026-05-30 | Add reader_declined to fillable and casts
 // v1.9 — 2026-05-28 | Zero pay_rate automatically when assigned reader is an admin
 // v1.8 — 2026-05-26 | Add client_id relationship for invoicing
@@ -57,6 +58,7 @@ class Assignment extends Model
         'helpscout_draft_sent_at',
         'client_id',
         'reader_declined',
+        'available_at',
     ];
 
     protected function casts(): array
@@ -72,6 +74,7 @@ class Assignment extends Model
             'reader_paid_at'            => 'datetime',
             'helpscout_draft_sent_at'   => 'datetime',
             'reader_declined'           => 'boolean',
+            'available_at'              => 'datetime',
         ];
     }
 
