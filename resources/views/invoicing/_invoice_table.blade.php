@@ -63,6 +63,12 @@ $statusColors = [
                             <button type="submit" class="text-red-500 hover:underline">Delete</button>
                         </form>
                     @elseif($invoice->status !== 'void')
+                        @if($invoice->invoice_type === 'pdf' && $invoice->google_doc_id)
+                            <a href="{{ route('invoices.edit', $invoice) }}"
+                               class="text-indigo-600 hover:underline">Edit</a>
+                            <a href="{{ route('invoices.pdf', $invoice) }}"
+                               class="text-gray-500 hover:underline">Download PDF</a>
+                        @endif
                         <form method="POST" action="{{ route('invoices.mark-paid', $invoice) }}" class="inline">
                             @csrf
                             <button type="submit" class="text-green-600 hover:underline">Mark Paid</button>

@@ -1,5 +1,6 @@
 <?php
 
+// v2.1 — 2026-06-02 | PDF invoices stored in portal_invoices Drive folder; MailerSend delivery for standalone PDF invoices
 // v2.0 — 2026-06-02 | Remove batch invoicing; all invoices now take array of line items and send immediately
 // v1.6 — 2026-05-26 | Add generateForCustomer(): direct Stripe + optional HelpScout draft for ad-hoc customer invoices
 // v1.5 — 2026-05-26 | Wire up real Google Docs invoice template; rework buildPdfPlaceholders() to match actual template tokens
@@ -238,7 +239,7 @@ class InvoiceService
         $emailBody    = Setting::getValue('invoice_email_body', '');
         $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $lineItems);
 
-        $folderId = config('services.google.drive_coverage_folder_id');
+        $folderId = config('services.google.drive_invoice_folder_id');
         $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
 
         $docId = $this->docs->createInvoiceDoc(self::INVOICE_TEMPLATE_ID, $filename, $folderId, $placeholders);
@@ -246,11 +247,79 @@ class InvoiceService
 
         $pdfBytes = $this->docs->exportDocToPdfBytes($docId);
 
+        // Deliver via HelpScout if there's an associated assignment ticket
         if ($assignment?->helpscout_ticket_number) {
             $this->postPdfHelpScoutDraft($invoice, $assignment, $pdfBytes, $filename, $emailBody);
+        } elseif ($client->email) {
+            // Standalone invoice — deliver via MailerSend
+            $this->sendPdfByMailerSend($invoice, $client, $pdfBytes, $filename);
         }
 
         $invoice->update(['status' => 'sent']);
+    }
+
+    /**
+     * Send a PDF invoice to a client via MailerSend using the invoice email template.
+     * Called when a standalone PDF invoice has no associated HelpScout ticket.
+     */
+    public function sendPdfByMailerSend(Invoice $invoice, Client $client, string $pdfBytes, string $filename): void
+    {
+        $apiKey     = config('services.mailersend.api_key');
+        $templateId = config('services.mailersend.invoice_template_id');
+
+        if (! $apiKey || ! $client->email) {
+            Log::warning('InvoiceService: skipping MailerSend delivery — no API key or client email', [
+                'invoice_id' => $invoice->id,
+            ]);
+            return;
+        }
+
+        $response = \Illuminate\Support\Facades\Http::withToken($apiKey)
+            ->post('https://api.mailersend.com/v1/email', [
+                'from'            => [
+                    'email' => config('mail.from.address', 'noreply@screenplayreaders.com'),
+                    'name'  => config('mail.from.name', 'Screenplay Readers'),
+                ],
+                'to'              => [['email' => $client->email, 'name' => $client->name]],
+                'template_id'     => $templateId,
+                'personalization' => [[
+                    'email' => $client->email,
+                    'data'  => ['invoicenumber' => (string) $invoice->invoice_number],
+                ]],
+                'attachments'     => [[
+                    'content'     => base64_encode($pdfBytes),
+                    'filename'    => $filename . '.pdf',
+                    'type'        => 'application/pdf',
+                    'disposition' => 'attachment',
+                ]],
+            ]);
+
+        if (! $response->successful()) {
+            Log::error('InvoiceService: MailerSend delivery failed', [
+                'invoice_id' => $invoice->id,
+                'status'     => $response->status(),
+                'body'       => $response->body(),
+            ]);
+            throw new RuntimeException('MailerSend delivery failed (' . $response->status() . '): ' . $response->body());
+        }
+    }
+
+    /**
+     * Regenerate the PDF for an existing invoice (e.g. after editing line items).
+     * Replaces the existing Google Doc and returns fresh PDF bytes.
+     */
+    public function regeneratePdf(Invoice $invoice, Client $client, array $lineItems): string
+    {
+        $srAddress    = Setting::getValue('sr_invoice_address', '');
+        $placeholders = $this->buildPdfPlaceholders($invoice, $client, $srAddress, $lineItems);
+
+        $folderId = config('services.google.drive_invoice_folder_id');
+        $filename  = 'Invoice #' . $invoice->invoice_number . ' — ' . $client->name;
+
+        $docId = $this->docs->createInvoiceDoc(self::INVOICE_TEMPLATE_ID, $filename, $folderId, $placeholders);
+        $invoice->update(['google_doc_id' => $docId]);
+
+        return $this->docs->exportDocToPdfBytes($docId);
     }
 
     /**

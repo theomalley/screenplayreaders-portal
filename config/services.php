@@ -40,6 +40,7 @@ return [
         'credentials_path'         => env('GOOGLE_APPLICATION_CREDENTIALS'),
         'drive_scripts_folder_id'  => env('GOOGLE_DRIVE_SCRIPTS_FOLDER_ID'),
         'drive_coverage_folder_id' => env('GOOGLE_DRIVE_COVERAGE_FOLDER_ID'),
+        'drive_invoice_folder_id'  => env('GOOGLE_DRIVE_INVOICE_FOLDER_ID', '1tuXzuzdhp96qD3xWlLb-XIa31nkZK5G-'),
         // DWD: the Workspace user the service account impersonates for Drive/Docs calls
         'impersonate_user'         => env('GOOGLE_IMPERSONATE_USER'),
     ],
@@ -69,6 +70,7 @@ return [
     'mailersend' => [
         'api_key'                   => env('MAILERSEND_API_KEY'),
         'assignment_template_id'    => env('MAILERSEND_ASSIGNMENT_TEMPLATE_ID', 'neqvygm95xdl0p7w'),
+        'invoice_template_id'       => env('MAILERSEND_INVOICE_TEMPLATE_ID', 'vywj2lpzxepg7oqz'),
     ],
 
 ];

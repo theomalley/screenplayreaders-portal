@@ -1,5 +1,6 @@
 <?php
 
+// v2.1 — 2026-06-02 | Add edit(), update(), downloadPdf() — edit/regenerate and download for PDF invoices
 // v2.0 — 2026-06-02 | Remove batch invoicing; store() accepts up to 8 line items and sends immediately
 // v1.4 — 2026-05-26 | Add customer invoice path (no client record; Stripe + optional HelpScout draft)
 // v1.0 — 2026-05-26 | Invoice creation, status management, and standalone invoicing tab
@@ -218,6 +219,98 @@ class InvoiceController extends Controller
 
         return redirect()->route('invoicing.index')
             ->with('success', "Invoice #{$invoiceNumber} deleted.");
+    }
+
+    /**
+     * Show the edit form for a PDF invoice.
+     */
+    public function edit(Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        abort_unless($invoice->invoice_type === 'pdf', 403);
+
+        $lineItems = $invoice->lineItems()->orderBy('created_at')->get();
+
+        return view('invoicing.edit', compact('invoice', 'lineItems'));
+    }
+
+    /**
+     * Update a PDF invoice's line items and regenerate the PDF.
+     * Does not re-send the email — admin can download the updated PDF.
+     */
+    public function update(Request $request, Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        abort_unless($invoice->invoice_type === 'pdf', 403);
+
+        $data = $request->validate([
+            'items'               => 'required|array|min:1|max:8',
+            'items.*.description' => 'required|string|max:1000',
+            'items.*.amount'      => 'required|numeric|min:0.01',
+            'due_date'            => 'nullable|date',
+            'notes'               => 'nullable|string|max:2000',
+        ]);
+
+        $lineItems = array_map(fn ($i) => [
+            'description' => $i['description'],
+            'amount'      => (float) $i['amount'],
+        ], $data['items']);
+
+        $total       = array_sum(array_column($lineItems, 'amount'));
+        $description = $lineItems[0]['description'];
+
+        // Replace all line items
+        $invoice->lineItems()->delete();
+        foreach ($lineItems as $item) {
+            \App\Models\InvoiceLineItem::create([
+                'invoice_id'  => $invoice->id,
+                'description' => $item['description'],
+                'amount'      => $item['amount'],
+            ]);
+        }
+
+        $invoice->update([
+            'description' => $description,
+            'amount'      => $total,
+            'due_date'    => $data['due_date'] ?? $invoice->due_date,
+            'notes'       => $data['notes'] ?? $invoice->notes,
+        ]);
+
+        // Regenerate the Google Doc / PDF
+        try {
+            $client = $invoice->client;
+            $this->invoiceService->regeneratePdf($invoice->fresh(), $client, $lineItems);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['invoice' => 'Line items saved but PDF regeneration failed: ' . $e->getMessage()]);
+        }
+
+        return redirect()->route('invoicing.index')
+            ->with('success', "Invoice #{$invoice->invoice_number} updated and PDF regenerated.");
+    }
+
+    /**
+     * Stream the PDF for a PDF invoice directly from Google Drive.
+     */
+    public function downloadPdf(Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        abort_unless($invoice->invoice_type === 'pdf' && $invoice->google_doc_id, 404);
+
+        try {
+            $docs     = app(\App\Services\GoogleDocsService::class);
+            $bytes    = $docs->exportDocToPdfBytes($invoice->google_doc_id);
+            $filename = 'Invoice #' . $invoice->invoice_number
+                . ($invoice->client ? ' — ' . $invoice->client->name : '')
+                . '.pdf';
+        } catch (\Throwable $e) {
+            return back()->withErrors(['invoice' => 'Could not retrieve PDF: ' . $e->getMessage()]);
+        }
+
+        return response($bytes, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Length'      => strlen($bytes),
+        ]);
     }
 
     /**
