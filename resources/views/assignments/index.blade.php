@@ -1666,7 +1666,7 @@
                             <div class="mb-3 rounded-lg border-2 border-blue-300 bg-blue-50"
                                  id="nreply-{{ $nrReply->id }}">
                                 <div class="flex items-center gap-3 px-4 py-3 flex-wrap">
-                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-400 text-blue-900 uppercase leading-none">Team Reply</span>
+                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-400 text-blue-900 uppercase leading-none">Editor Reply</span>
                                     <span class="text-sm font-medium text-gray-800">{{ $nrAssignment?->script_title ?? '—' }}</span>
                                     <span class="text-xs text-gray-400">{{ $nrReply->created_at->setTimezone($appTimezone)->format('M j, g:ia') }}</span>
                                     <button type="button"
@@ -1948,7 +1948,7 @@
                             <div class="mb-3 rounded-lg border-2 border-blue-300 bg-blue-50"
                                  id="nreply-mine-{{ $nrReply->id }}">
                                 <div class="flex items-center gap-3 px-4 py-3 flex-wrap">
-                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-400 text-blue-900 uppercase leading-none">Team Reply</span>
+                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-400 text-blue-900 uppercase leading-none">Editor Reply</span>
                                     <span class="text-sm font-medium text-gray-800">{{ $nrAssignment?->script_title ?? '—' }}</span>
                                     <span class="text-xs text-gray-400">{{ $nrReply->created_at->setTimezone($appTimezone)->format('M j, g:ia') }}</span>
                                     <button type="button"
