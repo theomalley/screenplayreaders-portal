@@ -19,7 +19,18 @@
                 </div>
             @endif
 
-            <div class="bg-white shadow-sm sm:rounded-lg" x-data="{ recipientType: '{{ old('recipient_type', 'client') }}' }">
+            @php
+                $clientMeta = $clients->mapWithKeys(fn($c) => [
+                    $c->id => ['invoice_type' => $c->invoice_type, 'batch' => (bool) $c->batch_invoicing]
+                ])->toJson();
+            @endphp
+            <div class="bg-white shadow-sm sm:rounded-lg"
+                 x-data="{
+                     recipientType: '{{ old('recipient_type', 'client') }}',
+                     clientId: '{{ old('client_id', request('client')) }}',
+                     clientMeta: {{ $clientMeta }},
+                     get selectedClient() { return this.clientId ? this.clientMeta[this.clientId] : null; }
+                 }">
 
                 {{-- Recipient type toggle --}}
                 <div class="px-4 pt-5 pb-3 border-b border-gray-100">
@@ -68,17 +79,32 @@
                                 <div>
                                     <x-input-label for="client_id" value="Client" />
                                     <select id="client_id" name="client_id"
+                                        x-model="clientId"
                                         x-bind:required="recipientType === 'client'"
                                         class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                                         <option value="">— Select client —</option>
                                         @foreach($clients as $client)
-                                            <option value="{{ $client->id }}"
-                                                {{ (old('client_id', request('client')) == $client->id) ? 'selected' : '' }}>
+                                            <option value="{{ $client->id }}">
                                                 {{ $client->name }} ({{ $client->code }})
-                                                — {{ $client->invoice_type === 'stripe' ? 'Stripe' : 'PDF' }}
                                             </option>
                                         @endforeach
                                     </select>
+
+                                    {{-- Dynamic invoice type hint --}}
+                                    <div class="mt-1.5 min-h-[1.25rem]">
+                                        <template x-if="selectedClient">
+                                            <p class="text-xs font-medium"
+                                               :class="selectedClient.invoice_type === 'stripe' ? 'text-indigo-600' : 'text-gray-500'">
+                                                <template x-if="selectedClient.invoice_type === 'stripe'">
+                                                    <span>&#x2192; Stripe invoice<span x-show="selectedClient.batch"> (batched)</span></span>
+                                                </template>
+                                                <template x-if="selectedClient.invoice_type !== 'stripe'">
+                                                    <span>&#x2192; PDF invoice</span>
+                                                </template>
+                                            </p>
+                                        </template>
+                                    </div>
+
                                     <x-input-error :messages="$errors->get('client_id')" class="mt-1" />
                                 </div>
                             @endif
