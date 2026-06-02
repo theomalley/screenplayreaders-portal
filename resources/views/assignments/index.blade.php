@@ -1662,7 +1662,7 @@
                         <button @click="tab = 'archived'"
                                 :class="tab === 'archived' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
                                 class="px-4 py-2 text-sm transition">
-                            Archive / Paid
+                            Archived
                         </button>
                         @if($needsAttentionCount > 0)
                             <button @click="tab = 'attention'"
