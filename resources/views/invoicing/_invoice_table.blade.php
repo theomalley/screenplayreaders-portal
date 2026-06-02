@@ -54,38 +54,49 @@ $statusColors = [
                         {{ ucfirst($invoice->status) }}
                     </span>
                 </td>
-                <td class="px-4 py-2 text-right text-xs space-x-2 whitespace-nowrap">
+                <td class="px-4 py-2 text-right text-xs whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-3">
                     @if($invoice->status === 'paid')
-                        <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="inline"
+                        <form method="POST" action="{{ route('invoices.destroy', $invoice) }}"
                               onsubmit="return confirm('Permanently delete invoice #{{ $invoice->invoice_number }} and remove it from the order log?')">
-                            @csrf
-                            @method('DELETE')
+                            @csrf @method('DELETE')
                             <button type="submit" class="text-red-500 hover:underline">Delete</button>
                         </form>
                     @elseif($invoice->status !== 'void')
                         @if($invoice->invoice_type === 'pdf' && $invoice->google_doc_id)
-                            <a href="{{ route('invoices.edit', $invoice) }}"
-                               class="text-indigo-600 hover:underline">Edit</a>
-                            <a href="{{ route('invoices.pdf', $invoice) }}?view=1" target="_blank"
-                               class="text-gray-500 hover:underline">View PDF</a>
-                            <a href="{{ route('invoices.pdf', $invoice) }}"
-                               class="text-gray-500 hover:underline">Download</a>
-                            <form method="POST" action="{{ route('invoices.resend', $invoice) }}" class="inline"
-                                  onsubmit="return confirm('Resend invoice #{{ $invoice->invoice_number }} to {{ $invoice->client?->email }}?')">
-                                @csrf
-                                <button type="submit" class="text-amber-600 hover:underline">Resend</button>
-                            </form>
+                            {{-- PDF actions in a small dropdown --}}
+                            <div class="relative" x-data="{ open: false }">
+                                <button type="button" @click="open = !open" @click.outside="open = false"
+                                        class="text-indigo-600 hover:underline flex items-center gap-0.5">
+                                    PDF <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div x-show="open" x-cloak
+                                     class="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-10 py-1 text-left">
+                                    <a href="{{ route('invoices.edit', $invoice) }}"
+                                       class="block px-3 py-1.5 text-indigo-600 hover:bg-gray-50">Edit</a>
+                                    <a href="{{ route('invoices.pdf', $invoice) }}?view=1" target="_blank"
+                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">View PDF</a>
+                                    <a href="{{ route('invoices.pdf', $invoice) }}"
+                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">Download</a>
+                                    <form method="POST" action="{{ route('invoices.resend', $invoice) }}"
+                                          onsubmit="return confirm('Resend to {{ $invoice->client?->email }}?')">
+                                        @csrf
+                                        <button type="submit" class="w-full text-left px-3 py-1.5 text-amber-600 hover:bg-gray-50">Resend</button>
+                                    </form>
+                                </div>
+                            </div>
                         @endif
-                        <form method="POST" action="{{ route('invoices.mark-paid', $invoice) }}" class="inline">
+                        <form method="POST" action="{{ route('invoices.mark-paid', $invoice) }}">
                             @csrf
                             <button type="submit" class="text-green-600 hover:underline">Mark Paid</button>
                         </form>
-                        <form method="POST" action="{{ route('invoices.void', $invoice) }}" class="inline"
+                        <form method="POST" action="{{ route('invoices.void', $invoice) }}"
                               onsubmit="return confirm('Void this invoice?')">
                             @csrf
                             <button type="submit" class="text-red-500 hover:underline">Void</button>
                         </form>
                     @endif
+                    </div>
                 </td>
             </tr>
         @endforeach
