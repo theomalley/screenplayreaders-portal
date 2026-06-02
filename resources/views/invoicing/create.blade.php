@@ -220,7 +220,7 @@
                         </div>
 
                         <div x-show="recipientType === 'client'" x-cloak>
-                            <x-input-label for="notes" value="Notes (internal, optional)" />
+                            <x-input-label for="notes" value="Notes (appears on invoice PDF)" />
                             <textarea id="notes" name="notes" rows="2"
                                 class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                             >{{ old('notes') }}</textarea>

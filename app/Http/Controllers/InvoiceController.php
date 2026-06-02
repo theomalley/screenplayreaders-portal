@@ -289,6 +289,27 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Resend a PDF invoice to the client via MailerSend.
+     */
+    public function resend(Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        abort_unless($invoice->invoice_type === 'pdf' && $invoice->google_doc_id, 403);
+
+        try {
+            $docs     = app(\App\Services\GoogleDocsService::class);
+            $bytes    = $docs->exportDocToPdfBytes($invoice->google_doc_id);
+            $filename = 'Invoice #' . $invoice->invoice_number
+                . ($invoice->client ? ' — ' . $invoice->client->name : '');
+            $this->invoiceService->sendPdfByMailerSend($invoice, $invoice->client, $bytes, $filename);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['invoice' => 'Resend failed: ' . $e->getMessage()]);
+        }
+
+        return back()->with('success', "Invoice #{$invoice->invoice_number} resent.");
+    }
+
+    /**
      * Stream the PDF for a PDF invoice directly from Google Drive.
      */
     public function downloadPdf(Invoice $invoice)
@@ -306,9 +327,12 @@ class InvoiceController extends Controller
             return back()->withErrors(['invoice' => 'Could not retrieve PDF: ' . $e->getMessage()]);
         }
 
+        $inline      = request()->boolean('view');
+        $disposition = $inline ? 'inline' : 'attachment';
+
         return response($bytes, 200, [
             'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
             'Content-Length'      => strlen($bytes),
         ]);
     }
