@@ -19,29 +19,28 @@
                 </div>
             @endif
 
-            @php
-                $clientMeta = $clients->mapWithKeys(fn($c) => [
-                    $c->id => ['invoice_type' => $c->invoice_type]
-                ])->toJson();
-            @endphp
+            <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('invoiceCreate', () => ({
+                    recipientType: @json(old('recipient_type', 'client')),
+                    clientId:      @json(old('client_id', request('client')) ?? ''),
+                    clientMeta:    @json($clients->mapWithKeys(fn($c) => [$c->id => ['invoice_type' => $c->invoice_type]])),
+                    items:         @json(old('items', [['description' => '', 'amount' => '']])),
+                    get selectedClient() { return this.clientId ? this.clientMeta[this.clientId] : null; },
+                    get total() {
+                        return this.items.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+                    },
+                    addItem() {
+                        if (this.items.length < 8) this.items.push({ description: '', amount: '' });
+                    },
+                    removeItem(idx) {
+                        if (this.items.length > 1) this.items.splice(idx, 1);
+                    }
+                }));
+            });
+            </script>
 
-            <div class="bg-white shadow-sm sm:rounded-lg"
-                 x-data="{
-                     recipientType: '{{ old('recipient_type', 'client') }}',
-                     clientId: '{{ old('client_id', request('client')) }}',
-                     clientMeta: {{ $clientMeta }},
-                     get selectedClient() { return this.clientId ? this.clientMeta[this.clientId] : null; },
-                     items: @json(old('items', [['description' => '', 'amount' => '']])),
-                     get total() {
-                         return this.items.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
-                     },
-                     addItem() {
-                         if (this.items.length < 8) this.items.push({ description: '', amount: '' });
-                     },
-                     removeItem(idx) {
-                         if (this.items.length > 1) this.items.splice(idx, 1);
-                     }
-                 }">
+            <div class="bg-white shadow-sm sm:rounded-lg" x-data="invoiceCreate">
 
                 {{-- Recipient type toggle --}}
                 <div class="px-4 pt-5 pb-3 border-b border-gray-100">
