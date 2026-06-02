@@ -4,8 +4,41 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
+            @if(session('success'))
+                <div class="px-4 py-3 rounded bg-green-50 border border-green-200 text-green-800 text-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            {{-- Post new announcement — admins and editors only --}}
+            @if(auth()->user()->canManageAssignments())
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <h3 class="text-sm font-semibold text-gray-700 mb-4">Post Announcement</h3>
+                <form method="POST" action="{{ route('announcements.store') }}" class="space-y-3">
+                    @csrf
+                    <div>
+                        <textarea id="announcement_body" name="body" rows="2"
+                                  class="block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                  placeholder="e.g. SR will be closed Monday for a holiday. No new assignments will be sent."
+                                  maxlength="2000" required></textarea>
+                        <x-input-error :messages="$errors->get('body')" class="mt-1" />
+                    </div>
+                    <div class="flex items-end gap-4">
+                        <div>
+                            <x-input-label for="announcement_expires_at" value="Expires at (optional)" />
+                            <input type="datetime-local" id="announcement_expires_at" name="expires_at"
+                                   class="mt-1 block w-52 text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                            <p class="mt-0.5 text-xs text-gray-400">Banner auto-hides after this time. Leave blank to never expire.</p>
+                        </div>
+                        <x-primary-button class="mb-0.5">Post</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
+            {{-- Announcement list --}}
             @if($announcements->isEmpty())
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-12 text-center text-gray-400 text-sm">
                     No announcements have been posted yet.
@@ -14,9 +47,9 @@
                 <div class="space-y-3">
                     @foreach($announcements as $ann)
                     @php
-                        $annExpired  = $ann->isExpired();
-                        $read        = $ann->reads->first();
-                        $wasRead     = $read?->read_at !== null;
+                        $annExpired   = $ann->isExpired();
+                        $read         = $ann->reads->first();
+                        $wasRead      = $read?->read_at !== null;
                         $wasDismissed = $read?->dismissed_at !== null;
                     @endphp
                     <div class="bg-white rounded-lg shadow-sm border {{ $annExpired ? 'border-gray-100' : 'border-amber-100' }} px-5 py-4
@@ -31,9 +64,8 @@
                                 @endif
                                 @if(auth()->user()->canManageAssignments())
                                     <form method="POST" action="{{ route('announcements.destroy', $ann) }}"
-                                          onsubmit="return confirm('Delete this announcement for all readers?')">
-                                        @csrf
-                                        @method('DELETE')
+                                          onsubmit="return confirm('Delete this announcement for all users?')">
+                                        @csrf @method('DELETE')
                                         <button type="submit" class="text-red-400 hover:text-red-600 text-xs underline whitespace-nowrap">Delete</button>
                                     </form>
                                 @endif
@@ -62,7 +94,7 @@
                     @endforeach
                 </div>
 
-                <div class="mt-6">
+                <div class="mt-2">
                     {{ $announcements->links() }}
                 </div>
             @endif
