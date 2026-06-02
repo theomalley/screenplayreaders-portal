@@ -157,6 +157,10 @@
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
                                 </a>
+                                <a href="{{ route('announcements.history') }}"
+                                    class="block px-4 py-2 text-sm {{ request()->routeIs('announcements.history') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Announcements
+                                </a>
                                 @if(\App\Support\Permission::check('team'))
                                 <a href="{{ route('team.index') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('team.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
@@ -189,6 +193,9 @@
                         @endif
                         <x-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                             {{ __('Reader Manual') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('announcements.history')" :active="request()->routeIs('announcements.history')">
+                            {{ __('Announcements') }}
                         </x-nav-link>
                     @endif
                 </div>

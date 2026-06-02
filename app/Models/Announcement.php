@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-02 | Add expires_at (expiration date) and scopeActive() for banner filtering
 // v1.0 — 2026-05-26 | Reader announcements with per-user read/dismiss state.
 
 namespace App\Models;
@@ -10,7 +11,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Announcement extends Model
 {
-    protected $fillable = ['body', 'created_by'];
+    protected $fillable = ['body', 'expires_at', 'created_by'];
+
+    protected function casts(): array
+    {
+        return [
+            'expires_at' => 'datetime',
+        ];
+    }
+
+    /** Only announcements that have not yet expired. */
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+        });
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
 
     public function createdBy(): BelongsTo
     {

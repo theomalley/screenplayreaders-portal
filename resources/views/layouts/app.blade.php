@@ -104,6 +104,7 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
             @php
                 $userId = auth()->id();
                 $_announcements = \App\Models\Announcement::query()
+                    ->active()
                     ->whereDoesntHave('reads', fn($q) => $q->where('user_id', $userId)->whereNotNull('dismissed_at'))
                     ->with(['reads' => fn($q) => $q->where('user_id', $userId), 'createdBy.editorProfile'])
                     ->orderBy('created_at', 'desc')
