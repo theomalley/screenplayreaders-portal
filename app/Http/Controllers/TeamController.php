@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-06-02 | Add toggleVisibility() — admin-only toggle for hidden_from_staff.
 // v1.2 — 2026-05-30 | Pass pendingApprovals count to view.
 // v1.1 — 2026-05-27 | Include admins section; reader photo upload; fix admin photo in assigned-reader column.
 // v1.0 — 2026-05-27 | Combined Team view — editors and readers on one unified list
@@ -9,6 +10,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\User;
 use App\Support\Permission;
+use Illuminate\Http\RedirectResponse;
 
 class TeamController extends Controller
 {
@@ -52,14 +54,30 @@ class TeamController extends Controller
         }
 
         return view('team.index', [
-            'admins'            => $admins,
-            'editors'           => $editors,
-            'readers'           => $readers,
-            'canEditEditors'    => Permission::check('editors.edit'),
-            'canDeleteEditors'  => Permission::check('editors.delete'),
-            'canEditReaders'    => Permission::check('readers.edit'),
-            'canDeleteReaders'  => Permission::check('readers.delete'),
-            'pendingApprovals'  => $pendingApprovals,
+            'authUser'         => auth()->user(),
+            'admins'           => $admins,
+            'editors'          => $editors,
+            'readers'          => $readers,
+            'canEditEditors'   => Permission::check('editors.edit'),
+            'canDeleteEditors' => Permission::check('editors.delete'),
+            'canEditReaders'   => Permission::check('readers.edit'),
+            'canDeleteReaders' => Permission::check('readers.delete'),
+            'pendingApprovals' => $pendingApprovals,
         ]);
+    }
+
+    /**
+     * Toggle hidden_from_staff for any user. Admin-only.
+     * A hidden user is excluded from the staff icon panel on the assignments page.
+     */
+    public function toggleVisibility(User $user): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $user->update(['hidden_from_staff' => ! $user->hidden_from_staff]);
+
+        $label = $user->hidden_from_staff ? 'hidden from' : 'visible to';
+
+        return back()->with('success', "{$user->name} is now {$label} other staff.");
     }
 }

@@ -59,11 +59,13 @@ class AssignmentController extends Controller
                 ->get();
 
             $editors = User::whereIn('role', ['admin', 'editor'])
+                ->where('hidden_from_staff', false)
                 ->with(['editorProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
                 ->orderBy('name')
                 ->get();
 
             $readers = User::where('role', 'reader')
+                ->where('hidden_from_staff', false)
                 ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
                 ->orderBy('name')
                 ->get()

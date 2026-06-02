@@ -128,6 +128,16 @@
                                             </div>
                                         @endif
                                     </td>
+                                    <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">
+                                        @if($authUser->isAdmin())
+                                        <form method="POST" action="{{ route('team.toggle-visibility', $admin) }}">
+                                            @csrf
+                                            <button type="submit" class="text-[10px] px-2 py-1 rounded border {{ $admin->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
+                                                {{ $admin->hidden_from_staff ? 'Hidden' : 'Visible' }}
+                                            </button>
+                                        </form>
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -214,6 +224,16 @@
                                                 </div>
                                             @endif
                                         </td>
+                                        <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">
+                                            @if($authUser->isAdmin())
+                                            <form method="POST" action="{{ route('team.toggle-visibility', $editor) }}">
+                                                @csrf
+                                                <button type="submit" class="text-[10px] px-2 py-1 rounded border {{ $editor->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
+                                                    {{ $editor->hidden_from_staff ? 'Hidden' : 'Visible' }}
+                                                </button>
+                                            </form>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -298,6 +318,16 @@
                                                 <div class="mt-0.5 text-[11px] text-gray-400 max-w-[160px] truncate" title="{{ $profile->availability_message }}">
                                                     {{ $profile->availability_message }}
                                                 </div>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">
+                                            @if($authUser->isAdmin())
+                                            <form method="POST" action="{{ route('team.toggle-visibility', $reader) }}">
+                                                @csrf
+                                                <button type="submit" class="text-[10px] px-2 py-1 rounded border {{ $reader->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
+                                                    {{ $reader->hidden_from_staff ? 'Hidden' : 'Visible' }}
+                                                </button>
+                                            </form>
                                             @endif
                                         </td>
                                     </tr>

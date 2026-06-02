@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-06-02 | Add hidden_from_staff field for admin-controlled staff panel visibility.
 // v1.3 — 2026-05-24 | Remove dead isWriter() and isProducer() role helpers.
 // v1.2 — 2026-05-24 | Add last_seen_at tracking and isOnline() helper.
 // v1.1 — 2026-05-24 | Add editorProfile() relationship.
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'password',
         'role',
         'last_seen_at',
+        'hidden_from_staff',
     ];
 
     protected $hidden = [
@@ -37,6 +39,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'last_seen_at'      => 'datetime',
+            'hidden_from_staff' => 'boolean',
             'password'          => 'hashed',
         ];
     }

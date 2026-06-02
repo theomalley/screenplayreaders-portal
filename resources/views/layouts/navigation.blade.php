@@ -185,6 +185,10 @@
                             <x-nav-link :href="route('reader-earnings.index')" :active="request()->routeIs('reader-earnings.*')">
                                 {{ __('Earnings') }}
                             </x-nav-link>
+                        @elseif(auth()->user()?->isAdminOrEditor())
+                            <x-nav-link :href="route('editor-earnings.index')" :active="request()->routeIs('editor-earnings.*')">
+                                {{ __('Earnings') }}
+                            </x-nav-link>
                         @endif
                         @if(\App\Support\Permission::check('ratebook'))
                             <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">

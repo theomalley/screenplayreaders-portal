@@ -25,6 +25,7 @@ use App\Http\Controllers\RatebookController;
 use App\Http\Controllers\ReaderPayController;
 use App\Http\Controllers\ReaderProfileController;
 use App\Http\Controllers\ReaderEarningsController;
+use App\Http\Controllers\EditorEarningsController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayoutScheduleController;
 use App\Http\Controllers\RevenueController;
@@ -85,6 +86,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('assignments/{assignment}/coverage-preview', [CoverageSubmissionController::class, 'coveragePreview'])->name('coverage.preview');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::post('/team/{user}/toggle-visibility', [TeamController::class, 'toggleVisibility'])->name('team.toggle-visibility');
 
     Route::get('/readers', [ReaderProfileController::class, 'index'])->name('readers.index');
     Route::get('/readers/create', [ReaderProfileController::class, 'create'])->name('readers.create');
@@ -199,6 +201,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/payroll/schedule', [PayoutScheduleController::class, 'update'])->name('payroll.schedule.update');
     Route::patch('/payroll/schedule/override', [PayoutScheduleController::class, 'setOverride'])->name('payroll.schedule.override');
     Route::get('/reader-earnings', [ReaderEarningsController::class, 'index'])->name('reader-earnings.index');
+    Route::get('/editor-earnings', [EditorEarningsController::class, 'index'])->name('editor-earnings.index');
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');
     Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
