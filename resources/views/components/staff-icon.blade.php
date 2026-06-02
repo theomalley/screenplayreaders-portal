@@ -29,69 +29,23 @@
     $cardUrl   = route('staff.card', $user);
 @endphp
 
-<div class="relative inline-block"
-     x-data="{
-         open: false,
-         loading: false,
-         html: '',
-         top: 0,
-         left: 0,
-         async toggle() {
-             if (this.open) { this.open = false; return; }
-             const btn = this.$el.querySelector('button');
-             const rect = btn.getBoundingClientRect();
-             const popupW = 288;
-             this.top  = rect.bottom + 6;
-             this.left = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
-             this.open = true;
-             if (!this.html) {
-                 this.loading = true;
-                 try {
-                     const r = await fetch('{{ $cardUrl }}', {
-                         headers: {
-                             'Accept': 'text/html',
-                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? ''
-                         }
-                     });
-                     this.html = await r.text();
-                 } catch(e) {
-                     this.html = '<p class=\'text-xs text-red-500\'>Could not load.</p>';
-                 } finally {
-                     this.loading = false;
-                 }
-             }
-         }
-     }">
-    <button type="button"
-            @click.stop="toggle()"
-            title="{{ $titleAttr }}"
-            class="relative inline-flex items-center justify-center {{ $sizeClass }} rounded-full {{ $bgClass }} font-mono font-semibold cursor-pointer focus:outline-none">
-        @if ($photoUrl)
-            <span class="absolute inset-0 rounded-full overflow-hidden">
-                <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
-            </span>
-        @else
-            {{ $initials }}
-        @endif
-        @if ($showCount && $active > 0)
-            <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-green-500 text-white">
-                {{ $active }}
-            </span>
-        @endif
-        @if ($online)
-            <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
-        @endif
-    </button>
-
-    <div x-show="open" x-cloak
-         x-transition:enter="transition ease-out duration-100"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         @click.outside="open = false"
-         @keydown.escape.window="open = false"
-         :style="'position:fixed;top:'+top+'px;left:'+left+'px'"
-         class="z-[9999] w-72 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-h-[3rem]">
-        <div x-show="loading" class="text-xs text-gray-400 text-center py-2">Loading…</div>
-        <div x-show="!loading" x-html="html"></div>
-    </div>
-</div>
+<button type="button"
+        onclick="srStaffCard.toggle(event, {{ $user->id }}, '{{ addslashes($cardUrl) }}', this)"
+        title="{{ $titleAttr }}"
+        class="relative inline-flex items-center justify-center {{ $sizeClass }} rounded-full {{ $bgClass }} font-mono font-semibold cursor-pointer focus:outline-none">
+    @if ($photoUrl)
+        <span class="absolute inset-0 rounded-full overflow-hidden">
+            <img src="{{ $photoUrl }}" alt="{{ $initials }}" class="w-full h-full object-cover" />
+        </span>
+    @else
+        {{ $initials }}
+    @endif
+    @if ($showCount && $active > 0)
+        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-green-500 text-white">
+            {{ $active }}
+        </span>
+    @endif
+    @if ($online)
+        <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-400 ring-2 ring-white z-10"></span>
+    @endif
+</button>

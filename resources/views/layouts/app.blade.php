@@ -222,41 +222,55 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
             </main>
         </div>
         <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('staffIconPopup', (userId) => ({
-                open: false,
-                loading: false,
-                html: '',
-                top: 0,
-                left: 0,
-                async toggle() {
-                    if (this.open) { this.open = false; return; }
-                    // Position using fixed coords so overflow:hidden ancestors can't clip it
-                    const btn = this.$el.querySelector('button');
-                    const rect = btn.getBoundingClientRect();
-                    const popupW = 288; // w-72
-                    this.top  = rect.bottom + 6 + window.scrollY;
-                    this.left = Math.max(8, Math.min(rect.left, window.innerWidth - popupW - 8));
-                    this.open = true;
-                    if (!this.html) {
-                        this.loading = true;
-                        try {
-                            const r = await fetch('/staff/' + userId + '/card', {
-                                headers: {
-                                    'Accept': 'text/html',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
-                                }
-                            });
-                            this.html = await r.text();
-                        } catch (e) {
-                            this.html = '<p class="text-xs text-red-500">Could not load.</p>';
-                        } finally {
-                            this.loading = false;
-                        }
-                    }
+        window.srStaffCard = {
+            _popup: null,
+            _userId: null,
+            _cache: {},
+            _outsideHandler: null,
+
+            toggle(event, userId, url, btn) {
+                event.stopPropagation();
+                if (this._userId === userId) { this.close(); return; }
+                this.close();
+                this._open(userId, url, btn);
+            },
+
+            _open(userId, url, btn) {
+                const popup = document.createElement('div');
+                popup.style.cssText = 'position:fixed;z-index:9999;width:288px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px -5px rgba(0,0,0,.15);padding:16px;min-height:3rem';
+                popup.innerHTML = '<p style="font-size:11px;color:#9ca3af;text-align:center;padding:4px 0">Loading…</p>';
+
+                const rect = btn.getBoundingClientRect();
+                popup.style.top  = (rect.bottom + 6) + 'px';
+                popup.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 296)) + 'px';
+
+                document.body.appendChild(popup);
+                this._popup  = popup;
+                this._userId = userId;
+
+                if (this._cache[userId]) {
+                    popup.innerHTML = this._cache[userId];
+                } else {
+                    fetch(url, { headers: { 'Accept': 'text/html', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '' } })
+                        .then(r => r.text())
+                        .then(html => { this._cache[userId] = html; if (this._popup === popup) popup.innerHTML = html; })
+                        .catch(() => { if (this._popup === popup) popup.innerHTML = '<p style="font-size:11px;color:#ef4444">Could not load.</p>'; });
                 }
-            }));
-        });
+
+                setTimeout(() => {
+                    this._outsideHandler = (e) => { if (!popup.contains(e.target)) this.close(); };
+                    document.addEventListener('click', this._outsideHandler);
+                    document.addEventListener('keydown', this._keyHandler = (e) => { if (e.key === 'Escape') this.close(); });
+                }, 0);
+            },
+
+            close() {
+                if (this._popup) { this._popup.remove(); this._popup = null; }
+                this._userId = null;
+                if (this._outsideHandler) { document.removeEventListener('click', this._outsideHandler); this._outsideHandler = null; }
+                if (this._keyHandler)     { document.removeEventListener('keydown', this._keyHandler);   this._keyHandler = null; }
+            }
+        };
         </script>
         @stack('scripts')
     </body>
