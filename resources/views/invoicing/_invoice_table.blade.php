@@ -57,6 +57,28 @@ $statusColors = [
                 <td class="px-4 py-2 text-right text-xs whitespace-nowrap">
                     <div class="flex items-center justify-end gap-3">
                     @if($invoice->status === 'paid')
+                        @if($invoice->invoice_type === 'pdf' && $invoice->google_doc_id)
+                            <div class="relative" x-data="{ open: false }">
+                                <button type="button" @click="open = !open" @click.outside="open = false"
+                                        class="text-indigo-600 hover:underline flex items-center gap-0.5">
+                                    PDF <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <div x-show="open" x-cloak
+                                     class="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-10 py-1 text-left">
+                                    <a href="{{ route('invoices.edit', $invoice) }}"
+                                       class="block px-3 py-1.5 text-indigo-600 hover:bg-gray-50">Edit</a>
+                                    <a href="{{ route('invoices.pdf', $invoice) }}?view=1" target="_blank"
+                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">View PDF</a>
+                                    <a href="{{ route('invoices.pdf', $invoice) }}"
+                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">Download</a>
+                                    <form method="POST" action="{{ route('invoices.resend', $invoice) }}"
+                                          onsubmit="return confirm('Resend to {{ $invoice->client?->email }}?')">
+                                        @csrf
+                                        <button type="submit" class="w-full text-left px-3 py-1.5 text-amber-600 hover:bg-gray-50">Resend</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endif
                         <form method="POST" action="{{ route('invoices.destroy', $invoice) }}"
                               onsubmit="return confirm('Permanently delete invoice #{{ $invoice->invoice_number }} and remove it from the order log?')">
                             @csrf @method('DELETE')
