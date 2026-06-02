@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-02 | draftEmail — creates a HelpScout draft to a reader/editor and redirects to it
 // v1.0 — 2026-05-31 | Staff icon popup card — returns rendered HTML for any admin/editor context
 
 namespace App\Http\Controllers;
@@ -7,7 +8,9 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\HelpScoutService;
 use App\Support\PayPeriod;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 
 class StaffCardController extends Controller
@@ -71,5 +74,24 @@ class StaffCardController extends Controller
         $html = view('partials.staff-card', compact('user', 'profile', 'weekStats', 'appTimezone', 'editUrl'))->render();
 
         return response($html);
+    }
+
+    /**
+     * Create a HelpScout draft addressed to a reader or editor and redirect to it.
+     * Opens a new outgoing conversation pre-addressed to the user's email.
+     */
+    public function draftEmail(User $user, HelpScoutService $helpScout): RedirectResponse
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+        abort_if($user->isAdmin(), 403);
+
+        $user->loadMissing(['readerProfile', 'editorProfile']);
+        $name = $user->isReader()
+            ? ($user->readerProfile?->displayName() ?? $user->name)
+            : ($user->editorProfile?->displayName() ?? $user->name);
+
+        $url = $helpScout->createDirectReaderDraft($user->email, $name);
+
+        return redirect($url);
     }
 }

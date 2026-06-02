@@ -33,9 +33,20 @@
             @if ($online)
                 <span class="text-xs text-green-600 font-medium">● Online</span>
             @endif
-            @if ($editUrl)
-                <a href="{{ $editUrl }}" class="text-xs text-indigo-500 hover:text-indigo-700 underline ml-auto">Edit Profile</a>
-            @endif
+            <div class="ml-auto flex items-center gap-3">
+                @if (! $user->isAdmin() && $user->email)
+                    <a href="{{ route('staff.draft-email', $user) }}" target="_blank"
+                       class="text-xs text-gray-400 hover:text-indigo-600 transition"
+                       title="Create HelpScout draft to {{ $user->email }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>Email
+                    </a>
+                @endif
+                @if ($editUrl)
+                    <a href="{{ $editUrl }}" class="text-xs text-indigo-500 hover:text-indigo-700 underline">Edit Profile</a>
+                @endif
+            </div>
         </div>
 
         @if ($profile?->title)

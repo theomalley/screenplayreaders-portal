@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-06-02 | createDirectReaderDraft — new outgoing draft addressed to a single reader
 // v1.5 — 2026-05-31 | createReaderBroadcastDraft — new outgoing draft with BCC list for reader broadcasts
 // v1.4 — 2026-05-31 | Fetch conversation once for ID + status; attempt draft directly on closed conversations
 // v1.3 — 2026-05-23 | Upload attachments separately to thread after draft creation
@@ -91,6 +92,43 @@ class HelpScoutService
                 ]);
             }
         }
+    }
+
+    /**
+     * Create a new outgoing conversation as a draft addressed to a single reader/editor.
+     * Returns the HelpScout web URL for the created conversation.
+     */
+    public function createDirectReaderDraft(string $toEmail, string $toName): string
+    {
+        $token     = $this->getToken();
+        $mailboxId = $this->getFirstMailboxId($token);
+
+        $convResponse = Http::withToken($token)
+            ->asJson()
+            ->post(self::API_BASE . '/conversations', [
+                'subject'   => 'Message to ' . $toName,
+                'customer'  => ['email' => $toEmail],
+                'mailboxId' => $mailboxId,
+                'type'      => 'email',
+                'status'    => 'active',
+                'threads'   => [[
+                    'type'     => 'reply',
+                    'customer' => ['email' => $toEmail],
+                    'draft'    => true,
+                    'text'     => '(Write your message here)',
+                ]],
+            ]);
+
+        if (! $convResponse->successful()) {
+            throw new \RuntimeException('HelpScout conversation create failed (' . $convResponse->status() . '): ' . $convResponse->body());
+        }
+
+        $conversationId = (string) $convResponse->header('Resource-Id');
+        if (! $conversationId) {
+            throw new \RuntimeException('HelpScout did not return a conversation ID.');
+        }
+
+        return 'https://secure.helpscout.net/conversation/' . $conversationId . '/';
     }
 
     /**
