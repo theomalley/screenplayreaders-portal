@@ -25,6 +25,7 @@ use App\Http\Controllers\ReaderPayController;
 use App\Http\Controllers\ReaderProfileController;
 use App\Http\Controllers\ReaderEarningsController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayoutScheduleController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatisticsController;
@@ -185,6 +186,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::patch('/payroll/schedule', [PayoutScheduleController::class, 'update'])->name('payroll.schedule.update');
+    Route::patch('/payroll/schedule/override', [PayoutScheduleController::class, 'setOverride'])->name('payroll.schedule.override');
     Route::get('/reader-earnings', [ReaderEarningsController::class, 'index'])->name('reader-earnings.index');
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');

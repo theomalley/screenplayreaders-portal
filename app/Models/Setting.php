@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-06-02 | Add PAYOUT_SCHEDULE_DEFAULTS and getPayoutSchedule() for admin-configurable payout schedule
 // v1.3 — 2026-05-30 | Add EMAIL_NOTIFICATION_DEFAULTS and getEmailNotificationTexts()
 // v1.2 — 2026-05-28 | Add getAppTimezone() for admin-configurable display timezone
 // v1.1 — 2026-05-27 | Add AGE_THRESHOLD_DEFAULTS and getAgeThresholds() for per-type age colours
@@ -156,6 +157,34 @@ class Setting extends Model
         }
 
         return $result;
+    }
+
+    /** Payout schedule defaults. day: 0=Sun … 6=Sat. time: HH:MM (America/Los_Angeles). */
+    public const PAYOUT_SCHEDULE_DEFAULTS = [
+        'payout_frequency' => 'weekly',
+        'payout_day'       => '6',
+        'payout_time'      => '08:00',
+    ];
+
+    /**
+     * Returns the full payout schedule config, merging stored values with defaults.
+     * Also returns override date and biweekly anchor (both nullable).
+     */
+    public static function getPayoutSchedule(): array
+    {
+        $keys   = array_keys(self::PAYOUT_SCHEDULE_DEFAULTS);
+        $keys[] = 'payout_next_override';
+        $keys[] = 'payout_biweekly_anchor';
+
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        return [
+            'frequency' => $stored['payout_frequency'] ?? self::PAYOUT_SCHEDULE_DEFAULTS['payout_frequency'],
+            'day'       => (int) ($stored['payout_day'] ?? self::PAYOUT_SCHEDULE_DEFAULTS['payout_day']),
+            'time'      => $stored['payout_time']      ?? self::PAYOUT_SCHEDULE_DEFAULTS['payout_time'],
+            'override'  => ($stored['payout_next_override']  ?? '') ?: null,
+            'anchor'    => ($stored['payout_biweekly_anchor'] ?? '') ?: null,
+        ];
     }
 
     public static function getSavedReplies(): array

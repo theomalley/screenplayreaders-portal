@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">My Payments</h2>
             <div class="text-sm text-gray-500">
                 Current period: <span class="font-medium text-gray-700">{{ \App\Support\PayPeriod::label($currentStart) }}</span>
-                &nbsp;· next payout Sat {{ $currentEnd->addHour()->format('M j') }}
+                &nbsp;· next payout {{ \App\Support\PayPeriod::nextPayoutDate()->format('D M j') }}
             </div>
         </div>
     </x-slot>

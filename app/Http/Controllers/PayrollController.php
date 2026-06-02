@@ -1,10 +1,12 @@
 <?php
 
+// v1.1 — 2026-06-02 | Pass payout schedule config to view for admin schedule panel
 // v1.0 — 2026-05-31 | Admin payroll dashboard — weekly payout history split by 1099 vs non-1099
 
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\Setting;
 use App\Support\PayPeriod;
 use Carbon\Carbon;
 
@@ -84,7 +86,10 @@ class PayrollController extends Controller
         ];
         $totals['total'] = $totals['pay_1099'] + $totals['pay_non_1099'];
 
-        return view('payroll.index', compact('periods', 'totals', 'period'));
+        $schedule   = Setting::getPayoutSchedule();
+        $nextPayout = PayPeriod::nextPayoutDate();
+
+        return view('payroll.index', compact('periods', 'totals', 'period', 'schedule', 'nextPayout'));
     }
 
     private function dateRange(string $period): array
