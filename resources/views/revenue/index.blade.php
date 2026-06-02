@@ -21,9 +21,9 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                 @php
                     $cards = [
+                        ['Net Revenue',     '$' . number_format($totals['net'],      2), 'bg-green-50  border-green-200  text-green-700'],
                         ['Gross Revenue',   '$' . number_format($totals['gross'],    2), 'bg-indigo-50 border-indigo-200 text-indigo-700'],
                         ['Discounts',       '$' . number_format($totals['discount'], 2), 'bg-gray-50  border-gray-200  text-gray-500'],
-                        ['Net Revenue',     '$' . number_format($totals['net'],      2), 'bg-green-50  border-green-200  text-green-700'],
                         ['Reader COG',      '$' . number_format($totals['cog_reader'], 2), 'bg-red-50  border-red-200  text-red-600'],
                         ['Processing COG',  '$' . number_format($totals['cog_proc'], 2), 'bg-orange-50 border-orange-200 text-orange-600'],
                         ['Commission COG',  '$' . number_format($totals['cog_comm'], 2), 'bg-yellow-50 border-yellow-200 text-yellow-700'],
