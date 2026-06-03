@@ -7,7 +7,8 @@
     $online    = $user->isOnline();
     $active    = $user->assignments->count();
     $max       = $profile?->max_concurrent_assignments ?? 0;
-    $bgClass   = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
+    $bgClass    = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
+    $customMsg  = $profile?->custom_message ? trim($profile->custom_message) : null;
 @endphp
 
 <div class="flex items-start gap-3">
@@ -51,6 +52,10 @@
 
         @if ($profile?->title)
             <div class="text-xs text-gray-400 mt-0.5">{{ $profile->title }}</div>
+        @endif
+
+        @if ($customMsg)
+            <p class="mt-1.5 text-xs text-gray-600 leading-relaxed italic" style="white-space:pre-line">{{ $customMsg }}</p>
         @endif
 
         <div class="text-xs text-gray-500 mt-1">
