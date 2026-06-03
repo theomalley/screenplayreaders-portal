@@ -18,28 +18,31 @@ class TeamController extends Controller
     {
         abort_unless(Permission::check('team'), 403);
 
-        $admins = User::where('role', 'admin')
-            ->with('editorProfile')
+        $isAdmin     = auth()->user()->isAdmin();
+        $visibleOnly = fn($q) => $isAdmin ? $q : $q->where('hidden_from_staff', false);
+
+        $admins = $visibleOnly(User::where('role', 'admin')
+            ->with('editorProfile'))
             ->orderBy('name')
             ->get();
 
-        $editors = User::where('role', 'editor')
+        $editors = $visibleOnly(User::where('role', 'editor')
             ->with('editorProfile')
             ->withCount([
                 'assignments as active_count'    => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED),
                 'assignments as completed_count' => fn($q) => $q->where('status', Assignment::STATUS_COMPLETED),
                 'assignments as total_count',
-            ])
+            ]))
             ->orderBy('name')
             ->get();
 
-        $readers = User::where('role', 'reader')
+        $readers = $visibleOnly(User::where('role', 'reader')
             ->with('readerProfile')
             ->withCount([
                 'assignments as active_count'    => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED),
                 'assignments as completed_count' => fn($q) => $q->where('status', Assignment::STATUS_COMPLETED),
                 'assignments as total_count',
-            ])
+            ]))
             ->orderBy('name')
             ->get();
 
