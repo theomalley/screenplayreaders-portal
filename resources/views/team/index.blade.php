@@ -135,6 +135,7 @@
                                             </button>
                                         </form>
                                         @endif
+                                        <div class="mt-1 text-[10px] text-gray-400">{{ $admin->lastOnlineText() }}</div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -221,6 +222,7 @@
                                                     {{ $profile->availability_message }}
                                                 </div>
                                             @endif
+                                            <div class="mt-1 text-[10px] text-gray-400">{{ $editor->lastOnlineText() }}</div>
                                             @if($authUser->isAdmin())
                                             <form method="POST" action="{{ route('team.toggle-visibility', $editor) }}" onclick="event.stopPropagation()" class="mt-1.5">
                                                 @csrf
@@ -315,6 +317,7 @@
                                                     {{ $profile->availability_message }}
                                                 </div>
                                             @endif
+                                            <div class="mt-1 text-[10px] text-gray-400">{{ $reader->lastOnlineText() }}</div>
                                             @if($authUser->isAdmin())
                                             <form method="POST" action="{{ route('team.toggle-visibility', $reader) }}" onclick="event.stopPropagation()" class="mt-1.5">
                                                 @csrf

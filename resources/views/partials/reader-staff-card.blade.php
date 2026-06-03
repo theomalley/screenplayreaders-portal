@@ -6,7 +6,8 @@
     $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
     $online   = $user->isOnline();
     $bgClass  = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
-    $bio      = $profile?->bio ? strip_tags($profile->bio) : null;
+    $customMsg = $profile?->custom_message ? trim($profile->custom_message) : null;
+    $bio       = $profile?->bio ? strip_tags($profile->bio) : null;
 @endphp
 
 <div class="flex items-start gap-3">
@@ -38,7 +39,9 @@
             <div class="text-xs text-gray-400 mt-0.5">{{ $profile->title }}</div>
         @endif
 
-        @if ($bio)
+        @if ($customMsg)
+            <p class="mt-2 text-xs text-gray-600 leading-relaxed" style="white-space:pre-line">{{ $customMsg }}</p>
+        @elseif ($bio)
             <p class="mt-2 text-xs text-gray-600 leading-relaxed" style="white-space:pre-line">{{ $bio }}</p>
         @else
             <p class="mt-2 text-xs text-gray-400 italic">No bio yet.</p>

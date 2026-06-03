@@ -123,6 +123,32 @@
             </div>
             @endif
 
+            @if(auth()->user()->isAdminOrEditor() || auth()->user()->isReader())
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Staff Card Message</h2>
+                    <p class="text-sm text-gray-600 mb-4">A short message shown when teammates click your staff icon. If set, this replaces your bio in the popup. Leave blank to show your bio instead.</p>
+
+                    <form method="POST" action="{{ route('profile.custom-message') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <textarea name="custom_message" rows="2"
+                                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none"
+                                  maxlength="200"
+                                  placeholder="e.g. On holiday until Jan 15. Feel free to reach out!">{{ old('custom_message', $meProfile?->custom_message) }}</textarea>
+                        <p class="text-xs text-gray-400 -mt-2">Plain text only · Max 200 characters</p>
+                        <x-input-error :messages="$errors->get('custom_message')" class="mt-1" />
+                        <div>
+                            <x-primary-button>Save Message</x-primary-button>
+                            @if (session('status') === 'custom-message-updated')
+                                <span class="ml-3 text-sm text-green-600">Saved.</span>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     @include('profile.partials.update-profile-information-form')

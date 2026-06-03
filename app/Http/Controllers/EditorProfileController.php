@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-06-03 | Add custom_message to update validation/save
 // v1.8 — 2026-05-28 | Separate updateRates() to prevent profile/rates forms from nulling each other's fields
 // v1.7 — 2026-05-28 | Rate fields on create; remove global rate fallback concept
 // v1.5 — 2026-05-28 | Add timezone field to editor/admin profile update
@@ -118,6 +119,7 @@ class EditorProfileController extends Controller
             'availability_message' => ['nullable', 'string', 'max:500'],
             'upload_warning'       => ['nullable', 'string', 'max:1000'],
             'bio'                  => ['nullable', 'string', 'max:5000'],
+            'custom_message'       => ['nullable', 'string', 'max:200'],
             'timezone'             => ['nullable', 'timezone'],
         ]);
 

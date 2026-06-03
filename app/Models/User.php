@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-06-03 | Add lastOnlineText() helper for human-readable last-seen time.
 // v1.4 — 2026-06-02 | Add hidden_from_staff field for admin-controlled staff panel visibility.
 // v1.3 — 2026-05-24 | Remove dead isWriter() and isProducer() role helpers.
 // v1.2 — 2026-05-24 | Add last_seen_at tracking and isOnline() helper.
@@ -57,6 +58,24 @@ class User extends Authenticatable
     }
 
     public function isOnline(): bool         { return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(5)); }
+
+    public function lastOnlineText(): string
+    {
+        if (! $this->last_seen_at) {
+            return 'Never seen';
+        }
+        if ($this->isOnline()) {
+            return 'Online now';
+        }
+        $secs = (int) $this->last_seen_at->diffInSeconds(now());
+        if ($secs < 60)  return $secs . 's ago';
+        $mins = (int) $this->last_seen_at->diffInMinutes(now());
+        if ($mins < 60)  return $mins . 'm ago';
+        $hrs  = (int) $this->last_seen_at->diffInHours(now());
+        if ($hrs < 24)   return $hrs . 'h ago';
+        $days = (int) $this->last_seen_at->diffInDays(now());
+        return $days . 'd ago';
+    }
 
     public function isAdmin(): bool          { return $this->role === 'admin'; }
     public function isEditor(): bool         { return $this->role === 'editor'; }

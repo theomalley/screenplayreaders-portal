@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-06-03 | Add custom_message to fillable
 // v1.6 — 2026-05-30 | Add bio_pending and photo_pending to fillable
 // v1.5 — 2026-05-30 | Add bio to fillable
 // v1.4 — 2026-05-30 | Add title to fillable
@@ -23,6 +24,7 @@ class EditorProfile extends Model
         'last_name',
         'title',
         'bio',
+        'custom_message',
         'bio_pending',
         'bio_rejection_note',
         'photo',

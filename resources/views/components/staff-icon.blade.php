@@ -25,7 +25,8 @@
     $titleAttr = ($profile?->displayName() ?? $user->name)
                . ($profile?->title ? ' · ' . $profile->title : '')
                . ($online ? ' · Online' : '')
-               . ($active !== null ? ' — ' . $active . ($max ? '/' . $max : '') . ' active' : '');
+               . ($active !== null ? ' — ' . $active . ($max ? '/' . $max : '') . ' active' : '')
+               . ' · ' . $user->lastOnlineText();
     $cardUrl   = route('staff.card', $user);
 @endphp
 

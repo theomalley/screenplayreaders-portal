@@ -54,6 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto'])->name('profile.photo');
     Route::patch('/profile/bio', [ProfileController::class, 'updateBio'])->name('profile.bio');
+    Route::patch('/profile/custom-message', [ProfileController::class, 'updateCustomMessage'])->name('profile.custom-message');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/availability', [AvailabilityController::class, 'edit'])->name('availability.edit');

@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-06-03 | Add custom_message to update validation/save
 // v1.6 — 2026-05-27 | Enforce Password::defaults() (min 12, mixed case, numbers, symbols) on create/update
 // v1.5 — 2026-05-27 | Gate edit/delete on readers.edit / readers.delete permissions; redirect to team.index
 // v1.4 — 2026-05-25 | Add requests_bypass_capacity to store/update.
@@ -114,6 +115,7 @@ class ReaderProfileController extends Controller
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
             'bio'                        => ['nullable', 'string', 'max:5000'],
+            'custom_message'             => ['nullable', 'string', 'max:200'],
         ]);
 
         if ($request->hasFile('photo')) {

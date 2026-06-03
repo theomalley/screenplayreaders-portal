@@ -1559,6 +1559,7 @@
                         <div class="flex flex-col items-center gap-0.5">
                             <button type="button"
                                     onclick="srStaffCard.toggle(event, {{ $editor->id }}, '{{ addslashes($eCardUrl) }}', this)"
+                                    title="{{ $editor->lastOnlineText() }}"
                                     class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700 cursor-pointer focus:outline-none hover:bg-indigo-200 transition-colors">
                                 @if ($ePhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
@@ -1597,6 +1598,7 @@
                         <div class="flex flex-col items-center gap-0.5">
                             <button type="button"
                                     onclick="srStaffCard.toggle(event, {{ $reader->id }}, '{{ addslashes($rCardUrl) }}', this)"
+                                    title="{{ $reader->lastOnlineText() }}"
                                     class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold cursor-pointer focus:outline-none transition-colors
                                         {{ $rFull ? 'bg-amber-200 text-amber-800 hover:bg-amber-300' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}
                                         {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}">

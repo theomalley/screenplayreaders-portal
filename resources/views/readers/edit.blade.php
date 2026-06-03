@@ -226,6 +226,17 @@
                                 ])
                             @endif
                         </div>
+
+                        <div>
+                            <x-input-label for="custom_message" value="Staff Card Message" />
+                            <textarea id="custom_message" name="custom_message"
+                                      rows="2"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      maxlength="200"
+                                      placeholder="Optional — short message shown when readers click this reader's icon. Overrides bio if set.">{{ old('custom_message', $profile?->custom_message) }}</textarea>
+                            <p class="mt-1 text-xs text-gray-400">Up to 200 characters. Plain text only. If set, shown instead of bio when readers click this reader's staff icon.</p>
+                            <x-input-error :messages="$errors->get('custom_message')" class="mt-1" />
+                        </div>
                     </div>
 
                     {{-- Account --}}

@@ -73,6 +73,23 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'notifications-updated');
     }
 
+    public function updateCustomMessage(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isAdminOrEditor() || $user->isReader(), 403);
+
+        $data = $request->validate(['custom_message' => 'nullable|string|max:200']);
+        $msg  = isset($data['custom_message']) ? trim($data['custom_message']) ?: null : null;
+
+        if ($user->isReader()) {
+            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['custom_message' => $msg]);
+        } else {
+            $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['custom_message' => $msg]);
+        }
+
+        return back()->with('status', 'custom-message-updated');
+    }
+
     public function updateBio(Request $request): RedirectResponse
     {
         $user = $request->user();
