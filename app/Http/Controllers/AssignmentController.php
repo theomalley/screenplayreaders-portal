@@ -1,5 +1,6 @@
 <?php
 
+// v2.6 — 2026-06-03 | Reader view: show all non-hidden readers in staff icon panel (not just online); suppress tooltip on peers.
 // v2.5 — 2026-05-30 | Fire reader notifications on status→unassigned in update() and updateStatus().
 // v2.4 — 2026-05-30 | Email readers on new unassigned assignment via ReaderNotificationService.
 // v2.3 — 2026-05-28 | Reader view: pass onlineEditors + onlineReaders for staff icon panel.
@@ -191,12 +192,11 @@ class AssignmentController extends Controller
             ->filter(fn($u) => $u->isOnline())
             ->values();
 
-        $onlineReaders = User::where('role', 'reader')
+        $staffReaders = User::where('role', 'reader')
+            ->where('hidden_from_staff', false)
             ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
             ->orderBy('name')
-            ->get()
-            ->filter(fn($u) => $u->isOnline() || $u->id === $user->id)
-            ->values();
+            ->get();
 
         $myFollowups = FollowupQuestion::with(['assignment'])
             ->whereHas('assignment', fn($q) => $q->where('assigned_reader_id', $user->id))
@@ -234,7 +234,7 @@ class AssignmentController extends Controller
             'ageThresholds'          => Setting::getAgeThresholds(),
             'appTimezone'            => Setting::getAppTimezone(),
             'onlineEditors'          => $onlineEditors,
-            'onlineReaders'          => $onlineReaders,
+            'staffReaders'           => $staffReaders,
             'myFollowups'            => $myFollowups,
             'myNoteReplies'          => $myNoteReplies,
             'myNotesByAssignment'    => $myNotesByAssignment,

@@ -1543,8 +1543,8 @@
                     </div>
                 @endif
 
-                {{-- Staff panel — all editors always visible; all readers always visible; green dot for online --}}
-                @if ($onlineEditors->isNotEmpty() || $onlineReaders->isNotEmpty())
+                {{-- Staff panel — online editors; all non-hidden readers (offline ok); green dot for online; no tooltip on peers --}}
+                @if ($onlineEditors->isNotEmpty() || $staffReaders->isNotEmpty())
                 <div class="mb-5 flex items-center gap-2 flex-wrap">
 
                     {{-- Editors (always shown) --}}
@@ -1575,12 +1575,12 @@
                     @endforeach
 
                     {{-- Divider between editors and readers --}}
-                    @if ($onlineEditors->isNotEmpty() && $onlineReaders->isNotEmpty())
+                    @if ($onlineEditors->isNotEmpty() && $staffReaders->isNotEmpty())
                         <div class="w-px h-8 bg-gray-200 mx-1 self-center"></div>
                     @endif
 
-                    {{-- Readers (always shown) --}}
-                    @foreach ($onlineReaders as $reader)
+                    {{-- Readers (all non-hidden; tooltip only for self) --}}
+                    @foreach ($staffReaders as $reader)
                         @php
                             $rProfile     = $reader->readerProfile;
                             $rInitials    = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
@@ -1590,12 +1590,19 @@
                             $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                             $rUnavailable = $rProfile?->availability === 'unavailable';
                             $rOnline      = $reader->isOnline();
+                            $rIsSelf      = $reader->id === auth()->id();
+                            $rTitle       = $rIsSelf
+                                ? ($rProfile?->displayName() ?? $reader->name)
+                                  . ($rProfile?->title ? ' · ' . $rProfile->title : '')
+                                  . ($rOnline ? ' · Online' : '')
+                                  . ' — ' . $rActive . '/' . ($rMax ?: '?') . ' active'
+                                : null;
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
                             <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold
                                 {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700' }}
                                 {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
-                                  title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rProfile?->title ? ' · ' . $rProfile->title : '' }}{{ $rOnline ? ' · Online' : '' }}{{ $reader->id === auth()->id() ? ' — ' . $rActive . '/' . ($rMax ?: '?') . ' active' : '' }}">
+                                  @if ($rTitle) title="{{ $rTitle }}"@endif>
                                 @if ($rPhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="w-full h-full object-cover" />
