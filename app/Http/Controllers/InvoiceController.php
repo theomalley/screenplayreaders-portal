@@ -1,5 +1,6 @@
 <?php
 
+// v2.2 — 2026-06-03 | Add markOutstanding() — revert a paid PDF invoice back to sent/outstanding
 // v2.1 — 2026-06-02 | Add edit(), update(), downloadPdf() — edit/regenerate and download for PDF invoices
 // v2.0 — 2026-06-02 | Remove batch invoicing; store() accepts up to 8 line items and sends immediately
 // v1.4 — 2026-05-26 | Add customer invoice path (no client record; Stripe + optional HelpScout draft)
@@ -335,6 +336,33 @@ class InvoiceController extends Controller
             'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
             'Content-Length'      => strlen($bytes),
         ]);
+    }
+
+    /**
+     * Revert a paid PDF invoice back to outstanding (sent).
+     * Removes the order revenue entry that was created when it was marked paid.
+     */
+    public function markOutstanding(Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        abort_unless($invoice->invoice_type === 'pdf', 403);
+
+        if (! $invoice->isPaid()) {
+            return back()->withErrors(['invoice' => 'Invoice is not currently marked as paid.']);
+        }
+
+        if ($invoice->client_id) {
+            $code = strtoupper($invoice->client->code ?? 'INV');
+            OrderRevenue::where('order_number', "INV-{$code}-{$invoice->invoice_number}")->delete();
+        }
+
+        $invoice->update([
+            'status'  => 'sent',
+            'paid_at' => null,
+        ]);
+
+        return redirect()->route('invoices.edit', $invoice)
+            ->with('success', "Invoice #{$invoice->invoice_number} marked as outstanding.");
     }
 
     /**

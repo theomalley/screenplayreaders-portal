@@ -16,9 +16,35 @@
     <div class="py-8">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+            @if(session('success'))
+                <div class="px-4 py-3 rounded bg-green-50 border border-green-200 text-green-800 text-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             @if($errors->has('invoice'))
                 <div class="px-4 py-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">
                     {{ $errors->first('invoice') }}
+                </div>
+            @endif
+
+            @if($invoice->isPaid())
+                <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-center justify-between gap-4">
+                    <div class="text-sm text-amber-800">
+                        <span class="font-semibold">Paid</span>
+                        @if($invoice->paid_at)
+                            on {{ $invoice->paid_at->format('M j, Y') }}
+                        @endif
+                        — mark as outstanding to revert this status.
+                    </div>
+                    <form method="POST" action="{{ route('invoices.mark-outstanding', $invoice) }}"
+                          onsubmit="return confirm('Mark this invoice as outstanding? This will remove it from the order log.')">
+                        @csrf
+                        <button type="submit"
+                            class="px-3 py-1.5 text-xs font-semibold text-amber-800 bg-amber-100 border border-amber-300 rounded-md hover:bg-amber-200 transition whitespace-nowrap">
+                            Mark as Outstanding
+                        </button>
+                    </form>
                 </div>
             @endif
 
