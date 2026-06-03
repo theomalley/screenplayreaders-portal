@@ -1543,22 +1543,23 @@
                     </div>
                 @endif
 
-                {{-- Staff panel — online editors; all non-hidden readers (offline ok); green dot for online; no tooltip on peers --}}
-                @if ($onlineEditors->isNotEmpty() || $staffReaders->isNotEmpty())
+                {{-- Staff panel — all non-hidden editors/admins and readers; green dot for online; click for bio card --}}
+                @if ($staffEditors->isNotEmpty() || $staffReaders->isNotEmpty())
                 <div class="mb-5 flex items-center gap-2 flex-wrap">
 
-                    {{-- Editors (always shown) --}}
-                    @foreach ($onlineEditors as $editor)
+                    {{-- Editors / Admins --}}
+                    @foreach ($staffEditors as $editor)
                         @php
                             $eProfile  = $editor->editorProfile;
                             $eInitials = $eProfile?->initials ?? strtoupper(substr($editor->name, 0, 2));
-                            $eActive   = $editor->assignments->count();
                             $ePhotoUrl = $eProfile?->photo ? asset('storage/' . $eProfile->photo) : null;
                             $eOnline   = $editor->isOnline();
+                            $eCardUrl  = route('staff.reader-card', $editor);
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
-                            <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700"
-                                  title="{{ $eProfile?->displayName() ?? $editor->name }}{{ $eProfile?->title ? ' · ' . $eProfile->title : '' }} (Editor){{ $eOnline ? ' · Online' : '' }}">
+                            <button type="button"
+                                    onclick="srStaffCard.toggle(event, {{ $editor->id }}, '{{ addslashes($eCardUrl) }}', this)"
+                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700 cursor-pointer focus:outline-none hover:bg-indigo-200 transition-colors">
                                 @if ($ePhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="w-full h-full object-cover" />
@@ -1569,17 +1570,17 @@
                                 @if ($eOnline)
                                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
                                 @endif
-                            </span>
+                            </button>
                             <span class="text-[9px] text-indigo-400 font-mono leading-none">{{ $eInitials }}</span>
                         </div>
                     @endforeach
 
                     {{-- Divider between editors and readers --}}
-                    @if ($onlineEditors->isNotEmpty() && $staffReaders->isNotEmpty())
+                    @if ($staffEditors->isNotEmpty() && $staffReaders->isNotEmpty())
                         <div class="w-px h-8 bg-gray-200 mx-1 self-center"></div>
                     @endif
 
-                    {{-- Readers (all non-hidden; tooltip only for self) --}}
+                    {{-- Readers (all non-hidden; click opens bio card) --}}
                     @foreach ($staffReaders as $reader)
                         @php
                             $rProfile     = $reader->readerProfile;
@@ -1591,18 +1592,14 @@
                             $rUnavailable = $rProfile?->availability === 'unavailable';
                             $rOnline      = $reader->isOnline();
                             $rIsSelf      = $reader->id === auth()->id();
-                            $rTitle       = $rIsSelf
-                                ? ($rProfile?->displayName() ?? $reader->name)
-                                  . ($rProfile?->title ? ' · ' . $rProfile->title : '')
-                                  . ($rOnline ? ' · Online' : '')
-                                  . ' — ' . $rActive . '/' . ($rMax ?: '?') . ' active'
-                                : null;
+                            $rCardUrl     = route('staff.reader-card', $reader);
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
-                            <span class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold
-                                {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700' }}
-                                {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
-                                  @if ($rTitle) title="{{ $rTitle }}"@endif>
+                            <button type="button"
+                                    onclick="srStaffCard.toggle(event, {{ $reader->id }}, '{{ addslashes($rCardUrl) }}', this)"
+                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold cursor-pointer focus:outline-none transition-colors
+                                        {{ $rFull ? 'bg-amber-200 text-amber-800 hover:bg-amber-300' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}
+                                        {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}">
                                 @if ($rPhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $rPhotoUrl }}" alt="{{ $rInitials }}" class="w-full h-full object-cover" />
@@ -1610,7 +1607,7 @@
                                 @else
                                     {{ $rInitials }}
                                 @endif
-                                @if ($rActive > 0 && $reader->id === auth()->id())
+                                @if ($rActive > 0 && $rIsSelf)
                                     <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
                                         {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
                                         {{ $rActive }}
@@ -1619,7 +1616,7 @@
                                 @if ($rOnline)
                                     <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white z-20"></span>
                                 @endif
-                            </span>
+                            </button>
                             <span class="text-[9px] text-gray-400 font-mono leading-none">{{ $rInitials }}</span>
                         </div>
                     @endforeach

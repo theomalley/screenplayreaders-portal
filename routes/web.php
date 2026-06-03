@@ -148,6 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/announcements/{announcement}/dismiss', [AnnouncementController::class, 'dismiss'])->name('announcements.dismiss');
 
     Route::get('/staff/{user}/card', [\App\Http\Controllers\StaffCardController::class, 'card'])->name('staff.card');
+    Route::get('/staff/{user}/reader-card', [\App\Http\Controllers\StaffCardController::class, 'readerCard'])->name('staff.reader-card');
     Route::get('/staff/{user}/draft-email', [\App\Http\Controllers\StaffCardController::class, 'draftEmail'])->name('staff.draft-email');
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');

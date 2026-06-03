@@ -1,5 +1,6 @@
 <?php
 
+// v2.7 — 2026-06-03 | Reader view: show all non-hidden admins/editors too; clickable peer cards via staff.reader-card.
 // v2.6 — 2026-06-03 | Reader view: show all non-hidden readers in staff icon panel (not just online); suppress tooltip on peers.
 // v2.5 — 2026-05-30 | Fire reader notifications on status→unassigned in update() and updateStatus().
 // v2.4 — 2026-05-30 | Email readers on new unassigned assignment via ReaderNotificationService.
@@ -185,12 +186,11 @@ class AssignmentController extends Controller
         $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
         $readerMax      = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
 
-        $onlineEditors = User::whereIn('role', ['admin', 'editor'])
+        $staffEditors = User::whereIn('role', ['admin', 'editor'])
+            ->where('hidden_from_staff', false)
             ->with(['editorProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
             ->orderBy('name')
-            ->get()
-            ->filter(fn($u) => $u->isOnline())
-            ->values();
+            ->get();
 
         $staffReaders = User::where('role', 'reader')
             ->where('hidden_from_staff', false)
@@ -233,7 +233,7 @@ class AssignmentController extends Controller
             'archivedByPeriod'       => $archivedByPeriod,
             'ageThresholds'          => Setting::getAgeThresholds(),
             'appTimezone'            => Setting::getAppTimezone(),
-            'onlineEditors'          => $onlineEditors,
+            'staffEditors'           => $staffEditors,
             'staffReaders'           => $staffReaders,
             'myFollowups'            => $myFollowups,
             'myNoteReplies'          => $myNoteReplies,

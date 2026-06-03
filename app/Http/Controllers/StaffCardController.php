@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-06-03 | readerCard — reader-facing public card (bio, photo, role, online); no sensitive data
 // v1.1 — 2026-06-02 | draftEmail — creates a HelpScout draft to a reader/editor and redirects to it
 // v1.0 — 2026-05-31 | Staff icon popup card — returns rendered HTML for any admin/editor context
 
@@ -72,6 +73,20 @@ class StaffCardController extends Controller
         }
 
         $html = view('partials.staff-card', compact('user', 'profile', 'weekStats', 'appTimezone', 'editUrl'))->render();
+
+        return response($html);
+    }
+
+    /**
+     * Reader-facing public card — bio, photo, name, role, online status only.
+     * Any authenticated user may fetch this; no sensitive assignment or pay data.
+     */
+    public function readerCard(User $user): Response
+    {
+        $user->loadMissing(['readerProfile', 'editorProfile']);
+        $profile = $user->isReader() ? $user->readerProfile : $user->editorProfile;
+
+        $html = view('partials.reader-staff-card', compact('user', 'profile'))->render();
 
         return response($html);
     }
