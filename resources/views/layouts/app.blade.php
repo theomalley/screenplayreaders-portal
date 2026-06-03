@@ -324,9 +324,12 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
         <script>
         window.srStaffCard = {
             _popup: null,
+            _inner: null,
             _userId: null,
             _cache: {},
             _outsideHandler: null,
+            _keyHandler: null,
+            _resizing: false,
 
             toggle(event, userId, url, btn) {
                 event.stopPropagation();
@@ -336,9 +339,22 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
             },
 
             _open(userId, url, btn) {
+                // Outer popup — flex column so inner div can scroll independently of the handle
                 const popup = document.createElement('div');
-                popup.style.cssText = 'position:fixed;z-index:9999;width:320px;min-width:200px;min-height:60px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px -5px rgba(0,0,0,.15);padding:16px;resize:both;overflow:auto';
-                popup.innerHTML = '<p style="font-size:11px;color:#9ca3af;text-align:center;padding:4px 0">Loading…</p>';
+                popup.style.cssText = 'position:fixed;z-index:9999;width:320px;min-width:200px;min-height:80px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px -5px rgba(0,0,0,.15);display:flex;flex-direction:column;overflow:hidden';
+
+                // Scrollable content area — grows to fill popup height after resize
+                const inner = document.createElement('div');
+                inner.style.cssText = 'flex:1;overflow:auto;padding:16px;min-height:0';
+                inner.innerHTML = '<p style="font-size:11px;color:#9ca3af;text-align:center;padding:4px 0">Loading…</p>';
+                popup.appendChild(inner);
+
+                // Top-right resize handle (NE drag: wider right, taller upward)
+                const handle = document.createElement('div');
+                handle.title = 'Drag to resize';
+                handle.style.cssText = 'position:absolute;top:0;right:0;width:22px;height:22px;cursor:ne-resize;display:flex;align-items:center;justify-content:center;border-radius:0 8px 0 4px;opacity:.45;user-select:none';
+                handle.innerHTML = '<svg width="11" height="11" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="9" x2="9" y2="2"/><line x1="6" y1="9" x2="9" y2="6"/></svg>';
+                popup.appendChild(handle);
 
                 const rect = btn.getBoundingClientRect();
                 popup.style.top  = (rect.bottom + 6) + 'px';
@@ -346,19 +362,43 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
 
                 document.body.appendChild(popup);
                 this._popup  = popup;
+                this._inner  = inner;
                 this._userId = userId;
 
                 if (this._cache[userId]) {
-                    popup.innerHTML = this._cache[userId];
+                    inner.innerHTML = this._cache[userId];
                 } else {
                     fetch(url, { headers: { 'Accept': 'text/html', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '' } })
                         .then(r => r.text())
-                        .then(html => { this._cache[userId] = html; if (this._popup === popup) popup.innerHTML = html; })
-                        .catch(() => { if (this._popup === popup) popup.innerHTML = '<p style="font-size:11px;color:#ef4444">Could not load.</p>'; });
+                        .then(html => { this._cache[userId] = html; if (this._popup === popup) inner.innerHTML = html; })
+                        .catch(() => { if (this._popup === popup) inner.innerHTML = '<p style="font-size:11px;color:#ef4444">Could not load.</p>'; });
                 }
 
+                // Custom NE resize: drag right = wider; drag up = taller (top moves up)
+                handle.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._resizing = true;
+                    const startX = e.clientX, startY = e.clientY;
+                    const startW = popup.offsetWidth, startH = popup.offsetHeight;
+                    const startTop = parseFloat(popup.style.top);
+                    const onMove = (ev) => {
+                        popup.style.width  = Math.max(200, startW + (ev.clientX - startX)) + 'px';
+                        const dy = ev.clientY - startY;
+                        popup.style.height = Math.max(80, startH - dy) + 'px';
+                        popup.style.top    = Math.max(8, startTop + dy) + 'px';
+                    };
+                    const onUp = () => {
+                        document.removeEventListener('mousemove', onMove);
+                        document.removeEventListener('mouseup', onUp);
+                        setTimeout(() => { this._resizing = false; }, 0);
+                    };
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('mouseup', onUp);
+                });
+
                 setTimeout(() => {
-                    this._outsideHandler = (e) => { if (!popup.contains(e.target)) this.close(); };
+                    this._outsideHandler = (e) => { if (!this._resizing && !popup.contains(e.target)) this.close(); };
                     document.addEventListener('click', this._outsideHandler);
                     document.addEventListener('keydown', this._keyHandler = (e) => { if (e.key === 'Escape') this.close(); });
                 }, 0);
@@ -366,7 +406,9 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
 
             close() {
                 if (this._popup) { this._popup.remove(); this._popup = null; }
+                this._inner  = null;
                 this._userId = null;
+                this._resizing = false;
                 if (this._outsideHandler) { document.removeEventListener('click', this._outsideHandler); this._outsideHandler = null; }
                 if (this._keyHandler)     { document.removeEventListener('keydown', this._keyHandler);   this._keyHandler = null; }
             }
