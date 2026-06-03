@@ -1,5 +1,6 @@
 <?php
 
+// v1.12 — 2026-06-03 | Add exempt_from_word_counts to fillable and casts
 // v1.11 — 2026-06-02 | Add available_at to fillable and casts (scheduled auto-release to Available)
 // v1.10 — 2026-05-30 | Add reader_declined to fillable and casts
 // v1.9 — 2026-05-28 | Zero pay_rate automatically when assigned reader is an admin
@@ -59,6 +60,7 @@ class Assignment extends Model
         'client_id',
         'reader_declined',
         'available_at',
+        'exempt_from_word_counts',
     ];
 
     protected function casts(): array
@@ -75,6 +77,7 @@ class Assignment extends Model
             'helpscout_draft_sent_at'   => 'datetime',
             'reader_declined'           => 'boolean',
             'available_at'              => 'datetime',
+            'exempt_from_word_counts'   => 'boolean',
         ];
     }
 

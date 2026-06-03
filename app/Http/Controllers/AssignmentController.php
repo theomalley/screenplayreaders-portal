@@ -598,7 +598,8 @@ class AssignmentController extends Controller
         $this->authorize('update', $assignment);
 
         $data         = $request->validated();
-        $data['rush'] = $request->boolean('rush');
+        $data['rush']                   = $request->boolean('rush');
+        $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
 
         $newCreatedAt = null;
         if (!empty($data['date']) && !empty($data['time'])) {

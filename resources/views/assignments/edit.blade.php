@@ -524,6 +524,19 @@
                         </div>
 
                         <div>
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="hidden" name="exempt_from_word_counts" value="0" />
+                                <input type="checkbox" id="exempt_from_word_counts" name="exempt_from_word_counts" value="1"
+                                    {{ old('exempt_from_word_counts', $assignment->exempt_from_word_counts ?? false) ? 'checked' : '' }}
+                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">
+                                    <span class="font-medium">Exempt from word counts</span>
+                                    <span class="text-gray-400 ml-1">— reader may submit coverage even if word count minimums are not met</span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div>
                             <x-input-label for="helpscout_ticket_number" value="HelpScout Ticket #" />
                             <input type="text" id="helpscout_ticket_number" name="helpscout_ticket_number"
                                 value="{{ $v('helpscout_ticket_number', $assignment->helpscout_ticket_number) }}"

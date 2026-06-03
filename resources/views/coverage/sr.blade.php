@@ -117,13 +117,19 @@
                     <div x-show="['script_coverage','short','deep_dive','book'].includes(type)">
                         <div class="flex items-baseline justify-between">
                             <x-input-label for="sr_logline" value="Logline" />
-                            <span class="text-xs text-gray-400" x-text="wordCount(logline) + ' / 50 words'"></span>
+                            <span class="text-xs"
+                                :class="loglineMinWords() > 0
+                                    ? (wordCount(logline) >= loglineMinWords() ? 'text-green-600' : 'text-gray-400')
+                                    : 'text-gray-400'"
+                                x-text="loglineMinWords() > 0
+                                    ? wordCount(logline) + ' words (min ' + loglineMinWords() + ')'
+                                    : wordCount(logline) + ' / 50 words'"></span>
                         </div>
                         <textarea id="sr_logline" name="sr_logline" rows="3"
                             x-model="logline"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                             placeholder="Max 50 words…">{{ old('sr_logline', $existing?->sr_logline) }}</textarea>
-                        <p x-show="wordCount(logline) > 50" class="mt-1 text-xs text-red-500">Over 50 words — please trim.</p>
+                        <p x-show="loglineMinWords() === 0 && wordCount(logline) > 50" class="mt-1 text-xs text-red-500">Over 50 words — please trim.</p>
                         <x-input-error :messages="$errors->get('sr_logline')" class="mt-1" />
                     </div>
 
@@ -131,8 +137,9 @@
                     <div x-show="['script_coverage','book'].includes(type)">
                         <div class="flex items-baseline justify-between">
                             <x-input-label for="sr_synopsis" value="Synopsis" />
-                            <span class="text-xs" :class="wordCount(synopsis) >= 600 ? 'text-green-600' : 'text-gray-400'"
-                                x-text="wordCount(synopsis) + ' words (min 600)'"></span>
+                            <span class="text-xs"
+                                :class="wordCount(synopsis) >= synopsisMinWords() ? 'text-green-600' : 'text-gray-400'"
+                                x-text="wordCount(synopsis) + ' words' + (synopsisMinWords() > 0 ? ' (min ' + synopsisMinWords() + ')' : '')"></span>
                         </div>
                         <textarea id="sr_synopsis" name="sr_synopsis" rows="10"
                             x-model="synopsis"
@@ -307,6 +314,7 @@
                         <div class="flex items-center gap-3">
                             <span x-show="draftSaved" x-cloak class="text-sm text-green-600 font-medium">Saved!</span>
                             <span x-show="draftError" x-cloak class="text-sm text-red-500">Error saving.</span>
+                            <span x-show="!wordCountsMet()" x-cloak class="text-sm text-amber-600">Word count minimums not yet met.</span>
                             <button type="button"
                                 :disabled="draftSaving || submitting"
                                 @click="saveDraft($el)"
@@ -318,8 +326,8 @@
                                 <span x-text="draftSaving ? 'Saving…' : 'Save for Later'"></span>
                             </button>
                             <button type="submit"
-                                :disabled="!qualityChecked || submitting"
-                                :class="(qualityChecked && !submitting) ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'"
+                                :disabled="!qualityChecked || submitting || !wordCountsMet()"
+                                :class="(qualityChecked && !submitting && wordCountsMet()) ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'"
                                 class="px-4 py-2 text-sm font-semibold text-white rounded-md transition-colors inline-flex items-center gap-2">
                                 <svg x-show="submitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -360,6 +368,9 @@
         qc.checked = true;
         qc.dispatchEvent(new Event('input', { bubbles: true }));
     }
+
+    const srWcSettings = @js($wordCounts);
+    const srWcExempt   = @js($wcExempt);
 
     function srCoverage() {
         return {
@@ -425,16 +436,34 @@
                 return text.trim().split(/\s+/).length;
             },
 
+            loglineMinWords() {
+                return srWcSettings.wc_sr_logline || 0;
+            },
+
+            synopsisMinWords() {
+                return srWcSettings.wc_sr_synopsis || 0;
+            },
+
             notesMinWords() {
                 const map = {
-                    script_coverage: 1200,
-                    deep_dive: 4100,
-                    book: 4100,
-                    short: 600,
-                    budget: 150,
-                    notes_only: 0,
+                    script_coverage: srWcSettings.wc_sr_notes_script_coverage,
+                    deep_dive:       srWcSettings.wc_sr_notes_deep_dive,
+                    book:            srWcSettings.wc_sr_notes_book,
+                    short:           srWcSettings.wc_sr_notes_short,
+                    budget:          srWcSettings.wc_sr_notes_budget,
+                    notes_only:      srWcSettings.wc_sr_notes_notes_only,
                 };
-                return map[this.type] || 0;
+                return map[this.type] ?? 0;
+            },
+
+            wordCountsMet() {
+                if (!srWcSettings.wc_enabled || srWcExempt) return true;
+                const showLogline  = ['script_coverage', 'short', 'deep_dive', 'book'].includes(this.type);
+                const showSynopsis = ['script_coverage', 'book'].includes(this.type);
+                if (showLogline  && this.loglineMinWords()  > 0 && this.wordCount(this.logline)  < this.loglineMinWords())  return false;
+                if (showSynopsis && this.synopsisMinWords() > 0 && this.wordCount(this.synopsis) < this.synopsisMinWords()) return false;
+                if (this.notesMinWords() > 0 && this.wordCount(this.notes) < this.notesMinWords()) return false;
+                return true;
             },
 
             async saveDraft(btn) {

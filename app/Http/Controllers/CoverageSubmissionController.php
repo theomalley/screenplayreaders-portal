@@ -33,8 +33,10 @@ class CoverageSubmissionController extends Controller
 
         $autofillKey  = $user->isAdmin() ? 'dev_autofill_admin' : ($user->isEditor() ? 'dev_autofill_editor' : 'dev_autofill_reader');
         $showAutofill = (bool) Setting::getValue($autofillKey, false);
+        $wordCounts   = Setting::getWordCounts();
+        $wcExempt     = (bool) $assignment->exempt_from_word_counts;
 
-        return view($view, compact('assignment', 'existing', 'showAutofill'));
+        return view($view, compact('assignment', 'existing', 'showAutofill', 'wordCounts', 'wcExempt'));
     }
 
     public function store(StoreCoverageSubmissionRequest $request, Assignment $assignment)

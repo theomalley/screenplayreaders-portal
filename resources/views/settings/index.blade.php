@@ -767,6 +767,121 @@
             </div>
             @endif
 
+            @if($isAdmin && $wordCounts !== null)
+            {{-- Word Count Minimums --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Coverage Word Count Minimums</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Set minimum word counts for each coverage field. Readers cannot submit coverage until these minimums are met
+                    (unless the assignment is marked <em>Exempt from word counts</em>). Set a field to 0 to require no minimum.
+                </p>
+
+                <form method="POST" action="{{ route('settings.word-counts') }}" class="space-y-6">
+                    @csrf
+                    @method('PATCH')
+
+                    {{-- Global toggle --}}
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="hidden" name="wc_enabled" value="0" />
+                            <input type="checkbox" name="wc_enabled" value="1"
+                                {{ $wordCounts['wc_enabled'] ? 'checked' : '' }}
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            <span class="text-sm font-medium text-gray-700">Enable word count minimums globally</span>
+                        </label>
+                        @if(!$wordCounts['wc_enabled'])
+                            <span class="text-xs text-amber-600 font-medium">Currently disabled — no word counts enforced</span>
+                        @endif
+                    </div>
+
+                    {{-- SR Coverage --}}
+                    <div class="border-t border-gray-100 pt-5 space-y-4">
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">SR Coverage</h4>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label value="Logline (min words)" />
+                                <input type="number" name="wc_sr_logline" min="0" max="99999"
+                                    value="{{ old('wc_sr_logline', $wordCounts['wc_sr_logline']) }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                <p class="mt-0.5 text-xs text-gray-400">Applies to SR logline field</p>
+                            </div>
+                            <div>
+                                <x-input-label value="Synopsis (min words)" />
+                                <input type="number" name="wc_sr_synopsis" min="0" max="99999"
+                                    value="{{ old('wc_sr_synopsis', $wordCounts['wc_sr_synopsis']) }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                <p class="mt-0.5 text-xs text-gray-400">Script Coverage & Book types</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-medium text-gray-600 mb-2">Notes — minimum words by assignment type</p>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                @foreach([
+                                    'wc_sr_notes_script_coverage' => 'Script Coverage',
+                                    'wc_sr_notes_notes_only'      => 'Notes-Only',
+                                    'wc_sr_notes_short'           => 'Short',
+                                    'wc_sr_notes_deep_dive'       => 'Deep-Dive',
+                                    'wc_sr_notes_budget'          => 'Budget',
+                                    'wc_sr_notes_book'            => 'Book',
+                                ] as $key => $label)
+                                    <div>
+                                        <x-input-label :value="$label" />
+                                        <input type="number" name="{{ $key }}" min="0" max="99999"
+                                            value="{{ old($key, $wordCounts[$key]) }}"
+                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- WD Coverage --}}
+                    <div class="border-t border-gray-100 pt-5 space-y-4">
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">WD Coverage</h4>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div>
+                                <x-input-label value="Logline (min words)" />
+                                <input type="number" name="wc_wd_logline" min="0" max="99999"
+                                    value="{{ old('wc_wd_logline', $wordCounts['wc_wd_logline']) }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
+                            <div>
+                                <x-input-label value="Synopsis (min words)" />
+                                <input type="number" name="wc_wd_synopsis" min="0" max="99999"
+                                    value="{{ old('wc_wd_synopsis', $wordCounts['wc_wd_synopsis']) }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                <p class="mt-0.5 text-xs text-gray-400">Coverage type only</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-medium text-gray-600 mb-2">Notes — total minimum words by assignment type</p>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                @foreach([
+                                    'wc_wd_notes_coverage'          => 'Coverage',
+                                    'wc_wd_notes_development_notes' => 'Development Notes',
+                                ] as $key => $label)
+                                    <div>
+                                        <x-input-label :value="$label" />
+                                        <input type="number" name="{{ $key }}" min="0" max="99999"
+                                            value="{{ old($key, $wordCounts[$key]) }}"
+                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end border-t border-gray-100 pt-4">
+                        <x-primary-button>Save word count settings</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
         </div>
     </div>
 </x-app-layout>

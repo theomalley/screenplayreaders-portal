@@ -1,5 +1,6 @@
 <?php
 
+// v2.9 — 2026-06-03 | Word count minimums — per-field admin settings + global enable/disable.
 // v2.8 — 2026-05-31 | Followup form HTML — before/after injection via settings.
 // v2.7 — 2026-05-30 | Email notification text settings (headers + body messages per notification type).
 // v2.6 — 2026-05-29 | QC saved replies — admin-customizable quick-insert notes for Send Back modal.
@@ -71,6 +72,7 @@ class SettingController extends Controller
         $followupBeforeHtml   = Setting::getValue('followup_before_html', '');
         $followupAfterHtml    = Setting::getValue('followup_after_html', '');
         $followupHeading      = Setting::getValue('followup_heading', '');
+        $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
@@ -80,6 +82,7 @@ class SettingController extends Controller
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading',
+            'wordCounts',
         ));
     }
 
@@ -340,5 +343,25 @@ class SettingController extends Controller
         Setting::setValue('followup_after_html',  trim($request->input('followup_after_html', '')));
 
         return back()->with('success', 'Followup form HTML saved.');
+    }
+
+    public function updateWordCounts(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $keys  = array_keys(Setting::WORD_COUNT_DEFAULTS);
+        $rules = ['wc_enabled' => 'required|boolean'];
+        foreach ($keys as $key) {
+            if ($key === 'wc_enabled') continue;
+            $rules[$key] = 'required|integer|min:0|max:99999';
+        }
+
+        $data = $request->validate($rules);
+
+        foreach ($data as $key => $value) {
+            Setting::setValue($key, (int) $value);
+        }
+
+        return back()->with('success', 'Word count minimums saved.');
     }
 }

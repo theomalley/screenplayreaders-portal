@@ -1,11 +1,14 @@
 <?php
 
+// v1.1 — 2026-06-03 | Server-side word count minimum enforcement (respects global enable flag and per-assignment exemption)
 // v1.0 — 2026-05-17 | Validates SR and WD coverage submission forms
 
 namespace App\Http\Requests;
 
 use App\Models\Assignment;
+use App\Models\Setting;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreCoverageSubmissionRequest extends FormRequest
 {
@@ -25,6 +28,94 @@ class StoreCoverageSubmissionRequest extends FormRequest
         }
 
         return $this->srRules();
+    }
+
+    /** After standard validation passes, enforce word count minimums. */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                /** @var Assignment $assignment */
+                $assignment = $this->route('assignment');
+                $wc = Setting::getWordCounts();
+
+                if (!$wc['wc_enabled'] || $assignment->exempt_from_word_counts) {
+                    return;
+                }
+
+                if ($assignment->vendor === 'wd') {
+                    $this->checkWdWordCounts($validator, $wc, $assignment);
+                } else {
+                    $this->checkSrWordCounts($validator, $wc, $assignment);
+                }
+            },
+        ];
+    }
+
+    private function wordCount(?string $text): int
+    {
+        if (!$text || !trim($text)) return 0;
+        return count(preg_split('/\s+/', trim($text)));
+    }
+
+    private function checkSrWordCounts(Validator $validator, array $wc, Assignment $assignment): void
+    {
+        $type = $this->input('sr_assignment_type', $assignment->assignment_type);
+
+        $showLogline  = in_array($type, ['script_coverage', 'short', 'deep_dive', 'book'], true);
+        $showSynopsis = in_array($type, ['script_coverage', 'book'], true);
+
+        if ($showLogline && $wc['wc_sr_logline'] > 0) {
+            $count = $this->wordCount($this->input('sr_logline'));
+            if ($count < $wc['wc_sr_logline']) {
+                $validator->errors()->add('sr_logline', "Logline must be at least {$wc['wc_sr_logline']} words (currently {$count}).");
+            }
+        }
+
+        if ($showSynopsis && $wc['wc_sr_synopsis'] > 0) {
+            $count = $this->wordCount($this->input('sr_synopsis'));
+            if ($count < $wc['wc_sr_synopsis']) {
+                $validator->errors()->add('sr_synopsis', "Synopsis must be at least {$wc['wc_sr_synopsis']} words (currently {$count}).");
+            }
+        }
+
+        $notesKey = "wc_sr_notes_{$type}";
+        $notesMin = $wc[$notesKey] ?? 0;
+        if ($notesMin > 0) {
+            $count = $this->wordCount($this->input('sr_notes'));
+            if ($count < $notesMin) {
+                $validator->errors()->add('sr_notes', "Notes must be at least {$notesMin} words (currently {$count}).");
+            }
+        }
+    }
+
+    private function checkWdWordCounts(Validator $validator, array $wc, Assignment $assignment): void
+    {
+        $type = $this->input('wd_assignment_type', $assignment->assignment_type);
+
+        if ($wc['wc_wd_logline'] > 0) {
+            $count = $this->wordCount($this->input('wd_logline'));
+            if ($count < $wc['wc_wd_logline']) {
+                $validator->errors()->add('wd_logline', "Logline must be at least {$wc['wc_wd_logline']} words (currently {$count}).");
+            }
+        }
+
+        if ($type === 'coverage' && $wc['wc_wd_synopsis'] > 0) {
+            $count = $this->wordCount($this->input('wd_synopsis'));
+            if ($count < $wc['wc_wd_synopsis']) {
+                $validator->errors()->add('wd_synopsis', "Synopsis must be at least {$wc['wc_wd_synopsis']} words (currently {$count}).");
+            }
+        }
+
+        $notesKey = $type === 'development_notes' ? 'wc_wd_notes_development_notes' : 'wc_wd_notes_coverage';
+        $notesMin = $wc[$notesKey] ?? 0;
+        if ($notesMin > 0) {
+            $notesFields = ['wd_notes_concept', 'wd_notes_plot', 'wd_notes_pacing', 'wd_notes_format', 'wd_notes_characters', 'wd_notes_dialogue', 'wd_notes_overall'];
+            $totalWords  = array_sum(array_map(fn($f) => $this->wordCount($this->input($f)), $notesFields));
+            if ($totalWords < $notesMin) {
+                $validator->errors()->add('wd_notes_overall', "Total notes must be at least {$notesMin} words (currently {$totalWords}).");
+            }
+        }
     }
 
     private function srRules(): array

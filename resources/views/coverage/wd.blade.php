@@ -115,8 +115,14 @@
 
                     {{-- Logline --}}
                     <div>
-                        <x-input-label for="wd_logline" value="Logline" />
+                        <div class="flex items-baseline justify-between">
+                            <x-input-label for="wd_logline" value="Logline" />
+                            <span class="text-xs"
+                                :class="loglineMinWords() > 0 ? (wordCount(logline) >= loglineMinWords() ? 'text-green-600' : 'text-gray-400') : 'text-gray-400'"
+                                x-text="loglineMinWords() > 0 ? wordCount(logline) + ' words (min ' + loglineMinWords() + ')' : wordCount(logline) + ' words'"></span>
+                        </div>
                         <textarea id="wd_logline" name="wd_logline" rows="3"
+                            x-model="logline"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">{{ old('wd_logline', $existing?->wd_logline) }}</textarea>
                         <x-input-error :messages="$errors->get('wd_logline')" class="mt-1" />
                     </div>
@@ -125,8 +131,8 @@
                     <div x-show="assignmentType === 'coverage'">
                         <div class="flex items-baseline justify-between">
                             <x-input-label for="wd_synopsis" value="Synopsis" />
-                            <span class="text-xs" :class="wordCount(synopsis) >= 450 ? 'text-green-600' : 'text-gray-400'"
-                                x-text="wordCount(synopsis) + ' words (min 450)'"></span>
+                            <span class="text-xs" :class="wordCount(synopsis) >= synopsisMinWords() ? 'text-green-600' : 'text-gray-400'"
+                                x-text="wordCount(synopsis) + ' words' + (synopsisMinWords() > 0 ? ' (min ' + synopsisMinWords() + ')' : '')"></span>
                         </div>
                         <textarea id="wd_synopsis" name="wd_synopsis" rows="10"
                             x-model="synopsis"
@@ -169,6 +175,8 @@
                                     @endforeach
                                 </select>
                                 <x-input-error :messages="$errors->get('wd_score_' . $section['key'])" />
+                                <span class="ml-auto text-xs text-gray-400"
+                                    x-text="wordCount(notes.{{ $section['key'] }}) + ' words'"></span>
                             </div>
                             <textarea name="wd_notes_{{ $section['key'] }}" rows="5"
                                 x-model="notes.{{ $section['key'] }}"
@@ -235,6 +243,7 @@
                         <div class="flex items-center gap-3">
                             <span x-show="draftSaved" x-cloak class="text-sm text-green-600 font-medium">Saved!</span>
                             <span x-show="draftError" x-cloak class="text-sm text-red-500">Error saving.</span>
+                            <span x-show="!wordCountsMet()" x-cloak class="text-sm text-amber-600">Word count minimums not yet met.</span>
                             <button type="button"
                                 :disabled="draftSaving || submitting"
                                 @click="saveDraft($el)"
@@ -246,8 +255,8 @@
                                 <span x-text="draftSaving ? 'Saving…' : 'Save for Later'"></span>
                             </button>
                             <button type="submit"
-                                :disabled="!qualityChecked || submitting"
-                                :class="(qualityChecked && !submitting) ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'"
+                                :disabled="!qualityChecked || submitting || !wordCountsMet()"
+                                :class="(qualityChecked && !submitting && wordCountsMet()) ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'"
                                 class="px-4 py-2 text-sm font-semibold text-white rounded-md transition-colors inline-flex items-center gap-2">
                                 <svg x-show="submitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -294,6 +303,9 @@
         qc.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
+    const wdWcSettings = @js($wordCounts);
+    const wdWcExempt   = @js($wcExempt);
+
     function wdCoverage() {
         return {
             assignmentType: '{{ old('wd_assignment_type', $existing?->wd_assignment_type ?? $assignment->assignment_type ?? 'coverage') }}',
@@ -303,6 +315,7 @@
             draftSaved: false,
             draftError: false,
             draftUrl: @js(route('coverage.draft', $assignment)),
+            logline: @js(old('wd_logline', $existing?->wd_logline ?? '')),
             synopsis: @js(old('wd_synopsis', $existing?->wd_synopsis ?? '')),
             notes: {
                 concept:    @js(old('wd_notes_concept',    $existing?->wd_notes_concept    ?? '')),
@@ -323,9 +336,25 @@
                 return Object.values(this.notes).reduce((sum, t) => sum + this.wordCount(t), 0);
             },
 
+            loglineMinWords() {
+                return wdWcSettings.wc_wd_logline || 0;
+            },
+
+            synopsisMinWords() {
+                return wdWcSettings.wc_wd_synopsis || 0;
+            },
+
             notesMinWords() {
-                if (this.assignmentType === 'development_notes') return 3700;
-                return 1200;
+                if (this.assignmentType === 'development_notes') return wdWcSettings.wc_wd_notes_development_notes ?? 0;
+                return wdWcSettings.wc_wd_notes_coverage ?? 0;
+            },
+
+            wordCountsMet() {
+                if (!wdWcSettings.wc_enabled || wdWcExempt) return true;
+                if (this.loglineMinWords() > 0 && this.wordCount(this.logline) < this.loglineMinWords()) return false;
+                if (this.assignmentType === 'coverage' && this.synopsisMinWords() > 0 && this.wordCount(this.synopsis) < this.synopsisMinWords()) return false;
+                if (this.notesMinWords() > 0 && this.totalNoteWords() < this.notesMinWords()) return false;
+                return true;
             },
 
             async saveDraft(btn) {

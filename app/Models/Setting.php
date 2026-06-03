@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-06-03 | Add WORD_COUNT_DEFAULTS and getWordCounts() for admin-configurable coverage word count minimums
 // v1.4 — 2026-06-02 | Add PAYOUT_SCHEDULE_DEFAULTS and getPayoutSchedule() for admin-configurable payout schedule
 // v1.3 — 2026-05-30 | Add EMAIL_NOTIFICATION_DEFAULTS and getEmailNotificationTexts()
 // v1.2 — 2026-05-28 | Add getAppTimezone() for admin-configurable display timezone
@@ -185,6 +186,42 @@ class Setting extends Model
             'override'  => ($stored['payout_next_override']  ?? '') ?: null,
             'anchor'    => ($stored['payout_biweekly_anchor'] ?? '') ?: null,
         ];
+    }
+
+    /** Default minimum word counts for coverage fields. 0 = no minimum. */
+    public const WORD_COUNT_DEFAULTS = [
+        'wc_enabled'                     => 1,
+        // SR fields
+        'wc_sr_logline'                  => 0,
+        'wc_sr_synopsis'                 => 600,
+        'wc_sr_notes_script_coverage'    => 1200,
+        'wc_sr_notes_notes_only'         => 0,
+        'wc_sr_notes_short'              => 600,
+        'wc_sr_notes_deep_dive'          => 4100,
+        'wc_sr_notes_budget'             => 150,
+        'wc_sr_notes_book'               => 4100,
+        // WD fields
+        'wc_wd_logline'                  => 0,
+        'wc_wd_synopsis'                 => 450,
+        'wc_wd_notes_coverage'           => 1200,
+        'wc_wd_notes_development_notes'  => 3700,
+    ];
+
+    /**
+     * Returns all word count settings as integers, keyed by their DB key.
+     * Falls back to WORD_COUNT_DEFAULTS for any missing row.
+     */
+    public static function getWordCounts(): array
+    {
+        $keys   = array_keys(self::WORD_COUNT_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        $result = [];
+        foreach (self::WORD_COUNT_DEFAULTS as $key => $default) {
+            $result[$key] = isset($stored[$key]) ? (int) $stored[$key] : (int) $default;
+        }
+
+        return $result;
     }
 
     public static function getSavedReplies(): array
