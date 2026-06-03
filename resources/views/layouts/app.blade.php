@@ -337,12 +337,12 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
 
             _open(userId, url, btn) {
                 const popup = document.createElement('div');
-                popup.style.cssText = 'position:fixed;z-index:9999;width:288px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px -5px rgba(0,0,0,.15);padding:16px;min-height:3rem';
+                popup.style.cssText = 'position:fixed;z-index:9999;width:320px;min-width:200px;min-height:60px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 10px 25px -5px rgba(0,0,0,.15);padding:16px;resize:both;overflow:auto';
                 popup.innerHTML = '<p style="font-size:11px;color:#9ca3af;text-align:center;padding:4px 0">Loading…</p>';
 
                 const rect = btn.getBoundingClientRect();
                 popup.style.top  = (rect.bottom + 6) + 'px';
-                popup.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 296)) + 'px';
+                popup.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 328)) + 'px';
 
                 document.body.appendChild(popup);
                 this._popup  = popup;

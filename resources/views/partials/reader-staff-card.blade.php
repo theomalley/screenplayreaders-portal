@@ -6,7 +6,7 @@
     $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
     $online   = $user->isOnline();
     $bgClass  = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
-    $bio      = $profile?->bio;
+    $bio      = $profile?->bio ? strip_tags($profile->bio) : null;
 @endphp
 
 <div class="flex items-start gap-3">
@@ -39,7 +39,7 @@
         @endif
 
         @if ($bio)
-            <p class="mt-2 text-xs text-gray-600 leading-relaxed">{{ $bio }}</p>
+            <p class="mt-2 text-xs text-gray-600 leading-relaxed" style="white-space:pre-line">{{ $bio }}</p>
         @else
             <p class="mt-2 text-xs text-gray-400 italic">No bio yet.</p>
         @endif
