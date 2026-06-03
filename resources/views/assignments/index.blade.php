@@ -84,7 +84,7 @@
                 _update() {
                     const diff = new Date(dueAt) - Date.now();
                     if (diff <= 0) {
-                        this.display = 'FAILED. Refund client.';
+                        this.display = 'FAILED. Refund RUSH fee.';
                         this.overdue = true;
                         clearInterval(this._iv);
                         return;
