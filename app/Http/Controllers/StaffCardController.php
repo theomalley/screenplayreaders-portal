@@ -74,7 +74,7 @@ class StaffCardController extends Controller
 
         $html = view('partials.staff-card', compact('user', 'profile', 'weekStats', 'appTimezone', 'editUrl'))->render();
 
-        return response($html);
+        return response($html)->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**
@@ -88,7 +88,7 @@ class StaffCardController extends Controller
 
         $html = view('partials.reader-staff-card', compact('user', 'profile'))->render();
 
-        return response($html);
+        return response($html)->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**
