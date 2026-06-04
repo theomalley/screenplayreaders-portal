@@ -200,10 +200,9 @@
                         </a>
                     </div>
                     <iframe
-                        src="https://drive.google.com/file/d/{{ $assignment->drive_coverage_pdf_id }}/preview"
+                        src="{{ route('assignments.streamCoverage', $assignment) }}"
                         class="w-full"
-                        style="height: 900px;"
-                        allow="autoplay">
+                        style="height: 900px;">
                     </iframe>
                 </div>
             @elseif($assignment->drive_coverage_doc_id)
