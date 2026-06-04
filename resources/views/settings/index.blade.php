@@ -884,6 +884,33 @@
             </div>
             @endif
 
+            {{-- Last Seen Reset --}}
+            @if($isAdmin)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Last Seen Times</h3>
+                    <p class="text-xs text-gray-500">Clear the "last seen" timestamps that determine online/offline status. Useful when testing with real accounts.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <form method="POST" action="{{ route('settings.reset-last-seen-all') }}"
+                          onsubmit="return confirm('Clear last-seen time for ALL users?')">
+                        @csrf
+                        <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors">
+                            Reset All Last Seen
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('settings.reset-last-seen-me') }}">
+                        @csrf
+                        <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors">
+                            Reset Mine Only
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endif
+
         </div>
     </div>
 </x-app-layout>

@@ -33,6 +33,8 @@
             @endif
             @if ($online)
                 <span class="text-xs text-green-600 font-medium">● Online</span>
+            @elseif(auth()->user()->isAdminOrEditor())
+                <span class="text-xs text-gray-400">{{ $user->lastOnlineText() }}</span>
             @endif
             <div class="ml-auto flex items-center gap-3">
                 @if (! $user->isAdmin() && $user->email)

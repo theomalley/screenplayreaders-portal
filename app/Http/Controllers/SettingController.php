@@ -364,4 +364,22 @@ class SettingController extends Controller
 
         return back()->with('success', 'Word count minimums saved.');
     }
+
+    public function resetAllLastSeen(): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        \App\Models\User::query()->update(['last_seen_at' => null]);
+
+        return back()->with('success', 'All last-seen times cleared.');
+    }
+
+    public function resetMyLastSeen(): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        auth()->user()->update(['last_seen_at' => null]);
+
+        return back()->with('success', 'Your last-seen time cleared.');
+    }
 }
