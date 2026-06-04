@@ -812,7 +812,12 @@
                                                     } finally { this.saving = false; }
                                                 }
                                             }">
-                                            <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
+                                            <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5 flex items-center gap-1.5">
+                                                {{ $typeLabel }}
+                                                @if($assignment->is_test)
+                                                    <span class="inline-flex items-center px-1 py-px rounded text-[9px] font-bold bg-amber-200 text-amber-800 tracking-wide">TEST</span>
+                                                @endif
+                                            </div>
                                             <div class="flex items-center gap-1">
                                                 @if($assignment->notes)
                                                     <div class="inline-block shrink-0"

@@ -130,7 +130,7 @@
 
                         {{-- Admin dropdown (Team, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*');
+                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*') || request()->routeIs('test-data.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -173,6 +173,10 @@
                                 @endif
                                 @if(auth()->user()?->isAdmin())
                                     <div class="my-1 border-t border-gray-100"></div>
+                                    <a href="{{ route('test-data.index') }}"
+                                        class="block px-4 py-2 text-sm {{ request()->routeIs('test-data.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Test Data
+                                    </a>
                                     <a href="{{ route('reader-pay.index') }}"
                                         class="block px-4 py-2 text-sm {{ request()->routeIs('reader-pay.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Reader Pay

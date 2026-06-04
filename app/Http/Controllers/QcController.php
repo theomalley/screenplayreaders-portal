@@ -89,6 +89,12 @@ class QcController extends Controller
         );
 
         if ($allDone) {
+            // Skip HelpScout draft entirely for test assignments
+            if ($assignment->is_test) {
+                return redirect()->route('qc.index')
+                    ->with('success', "#{$assignment->order_number} — {$assignment->script_title} approved. (Test — no HelpScout draft created.)");
+            }
+
             // Generate any missing PDFs before attempting the draft
             foreach ($siblings as $sibling) {
                 if ($sibling->drive_coverage_doc_id && ! $sibling->drive_coverage_pdf_id) {

@@ -1,5 +1,6 @@
 <?php
 
+// v1.13 — 2026-06-04 | Add is_test flag; auto-reset completed test assignments after 4 h
 // v1.12 — 2026-06-03 | Add exempt_from_word_counts to fillable and casts
 // v1.11 — 2026-06-02 | Add available_at to fillable and casts (scheduled auto-release to Available)
 // v1.10 — 2026-05-30 | Add reader_declined to fillable and casts
@@ -61,6 +62,7 @@ class Assignment extends Model
         'reader_declined',
         'available_at',
         'exempt_from_word_counts',
+        'is_test',
     ];
 
     protected function casts(): array
@@ -78,6 +80,7 @@ class Assignment extends Model
             'reader_declined'           => 'boolean',
             'available_at'              => 'datetime',
             'exempt_from_word_counts'   => 'boolean',
+            'is_test'                   => 'boolean',
         ];
     }
 
@@ -89,6 +92,18 @@ class Assignment extends Model
                 if ($reader && $reader->isAdmin()) {
                     $assignment->pay_rate = '0.00';
                 }
+            }
+        });
+
+        // Auto-reset test assignments 4 hours after they reach completed
+        static::updated(function (Assignment $assignment) {
+            if ($assignment->is_test
+                && $assignment->status === self::STATUS_COMPLETED
+                && $assignment->wasChanged('status')
+                && Setting::getValue('test_auto_reset', '0') === '1'
+            ) {
+                \App\Jobs\ResetTestAssignment::dispatch($assignment->id)
+                    ->delay(now()->addHours(4));
             }
         });
     }

@@ -154,6 +154,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/impersonate/{user}', [\App\Http\Controllers\ImpersonateController::class, 'start'])->name('impersonate.start');
     Route::post('/admin/impersonate-stop', [\App\Http\Controllers\ImpersonateController::class, 'stop'])->name('impersonate.stop');
 
+    Route::get('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'index'])->name('test-data.index');
+    Route::post('/admin/test-data/seed', [\App\Http\Controllers\TestDataController::class, 'seed'])->name('test-data.seed');
+    Route::post('/admin/test-data/reset', [\App\Http\Controllers\TestDataController::class, 'reset'])->name('test-data.reset');
+    Route::delete('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'destroy'])->name('test-data.destroy');
+    Route::post('/admin/test-data/auto-reset', [\App\Http\Controllers\TestDataController::class, 'toggleAutoReset'])->name('test-data.auto-reset');
+
     Route::get('/staff/{user}/card', [\App\Http\Controllers\StaffCardController::class, 'card'])->name('staff.card');
     Route::get('/staff/{user}/reader-card', [\App\Http\Controllers\StaffCardController::class, 'readerCard'])->name('staff.reader-card');
     Route::get('/staff/{user}/draft-email', [\App\Http\Controllers\StaffCardController::class, 'draftEmail'])->name('staff.draft-email');
