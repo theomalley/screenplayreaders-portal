@@ -157,7 +157,7 @@
                             <label for="create_invoice" class="text-sm font-medium text-gray-700 cursor-pointer">Invoice</label>
                         </div>
                         <div x-show="createInvoice" x-cloak class="mt-3 space-y-3">
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <x-input-label for="invoice_client_id" value="Client" />
                                     <select id="invoice_client_id" name="invoice_client_id"

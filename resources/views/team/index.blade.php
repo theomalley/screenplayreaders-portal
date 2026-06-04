@@ -64,8 +64,8 @@
             @if ($admins->isNotEmpty())
             <div>
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admins</h3>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <table class="w-full divide-y divide-gray-200 text-sm" style="table-layout:fixed">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
+                    <table class="w-full divide-y divide-gray-200 text-sm" style="min-width:480px">
                         <colgroup>
                             <col style="width:32%">
                             <col style="width:20%">

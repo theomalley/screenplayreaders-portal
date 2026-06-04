@@ -70,7 +70,7 @@
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-5">
                     <h3 class="font-semibold text-gray-700 text-base border-b border-gray-100 pb-2">Assignment Details</h3>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <x-input-label for="genre" value="Genre" />
                             <x-text-input id="genre" name="genre" type="text" class="mt-1 block w-full"
@@ -214,7 +214,7 @@
 
                     <div class="space-y-4">
                         @foreach ($scoreItems as $i => $item)
-                            <div class="grid grid-cols-[1fr_auto_auto] gap-3 items-center">
+                            <div class="grid grid-cols-[1fr_auto_auto] gap-2 sm:gap-3 items-center">
                                 <label for="score_{{ $item['key'] }}" class="text-sm text-gray-700">
                                     <span class="text-gray-400 mr-1">{{ $i + 1 }}.</span>{{ $item['label'] }}
                                 </label>
@@ -224,7 +224,7 @@
                                     min="50" max="100" step="1"
                                     x-model.number="scores.{{ $item['key'] }}"
                                     :style="`accent-color: ${scoreColor(scores.{{ $item['key'] }})}`"
-                                    class="w-40 h-2 cursor-pointer" />
+                                    class="w-24 sm:w-40 h-2 cursor-pointer" />
                                 <span class="text-sm font-bold w-8 text-right tabular-nums"
                                     :style="`color: ${scoreColor(scores.{{ $item['key'] }})}`"
                                     x-text="scores.{{ $item['key'] }}"></span>

@@ -314,13 +314,35 @@
                     {{ __('Team') }}
                 </x-responsive-nav-link>
                 @endif
+                @if(auth()->user()?->isEditor() && !auth()->user()?->isAdmin())
+                    <x-responsive-nav-link :href="route('editor-earnings.index')" :active="request()->routeIs('editor-earnings.*')">
+                        {{ __('Earnings') }}
+                    </x-responsive-nav-link>
+                @endif
                 @if(auth()->user()?->isAdmin())
+                    <x-responsive-nav-link :href="route('payroll.index')" :active="request()->routeIs('payroll.*')">
+                        {{ __('Payroll') }}
+                    </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('reader-pay.index')" :active="request()->routeIs('reader-pay.*')">
                         {{ __('Reader Pay') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('editor-pay.index')" :active="request()->routeIs('editor-pay.*')">
                         {{ __('Editor Pay') }}
                     </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('test-data.index')" :active="request()->routeIs('test-data.*')">
+                        {{ __('Test Data') }}
+                    </x-responsive-nav-link>
+                @endif
+                @if(session('impersonator_id'))
+                    <div class="px-4 py-2">
+                        <form method="POST" action="{{ route('impersonate.stop') }}">
+                            @csrf
+                            <button type="submit"
+                                    class="w-full text-left text-sm font-medium text-yellow-700 bg-yellow-50 px-3 py-2 rounded-md">
+                                ← Return to Admin (stop viewing as {{ auth()->user()->name }})
+                            </button>
+                        </form>
+                    </div>
                 @endif
             @else
                 @if(auth()->user()?->isReader())

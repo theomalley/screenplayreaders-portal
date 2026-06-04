@@ -107,6 +107,7 @@
                     </div>
 
                     {{-- Line items table --}}
+                    <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100 text-sm">
                         <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
                             <tr>
@@ -152,6 +153,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>{{-- /overflow-x-auto --}}
                 </div>
                 @endforeach
             @endif
@@ -225,7 +227,7 @@
                                     </svg>
                                 </div>
                             </summary>
-                            <div class="border-t border-gray-100 bg-gray-50">
+                            <div class="border-t border-gray-100 bg-gray-50 overflow-x-auto">
                                 <table class="min-w-full text-sm">
                                     <tbody class="divide-y divide-gray-100">
                                         @foreach($batch['assignments'] as $a)

@@ -205,7 +205,7 @@
                     <iframe
                         src="{{ route('assignments.streamCoverage', $assignment) }}"
                         class="w-full"
-                        style="height: 900px;">
+                        style="height: clamp(400px, 75vh, 900px);">
                     </iframe>
                 </div>
             @elseif($assignment->drive_coverage_doc_id)

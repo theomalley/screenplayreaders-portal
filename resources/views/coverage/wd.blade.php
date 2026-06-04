@@ -64,7 +64,7 @@
 
                     <input type="hidden" name="wd_assignment_type" value="{{ old('wd_assignment_type', $existing?->wd_assignment_type ?? $assignment->assignment_type) }}" />
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <x-input-label for="genre" value="Genre" />
                             <x-text-input id="genre" name="genre" type="text" class="mt-1 block w-full"
