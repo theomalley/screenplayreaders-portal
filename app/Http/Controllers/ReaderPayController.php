@@ -163,12 +163,11 @@ class ReaderPayController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        // Hard-delete test assignments; delete all pending adjustments
+        // Hard-delete all unpaid completed assignments for this reader + all pending adjustments
         $deleted = Assignment::where('assigned_reader_id', $reader->id)
             ->where('vendor', 'sr')
             ->where('status', Assignment::STATUS_COMPLETED)
             ->whereNull('reader_paid_at')
-            ->where('is_test', true)
             ->delete();
 
         ReaderPayAdjustment::where('user_id', $reader->id)
