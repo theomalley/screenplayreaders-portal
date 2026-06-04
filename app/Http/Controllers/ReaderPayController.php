@@ -159,6 +159,28 @@ class ReaderPayController extends Controller
             ->with('success', "Adjustment {$sign}{$validated['amount']} added for {$name}.");
     }
 
+    public function clearUnpaidBatch(User $reader)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        // Hard-delete test assignments; delete all pending adjustments
+        $deleted = Assignment::where('assigned_reader_id', $reader->id)
+            ->where('vendor', 'sr')
+            ->where('status', Assignment::STATUS_COMPLETED)
+            ->whereNull('reader_paid_at')
+            ->where('is_test', true)
+            ->delete();
+
+        ReaderPayAdjustment::where('user_id', $reader->id)
+            ->whereNull('reader_paid_at')
+            ->delete();
+
+        $name = $reader->readerProfile?->displayName() ?? $reader->name;
+
+        return redirect()->route('reader-pay.index')
+            ->with('success', "Cleared unpaid queue for {$name} ({$deleted} test assignment(s) removed).");
+    }
+
     public function removeHistoryBatch(Request $request, User $reader)
     {
         abort_unless(auth()->user()->isAdmin(), 403);

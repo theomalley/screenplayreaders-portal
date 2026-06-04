@@ -222,6 +222,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');
     Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
+    Route::post('/reader-pay/{reader}/clear-unpaid', [ReaderPayController::class, 'clearUnpaidBatch'])->name('reader-pay.clear-unpaid');
     Route::post('/reader-pay/{reader}/remove-batch', [ReaderPayController::class, 'removeHistoryBatch'])->name('reader-pay.remove-batch');
     Route::post('/reader-pay/{reader}/mark-unpaid', [ReaderPayController::class, 'markUnpaid'])->name('reader-pay.mark-unpaid');
     Route::post('/reader-pay/{reader}/adjustment', [ReaderPayController::class, 'addAdjustment'])->name('reader-pay.add-adjustment');

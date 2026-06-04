@@ -54,6 +54,16 @@
                             </span>
                         </div>
                         <div class="flex items-center gap-2">
+                            @if(auth()->user()->isAdmin())
+                            <form method="POST" action="{{ route('reader-pay.clear-unpaid', $readerId) }}"
+                                onsubmit="return confirm('Remove all test assignments and pending adjustments for {{ $rd['reader_name'] }}?')">
+                                @csrf
+                                <button type="submit"
+                                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-300 hover:bg-red-50 rounded-md transition-colors">
+                                    Remove
+                                </button>
+                            </form>
+                            @endif
                             <button type="button" @click="adjOpen = !adjOpen"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 hover:bg-indigo-50 rounded-md transition-colors">
                                 + Adjustment
