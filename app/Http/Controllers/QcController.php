@@ -109,9 +109,8 @@ class QcController extends Controller
             $siblings = Assignment::where('order_number', $assignment->order_number)->get();
 
             try {
-                $this->buildHelpScoutDraft($siblings->all());
-                return redirect()->route('qc.index')
-                    ->with('success', "#{$assignment->order_number} — {$assignment->script_title} approved. HelpScout draft created.");
+                $hsUrl = $this->buildHelpScoutDraft($siblings->all());
+                return redirect()->away($hsUrl);
             } catch (\Throwable $e) {
                 Log::error('HelpScout draft failed after QC approval', [
                     'order_number' => $assignment->order_number,
@@ -158,8 +157,8 @@ class QcController extends Controller
         }
 
         try {
-            $this->buildHelpScoutDraft([$assignment]);
-            return back()->with('success', 'HelpScout draft created for this coverage.');
+            $hsUrl = $this->buildHelpScoutDraft([$assignment]);
+            return redirect()->away($hsUrl);
         } catch (\Throwable $e) {
             Log::error('HelpScout draftNow failed', [
                 'assignment_id' => $assignment->id,
@@ -203,8 +202,8 @@ class QcController extends Controller
         }
 
         try {
-            $this->buildHelpScoutDraft($siblings->all());
-            return back()->with('success', 'HelpScout draft created with all available coverage PDFs.');
+            $hsUrl = $this->buildHelpScoutDraft($siblings->all());
+            return redirect()->away($hsUrl);
         } catch (\Throwable $e) {
             Log::error('HelpScout draftAll failed', [
                 'order_number' => $assignment->order_number,
@@ -248,9 +247,10 @@ class QcController extends Controller
      * all assignments after success.
      *
      * @param  Assignment[]  $assignments
+     * @return string  The HelpScout web URL for the conversation
      * @throws \RuntimeException if no conversation ID is found or the API call fails
      */
-    private function buildHelpScoutDraft(array $assignments): void
+    private function buildHelpScoutDraft(array $assignments): string
     {
         $orderNumber = $assignments[0]->order_number;
 
@@ -263,7 +263,8 @@ class QcController extends Controller
                 throw new \RuntimeException("No HelpScout conversation on record for order #{$orderNumber}. Set the HelpScout ticket # on the assignment and try again.");
             }
 
-            $conversationId = (new HelpScoutService())->findConversationIdByTicketNumber($ticketNumber);
+            $helpScout      = new HelpScoutService();
+            $conversationId = $helpScout->findConversationIdByTicketNumber($ticketNumber);
 
             if (! $conversationId) {
                 throw new \RuntimeException("Could not find HelpScout conversation for ticket #{$ticketNumber}.");
@@ -300,11 +301,12 @@ class QcController extends Controller
             throw new \RuntimeException("No coverage PDFs available for order #{$orderNumber}.");
         }
 
-        (new HelpScoutService())->createDraftReply(
-            $record->helpscout_conversation_id,
-            'Insert Saved Reply',
-            $attachments
-        );
+        $conversationId = $record->helpscout_conversation_id;
+        $helpScout      = new HelpScoutService();
+        $body           = $helpScout->getSavedReplyBody('1441336');
+        $body           = $helpScout->resolveBodyVariables($body, $conversationId);
+
+        $helpScout->createDraftReply($conversationId, $body, $attachments);
 
         // Stamp all siblings for this order so the archive GoBack column shows ✓
         Assignment::where('order_number', $orderNumber)
@@ -312,8 +314,10 @@ class QcController extends Controller
 
         Log::info('HelpScout draft created', [
             'order_number'    => $orderNumber,
-            'conversation_id' => $record->helpscout_conversation_id,
+            'conversation_id' => $conversationId,
             'attachments'     => count($attachments),
         ]);
+
+        return 'https://secure.helpscout.net/conversation/' . $conversationId . '/';
     }
 }
