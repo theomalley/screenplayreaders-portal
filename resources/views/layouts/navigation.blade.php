@@ -128,10 +128,12 @@
                             </div>
                         @endif
 
-                        {{-- Earnings tab (all admin/editor users) --}}
+                        {{-- Earnings tab (editors only) --}}
+                        @if(auth()->user()?->isEditor())
                         <x-nav-link :href="route('editor-earnings.index')" :active="request()->routeIs('editor-earnings.*')">
                             Earnings
                         </x-nav-link>
+                        @endif
 
                         {{-- Admin dropdown (Team, Archive, Ratebook, Reader Manual) --}}
                         @php
