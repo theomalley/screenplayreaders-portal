@@ -109,8 +109,12 @@
                                 <div x-show="revenueOpen" x-cloak
                                      class="absolute top-full left-0 mt-0 w-36 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
                                     <a href="{{ route('revenue.index') }}"
-                                       class="block px-4 py-2 text-sm {{ request()->routeIs('revenue.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('revenue.index') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Revenue
+                                    </a>
+                                    <a href="{{ route('revenue.by-customer') }}"
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('revenue.by-customer') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        By Customer
                                     </a>
                                     <a href="{{ route('statistics.index') }}"
                                        class="block px-4 py-2 text-sm {{ request()->routeIs('statistics.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">

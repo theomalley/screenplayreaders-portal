@@ -202,7 +202,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/woo-orders/{id}/resend-email', [WooOrderController::class, 'resendEmail'])->name('woo-orders.resend-email')->whereNumber('id');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
+    Route::get('/revenue/by-customer', [RevenueController::class, 'byCustomer'])->name('revenue.by-customer');
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::get('/payroll/export-1099', [PayrollController::class, 'export1099'])->name('payroll.export-1099');
     Route::patch('/payroll/schedule', [PayoutScheduleController::class, 'update'])->name('payroll.schedule.update');
     Route::patch('/payroll/schedule/override', [PayoutScheduleController::class, 'setOverride'])->name('payroll.schedule.override');
     Route::get('/reader-earnings', [ReaderEarningsController::class, 'index'])->name('reader-earnings.index');

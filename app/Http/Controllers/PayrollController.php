@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-06-04 | Current-period card, 1099 CSV export
 // v1.1 — 2026-06-02 | Pass payout schedule config to view for admin schedule panel
 // v1.0 — 2026-05-31 | Admin payroll dashboard — weekly payout history split by 1099 vs non-1099
 
@@ -9,6 +10,7 @@ use App\Models\Assignment;
 use App\Models\Setting;
 use App\Support\PayPeriod;
 use Carbon\Carbon;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayrollController extends Controller
 {
@@ -89,7 +91,101 @@ class PayrollController extends Controller
         $schedule   = Setting::getPayoutSchedule();
         $nextPayout = PayPeriod::nextPayoutDate();
 
-        return view('payroll.index', compact('periods', 'totals', 'period', 'schedule', 'nextPayout'));
+        // Current pay-period totals — always computed regardless of filter
+        [$curStart, $curEnd] = PayPeriod::current();
+        $curAssignments = Assignment::with(['assignedReader.readerProfile'])
+            ->where('status', Assignment::STATUS_COMPLETED)
+            ->where('vendor', 'sr')
+            ->whereNotNull('reader_paid_at')
+            ->where('reader_paid_at', '>=', $curStart)
+            ->where('reader_paid_at', '<=', $curEnd)
+            ->get();
+
+        $currentPeriod = [
+            'label'        => PayPeriod::label($curStart),
+            'start'        => $curStart,
+            'end'          => $curEnd,
+            'pay_1099'     => 0.0,
+            'pay_non_1099' => 0.0,
+            'total'        => 0.0,
+        ];
+        foreach ($curAssignments as $a) {
+            $is1099 = (bool) ($a->assignedReader?->readerProfile?->is_1099 ?? false);
+            if ($is1099) {
+                $currentPeriod['pay_1099'] += (float) $a->pay_rate;
+            } else {
+                $currentPeriod['pay_non_1099'] += (float) $a->pay_rate;
+            }
+        }
+        $currentPeriod['total'] = $currentPeriod['pay_1099'] + $currentPeriod['pay_non_1099'];
+
+        return view('payroll.index', compact(
+            'periods', 'totals', 'period', 'schedule', 'nextPayout', 'currentPeriod'
+        ));
+    }
+
+    public function export1099(): StreamedResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $period = request()->input('period', 'all_time');
+        if (! array_key_exists($period, self::$PERIODS)) {
+            $period = 'all_time';
+        }
+
+        [$start, $end] = $this->dateRange($period);
+
+        $assignments = Assignment::with(['assignedReader.readerProfile'])
+            ->where('status', Assignment::STATUS_COMPLETED)
+            ->where('vendor', 'sr')
+            ->whereNotNull('reader_paid_at')
+            ->whereHas('assignedReader.readerProfile', fn ($q) => $q->where('is_1099', true))
+            ->when($start, fn ($q) => $q->where('reader_paid_at', '>=', $start))
+            ->when($end,   fn ($q) => $q->where('reader_paid_at', '<=', $end))
+            ->get();
+
+        // Aggregate per reader
+        $byReader = [];
+        foreach ($assignments as $a) {
+            $id      = $a->assigned_reader_id;
+            $profile = $a->assignedReader?->readerProfile;
+            if (! isset($byReader[$id])) {
+                $byReader[$id] = [
+                    'name'         => $profile?->displayName() ?? $a->assignedReader?->name ?? 'Unknown',
+                    'paypal_email' => $profile?->paypal_email ?? '',
+                    'count'        => 0,
+                    'total'        => 0.0,
+                ];
+            }
+            $byReader[$id]['count']++;
+            $byReader[$id]['total'] += (float) $a->pay_rate;
+        }
+
+        usort($byReader, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
+        $periodLabel = self::$PERIODS[$period];
+        $filename    = 'sr-1099-pay-' . $period . '-' . now()->format('Ymd') . '.csv';
+
+        return response()->streamDownload(function () use ($byReader, $periodLabel) {
+            $f = fopen('php://output', 'w');
+            fputcsv($f, ['SR 1099 Pay Report — ' . $periodLabel]);
+            fputcsv($f, ['Generated', now()->format('M j, Y g:i A T')]);
+            fputcsv($f, []);
+            fputcsv($f, ['Name', 'PayPal Email', 'Assignments', 'Total Paid']);
+            foreach ($byReader as $row) {
+                fputcsv($f, [
+                    $row['name'],
+                    $row['paypal_email'],
+                    $row['count'],
+                    number_format($row['total'], 2),
+                ]);
+            }
+            $grandTotal = array_sum(array_column($byReader, 'total'));
+            $grandCount = array_sum(array_column($byReader, 'count'));
+            fputcsv($f, []);
+            fputcsv($f, ['TOTAL', '', $grandCount, number_format($grandTotal, 2)]);
+            fclose($f);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     private function dateRange(string $period): array

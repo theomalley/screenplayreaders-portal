@@ -35,6 +35,15 @@
                                     @endif
                                 </a>
                                 <span class="font-semibold text-gray-800">{{ $rd['reader_name'] }}</span>
+                                @php $paymentId = strtoupper($rd['initials']) . now()->format('Ymd'); @endphp
+                                <span x-data="{ copied: false }"
+                                      class="inline-flex items-center gap-1 cursor-pointer select-all"
+                                      @click="navigator.clipboard.writeText('{{ $paymentId }}'); copied = true; setTimeout(() => copied = false, 1500)"
+                                      title="Copy payment ID for PayPal note">
+                                    <span class="font-mono text-xs px-1.5 py-0.5 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-700 transition-colors">{{ $paymentId }}</span>
+                                    <span x-show="!copied" class="text-[10px] text-gray-400">copy</span>
+                                    <span x-show="copied" x-cloak class="text-[10px] text-green-600 font-medium">✓ copied</span>
+                                </span>
                             </div>
                             @if($rd['paypal_email'])
                                 <span class="text-sm text-gray-500">· PayPal: <span class="font-mono text-xs">{{ $rd['paypal_email'] }}</span></span>

@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-04 | By-customer / by-client revenue breakdown
 // v1.0 — 2026-05-25 | Admin-only revenue dashboard — time-period aggregates and Chart.js data
 
 namespace App\Http\Controllers;
@@ -57,6 +58,48 @@ class RevenueController extends Controller
         $chartData = $this->buildChartData($orders, $start, $end, $period);
 
         return view('revenue.index', compact('orders', 'totals', 'period', 'chartData'));
+    }
+
+    public function byCustomer()
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $period = request()->input('period', 'this_month');
+        if (! array_key_exists($period, self::$PERIODS)) {
+            $period = 'this_month';
+        }
+
+        [$start, $end] = $this->dateRange($period);
+
+        $baseQuery = OrderRevenue::when($start, fn ($q) => $q->where('ordered_at', '>=', $start))
+                                  ->when($end,   fn ($q) => $q->where('ordered_at', '<=', $end));
+
+        // Per WooCommerce customer (by email)
+        $byCustomer = (clone $baseQuery)
+            ->selectRaw('customer_email, MAX(customer_name) as customer_name, COUNT(*) as order_count,
+                         SUM(order_total) as gross, SUM(discount_amount) as discount,
+                         SUM(net_revenue) as net')
+            ->whereNotNull('customer_email')
+            ->where('customer_email', '!=', '')
+            ->groupBy('customer_email')
+            ->orderByDesc('net')
+            ->get();
+
+        // Per Client (joined through assignments)
+        $byClient = DB::table('order_revenues as r')
+            ->join('assignments as a', 'a.order_number', '=', 'r.order_number')
+            ->join('clients as c', 'c.id', '=', 'a.client_id')
+            ->when($start, fn ($q) => $q->where('r.ordered_at', '>=', $start))
+            ->when($end,   fn ($q) => $q->where('r.ordered_at', '<=', $end))
+            ->selectRaw('c.id as client_id, c.name as client_name,
+                         COUNT(DISTINCT r.order_number) as order_count,
+                         SUM(r.order_total) as gross, SUM(r.discount_amount) as discount,
+                         SUM(r.net_revenue) as net')
+            ->groupBy('c.id', 'c.name')
+            ->orderByDesc('net')
+            ->get();
+
+        return view('revenue.by-customer', compact('byCustomer', 'byClient', 'period'));
     }
 
     private function dateRange(string $period): array

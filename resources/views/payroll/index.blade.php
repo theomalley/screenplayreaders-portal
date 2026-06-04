@@ -16,6 +16,22 @@
     <div class="py-6">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+            {{-- Current pay-period snapshot (always visible) --}}
+            <div class="bg-indigo-600 rounded-lg shadow px-5 py-4 text-white flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <div class="text-xs font-semibold uppercase tracking-wide opacity-75">Current Pay Period</div>
+                    <div class="mt-0.5 text-lg font-bold">{{ $currentPeriod['label'] }}</div>
+                    <div class="mt-1 flex items-center gap-4 text-sm opacity-90">
+                        <span>1099: <strong>${{ number_format($currentPeriod['pay_1099'], 2) }}</strong></span>
+                        <span>Non-1099: <strong>${{ number_format($currentPeriod['pay_non_1099'], 2) }}</strong></span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs font-semibold uppercase tracking-wide opacity-75">Total Paid This Period</div>
+                    <div class="mt-0.5 text-3xl font-extrabold">${{ number_format($currentPeriod['total'], 2) }}</div>
+                </div>
+            </div>
+
             {{-- Payout Schedule (admin only) --}}
             @php
                 $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -131,8 +147,15 @@
             {{-- Weekly payout history --}}
             @if ($periods)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div class="px-5 py-3 border-b border-gray-100">
+                <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                     <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Weekly Payout History</h3>
+                    <a href="{{ route('payroll.export-1099', ['period' => $period]) }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-md transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Export 1099 CSV
+                    </a>
                 </div>
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                     <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
