@@ -27,7 +27,7 @@
                     <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
                         <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">SR — Base Rates</h3>
                     </div>
-                    <table class="min-w-full divide-y divide-gray-100 text-sm">
+                    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100 text-sm">
                         <tbody class="divide-y divide-gray-100">
                             @php
                             $srBaseRows = [
@@ -61,7 +61,7 @@
                                 <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom per assignment</td>
                             </tr>
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
 
                 {{-- SR Modifiers --}}
@@ -69,7 +69,7 @@
                     <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
                         <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">SR — Modifiers</h3>
                     </div>
-                    <table class="min-w-full divide-y divide-gray-100 text-sm">
+                    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100 text-sm">
                         <tbody class="divide-y divide-gray-100">
                             @php
                             $srModRows = [
@@ -102,7 +102,7 @@
                                 <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom per assignment</td>
                             </tr>
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
 
                 {{-- WD Base Rates --}}
@@ -110,7 +110,7 @@
                     <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
                         <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">WD — Base Rates</h3>
                     </div>
-                    <table class="min-w-full divide-y divide-gray-100 text-sm">
+                    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100 text-sm">
                         <tbody class="divide-y divide-gray-100">
                             @php
                             $wdBaseRows = [
@@ -137,7 +137,7 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
 
                 {{-- WD Modifiers --}}
@@ -145,7 +145,7 @@
                     <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
                         <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">WD — Modifiers</h3>
                     </div>
-                    <table class="min-w-full divide-y divide-gray-100 text-sm">
+                    <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100 text-sm">
                         <tbody class="divide-y divide-gray-100">
                             @php
                             $wdModRows = [
@@ -177,7 +177,7 @@
                                 <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom per assignment</td>
                             </tr>
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
 
                 {{-- Editor Rates — hidden from readers --}}
@@ -198,7 +198,7 @@
                     @if ($canEdit)
                         {{-- Admin: per-editor breakdown --}}
                         @if ($editorRates && $editorRates->isNotEmpty())
-                            <table class="min-w-full divide-y divide-gray-100 text-sm">
+                            <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100 text-sm">
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Editor</th>
@@ -224,14 +224,14 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
-                            </table>
+                            </table></div>
                         @else
                             <p class="px-5 py-4 text-sm text-gray-400 italic">No editors found.</p>
                         @endif
 
                     @elseif ($isEditor && $myEditorRates)
                         {{-- Editor: own rates, read-only --}}
-                        <table class="min-w-full divide-y divide-gray-100 text-sm">
+                        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100 text-sm">
                             <tbody class="divide-y divide-gray-100">
                                 <tr>
                                     <td class="px-5 py-3 text-gray-700 w-2/3">Your Commission Rate</td>
@@ -246,7 +246,7 @@
                                     </td>
                                 </tr>
                             </tbody>
-                        </table>
+                        </table></div>
                     @endif
                 </div>
                 @endif

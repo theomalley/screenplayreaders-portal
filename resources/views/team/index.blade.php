@@ -67,12 +67,6 @@
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div class="overflow-x-auto">
                     <table class="min-w-[480px] divide-y divide-gray-200 text-sm">
-                        <colgroup>
-                            <col style="width:32%">
-                            <col style="width:20%">
-                            <col style="width:28%">
-                            <col style="width:20%">
-                        </colgroup>
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
@@ -160,13 +154,8 @@
                     </div>
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <table class="w-full divide-y divide-gray-200 text-sm" style="table-layout:fixed">
-                            <colgroup>
-                                <col style="width:32%">
-                                <col style="width:20%">
-                                <col style="width:28%">
-                                <col style="width:20%">
-                            </colgroup>
+                        <div class="overflow-x-auto">
+                        <table class="min-w-[480px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Editor</th>
@@ -262,13 +251,8 @@
                     </div>
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <table class="w-full divide-y divide-gray-200 text-sm" style="table-layout:fixed">
-                            <colgroup>
-                                <col style="width:32%">
-                                <col style="width:20%">
-                                <col style="width:28%">
-                                <col style="width:20%">
-                            </colgroup>
+                        <div class="overflow-x-auto">
+                        <table class="min-w-[480px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reader</th>
