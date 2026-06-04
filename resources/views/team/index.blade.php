@@ -64,8 +64,9 @@
             @if ($admins->isNotEmpty())
             <div>
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admins</h3>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
-                    <table class="w-full divide-y divide-gray-200 text-sm" style="min-width:480px">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                    <table class="min-w-[480px] divide-y divide-gray-200 text-sm">
                         <colgroup>
                             <col style="width:32%">
                             <col style="width:20%">
@@ -141,6 +142,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>{{-- /overflow-x-auto --}}
                 </div>
             </div>
             @endif
@@ -242,6 +244,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </div>{{-- /overflow-x-auto --}}
                     </div>
                 @endif
             </div>
@@ -343,6 +346,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </div>{{-- /overflow-x-auto --}}
                     </div>
                 @endif
             </div>

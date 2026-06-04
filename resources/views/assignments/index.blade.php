@@ -616,7 +616,7 @@
                             @endforeach
                         </div>
                         <div class="overflow-x-auto">
-                        <table class="w-full table-fixed divide-y divide-gray-200 text-sm">
+                        <table class="min-w-[600px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>

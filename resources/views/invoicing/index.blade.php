@@ -10,7 +10,7 @@
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             @if(session('success'))
                 <div class="px-4 py-3 rounded bg-green-50 border border-green-200 text-green-800 text-sm">
@@ -32,7 +32,9 @@
                 @if($outstanding->isEmpty())
                     <div class="px-4 py-8 text-center text-sm text-gray-400">No outstanding invoices.</div>
                 @else
-                    @include('invoicing._invoice_table', ['invoices' => $outstanding, 'showPaid' => false])
+                    <div class="overflow-x-auto">
+                        @include('invoicing._invoice_table', ['invoices' => $outstanding, 'showPaid' => false])
+                    </div>
                 @endif
             </div>
 
@@ -42,7 +44,9 @@
                     <div class="px-4 py-3 border-b border-gray-100">
                         <h3 class="text-sm font-semibold text-gray-700">Paid</h3>
                     </div>
-                    @include('invoicing._invoice_table', ['invoices' => $paid, 'showPaid' => true])
+                    <div class="overflow-x-auto">
+                        @include('invoicing._invoice_table', ['invoices' => $paid, 'showPaid' => true])
+                    </div>
                 </div>
             @endif
 

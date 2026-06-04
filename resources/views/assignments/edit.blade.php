@@ -650,7 +650,7 @@
                 </div>
 
                 {{-- Actions — outside the edit form so the delete form is never nested --}}
-                <div class="flex items-center justify-between px-6 pb-6 pt-4 border-t border-gray-100">
+                <div class="flex flex-wrap items-center justify-between gap-y-3 px-6 pb-6 pt-4 border-t border-gray-100">
                     <div class="flex items-center gap-2">
                         <form method="POST" action="{{ route('assignments.destroy', $assignment) }}"
                               onsubmit="return confirm('Permanently delete this assignment? This cannot be undone.')">
