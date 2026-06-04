@@ -151,6 +151,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->name('announcements.mark-read');
     Route::post('/announcements/{announcement}/dismiss', [AnnouncementController::class, 'dismiss'])->name('announcements.dismiss');
 
+    Route::post('/admin/impersonate/{user}', [\App\Http\Controllers\ImpersonateController::class, 'start'])->name('impersonate.start');
+    Route::post('/admin/impersonate-stop', [\App\Http\Controllers\ImpersonateController::class, 'stop'])->name('impersonate.stop');
+
     Route::get('/staff/{user}/card', [\App\Http\Controllers\StaffCardController::class, 'card'])->name('staff.card');
     Route::get('/staff/{user}/reader-card', [\App\Http\Controllers\StaffCardController::class, 'readerCard'])->name('staff.reader-card');
     Route::get('/staff/{user}/draft-email', [\App\Http\Controllers\StaffCardController::class, 'draftEmail'])->name('staff.draft-email');

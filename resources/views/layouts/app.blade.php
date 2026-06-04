@@ -200,6 +200,24 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
         <div class="min-h-screen">
             @include('layouts.navigation')
 
+            @if(session('impersonator_id'))
+            <div class="bg-yellow-400 text-yellow-900 text-sm font-semibold">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4">
+                    <span>
+                        👁 Viewing as <strong>{{ auth()->user()->name }}</strong>
+                        ({{ ucfirst(auth()->user()->role) }})
+                    </span>
+                    <form method="POST" action="{{ route('impersonate.stop') }}">
+                        @csrf
+                        <button type="submit"
+                                class="px-3 py-1 bg-yellow-900 text-yellow-100 text-xs font-bold rounded hover:bg-yellow-800 transition-colors whitespace-nowrap">
+                            ← Return to Admin
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             @if(auth()->check())
             @php
                 $userId = auth()->id();

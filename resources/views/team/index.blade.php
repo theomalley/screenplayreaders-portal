@@ -230,6 +230,12 @@
                                                     {{ $editor->hidden_from_staff ? 'Hidden' : 'Visible' }}
                                                 </button>
                                             </form>
+                                            <form method="POST" action="{{ route('impersonate.start', $editor) }}" onclick="event.stopPropagation()" class="mt-1">
+                                                @csrf
+                                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded border border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 whitespace-nowrap">
+                                                    👁 View as
+                                                </button>
+                                            </form>
                                             @endif
                                         </td>
                                     </tr>
@@ -323,6 +329,12 @@
                                                 @csrf
                                                 <button type="submit" class="text-[10px] px-2 py-0.5 rounded border {{ $reader->hidden_from_staff ? 'border-amber-300 text-amber-600 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300' }}">
                                                     {{ $reader->hidden_from_staff ? 'Hidden' : 'Visible' }}
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('impersonate.start', $reader) }}" onclick="event.stopPropagation()" class="mt-1">
+                                                @csrf
+                                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded border border-yellow-300 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 whitespace-nowrap">
+                                                    👁 View as
                                                 </button>
                                             </form>
                                             @endif
