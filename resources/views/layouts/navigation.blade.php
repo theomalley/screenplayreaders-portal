@@ -128,6 +128,11 @@
                             </div>
                         @endif
 
+                        {{-- Earnings tab (all admin/editor users) --}}
+                        <x-nav-link :href="route('editor-earnings.index')" :active="request()->routeIs('editor-earnings.*')">
+                            Earnings
+                        </x-nav-link>
+
                         {{-- Admin dropdown (Team, Archive, Ratebook, Reader Manual) --}}
                         @php
                             $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('reader-pay.*') || request()->routeIs('editor-pay.*') || request()->routeIs('test-data.*');
@@ -191,10 +196,6 @@
                     @else
                         @if(auth()->user()?->isReader())
                             <x-nav-link :href="route('reader-earnings.index')" :active="request()->routeIs('reader-earnings.*')">
-                                {{ __('Earnings') }}
-                            </x-nav-link>
-                        @elseif(auth()->user()?->isAdminOrEditor())
-                            <x-nav-link :href="route('editor-earnings.index')" :active="request()->routeIs('editor-earnings.*')">
                                 {{ __('Earnings') }}
                             </x-nav-link>
                         @endif
