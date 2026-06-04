@@ -110,7 +110,7 @@ class QcController extends Controller
 
             try {
                 $hsUrl = $this->buildHelpScoutDraft($siblings->all());
-                return redirect()->away($hsUrl);
+                return $this->openInNewTab($hsUrl, route('qc.index'));
             } catch (\Throwable $e) {
                 Log::error('HelpScout draft failed after QC approval', [
                     'order_number' => $assignment->order_number,
@@ -158,7 +158,7 @@ class QcController extends Controller
 
         try {
             $hsUrl = $this->buildHelpScoutDraft([$assignment]);
-            return redirect()->away($hsUrl);
+            return $this->openInNewTab($hsUrl, route('qc.index'));
         } catch (\Throwable $e) {
             Log::error('HelpScout draftNow failed', [
                 'assignment_id' => $assignment->id,
@@ -203,7 +203,7 @@ class QcController extends Controller
 
         try {
             $hsUrl = $this->buildHelpScoutDraft($siblings->all());
-            return redirect()->away($hsUrl);
+            return $this->openInNewTab($hsUrl, route('qc.index'));
         } catch (\Throwable $e) {
             Log::error('HelpScout draftAll failed', [
                 'order_number' => $assignment->order_number,
@@ -230,6 +230,27 @@ class QcController extends Controller
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Return an HTML shim that opens $hsUrl in a new tab and redirects the
+     * current tab to $returnUrl. Works for standard form-POST responses where
+     * a server-side 302 can only navigate the current tab.
+     */
+    private function openInNewTab(string $hsUrl, string $returnUrl): \Illuminate\Http\Response
+    {
+        $hsUrlJson     = json_encode($hsUrl,     JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+        $returnUrlJson = json_encode($returnUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
+
+        return response(
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Redirecting…</title></head><body>" .
+            "<script>window.open({$hsUrlJson},'_blank');window.location.replace({$returnUrlJson});</script>" .
+            "<noscript><p>Draft created. <a href=\"{$hsUrl}\" target=\"_blank\">Open in HelpScout</a> &mdash; " .
+            "<a href=\"{$returnUrl}\">Return to QC queue</a></p></noscript>" .
+            "</body></html>",
+            200,
+            ['Content-Type' => 'text/html']
+        );
+    }
 
     private function generatePdfForAssignment(Assignment $assignment): string
     {
