@@ -775,7 +775,7 @@
                                                                         .catch(() => { busy = false; err = 'Failed'; })
                                                                     "
                                                                     class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
-                                                                    :class="sent ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'"
+                                                                    :class="sent ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 hover:bg-red-200'"
                                                                     x-text="busy ? '…' : (sent ? '✓ Drafted' : 'Over 120')">
                                                             </button>
                                                             <span x-show="err" x-text="err" class="text-[10px] text-red-500 ml-0.5"></span>
@@ -1153,7 +1153,7 @@
                                                                         .catch(() => { busy = false; err = 'Failed'; })
                                                                     "
                                                                     class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
-                                                                    :class="sent ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'"
+                                                                    :class="sent ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 hover:bg-red-200'"
                                                                     x-text="busy ? '…' : (sent ? '✓ Drafted' : 'Over 120')">
                                                             </button>
                                                             <span x-show="err" x-text="err" class="text-[10px] text-red-500 ml-0.5"></span>
