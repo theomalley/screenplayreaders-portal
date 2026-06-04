@@ -884,6 +884,64 @@
             </div>
             @endif
 
+            {{-- Quick-Login Link --}}
+            @if($isAdmin)
+            @php $qlToken = \App\Http\Controllers\QuickLoginController::currentToken(); @endphp
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Admin Quick-Login Link</h3>
+                    <p class="text-xs text-gray-500">
+                        A tokenized URL you can bookmark on your phone or browser to log straight in as admin — no password prompt.
+                        Treat it like a password: keep it private and revoke it if it's ever compromised.
+                    </p>
+                </div>
+
+                @if($qlToken)
+                    @php $qlUrl = url('/ql/' . $qlToken); @endphp
+                    <div x-data="{ copied: false }">
+                        <div class="flex items-center gap-2">
+                            <input type="text" readonly value="{{ $qlUrl }}"
+                                   class="flex-1 text-xs font-mono border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-700 focus:outline-none select-all"
+                                   onclick="this.select()">
+                            <button type="button"
+                                    @click="navigator.clipboard.writeText('{{ $qlUrl }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                    class="px-3 py-2 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-md transition-colors whitespace-nowrap">
+                                <span x-show="!copied">Copy URL</span>
+                                <span x-show="copied" x-cloak class="text-green-700">✓ Copied</span>
+                            </button>
+                        </div>
+                        <p class="mt-1.5 text-[10px] text-gray-400">Bookmark this URL. Clicking it logs you in directly. Rate-limited to 10 attempts/min per IP.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <form method="POST" action="{{ route('quick-login.generate') }}"
+                              onsubmit="return confirm('Regenerate? Your existing bookmark will stop working.')">
+                            @csrf
+                            <button type="submit"
+                                    class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors">
+                                Regenerate
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('quick-login.revoke') }}"
+                              onsubmit="return confirm('Revoke this link? Any saved bookmarks will stop working immediately.')">
+                            @csrf @method('DELETE')
+                            <button type="submit"
+                                    class="px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 rounded-md transition-colors">
+                                Revoke
+                            </button>
+                        </form>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('quick-login.generate') }}">
+                        @csrf
+                        <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors">
+                            Generate Quick-Login Link
+                        </button>
+                    </form>
+                @endif
+            </div>
+            @endif
+
             {{-- Last Seen Reset --}}
             @if($isAdmin)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">

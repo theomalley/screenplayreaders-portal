@@ -40,6 +40,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/followup/{token}',  [FollowupFormController::class, 'show'])->name('followup.show');
 Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->name('followup.submit');
 
+// Tokenized admin quick-login (public, rate-limited)
+Route::get('/ql/{token}', [\App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login');
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -121,6 +124,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/word-counts', [SettingController::class, 'updateWordCounts'])->name('settings.word-counts');
     Route::post('/settings/reset-last-seen-all', [SettingController::class, 'resetAllLastSeen'])->name('settings.reset-last-seen-all');
     Route::post('/settings/reset-last-seen-me', [SettingController::class, 'resetMyLastSeen'])->name('settings.reset-last-seen-me');
+    Route::post('/settings/quick-login/generate', [\App\Http\Controllers\QuickLoginController::class, 'generate'])->name('quick-login.generate');
+    Route::delete('/settings/quick-login', [\App\Http\Controllers\QuickLoginController::class, 'revoke'])->name('quick-login.revoke');
     Route::post('/settings/email-all-readers', [SettingController::class, 'emailAllReaders'])->name('settings.email-all-readers');
 
     // Assignment notes (reader → admin messaging)
