@@ -346,19 +346,48 @@
     <script>
     // DEV ONLY — remove before launch
     function srAutofill() {
-        const short  = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
-        const medium = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.';
-        const long   = medium + ' ' + medium + ' ' + medium;
+        const fill = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.value = val;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        };
 
-        const fill = (el, val) => { el.value = val; el.dispatchEvent(new Event('input', { bubbles: true })); };
+        // Build text long enough to meet minWords by repeating a realistic sentence block.
+        const block = 'The story follows a determined protagonist navigating unexpected obstacles while uncovering deeper truths about themselves and the world around them. Character motivations are clearly established and the narrative maintains strong tension throughout. The dialogue feels authentic and each scene advances both plot and character development in meaningful ways.';
+        const countWords = str => str.trim().split(/\s+/).length;
+        const makeText = (minWords) => {
+            let t = block;
+            while (countWords(t) < minWords) t += ' ' + block;
+            return t;
+        };
 
-        fill(document.getElementById('genre'),            'Drama');
-        fill(document.getElementById('time_period'),      'Contemporary');
-        fill(document.getElementById('locations'),        'Los Angeles, New York');
-        fill(document.getElementById('estimated_budget'), 'medium');
-        fill(document.getElementById('sr_logline'),       'A struggling writer discovers a mysterious manuscript that begins rewriting itself, forcing him to confront the truth about his own identity before the final chapter consumes him.');
-        fill(document.getElementById('sr_synopsis'),      medium);
-        fill(document.getElementById('sr_notes'),         long);
+        // Determine which notes minimum applies for this assignment type
+        const assignType = document.querySelector('input[name="sr_assignment_type"]')?.value ?? 'script_coverage';
+        const notesMinsMap = {
+            script_coverage: srWcSettings.wc_sr_notes_script_coverage,
+            deep_dive:       srWcSettings.wc_sr_notes_deep_dive,
+            book:            srWcSettings.wc_sr_notes_book,
+            short:           srWcSettings.wc_sr_notes_short,
+            budget:          srWcSettings.wc_sr_notes_budget,
+            notes_only:      srWcSettings.wc_sr_notes_notes_only,
+        };
+        const notesMin    = notesMinsMap[assignType] || 0;
+        const synopsisMin = srWcSettings.wc_sr_synopsis || 0;
+        const loglineMin  = srWcSettings.wc_sr_logline  || 0;
+
+        fill('genre',            'Drama');
+        fill('time_period',      'Contemporary');
+        fill('locations',        'Los Angeles, New York');
+        fill('estimated_budget', 'medium');
+
+        // Logline: meet min if set, otherwise stay under the 50-word soft cap
+        fill('sr_logline',  loglineMin > 0
+            ? makeText(loglineMin)
+            : 'A determined writer uncovers a manuscript that rewrites itself each night, forcing a reckoning with identity and truth before the final chapter erases him completely.');
+
+        fill('sr_synopsis', makeText(Math.max(synopsisMin, 50)));
+        fill('sr_notes',    makeText(Math.max(notesMin,    50)));
 
         document.querySelector('select[name="sr_bechdel"]').value  = 'Yes';
         document.querySelector('select[name="sr_diversity"]').value = 'Diverse';
