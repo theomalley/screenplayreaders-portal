@@ -39,13 +39,15 @@ class TestDataController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $testCount     = Assignment::where('is_test', true)->count();
-        $pendingReset  = Assignment::where('is_test', true)
+        $testCount       = Assignment::where('is_test', true)->count();
+        $pendingReset    = Assignment::where('is_test', true)
             ->where('status', '!=', Assignment::STATUS_UNASSIGNED)
             ->count();
-        $autoReset     = Setting::getValue('test_auto_reset', '0') === '1';
+        $autoReset       = Setting::getValue('test_auto_reset', '0') === '1';
+        $testScriptId    = Setting::getValue('test_script_drive_file_id', '');
+        $testScriptName  = Setting::getValue('test_script_drive_filename', '');
 
-        return view('admin.test-data', compact('testCount', 'pendingReset', 'autoReset'));
+        return view('admin.test-data', compact('testCount', 'pendingReset', 'autoReset', 'testScriptId', 'testScriptName'));
     }
 
     public function seed(Request $request)
@@ -70,17 +72,22 @@ class TestDataController extends Controller
             $writer            = $writers[$i % count($writers)];
             $orderNum          = 'TEST-' . strtoupper(substr(uniqid(), -6));
 
+            $scriptFileId   = Setting::getValue('test_script_drive_file_id', '') ?: null;
+            $scriptFilename = Setting::getValue('test_script_drive_filename', '') ?: null;
+
             Assignment::create([
-                'order_number'    => $orderNum,
-                'vendor'          => 'sr',
-                'assignment_type' => $type,
-                'script_title'    => $title,
-                'writer_name'     => $writer,
-                'page_count'      => $pages,
-                'pay_rate'        => $pay,
-                'status'          => Assignment::STATUS_UNASSIGNED,
-                'is_test'         => true,
-                'unassigned_at'   => now(),
+                'order_number'          => $orderNum,
+                'vendor'                => 'sr',
+                'assignment_type'       => $type,
+                'script_title'          => $title,
+                'writer_name'           => $writer,
+                'page_count'            => $pages,
+                'pay_rate'              => $pay,
+                'status'                => Assignment::STATUS_UNASSIGNED,
+                'is_test'               => true,
+                'unassigned_at'         => now(),
+                'drive_script_file_id'  => $scriptFileId,
+                'drive_script_filename' => $scriptFilename,
             ]);
 
             $created++;
@@ -130,6 +137,19 @@ class TestDataController extends Controller
         Assignment::where('is_test', true)->delete();
 
         return back()->with('success', "Deleted all {$testIds->count()} test assignment(s).");
+    }
+
+    public function saveTestScript(Request $request)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $fileId   = trim($request->input('file_id', ''));
+        $filename = trim($request->input('filename', ''));
+
+        Setting::setValue('test_script_drive_file_id', $fileId);
+        Setting::setValue('test_script_drive_filename', $filename ?: 'test-script.pdf');
+
+        return back()->with('success', $fileId ? 'Test script saved.' : 'Test script cleared.');
     }
 
     public function toggleAutoReset(Request $request)

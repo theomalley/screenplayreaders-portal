@@ -10,7 +10,7 @@ class TrackLastSeen
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check()) {
+        if (auth()->check() && ! session()->has('impersonator_id')) {
             $user = auth()->user();
             // Throttle writes: only update if last ping was more than 2 minutes ago
             if (!$user->last_seen_at || $user->last_seen_at->lt(now()->subMinutes(2))) {

@@ -57,8 +57,10 @@ class WooOrderController extends Controller
             ]);
         }
 
+        $orders = array_filter($result['orders'], fn($o) => (float)($o['total'] ?? 0) > 0);
+
         return view('woo-orders.index', [
-            'orders'     => $result['orders'],
+            'orders'     => array_values($orders),
             'total'      => $result['total'],
             'totalPages' => $result['total_pages'],
             'page'       => $page,

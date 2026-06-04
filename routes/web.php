@@ -122,6 +122,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/email-notifications', [SettingController::class, 'updateEmailNotificationTexts'])->name('settings.email-notifications');
     Route::patch('/settings/followup-html', [SettingController::class, 'updateFollowupHtml'])->name('settings.followup-html');
     Route::patch('/settings/word-counts', [SettingController::class, 'updateWordCounts'])->name('settings.word-counts');
+    Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');
+    Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');
     Route::post('/settings/reset-last-seen-all', [SettingController::class, 'resetAllLastSeen'])->name('settings.reset-last-seen-all');
     Route::post('/settings/reset-last-seen-me', [SettingController::class, 'resetMyLastSeen'])->name('settings.reset-last-seen-me');
     Route::post('/settings/quick-login/generate', [\App\Http\Controllers\QuickLoginController::class, 'generate'])->name('quick-login.generate');
@@ -163,6 +165,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/admin/impersonate-stop', [\App\Http\Controllers\ImpersonateController::class, 'stop'])->name('impersonate.stop');
 
     Route::get('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'index'])->name('test-data.index');
+    Route::post('/admin/test-data/script', [\App\Http\Controllers\TestDataController::class, 'saveTestScript'])->name('test-data.script');
     Route::post('/admin/test-data/seed', [\App\Http\Controllers\TestDataController::class, 'seed'])->name('test-data.seed');
     Route::post('/admin/test-data/reset', [\App\Http\Controllers\TestDataController::class, 'reset'])->name('test-data.reset');
     Route::delete('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'destroy'])->name('test-data.destroy');

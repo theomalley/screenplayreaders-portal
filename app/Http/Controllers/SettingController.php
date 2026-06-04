@@ -74,6 +74,10 @@ class SettingController extends Controller
         $followupHeading      = Setting::getValue('followup_heading', '');
         $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
 
+        $adminProfile       = auth()->user()->editorProfile;
+        $adminPortalPhotoUrl = $adminProfile?->photo      ? asset('storage/' . $adminProfile->photo)       : null;
+        $adminAboutPhotoUrl  = $adminProfile?->about_photo ? asset('storage/' . $adminProfile->about_photo) : null;
+
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
             'capacityOverride', 'sessionTimeout',
@@ -82,7 +86,7 @@ class SettingController extends Controller
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading',
-            'wordCounts',
+            'wordCounts', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
     }
 
@@ -363,6 +367,44 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'Word count minimums saved.');
+    }
+
+    public function uploadPortalPhoto(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate(['photo' => 'required|image|max:4096']);
+
+        $path    = $request->file('photo')->store('editor-photos', 'public');
+        $profile = auth()->user()->editorProfile;
+
+        if ($profile) {
+            if ($profile->photo) \Illuminate\Support\Facades\Storage::disk('public')->delete($profile->photo);
+            $profile->update(['photo' => $path]);
+        } else {
+            auth()->user()->editorProfile()->create(['photo' => $path]);
+        }
+
+        return back()->with('success', 'Portal profile photo updated.');
+    }
+
+    public function uploadAboutPhoto(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate(['about_photo' => 'required|image|max:4096']);
+
+        $path    = $request->file('about_photo')->store('editor-photos', 'public');
+        $profile = auth()->user()->editorProfile;
+
+        if ($profile) {
+            if ($profile->about_photo) \Illuminate\Support\Facades\Storage::disk('public')->delete($profile->about_photo);
+            $profile->update(['about_photo' => $path]);
+        } else {
+            auth()->user()->editorProfile()->create(['about_photo' => $path]);
+        }
+
+        return back()->with('success', 'About page photo updated.');
     }
 
     public function resetAllLastSeen(): RedirectResponse

@@ -42,7 +42,7 @@ class OrderLogController extends Controller
 
         $q = trim((string) $request->input('q', ''));
 
-        $query = OrderRevenue::orderByDesc('ordered_at');
+        $query = OrderRevenue::where('order_total', '>', 0)->orderByDesc('ordered_at');
 
         if ($period !== 'all') {
             [$start, $end] = $this->dateRange($period);

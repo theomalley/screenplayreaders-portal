@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-06-04 | Add about_photo for main website About page
 // v1.7 — 2026-06-03 | Add custom_message to fillable
 // v1.6 — 2026-05-30 | Add bio_pending and photo_pending to fillable
 // v1.5 — 2026-05-30 | Add bio to fillable
@@ -37,6 +38,7 @@ class EditorProfile extends Model
         'timezone',
         'editor_commission',
         'editor_weekly_flat',
+        'about_photo',
     ];
 
     protected $casts = [
