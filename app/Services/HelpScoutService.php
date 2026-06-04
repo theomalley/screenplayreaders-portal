@@ -188,7 +188,8 @@ class HelpScoutService
 
     public function getSavedReplyBody(string $savedReplyId): string
     {
-        return Cache::remember('helpscout_saved_reply_' . $savedReplyId, 60 * 60, function () use ($savedReplyId) {
+        // Cache key includes version suffix so stale empty-string entries are bypassed.
+        return Cache::remember('helpscout_saved_reply_' . $savedReplyId . '_v2', 60 * 60, function () use ($savedReplyId) {
             $token     = $this->getToken();
             $mailboxId = $this->getFirstMailboxId($token);
             $response  = Http::withToken($token)
@@ -198,7 +199,23 @@ class HelpScoutService
                 throw new \RuntimeException('HelpScout saved reply fetch failed (' . $response->status() . '): ' . $response->body());
             }
 
-            return $response->json('body') ?? '';
+            $json = $response->json();
+            Log::info('HelpScout saved reply raw response', ['id' => $savedReplyId, 'json' => $json]);
+
+            // HelpScout may use 'body' or 'text'; also check HAL _embedded wrapper.
+            $body = $json['body']
+                ?? $json['text']
+                ?? $json['_embedded']['saved-reply']['body']
+                ?? $json['_embedded']['saved-reply']['text']
+                ?? null;
+
+            if (empty($body)) {
+                throw new \RuntimeException(
+                    'HelpScout saved reply body is empty. Full response: ' . $response->body()
+                );
+            }
+
+            return $body;
         });
     }
 
