@@ -707,7 +707,7 @@
                                         ])));
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
-                                        x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
+                                        x-show="!search || $el.dataset.search.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
                                         data-sort-date="{{ $assignment->created_at?->timestamp ?? 0 }}"
                                         data-sort-rush="{{ $assignment->rush ? 1 : 0 }}"
@@ -1039,7 +1039,7 @@
                                         ])));
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
-                                        x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
+                                        x-show="!search || $el.dataset.search.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
                                         {{-- Order Details (first): portal link, age, HelpScout --}}
@@ -1199,7 +1199,7 @@
                                         ])));
                                     @endphp
                                     <tr class="hover:bg-gray-50"
-                                        x-show="'{{ $arcSearch }}'.includes(search.toLowerCase())"
+                                        x-show="$el.dataset.search.includes(search.toLowerCase())"
                                         data-search="{{ $arcSearch }}">
                                         <td class="px-3 py-2 whitespace-nowrap font-mono text-gray-700">
                                             <a href="{{ route('assignments.show', $arc) }}" class="hover:text-indigo-600">{{ $arc->order_number }}</a>
