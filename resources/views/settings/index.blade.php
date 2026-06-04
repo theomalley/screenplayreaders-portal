@@ -54,7 +54,7 @@
             {{-- Portal Theme --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Portal Theme</h3>
-                <p class="text-xs text-gray-500 mb-4">Sets the colour scheme for the navigation bar and accent colours throughout the portal.</p>
+                <p class="text-xs text-gray-500 mb-4">Sets the colour scheme for the navigation bar and accent colours throughout the portal. <strong class="text-gray-600">This changes the theme for all users.</strong></p>
                 <div class="flex flex-wrap gap-3">
                     @foreach([
                         'default'  => ['label' => 'Default',  'nav' => '#2b4158', 'border_nav' => '#1e3047', 'body' => '#f7f4e6', 'accent' => '#3c9590'],
@@ -116,7 +116,8 @@
             </div>
             @endif
 
-            {{-- Assignment Age Colour Thresholds --}}
+            {{-- Assignment Age Colour Thresholds (admin only) --}}
+            @if($isAdmin)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Assignment Age Colours</h3>
                 <p class="text-xs text-gray-500 mb-4">
@@ -209,6 +210,7 @@
                     <p class="mt-3 text-xs text-gray-400">Age colour thresholds can only be modified by an admin.</p>
                 @endif
             </div>
+            @endif
 
             {{-- Admin-only sections --}}
             @if ($isAdmin)
