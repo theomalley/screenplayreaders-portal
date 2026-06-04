@@ -534,6 +534,13 @@
                                             </div>
                                         </div>
 
+                                        @if ($rProfile?->title)
+                                            <div class="text-xs text-gray-400 mt-0.5">{{ $rProfile->title }}</div>
+                                        @endif
+                                        @if ($rProfile?->custom_message)
+                                            <p class="mt-1.5 text-xs text-gray-600 leading-relaxed italic" style="white-space:pre-line">{{ $rProfile->custom_message }}</p>
+                                        @endif
+
                                         {{-- Weekly pay stats --}}
                                         @if ($rStats)
                                             <div class="mt-2 flex gap-4">
