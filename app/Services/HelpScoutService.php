@@ -186,6 +186,20 @@ class HelpScoutService
         return (int) $response;
     }
 
+    public function getSavedReplyBody(string $savedReplyId): string
+    {
+        return Cache::remember('helpscout_saved_reply_' . $savedReplyId, 60 * 60, function () use ($savedReplyId) {
+            $token    = $this->getToken();
+            $response = Http::withToken($token)->get(self::API_BASE . "/saved-replies/{$savedReplyId}");
+
+            if (! $response->ok()) {
+                throw new \RuntimeException('HelpScout saved reply fetch failed (' . $response->status() . '): ' . $response->body());
+            }
+
+            return $response->json('body') ?? '';
+        });
+    }
+
     public function findConversationIdByTicketNumber(string $ticketNumber): ?string
     {
         $token    = $this->getToken();

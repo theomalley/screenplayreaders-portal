@@ -1032,4 +1032,30 @@ class AssignmentController extends Controller
 
         return "{$typeLabel} — {$assignment->script_title} (Order #{$assignment->order_number})";
     }
+
+    public function over120(Assignment $assignment, \App\Services\HelpScoutService $helpScout)
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless($assignment->status === Assignment::STATUS_INCOMING, 422);
+
+        $conversationId = $assignment->helpscoutConversation?->helpscout_conversation_id;
+        if (! $conversationId && $assignment->helpscout_ticket_number) {
+            $conversationId = $helpScout->findConversationIdByTicketNumber($assignment->helpscout_ticket_number);
+        }
+
+        if (! $conversationId) {
+            return response()->json(['error' => 'No HelpScout conversation found for this assignment.'], 422);
+        }
+
+        try {
+            $body = $helpScout->getSavedReplyBody('1441347');
+            $helpScout->createDraftReply($conversationId, $body);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Draft creation failed: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json([
+            'url' => 'https://secure.helpscout.net/conversation/' . $conversationId . '/',
+        ]);
+    }
 }
