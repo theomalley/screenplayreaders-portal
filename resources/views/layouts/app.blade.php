@@ -368,7 +368,7 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                 if (this._cache[userId]) {
                     inner.innerHTML = this._cache[userId];
                 } else {
-                    fetch(url, { headers: { 'Accept': 'text/html', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '' } })
+                    fetch(url, { cache: 'no-store', headers: { 'Accept': 'text/html', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '' } })
                         .then(r => r.text())
                         .then(html => { this._cache[userId] = html; if (this._popup === popup) inner.innerHTML = html; })
                         .catch(() => { if (this._popup === popup) inner.innerHTML = '<p style="font-size:11px;color:#ef4444">Could not load.</p>'; });
