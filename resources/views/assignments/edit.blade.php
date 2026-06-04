@@ -693,9 +693,7 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-5">
             @if ($assignment->drive_script_file_id)
                 @php
-                    $fileId  = $assignment->drive_script_file_id;
                     $viewUrl = route('assignments.streamScript', $assignment);
-                    $dlUrl   = "https://drive.google.com/uc?export=download&id={$fileId}";
                 @endphp
                 <div class="mb-4">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Assignment File</p>
@@ -703,8 +701,10 @@
                     <div class="flex items-center gap-4" x-data="{ open: false }">
                         <button @click="open = true" type="button"
                                 class="text-sm text-indigo-600 hover:text-indigo-800">View</button>
-                        <a href="{{ $dlUrl }}" target="_blank"
-                           class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
+                        @if (\App\Support\Permission::check('script.download'))
+                            <a href="{{ route('assignments.downloadScript', $assignment) }}"
+                               class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
+                        @endif
 
                         {{-- Full-screen script preview modal --}}
                         <div x-show="open" x-cloak
@@ -715,6 +715,14 @@
                             <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
                                 <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? 'Script' }}</span>
                                 <div class="flex items-center gap-2 shrink-0">
+                                    @if (\App\Support\Permission::check('script.download'))
+                                        <a href="{{ route('assignments.downloadScript', $assignment) }}"
+                                           class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
+                                    @endif
+                                    @if (\App\Support\Permission::check('script.print'))
+                                        <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
+                                           class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
+                                    @endif
                                     <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
                                           onsubmit="return confirm('Remove title page (page 1)?')">
                                         @csrf
@@ -749,9 +757,25 @@
                                             class="text-gray-400 hover:text-white text-2xl leading-none ml-2 px-1">×</button>
                                 </div>
                             </div>
-                            <iframe :src="open ? @js($viewUrl) : ''"
-                                    class="flex-1 w-full border-0"
-                                    allowfullscreen></iframe>
+                            {{-- PDF.js multi-page canvas viewer --}}
+                            <div x-data="pdfViewer(@js($viewUrl))"
+                                 x-effect="if (open && totalPages === 0 && !loading) loadPdf()"
+                                 class="flex-1 flex flex-col min-h-0">
+                                <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
+                                    <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
+                                    <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
+                                        Go to page
+                                        <input type="number" min="1" :max="totalPages"
+                                               @change="scrollToPage($event.target.value)"
+                                               @keydown.enter.prevent="scrollToPage($event.target.value)"
+                                               class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
+                                        / <span x-text="totalPages"></span>
+                                    </span>
+                                </div>
+                                <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                    <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -829,4 +853,89 @@
             @endif
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('alpine:init', () => {
+        if (Alpine._data?.pdfViewer) return;
+
+        async function ensurePdfJs() {
+            if (window.pdfjsLib) return;
+            await new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+                s.onload = () => {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+                    resolve();
+                };
+                s.onerror = () => reject(new Error('PDF.js failed to load'));
+                document.head.appendChild(s);
+            });
+        }
+
+        Alpine.data('pdfViewer', (url) => {
+            let pdfDoc = null;
+            let pages  = [];
+
+            return {
+                open: false,
+                url: url,
+                currentPage: 0,
+                totalPages: 0,
+                loading: false,
+
+                async openViewer() {
+                    this.open = true;
+                    await this.$nextTick();
+                    this.$refs.modal?.focus();
+                    if (!pdfDoc) await this.loadPdf();
+                },
+
+                async loadPdf() {
+                    this.loading = true;
+                    try {
+                        await ensurePdfJs();
+                        pdfDoc = await pdfjsLib.getDocument({
+                            url: this.url,
+                            withCredentials: true,
+                        }).promise;
+                        this.totalPages = pdfDoc.numPages;
+                        await this.renderAllPages();
+                    } catch (e) {
+                        console.error('PDF load error:', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async renderAllPages() {
+                    const wrap = this.$refs.canvasWrap;
+                    pages = [];
+                    const maxW = Math.max(wrap.clientWidth - 48, 200);
+                    for (let i = 1; i <= this.totalPages; i++) {
+                        this.currentPage = i;
+                        const page = await pdfDoc.getPage(i);
+                        const base = page.getViewport({ scale: 1 });
+                        const scale = Math.min(maxW / base.width, 2.0);
+                        const vp = page.getViewport({ scale });
+                        const canvas = document.createElement('canvas');
+                        canvas.width  = vp.width;
+                        canvas.height = vp.height;
+                        canvas.className = 'shadow-2xl shrink-0';
+                        wrap.appendChild(canvas);
+                        pages.push(canvas);
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                    }
+                },
+
+                scrollToPage(num) {
+                    const n = Math.max(1, Math.min(parseInt(num) || 1, this.totalPages));
+                    if (pages[n - 1]) pages[n - 1].scrollIntoView({ behavior: 'smooth' });
+                },
+            };
+        });
+    });
+    </script>
+    @endpush
 </x-app-layout>

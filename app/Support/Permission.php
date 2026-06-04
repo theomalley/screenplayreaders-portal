@@ -12,6 +12,8 @@ class Permission
     public const FEATURES = [
         'assignments'        => 'Assignments — View',
         'assignments.manage' => 'Assignments — Create / Edit / Delete',
+        'script.download'    => 'Scripts — Download',
+        'script.print'       => 'Scripts — Print',
         'qc'                 => 'QC Queue',
         'archive'            => 'Archive',
         'ratebook'           => 'Rates — View',
@@ -29,6 +31,8 @@ class Permission
     public const DEFAULTS = [
         'assignments'        => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],
         'assignments.manage' => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
+        'script.download'    => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
+        'script.print'       => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
         'qc'                 => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
         'archive'            => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
         'ratebook'           => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],

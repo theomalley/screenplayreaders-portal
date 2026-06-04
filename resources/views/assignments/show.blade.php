@@ -274,10 +274,16 @@
         <div class="bg-white rounded-lg shadow mb-6 overflow-hidden">
             <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-700">{{ $viewerLabel }}</span>
-                @if ($dlUrl)
-                    <a href="{{ $dlUrl }}" target="_blank"
-                       class="text-xs text-indigo-600 hover:text-indigo-800">{{ $dlLabel }}</a>
-                @endif
+                <div class="flex items-center gap-3">
+                    @if ($dlUrl)
+                        <a href="{{ $dlUrl }}"
+                           class="text-xs text-indigo-600 hover:text-indigo-800">{{ $dlLabel }}</a>
+                    @endif
+                    @if (!auth()->user()->isReader() && \App\Support\Permission::check('script.print') && $viewLink)
+                        <a href="{{ $viewLink }}" target="_blank" rel="noopener"
+                           class="text-xs text-indigo-600 hover:text-indigo-800">Print</a>
+                    @endif
+                </div>
             </div>
 
             @if ($viewLink && $assignment->assigned_reader_id === auth()->id() || auth()->user()->isAdminOrEditor())

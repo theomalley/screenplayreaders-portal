@@ -33,6 +33,7 @@ use App\Services\GoogleDriveService;
 use App\Services\ReaderNotificationService;
 use App\Support\FilenameGenerator;
 use App\Support\PayPeriod;
+use App\Support\Permission;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -528,7 +529,9 @@ class AssignmentController extends Controller
         } else {
             $viewLink    = $fileId ? route('assignments.streamScript', $assignment) : null;
             $viewerLabel = 'Script';
-            $dlUrl       = ($fileId && $user->isAdminOrEditor()) ? "https://drive.google.com/uc?export=download&id={$fileId}" : null;
+            $dlUrl       = ($fileId && !$user->isReader() && Permission::check('script.download'))
+                ? route('assignments.downloadScript', $assignment)
+                : null;
             $dlLabel     = 'Download Script';
         }
 
@@ -541,16 +544,33 @@ class AssignmentController extends Controller
     public function streamScript(Assignment $assignment, GoogleDriveService $drive)
     {
         $this->authorize('view', $assignment);
-
         abort_unless($assignment->drive_script_file_id, 404);
 
+        $filename = $assignment->drive_script_filename ?? 'script.pdf';
         $contents = $drive->downloadContents($assignment->drive_script_file_id);
 
         return response($contents, 200, [
             'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="script.pdf"',
+            'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
             'Cache-Control'       => 'private, no-store',
             'X-Frame-Options'     => 'SAMEORIGIN',
+        ]);
+    }
+
+    public function downloadScript(Assignment $assignment, GoogleDriveService $drive)
+    {
+        $this->authorize('view', $assignment);
+        abort_if(auth()->user()->isReader(), 403);
+        abort_unless(Permission::check('script.download'), 403);
+        abort_unless($assignment->drive_script_file_id, 404);
+
+        $filename = $assignment->drive_script_filename ?? 'script.pdf';
+        $contents = $drive->downloadContents($assignment->drive_script_file_id);
+
+        return response($contents, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . addslashes($filename) . '"',
+            'Cache-Control'       => 'private, no-store',
         ]);
     }
 

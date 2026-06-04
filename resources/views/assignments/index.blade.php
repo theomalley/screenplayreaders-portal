@@ -906,6 +906,14 @@
                                                     <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
                                                         <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
                                                         <div class="flex items-center gap-2 shrink-0">
+                                                            @if (\App\Support\Permission::check('script.download'))
+                                                                <a href="{{ route('assignments.downloadScript', $assignment) }}"
+                                                                   class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
+                                                            @endif
+                                                            @if (\App\Support\Permission::check('script.print'))
+                                                                <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
+                                                                   class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
+                                                            @endif
                                                             <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
                                                                   onsubmit="return confirm('Remove title page (page 1)?')">
                                                                 @csrf
@@ -940,9 +948,25 @@
                                                                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                         </div>
                                                     </div>
-                                                    <iframe :src="viewerOpen ? @js($viewUrl) : ''"
-                                                            class="flex-1 w-full border-0"
-                                                            allowfullscreen></iframe>
+                                                    {{-- PDF.js multi-page canvas viewer --}}
+                                                    <div x-data="pdfViewer(@js($viewUrl))"
+                                                         x-effect="if (viewerOpen && totalPages === 0 && !loading) loadPdf()"
+                                                         class="flex-1 flex flex-col min-h-0">
+                                                        <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
+                                                            <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
+                                                            <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
+                                                                Go to page
+                                                                <input type="number" min="1" :max="totalPages"
+                                                                       @change="scrollToPage($event.target.value)"
+                                                                       @keydown.enter.prevent="scrollToPage($event.target.value)"
+                                                                       class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
+                                                                / <span x-text="totalPages"></span>
+                                                            </span>
+                                                        </div>
+                                                        <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                                            <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             @endif
                                         </td>
@@ -1011,8 +1035,8 @@
                                             : null;
                                         $accTitle    = $assignment->accepted_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? null;
                                         $typeLabel   = $assignment->assignment_type === 'formatting' ? 'Formatting' : 'Proofreading';
-                                        $downloadUrl = $assignment->drive_script_file_id
-                                            ? 'https://drive.google.com/uc?export=download&id=' . $assignment->drive_script_file_id
+                                        $downloadUrl = ($assignment->drive_script_file_id && \App\Support\Permission::check('script.download'))
+                                            ? route('assignments.downloadScript', $assignment)
                                             : null;
 
                                         $assignedInitials = $assignment->assignedReader?->readerProfile?->initials
@@ -1478,12 +1502,38 @@
                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
                                                     <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2">
                                                         <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                        <button @click="open = false" type="button"
-                                                                class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                        <div class="flex items-center gap-2 shrink-0">
+                                                            @if (\App\Support\Permission::check('script.download'))
+                                                                <a href="{{ route('assignments.downloadScript', $assignment) }}"
+                                                                   class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
+                                                            @endif
+                                                            @if (\App\Support\Permission::check('script.print'))
+                                                                <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
+                                                                   class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
+                                                            @endif
+                                                            <button @click="open = false" type="button"
+                                                                    class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                        </div>
                                                     </div>
-                                                    <iframe :src="open ? @js($viewUrl) : ''"
-                                                            class="flex-1 w-full border-0"
-                                                            allowfullscreen></iframe>
+                                                    {{-- PDF.js multi-page canvas viewer --}}
+                                                    <div x-data="pdfViewer(@js($viewUrl))"
+                                                         x-effect="if (open && totalPages === 0 && !loading) loadPdf()"
+                                                         class="flex-1 flex flex-col min-h-0">
+                                                        <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
+                                                            <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
+                                                            <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
+                                                                Go to page
+                                                                <input type="number" min="1" :max="totalPages"
+                                                                       @change="scrollToPage($event.target.value)"
+                                                                       @keydown.enter.prevent="scrollToPage($event.target.value)"
+                                                                       class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
+                                                                / <span x-text="totalPages"></span>
+                                                            </span>
+                                                        </div>
+                                                        <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                                            <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             @else
                                                 <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
