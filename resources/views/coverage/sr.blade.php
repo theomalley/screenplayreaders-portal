@@ -53,7 +53,7 @@
             @if($showAutofill)
             <button type="button" onclick="srAutofill()"
                 class="w-full py-2 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-lg">
-                DEV: Autofill test data
+                TEST: Populate form with test data.
             </button>
             @endif
 
@@ -393,9 +393,6 @@
         document.querySelector('select[name="sr_diversity"]').value = 'Diverse';
         document.querySelector('input[name="sr_recommendation"][value="Consider"]').checked = true;
 
-        const qc = document.getElementById('quality_checked');
-        qc.checked = true;
-        qc.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     const srWcSettings = @js($wordCounts);
