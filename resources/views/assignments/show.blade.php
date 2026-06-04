@@ -318,8 +318,8 @@
             @endif
         </div>
 
-        {{-- Reader actions --}}
-        @if (auth()->user()->isReader())
+        {{-- Accept / reader actions --}}
+        @if (auth()->user()->isReader() || auth()->user()->canManageAssignments())
             <div class="flex gap-3">
                 @can('accept', $assignment)
                     <form method="POST" action="{{ route('assignments.accept', $assignment) }}">

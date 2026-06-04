@@ -48,10 +48,11 @@ class AssignmentPolicy
         return $user->canManageAssignments();
     }
 
-    /** Reader accepting an unassigned assignment */
+    /** Reader, editor, or admin self-assigning an unassigned assignment */
     public function accept(User $user, Assignment $assignment): bool
     {
-        return $user->isReader() && $assignment->isAvailable();
+        return $assignment->isAvailable()
+            && ($user->isReader() || $user->canManageAssignments());
     }
 
     /** Reader cancelling their own accepted assignment */

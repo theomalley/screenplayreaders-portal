@@ -1014,6 +1014,25 @@
                                             @if ($accStr)
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                             @endif
+                                            @if ($assignment->status === 'unassigned')
+                                                <div class="mt-1.5" x-data="{ busy: false, err: '' }">
+                                                    <button type="button"
+                                                            :disabled="busy"
+                                                            @click.stop="busy = true; err = '';
+                                                                fetch(@js(route('assignments.accept', $assignment)), {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                                        'Accept': 'application/json',
+                                                                    }
+                                                                }).then(r => r.ok ? location.reload() : r.json().then(d => { busy = false; err = d.message ?? 'Failed'; }))
+                                                                .catch(() => { busy = false; err = 'Failed'; })"
+                                                            class="inline-flex items-center px-2.5 py-1 bg-green-600 hover:bg-green-500 text-white text-[10px] font-semibold rounded transition-colors disabled:opacity-50 whitespace-nowrap"
+                                                            x-text="busy ? 'Accepting…' : 'Accept'">
+                                                    </button>
+                                                    <span x-show="err" x-text="err" class="block text-[10px] text-red-500 mt-0.5"></span>
+                                                </div>
+                                            @endif
                                         </td>
 
                                     </tr>
