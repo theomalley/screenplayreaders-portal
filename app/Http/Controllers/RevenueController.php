@@ -85,18 +85,17 @@ class RevenueController extends Controller
             ->orderByDesc('net')
             ->get();
 
-        // Per Client (joined through assignments)
-        $byClient = DB::table('order_revenues as r')
-            ->join('assignments as a', 'a.order_number', '=', 'r.order_number')
-            ->join('clients as c', 'c.id', '=', 'a.client_id')
-            ->when($start, fn ($q) => $q->where('r.ordered_at', '>=', $start))
-            ->when($end,   fn ($q) => $q->where('r.ordered_at', '<=', $end))
+        // Per Client — from invoices (client revenue is invoiced, not through WooCommerce)
+        $byClient = DB::table('invoices as i')
+            ->join('clients as c', 'c.id', '=', 'i.client_id')
+            ->where('i.status', 'paid')
+            ->when($start, fn ($q) => $q->where('i.issued_at', '>=', $start))
+            ->when($end,   fn ($q) => $q->where('i.issued_at', '<=', $end))
             ->selectRaw('c.id as client_id, c.name as client_name,
-                         COUNT(DISTINCT r.order_number) as order_count,
-                         SUM(r.order_total) as gross, SUM(r.discount_amount) as discount,
-                         SUM(r.net_revenue) as net')
+                         COUNT(*) as order_count,
+                         SUM(i.amount) as gross')
             ->groupBy('c.id', 'c.name')
-            ->orderByDesc('net')
+            ->orderByDesc('gross')
             ->get();
 
         return view('revenue.by-customer', compact('byCustomer', 'byClient', 'period'));

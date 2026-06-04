@@ -113,20 +113,18 @@
                      'name'        => $r->client_name,
                      'order_count' => (int) $r->order_count,
                      'gross'       => (float) $r->gross,
-                     'discount'    => (float) $r->discount,
-                     'net'         => (float) $r->net,
-                 ])->values()); sort('net', false)"
+                 ])->values()); sort('gross', false)"
                  class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
 
                 <div class="px-5 py-3 border-b border-gray-100">
                     <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         By Client
-                        <span class="ml-2 text-xs font-normal text-gray-400 normal-case">{{ $byClient->count() }} client{{ $byClient->count() === 1 ? '' : 's' }}</span>
+                        <span class="ml-2 text-xs font-normal text-gray-400 normal-case">{{ $byClient->count() }} client{{ $byClient->count() === 1 ? '' : 's' }} · paid invoices by issued date</span>
                     </h3>
                 </div>
 
                 @if($byClient->isEmpty())
-                    <div class="px-5 py-10 text-center text-sm text-gray-400">No client-linked orders in this period.</div>
+                    <div class="px-5 py-10 text-center text-sm text-gray-400">No paid client invoices in this period.</div>
                 @else
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -140,23 +138,13 @@
                                     </th>
                                     <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700 select-none"
                                         @click="sort('order_count')">
-                                        Orders
+                                        Invoices
                                         <span x-show="sortCol === 'order_count'" x-text="sortAsc ? '↑' : '↓'" class="ml-1"></span>
                                     </th>
                                     <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700 select-none"
                                         @click="sort('gross')">
-                                        Gross
+                                        Total Invoiced
                                         <span x-show="sortCol === 'gross'" x-text="sortAsc ? '↑' : '↓'" class="ml-1"></span>
-                                    </th>
-                                    <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700 select-none"
-                                        @click="sort('discount')">
-                                        Discount
-                                        <span x-show="sortCol === 'discount'" x-text="sortAsc ? '↑' : '↓'" class="ml-1"></span>
-                                    </th>
-                                    <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700 select-none"
-                                        @click="sort('net')">
-                                        Net
-                                        <span x-show="sortCol === 'net'" x-text="sortAsc ? '↑' : '↓'" class="ml-1"></span>
                                     </th>
                                 </tr>
                             </thead>
@@ -166,12 +154,8 @@
                                         <td class="px-4 py-2.5 text-gray-400 tabular-nums text-xs" x-text="idx + 1"></td>
                                         <td class="px-4 py-2.5 font-medium text-gray-800" x-text="row.name"></td>
                                         <td class="px-4 py-2.5 text-right tabular-nums text-gray-600" x-text="row.order_count"></td>
-                                        <td class="px-4 py-2.5 text-right tabular-nums text-gray-700"
-                                            x-text="'$' + row.gross.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})"></td>
-                                        <td class="px-4 py-2.5 text-right tabular-nums text-amber-600"
-                                            x-text="row.discount > 0 ? '−$' + row.discount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—'"></td>
                                         <td class="px-4 py-2.5 text-right tabular-nums font-semibold text-green-700"
-                                            x-text="'$' + row.net.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})"></td>
+                                            x-text="'$' + row.gross.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})"></td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -179,11 +163,7 @@
                                 <tr>
                                     <td colspan="2" class="px-4 py-3 text-gray-600">Total ({{ $byClient->count() }} clients)</td>
                                     <td class="px-4 py-3 text-right tabular-nums text-gray-700">{{ $byClient->sum('order_count') }}</td>
-                                    <td class="px-4 py-3 text-right tabular-nums text-gray-700">${{ number_format($byClient->sum('gross'), 2) }}</td>
-                                    <td class="px-4 py-3 text-right tabular-nums text-amber-600">
-                                        @if($byClient->sum('discount') > 0)−${{ number_format($byClient->sum('discount'), 2) }}@else—@endif
-                                    </td>
-                                    <td class="px-4 py-3 text-right tabular-nums text-green-700">${{ number_format($byClient->sum('net'), 2) }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums text-green-700">${{ number_format($byClient->sum('gross'), 2) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
