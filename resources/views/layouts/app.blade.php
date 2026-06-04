@@ -7,9 +7,16 @@
 
         <title>{{ config('app.name', 'Screenplay Readers Portal') }}</title>
 
-        @php $faviconMeta = storage_path('app/portal-favicon-path.txt'); @endphp
-        @if(is_readable($faviconMeta))
-            <link rel="icon" href="{{ asset('storage/' . trim(file_get_contents($faviconMeta))) }}">
+        @php
+            $faviconMeta = storage_path('app/portal-favicon-path.txt');
+            $faviconUrl  = is_readable($faviconMeta) ? asset('storage/' . trim(file_get_contents($faviconMeta))) : null;
+        @endphp
+        @if($faviconUrl)
+            <link rel="icon" href="{{ $faviconUrl }}">
+            {{-- Safari / iPhone home-screen icon --}}
+            <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
+            <meta name="apple-mobile-web-app-capable" content="yes">
+            <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'SR Portal') }}">
         @endif
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])

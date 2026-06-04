@@ -125,6 +125,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/reset-last-seen-all', [SettingController::class, 'resetAllLastSeen'])->name('settings.reset-last-seen-all');
     Route::post('/settings/reset-last-seen-me', [SettingController::class, 'resetMyLastSeen'])->name('settings.reset-last-seen-me');
     Route::post('/settings/quick-login/generate', [\App\Http\Controllers\QuickLoginController::class, 'generate'])->name('quick-login.generate');
+    Route::post('/settings/quick-login/landing', [\App\Http\Controllers\QuickLoginController::class, 'saveLanding'])->name('quick-login.landing');
     Route::delete('/settings/quick-login', [\App\Http\Controllers\QuickLoginController::class, 'revoke'])->name('quick-login.revoke');
     Route::post('/settings/email-all-readers', [SettingController::class, 'emailAllReaders'])->name('settings.email-all-readers');
 

@@ -13,8 +13,19 @@ use Illuminate\Support\Str;
 
 class QuickLoginController extends Controller
 {
-    private const TOKEN_KEY   = 'admin_quick_login_token';
-    private const USER_ID_KEY = 'admin_quick_login_user_id';
+    private const TOKEN_KEY    = 'admin_quick_login_token';
+    private const USER_ID_KEY  = 'admin_quick_login_user_id';
+    private const LANDING_KEY  = 'admin_quick_login_landing';
+
+    public const LANDING_OPTIONS = [
+        'assignments.index' => 'Assignments',
+        'qc.index'          => 'QC Queue',
+        'archive.index'     => 'Archive',
+        'revenue.index'     => 'Revenue',
+        'payroll.index'     => 'Payroll',
+        'reader-pay.index'  => 'Reader Pay',
+        'team.index'        => 'Team',
+    ];
 
     /** Public route — validates token and logs in. Rate-limited. */
     public function login(string $token)
@@ -55,7 +66,27 @@ class QuickLoginController extends Controller
         Auth::login($user, remember: true);
         request()->session()->regenerate();
 
-        return redirect()->route('assignments.index');
+        $landing = Setting::getValue(self::LANDING_KEY, 'assignments.index');
+        if (! array_key_exists($landing, self::LANDING_OPTIONS)) {
+            $landing = 'assignments.index';
+        }
+
+        return redirect()->route($landing);
+    }
+
+    /** Admin: save the landing-page preference. */
+    public function saveLanding(\Illuminate\Http\Request $request)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $landing = $request->input('landing', 'assignments.index');
+        if (! array_key_exists($landing, self::LANDING_OPTIONS)) {
+            $landing = 'assignments.index';
+        }
+
+        Setting::setValue(self::LANDING_KEY, $landing);
+
+        return back()->with('success', 'Quick-login landing page saved.');
     }
 
     /** Admin: generate (or regenerate) the quick-login token. */

@@ -897,7 +897,24 @@
                 </div>
 
                 @if($qlToken)
-                    @php $qlUrl = url('/ql/' . $qlToken); @endphp
+                    @php
+                        $qlUrl      = url('/ql/' . $qlToken);
+                        $qlLanding  = \App\Models\Setting::getValue('admin_quick_login_landing', 'assignments.index');
+                        $qlOptions  = \App\Http\Controllers\QuickLoginController::LANDING_OPTIONS;
+                    @endphp
+
+                    {{-- Landing page selector --}}
+                    <form method="POST" action="{{ route('quick-login.landing') }}" class="flex items-center gap-3">
+                        @csrf
+                        <label class="text-xs font-medium text-gray-600 whitespace-nowrap">Lands on</label>
+                        <select name="landing" onchange="this.form.submit()"
+                                class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            @foreach($qlOptions as $route => $label)
+                                <option value="{{ $route }}" @selected($qlLanding === $route)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+
                     <div x-data="{ copied: false }">
                         <div class="flex items-center gap-2">
                             <input type="text" readonly value="{{ $qlUrl }}"
