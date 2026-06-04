@@ -326,6 +326,7 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
             _popup: null,
             _inner: null,
             _userId: null,
+            _cache: {},
             _outsideHandler: null,
             _keyHandler: null,
             _resizing: false,
@@ -364,10 +365,14 @@ body { background-color: {{ $pt['body_bg'] }} !important; }
                 this._inner  = inner;
                 this._userId = userId;
 
-                fetch(url, { cache: 'no-store', headers: { 'Accept': 'text/html', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '' } })
-                    .then(r => r.text())
-                    .then(html => { if (this._popup === popup) inner.innerHTML = html; })
-                    .catch(() => { if (this._popup === popup) inner.innerHTML = '<p style="font-size:11px;color:#ef4444">Could not load.</p>'; });
+                if (this._cache[userId]) {
+                    inner.innerHTML = this._cache[userId];
+                } else {
+                    fetch(url, { cache: 'no-store', headers: { 'Accept': 'text/html', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '' } })
+                        .then(r => r.text())
+                        .then(html => { this._cache[userId] = html; if (this._popup === popup) inner.innerHTML = html; })
+                        .catch(() => { if (this._popup === popup) inner.innerHTML = '<p style="font-size:11px;color:#ef4444">Could not load.</p>'; });
+                }
 
                 // Custom NE resize: drag right = wider; drag up = taller (top moves up)
                 handle.addEventListener('mousedown', (e) => {
