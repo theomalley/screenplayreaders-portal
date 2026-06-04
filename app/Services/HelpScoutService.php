@@ -248,6 +248,53 @@ class HelpScoutService
         return $id ? (string) $id : null;
     }
 
+    /**
+     * Substitute HelpScout template variables ({%customer.firstName,fallback=X%} etc.)
+     * using live customer data from the conversation.
+     */
+    public function resolveBodyVariables(string $body, string $conversationId): string
+    {
+        $token        = $this->getToken();
+        $conversation = $this->fetchConversation($conversationId, $token);
+        $customerId   = $this->extractCustomerId($conversation, $conversationId);
+        $customer     = $this->fetchCustomer($customerId, $token);
+
+        $vars = [
+            'customer.firstName'   => $customer['firstName'] ?? '',
+            'customer.lastName'    => $customer['lastName']  ?? '',
+            'customer.fullName'    => trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? '')),
+            'conversation.subject' => $conversation['subject'] ?? '',
+            'conversation.number'  => (string) ($conversation['number'] ?? ''),
+        ];
+
+        // Matches {%variable,fallback=VALUE%} or {%variable%} with optional surrounding spaces.
+        return preg_replace_callback(
+            '/{%\s*([^,%}]+?)\s*(?:,\s*fallback\s*=\s*([^%]*?))?\s*%}/',
+            function ($m) use ($vars) {
+                $key      = trim($m[1]);
+                $fallback = $m[2] ?? '';
+                $value    = $vars[$key] ?? '';
+                return $value !== '' ? $value : $fallback;
+            },
+            $body
+        );
+    }
+
+    private function fetchCustomer(int $customerId, string $token): array
+    {
+        $response = Http::withToken($token)->get(self::API_BASE . "/customers/{$customerId}");
+
+        if (! $response->ok()) {
+            Log::warning('HelpScout customer fetch failed', [
+                'customer_id' => $customerId,
+                'status'      => $response->status(),
+            ]);
+            return [];
+        }
+
+        return $response->json() ?? [];
+    }
+
     private function fetchConversation(string $conversationId, string $token): array
     {
         $response = Http::withToken($token)

@@ -1049,6 +1049,7 @@ class AssignmentController extends Controller
 
         try {
             $body = $helpScout->getSavedReplyBody('1441347');
+            $body = $helpScout->resolveBodyVariables($body, $conversationId);
             $helpScout->createDraftReply($conversationId, $body);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Draft creation failed: ' . $e->getMessage()], 500);
