@@ -805,7 +805,7 @@
                                                     </div>
                                                 @endif
                                                 @if($viewUrl)
-                                                    <button @click="viewerOpen = true" type="button"
+                                                    <button @click="viewerOpen = true; window.dispatchEvent(new CustomEvent('sr-load-pdf-{{ $assignment->id }}'))" type="button"
                                                             class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
                                                 @else
                                                     <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
@@ -950,7 +950,7 @@
                                                     </div>
                                                     {{-- PDF.js multi-page canvas viewer --}}
                                                     <div x-data="pdfViewer(@js($viewUrl))"
-                                                         x-effect="if (viewerOpen && totalPages === 0 && !loading) loadPdf()"
+                                                         @sr-load-pdf-{{ $assignment->id }}.window="if (totalPages === 0 && !loading) loadPdf()"
                                                          class="flex-1 flex flex-col min-h-0">
                                                         <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
                                                             <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
@@ -1490,15 +1490,14 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-3" x-data="{ open: false }">
+                                        <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl ?? ''))">
                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($viewUrl)
-                                                <button @click="open = true" type="button"
+                                                <button @click="openViewer()" type="button"
                                                         class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
-                                                <div x-show="open" x-cloak
+                                                <div x-show="open" x-cloak x-ref="modal"
                                                      @keydown.escape.window="open = false"
                                                      tabindex="-1"
-                                                     x-effect="if (open) $nextTick(() => $el.focus())"
                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
                                                     <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2">
                                                         <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
@@ -1515,24 +1514,19 @@
                                                                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                         </div>
                                                     </div>
-                                                    {{-- PDF.js multi-page canvas viewer --}}
-                                                    <div x-data="pdfViewer(@js($viewUrl))"
-                                                         x-effect="if (open && totalPages === 0 && !loading) loadPdf()"
-                                                         class="flex-1 flex flex-col min-h-0">
-                                                        <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
-                                                            <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
-                                                            <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
-                                                                Go to page
-                                                                <input type="number" min="1" :max="totalPages"
-                                                                       @change="scrollToPage($event.target.value)"
-                                                                       @keydown.enter.prevent="scrollToPage($event.target.value)"
-                                                                       class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
-                                                                / <span x-text="totalPages"></span>
-                                                            </span>
-                                                        </div>
-                                                        <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
-                                                            <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
-                                                        </div>
+                                                    <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
+                                                        <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
+                                                        <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
+                                                            Go to page
+                                                            <input type="number" min="1" :max="totalPages"
+                                                                   @change="scrollToPage($event.target.value)"
+                                                                   @keydown.enter.prevent="scrollToPage($event.target.value)"
+                                                                   class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
+                                                            / <span x-text="totalPages"></span>
+                                                        </span>
+                                                    </div>
+                                                    <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                                        <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
                                                     </div>
                                                 </div>
                                             @else
