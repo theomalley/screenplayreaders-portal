@@ -197,6 +197,19 @@
                                             Mark Unpaid
                                         </button>
                                     </form>
+                                    @if(auth()->user()->isAdmin())
+                                    <form method="POST"
+                                          action="{{ route('reader-pay.remove-batch', $batch['reader_id']) }}"
+                                          onsubmit="return confirm('Permanently remove this batch? Test assignments will be deleted; real assignments will be reverted to unpaid.')"
+                                          @click.stop>
+                                        @csrf
+                                        <input type="hidden" name="paid_at" value="{{ $batch['paid_at']->toDateString() }}">
+                                        <button type="submit"
+                                                class="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors">
+                                            Remove
+                                        </button>
+                                    </form>
+                                    @endif
                                     <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                     </svg>

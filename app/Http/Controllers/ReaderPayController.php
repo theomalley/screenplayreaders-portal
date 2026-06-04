@@ -159,6 +159,36 @@ class ReaderPayController extends Controller
             ->with('success', "Adjustment {$sign}{$validated['amount']} added for {$name}.");
     }
 
+    public function removeHistoryBatch(Request $request, User $reader)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $validated = $request->validate(['paid_at' => 'required|date']);
+        $date = Carbon::parse($validated['paid_at'])->toDateString();
+
+        // Test assignments: delete entirely. Non-test: revert to unpaid (safer for production data).
+        Assignment::where('assigned_reader_id', $reader->id)
+            ->where('vendor', 'sr')
+            ->whereDate('reader_paid_at', $date)
+            ->where('is_test', true)
+            ->delete();
+
+        Assignment::where('assigned_reader_id', $reader->id)
+            ->where('vendor', 'sr')
+            ->whereDate('reader_paid_at', $date)
+            ->where('is_test', false)
+            ->update(['reader_paid_at' => null]);
+
+        ReaderPayAdjustment::where('user_id', $reader->id)
+            ->whereDate('reader_paid_at', $date)
+            ->delete();
+
+        $name = $reader->readerProfile?->displayName() ?? $reader->name;
+
+        return redirect()->route('reader-pay.index')
+            ->with('success', "Removed batch for {$name} ({$date}).");
+    }
+
     public function deleteAdjustment(ReaderPayAdjustment $adjustment)
     {
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
