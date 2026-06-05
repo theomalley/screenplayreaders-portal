@@ -110,6 +110,16 @@ class EditorProfileController extends Controller
         abort_unless(Permission::check('editors.edit'), 403);
         abort_unless($user->isEditor() || $user->isAdmin(), 404);
 
+        if (auth()->user()->isAdmin() && $request->input('_action') === 'role_change') {
+            abort_unless($user->isEditor() && $request->input('role') === 'reader', 422);
+            $user->update(['role' => 'reader']);
+            $user->readerProfile()->firstOrCreate(
+                ['user_id' => $user->id],
+                ['initials' => $user->editorProfile?->initials ?? strtoupper(substr($user->name, 0, 2)), 'tier_1' => true]
+            );
+            return redirect()->route('readers.edit', $user)->with('success', 'Role changed to reader.');
+        }
+
         $data = $request->validate([
             'initials'             => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
             'first_name'           => ['required', 'string', 'max:100'],

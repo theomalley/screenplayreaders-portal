@@ -593,6 +593,21 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+                            <span class="text-sm font-medium text-gray-700">Tier Membership</span>
+                            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                <input type="checkbox" name="tier_1" value="1"
+                                       {{ old('tier_1', $profile?->tier_1 ?? true) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                Tier 1
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                <input type="checkbox" name="tier_2" value="1"
+                                       {{ old('tier_2', $profile?->tier_2 ?? false) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                Tier 2
+                            </label>
+                        </div>
                         <div class="flex justify-end">
                             <x-primary-button>Save Capacity &amp; Pay</x-primary-button>
                         </div>
@@ -632,6 +647,40 @@
                 </div>
 
             </form>{{-- end admin-form --}}
+
+            @if (auth()->user()->isAdmin() && !$user->isAdmin())
+            {{-- Role Change (admin only) --}}
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                <div class="max-w-xl space-y-4">
+                    <h2 class="text-lg font-medium text-gray-900">Role <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                    <p class="text-sm text-gray-600 -mt-2">
+                        @if ($isEditingReader)
+                            Changing to Editor moves this user out of the reader pool.
+                        @else
+                            Changing to Reader moves this user into the reader pool.
+                        @endif
+                    </p>
+                    <form method="POST"
+                          action="{{ $isEditingReader ? route('readers.update', $user) : route('admin.editors.update', $user) }}">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="_action" value="role_change">
+                        <select name="role" class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @if ($isEditingReader)
+                                <option value="reader" selected>Reader</option>
+                                <option value="editor">Editor</option>
+                            @else
+                                <option value="editor" selected>Editor</option>
+                                <option value="reader">Reader</option>
+                            @endif
+                        </select>
+                        <div class="flex justify-end mt-4">
+                            <x-primary-button>Save Role</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
 
             {{-- Delete (separate form — DELETE method) --}}
             @if (auth()->user()->isAdmin() && !$user->isAdmin())
