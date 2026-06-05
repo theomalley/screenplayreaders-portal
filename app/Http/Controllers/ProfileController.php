@@ -150,6 +150,50 @@ class ProfileController extends Controller
         return back()->with('status', $user->isAdmin() ? 'photo-updated' : 'photo-pending');
     }
 
+    public function uploadAboutPhoto(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isAdminOrEditor() || $user->isReader(), 403);
+
+        $request->validate([
+            'about_photo' => 'required|image|mimes:jpeg,jpg,png,webp|max:8192|dimensions:min_width=600,min_height=600',
+        ]);
+
+        if ($user->isReader()) {
+            $path    = $request->file('about_photo')->store('reader-photos', 'public');
+            $profile = $user->readerProfile;
+
+            if ($profile?->about_photo_pending) {
+                Storage::disk('public')->delete($profile->about_photo_pending);
+            }
+            $user->readerProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['about_photo_pending' => $path, 'about_photo_rejection_note' => null]
+            );
+        } else {
+            $path    = $request->file('about_photo')->store('editor-photos', 'public');
+            $profile = $user->editorProfile;
+
+            if ($user->isAdmin()) {
+                if ($profile?->about_photo) Storage::disk('public')->delete($profile->about_photo);
+                $user->editorProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    ['about_photo' => $path]
+                );
+            } else {
+                if ($profile?->about_photo_pending) {
+                    Storage::disk('public')->delete($profile->about_photo_pending);
+                }
+                $user->editorProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    ['about_photo_pending' => $path, 'about_photo_rejection_note' => null]
+                );
+            }
+        }
+
+        return back()->with('status', $user->isAdmin() ? 'about-photo-updated' : 'about-photo-pending');
+    }
+
     public function destroy(Request $request): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [

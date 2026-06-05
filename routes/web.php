@@ -56,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto'])->name('profile.photo');
+    Route::post('/profile/about-photo', [ProfileController::class, 'uploadAboutPhoto'])->name('profile.about-photo');
     Route::patch('/profile/bio', [ProfileController::class, 'updateBio'])->name('profile.bio');
     Route::patch('/profile/custom-message', [ProfileController::class, 'updateCustomMessage'])->name('profile.custom-message');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -152,8 +153,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/admin/approvals/bio/{user}/approve',   [AdminApprovalController::class, 'approveBio'])->name('admin.approvals.bio.approve');
     Route::post('/admin/approvals/bio/{user}/reject',    [AdminApprovalController::class, 'rejectBio'])->name('admin.approvals.bio.reject');
-    Route::post('/admin/approvals/photo/{user}/approve', [AdminApprovalController::class, 'approvePhoto'])->name('admin.approvals.photo.approve');
-    Route::post('/admin/approvals/photo/{user}/reject',  [AdminApprovalController::class, 'rejectPhoto'])->name('admin.approvals.photo.reject');
+    Route::post('/admin/approvals/photo/{user}/approve',       [AdminApprovalController::class, 'approvePhoto'])->name('admin.approvals.photo.approve');
+    Route::post('/admin/approvals/photo/{user}/reject',        [AdminApprovalController::class, 'rejectPhoto'])->name('admin.approvals.photo.reject');
+    Route::post('/admin/approvals/about-photo/{user}/approve', [AdminApprovalController::class, 'approveAboutPhoto'])->name('admin.approvals.about-photo.approve');
+    Route::post('/admin/approvals/about-photo/{user}/reject',  [AdminApprovalController::class, 'rejectAboutPhoto'])->name('admin.approvals.about-photo.reject');
 
     Route::get('/announcements/history', [AnnouncementController::class, 'history'])->name('announcements.history');
     Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');

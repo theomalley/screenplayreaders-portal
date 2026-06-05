@@ -30,9 +30,10 @@
 
                     {{-- Photo --}}
                     @php
-                        $currentPhotoUrl   = $profile?->photo ? asset('storage/' . $profile->photo) : '';
-                        $pendingPhotoUrl   = $profile?->photo_pending ? asset('storage/' . $profile->photo_pending) : null;
-                        $pendingBioContent = $profile?->bio_pending;
+                        $currentPhotoUrl      = $profile?->photo ? asset('storage/' . $profile->photo) : '';
+                        $pendingPhotoUrl      = $profile?->photo_pending ? asset('storage/' . $profile->photo_pending) : null;
+                        $pendingAboutPhotoUrl = $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null;
+                        $pendingBioContent    = $profile?->bio_pending;
                     @endphp
                     <div x-data="{ previewUrl: '{{ $currentPhotoUrl }}' }">
                         <x-input-label value="Photo" />
@@ -66,7 +67,17 @@
                             'approveUrl'  => route('admin.approvals.photo.approve', $user),
                             'rejectUrl'   => route('admin.approvals.photo.reject', $user),
                             'preview'     => '<img src="'.e($pendingPhotoUrl).'" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending photo" />',
-                            'label'       => 'Pending photo waiting for approval.',
+                            'label'       => 'Pending reader icon waiting for approval.',
+                        ])
+                    @endif
+
+                    @if ($pendingAboutPhotoUrl)
+                        @include('partials.approval-panel', [
+                            'type'        => 'about-photo',
+                            'approveUrl'  => route('admin.approvals.about-photo.approve', $user),
+                            'rejectUrl'   => route('admin.approvals.about-photo.reject', $user),
+                            'preview'     => '<img src="'.e($pendingAboutPhotoUrl).'" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending about photo" />',
+                            'label'       => 'Pending about page photo waiting for approval.',
                         ])
                     @endif
 

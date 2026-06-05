@@ -1,5 +1,6 @@
 <?php
 
+// v1.11 — 2026-06-05 | Add about_photo fields to fillable
 // v1.10 — 2026-06-03 | Add custom_message to fillable
 // v1.9 — 2026-05-30 | Add followup notification fields to fillable
 // v1.8 — 2026-05-30 | Add bio_pending and photo_pending to fillable
@@ -34,6 +35,9 @@ class ReaderProfile extends Model
         'photo',
         'photo_pending',
         'photo_rejection_note',
+        'about_photo',
+        'about_photo_pending',
+        'about_photo_rejection_note',
         'max_concurrent_assignments',
         'requests_bypass_capacity',
         'paypal_email',

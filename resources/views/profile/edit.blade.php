@@ -18,12 +18,15 @@
 
             @if(auth()->user()->isAdminOrEditor() || auth()->user()->isReader())
             @php
-                $meProfile    = auth()->user()->isAdminOrEditor() ? auth()->user()->editorProfile : auth()->user()->readerProfile;
-                $currentPhoto = $meProfile?->photo ? asset('storage/' . $meProfile->photo) : null;
-                $pendingPhoto        = $meProfile?->photo_pending ? asset('storage/' . $meProfile->photo_pending) : null;
-                $pendingBio         = $meProfile?->bio_pending;
-                $photoRejectionNote = $meProfile?->photo_rejection_note;
-                $bioRejectionNote   = $meProfile?->bio_rejection_note;
+                $meProfile               = auth()->user()->isAdminOrEditor() ? auth()->user()->editorProfile : auth()->user()->readerProfile;
+                $currentPhoto            = $meProfile?->photo ? asset('storage/' . $meProfile->photo) : null;
+                $pendingPhoto            = $meProfile?->photo_pending ? asset('storage/' . $meProfile->photo_pending) : null;
+                $currentAboutPhoto       = $meProfile?->about_photo ? asset('storage/' . $meProfile->about_photo) : null;
+                $pendingAboutPhoto       = $meProfile?->about_photo_pending ? asset('storage/' . $meProfile->about_photo_pending) : null;
+                $pendingBio              = $meProfile?->bio_pending;
+                $photoRejectionNote      = $meProfile?->photo_rejection_note;
+                $aboutPhotoRejectionNote = $meProfile?->about_photo_rejection_note;
+                $bioRejectionNote        = $meProfile?->bio_rejection_note;
             @endphp
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl" x-data="{ preview: null }">
@@ -69,6 +72,55 @@
                                 <div class="mt-3 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
                                     <img src="{{ $pendingPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending photo" />
                                     <span>Photo pending admin approval.</span>
+                                </div>
+                            @endif
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl" x-data="{ preview: null }">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">About Page Photo</h2>
+                    <p class="text-sm text-gray-600 mb-4">Displayed on the public website's About page. Minimum 600×600 px.</p>
+
+                    <div class="flex items-center gap-5 mb-4">
+                        <div class="relative w-16 h-16 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                            <img :src="preview || '{{ $currentAboutPhoto }}'"
+                                 x-show="preview || {{ $currentAboutPhoto ? 'true' : 'false' }}"
+                                 alt="About page photo" class="absolute inset-0 w-full h-full object-cover" />
+                            @if(!$currentAboutPhoto)
+                            <span x-show="!preview" class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">None</span>
+                            @endif
+                        </div>
+                        <form method="POST" action="{{ route('profile.about-photo') }}" enctype="multipart/form-data" class="flex-1">
+                            @csrf
+                            <x-input-label for="about_photo_input" value="Choose photo" />
+                            <input id="about_photo_input" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp"
+                                   @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => preview = e.target.result; r.readAsDataURL(f) }"
+                                   class="mt-1 block w-full text-sm text-gray-500
+                                          file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
+                                          file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
+                                          hover:file:bg-gray-200 cursor-pointer" />
+                            <p class="mt-1 text-xs text-gray-400">JPG, PNG, or WebP · min 600×600 px · max 8 MB</p>
+                            <x-input-error :messages="$errors->get('about_photo')" class="mt-1" />
+                            <div class="mt-3">
+                                <x-primary-button>Upload Photo</x-primary-button>
+                                @if (session('status') === 'about-photo-updated')
+                                    <span class="ml-3 text-sm text-green-600">Saved.</span>
+                                @elseif (session('status') === 'about-photo-pending')
+                                    <span class="ml-3 text-sm text-amber-600">Submitted for admin approval.</span>
+                                @endif
+                            </div>
+                            @if ($aboutPhotoRejectionNote)
+                                <div class="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                    <p class="font-medium">About photo rejected by admin:</p>
+                                    <p class="mt-0.5">{{ $aboutPhotoRejectionNote }}</p>
+                                </div>
+                            @elseif ($pendingAboutPhoto)
+                                <div class="mt-3 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                    <img src="{{ $pendingAboutPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending about photo" />
+                                    <span>About photo pending admin approval.</span>
                                 </div>
                             @endif
                         </form>

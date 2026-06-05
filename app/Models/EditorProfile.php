@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-06-05 | Add about_photo_pending and about_photo_rejection_note fields
 // v1.8 — 2026-06-04 | Add about_photo for main website About page
 // v1.7 — 2026-06-03 | Add custom_message to fillable
 // v1.6 — 2026-05-30 | Add bio_pending and photo_pending to fillable
@@ -39,6 +40,8 @@ class EditorProfile extends Model
         'editor_commission',
         'editor_weekly_flat',
         'about_photo',
+        'about_photo_pending',
+        'about_photo_rejection_note',
     ];
 
     protected $casts = [
