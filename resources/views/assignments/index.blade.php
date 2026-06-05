@@ -503,6 +503,12 @@
                                                    class="text-xs text-indigo-500 hover:text-indigo-700 underline">Edit Profile</a>
                                             </div>
                                         </div>
+                                        @if ($eProfile?->title)
+                                            <div class="text-xs text-gray-400 mt-0.5">{{ $eProfile->title }}</div>
+                                        @endif
+                                        @if ($eProfile?->custom_message)
+                                            <p class="mt-1.5 text-xs text-gray-600 leading-relaxed italic" style="white-space:pre-line">{{ $eProfile->custom_message }}</p>
+                                        @endif
                                         @if ($editor->assignments->isNotEmpty())
                                             <ul class="mt-2 space-y-1">
                                                 @foreach ($editor->assignments as $ra)
