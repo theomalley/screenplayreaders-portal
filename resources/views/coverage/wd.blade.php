@@ -35,6 +35,24 @@
                 <div><span class="text-indigo-500 font-medium block">Reader</span>{{ $assignment->assignedReader?->readerProfile?->initials ?? $assignment->assignedReader?->editorProfile?->initials ?? '—' }}</div>
             </div>
 
+            @if ($readingNotes->isNotEmpty())
+            <div x-data="{ open: true }" class="bg-indigo-50 border border-indigo-200 rounded-lg overflow-hidden">
+                <button type="button" @click="open = !open"
+                        class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 transition-colors">
+                    <span>📝 Reading Notes ({{ $readingNotes->count() }})</span>
+                    <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div x-show="open" x-cloak class="px-4 pb-4 space-y-2">
+                    @foreach ($readingNotes as $rn)
+                        <div class="bg-white border border-indigo-100 rounded px-3 py-2">
+                            <p class="text-sm text-gray-800 whitespace-pre-wrap leading-snug">{{ $rn->body }}</p>
+                            <p class="text-[10px] text-gray-400 mt-1">{{ $rn->created_at->format('M j, g:ia') }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             @if ($errors->any())
                 <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
                     <strong>Please correct the following:</strong>

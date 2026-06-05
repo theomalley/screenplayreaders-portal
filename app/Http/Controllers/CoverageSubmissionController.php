@@ -12,6 +12,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCoverageSubmissionRequest;
 use App\Models\Assignment;
 use App\Models\AssignmentNote;
+use App\Models\ReaderScriptNote;
 use App\Models\Setting;
 use App\Services\GoogleDocsService;
 use App\Support\FilenameGenerator;
@@ -36,7 +37,12 @@ class CoverageSubmissionController extends Controller
         $wordCounts   = Setting::getWordCounts();
         $wcExempt     = (bool) $assignment->exempt_from_word_counts;
 
-        return view($view, compact('assignment', 'existing', 'showAutofill', 'wordCounts', 'wcExempt'));
+        $readingNotes = ReaderScriptNote::where('assignment_id', $assignment->id)
+            ->where('user_id', $user->id)
+            ->orderBy('created_at')
+            ->get();
+
+        return view($view, compact('assignment', 'existing', 'showAutofill', 'wordCounts', 'wcExempt', 'readingNotes'));
     }
 
     public function store(StoreCoverageSubmissionRequest $request, Assignment $assignment)

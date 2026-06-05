@@ -142,6 +142,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/assignments/{assignment}/editor-notes',        [AssignmentEditorNoteController::class, 'store'])->name('assignment-editor-notes.store');
     Route::delete('/assignment-editor-notes/{note}',             [AssignmentEditorNoteController::class, 'destroy'])->name('assignment-editor-notes.destroy');
 
+    // Personal reading notes (private per-user — for note-taking while reading a script)
+    Route::post('/assignments/{assignment}/reading-notes',  [\App\Http\Controllers\ReaderScriptNoteController::class, 'store'])->name('reading-notes.store');
+    Route::delete('/reading-notes/{note}',                  [\App\Http\Controllers\ReaderScriptNoteController::class, 'destroy'])->name('reading-notes.destroy');
+
     // Followup question management (admin/editor)
     Route::get('/followup-history/{orderNumber}',       [FollowupQuestionController::class, 'history'])->name('followups.history');
     Route::delete('/followup-tokens/{followupToken}',   [FollowupQuestionController::class, 'destroyToken'])->name('followupTokens.destroy');

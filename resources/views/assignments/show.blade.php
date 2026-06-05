@@ -191,7 +191,15 @@
 
     @else
     {{-- ===== SINGLE / READER LAYOUT ===== --}}
-    <div class="py-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" x-data="{ editOpen: false }">
+    @php
+        $notesForJs = $readingNotes->map(fn($n) => [
+            'id'         => $n->id,
+            'body'       => $n->body,
+            'created_at' => $n->created_at->format('M j, g:ia'),
+        ])->values()->all();
+    @endphp
+    <div class="py-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
+         x-data="singleAssignmentView(@js($notesForJs), @js(route('reading-notes.store', $assignment)), @js(csrf_token()))">
 
         @if (session('success'))
             <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
@@ -283,6 +291,16 @@
                         <a href="{{ $viewLink }}" target="_blank" rel="noopener"
                            class="text-xs text-indigo-600 hover:text-indigo-800">Print</a>
                     @endif
+                    <button type="button" @click="notesOpen = !notesOpen"
+                            :class="notesOpen ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-700'"
+                            class="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Notes
+                        <span x-show="notes.length > 0" x-text="notes.length"
+                              class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-indigo-600 text-white rounded-full leading-none"></span>
+                    </button>
                 </div>
             </div>
 
@@ -350,6 +368,56 @@
             </div>
         @endif
 
+        {{-- Reading notes drawer --}}
+        <div x-show="notesOpen" x-cloak
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-x-4"
+             x-transition:enter-end="opacity-100 translate-x-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-x-0"
+             x-transition:leave-end="opacity-0 translate-x-4"
+             class="fixed top-16 right-0 z-40 h-[calc(100vh-4rem)] w-80 bg-white shadow-xl border-l border-gray-200 flex flex-col">
+
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-indigo-50 shrink-0">
+                <span class="text-sm font-semibold text-indigo-800">Reading Notes</span>
+                <button type="button" @click="notesOpen = false" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="px-4 py-3 border-b border-gray-100 shrink-0">
+                <textarea x-model="noteBody"
+                          @keydown.ctrl.enter.prevent="addNote()"
+                          @keydown.meta.enter.prevent="addNote()"
+                          rows="3"
+                          class="w-full text-sm border border-gray-200 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                          placeholder="Type a note… Ctrl+Enter to save"></textarea>
+                <button type="button" @click="addNote()"
+                        :disabled="!noteBody.trim() || noteSaving"
+                        class="mt-2 w-full px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                    <span x-text="noteSaving ? 'Saving…' : 'Add Note'"></span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                <template x-if="notes.length === 0">
+                    <p class="text-xs text-gray-400 text-center mt-6">No notes yet.</p>
+                </template>
+                <template x-for="note in [...notes].reverse()" :key="note.id">
+                    <div class="bg-gray-50 border border-gray-100 rounded-md px-3 py-2 group">
+                        <p class="text-sm text-gray-800 whitespace-pre-wrap leading-snug" x-text="note.body"></p>
+                        <div class="flex items-center justify-between mt-1.5">
+                            <span class="text-[10px] text-gray-400" x-text="note.created_at"></span>
+                            <button type="button" @click="deleteNote(note.id)"
+                                    class="text-[10px] text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
     </div>
 
     {{-- Full-screen Google Docs editing overlay (single layout) --}}
@@ -395,6 +463,49 @@
                 document.head.appendChild(s);
             });
         }
+
+        Alpine.data('singleAssignmentView', (initialNotes, storeUrl, csrfToken) => ({
+            editOpen: false,
+            notesOpen: false,
+            notes: initialNotes,
+            noteBody: '',
+            noteSaving: false,
+
+            async addNote() {
+                const body = this.noteBody.trim();
+                if (!body || this.noteSaving) return;
+                this.noteSaving = true;
+                try {
+                    const r = await fetch(storeUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ body }),
+                    });
+                    if (r.ok) {
+                        const note = await r.json();
+                        this.notes.push(note);
+                        this.noteBody = '';
+                    }
+                } finally {
+                    this.noteSaving = false;
+                }
+            },
+
+            async deleteNote(id) {
+                if (!confirm('Delete this note?')) return;
+                const r = await fetch(`/reading-notes/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                });
+                if (r.ok) {
+                    this.notes = this.notes.filter(n => n.id !== id);
+                }
+            },
+        }));
 
         Alpine.data('pdfViewer', (url) => {
             let pdfDoc = null;
