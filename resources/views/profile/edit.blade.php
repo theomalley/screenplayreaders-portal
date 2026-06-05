@@ -52,7 +52,7 @@
                                @change="pick($event.target.files[0])" />
                         <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors"
                              :class="dragging ? 'border-indigo-400 bg-indigo-50' : 'border-dashed border-gray-300 hover:border-gray-400'"
-                             style="height: 180px"
+                             style="width:200px;height:200px"
                              @click="$refs.photoInput.click()"
                              @dragover.prevent="dragging = true"
                              @dragleave.prevent="dragging = false"
@@ -112,7 +112,7 @@
                                @change="pick($event.target.files[0])" />
                         <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors"
                              :class="dragging ? 'border-indigo-400 bg-indigo-50' : 'border-dashed border-gray-300 hover:border-gray-400'"
-                             style="height: 180px"
+                             style="width:200px;height:200px"
                              @click="$refs.aboutInput.click()"
                              @dragover.prevent="dragging = true"
                              @dragleave.prevent="dragging = false"
