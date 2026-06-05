@@ -37,13 +37,13 @@
                           x-data="{
                             preview: '{{ $currentPhoto }}',
                             dragging: false,
-                            uploading: false,
+                            hasFile: false,
                             pick(file) {
                                 if (!file) return;
                                 const dt = new DataTransfer(); dt.items.add(file);
                                 this.$refs.photoInput.files = dt.files;
                                 const r = new FileReader();
-                                r.onload = e => { this.preview = e.target.result; this.uploading = true; this.$nextTick(() => this.$el.submit()); };
+                                r.onload = e => { this.preview = e.target.result; this.hasFile = true; };
                                 r.readAsDataURL(file);
                             }
                           }">
@@ -63,9 +63,12 @@
                             <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
                                  :class="preview ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
                                 <svg class="w-8 h-8" :class="preview ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                                <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'" x-text="uploading ? 'Uploading…' : 'Drop photo here or click to browse'"></span>
+                                <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'">Drop photo here or click to browse</span>
                                 <span class="text-xs" :class="preview ? 'text-white/80' : 'text-gray-400'">JPG, PNG or WebP · min 600×600 px · max 8 MB</span>
                             </div>
+                        </div>
+                        <div class="mt-3">
+                            <x-primary-button :disabled="!hasFile" x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Upload Photo</x-primary-button>
                         </div>
                         <x-input-error :messages="$errors->get('photo')" class="mt-2" />
                         @if (session('status') === 'photo-updated')
@@ -97,13 +100,13 @@
                           x-data="{
                             preview: '{{ $currentAboutPhoto }}',
                             dragging: false,
-                            uploading: false,
+                            hasFile: false,
                             pick(file) {
                                 if (!file) return;
                                 const dt = new DataTransfer(); dt.items.add(file);
                                 this.$refs.aboutInput.files = dt.files;
                                 const r = new FileReader();
-                                r.onload = e => { this.preview = e.target.result; this.uploading = true; this.$nextTick(() => this.$el.submit()); };
+                                r.onload = e => { this.preview = e.target.result; this.hasFile = true; };
                                 r.readAsDataURL(file);
                             }
                           }">
@@ -123,9 +126,12 @@
                             <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
                                  :class="preview ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
                                 <svg class="w-8 h-8" :class="preview ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                                <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'" x-text="uploading ? 'Uploading…' : 'Drop photo here or click to browse'"></span>
+                                <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'">Drop photo here or click to browse</span>
                                 <span class="text-xs" :class="preview ? 'text-white/80' : 'text-gray-400'">JPG, PNG or WebP · min 600×600 px · max 8 MB</span>
                             </div>
+                        </div>
+                        <div class="mt-3">
+                            <x-primary-button :disabled="!hasFile" x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Upload Photo</x-primary-button>
                         </div>
                         <x-input-error :messages="$errors->get('about_photo')" class="mt-2" />
                         @if (session('status') === 'about-photo-updated')
