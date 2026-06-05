@@ -131,12 +131,10 @@ class AssignmentController extends Controller
 
             $pendingApprovals = User::where(function ($q) {
                     $q->whereHas('readerProfile', fn($rq) => $rq
-                        ->whereNotNull('photo_pending')
-                        ->orWhereNotNull('about_photo_pending')
+                        ->whereNotNull('about_photo_pending')
                         ->orWhereNotNull('bio_pending'))
                       ->orWhereHas('editorProfile', fn($eq) => $eq
-                        ->whereNotNull('photo_pending')
-                        ->orWhereNotNull('about_photo_pending')
+                        ->whereNotNull('about_photo_pending')
                         ->orWhereNotNull('bio_pending'));
                 })
                 ->with(['readerProfile', 'editorProfile'])

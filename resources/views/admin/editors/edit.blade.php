@@ -61,16 +61,6 @@
                         <x-input-error :messages="$errors->get('photo')" class="mt-1" />
                     </div>
 
-                    @if ($pendingPhotoUrl)
-                        @include('partials.approval-panel', [
-                            'type'        => 'photo',
-                            'approveUrl'  => route('admin.approvals.photo.approve', $user),
-                            'rejectUrl'   => route('admin.approvals.photo.reject', $user),
-                            'preview'     => '<img src="'.e($pendingPhotoUrl).'" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending photo" />',
-                            'label'       => 'Pending reader icon waiting for approval.',
-                        ])
-                    @endif
-
                     @if ($pendingAboutPhotoUrl)
                         @include('partials.approval-panel', [
                             'type'        => 'about-photo',

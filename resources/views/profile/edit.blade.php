@@ -76,19 +76,6 @@
                         <x-input-error :messages="$errors->get('photo')" class="mt-2" />
                         @if (session('status') === 'photo-updated')
                             <p class="mt-2 text-sm text-green-600">Saved.</p>
-                        @elseif (session('status') === 'photo-pending')
-                            <p class="mt-2 text-sm text-amber-600">Submitted for admin approval.</p>
-                        @endif
-                        @if ($photoRejectionNote)
-                            <div class="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                                <p class="font-medium">Photo rejected by admin:</p>
-                                <p class="mt-0.5">{{ $photoRejectionNote }}</p>
-                            </div>
-                        @elseif ($pendingPhoto)
-                            <div class="mt-2 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-                                <img src="{{ $pendingPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending photo" />
-                                <span>Pending admin approval.</span>
-                            </div>
                         @endif
                     </form>
                 </div>

@@ -120,34 +120,18 @@ class ProfileController extends Controller
         ]);
 
         if ($user->isReader()) {
-            $folder = 'reader-photos';
-            $path   = $request->file('photo')->store($folder, 'public');
-
-            if ($user->isAdmin()) {
-                $profile = $user->readerProfile;
-                if ($profile?->photo) Storage::disk('public')->delete($profile->photo);
-                $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['photo' => $path]);
-            } else {
-                $profile = $user->readerProfile;
-                if ($profile?->photo_pending) Storage::disk('public')->delete($profile->photo_pending);
-                $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['photo_pending' => $path, 'photo_rejection_note' => null]);
-            }
+            $profile = $user->readerProfile;
+            $path    = $request->file('photo')->store('reader-photos', 'public');
+            if ($profile?->photo) Storage::disk('public')->delete($profile->photo);
+            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['photo' => $path]);
         } else {
-            $folder = 'editor-photos';
-            $path   = $request->file('photo')->store($folder, 'public');
-
-            if ($user->isAdmin()) {
-                $profile = $user->editorProfile;
-                if ($profile?->photo) Storage::disk('public')->delete($profile->photo);
-                $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['photo' => $path, 'initials' => '', 'first_name' => '', 'last_name' => '']);
-            } else {
-                $profile = $user->editorProfile;
-                if ($profile?->photo_pending) Storage::disk('public')->delete($profile->photo_pending);
-                $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['photo_pending' => $path, 'photo_rejection_note' => null]);
-            }
+            $profile = $user->editorProfile;
+            $path    = $request->file('photo')->store('editor-photos', 'public');
+            if ($profile?->photo) Storage::disk('public')->delete($profile->photo);
+            $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['photo' => $path]);
         }
 
-        return back()->with('status', $user->isAdmin() ? 'photo-updated' : 'photo-pending');
+        return back()->with('status', 'photo-updated');
     }
 
     public function uploadAboutPhoto(Request $request): RedirectResponse

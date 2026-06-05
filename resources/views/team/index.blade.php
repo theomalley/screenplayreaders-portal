@@ -66,13 +66,13 @@
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admins</h3>
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div class="overflow-x-auto">
-                    <table class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
+                    <table id="table-admins" class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:30%">Admin</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                                <th data-col="0" onclick="teamSort('table-admins',0)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:30%">Admin <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                <th data-col="1" onclick="teamSort('table-admins',1)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700">Title <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                <th data-col="2" onclick="teamSort('table-admins',2)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700">Email <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                <th data-col="3" onclick="teamSort('table-admins',3)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700">Availability <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-100">
@@ -86,7 +86,7 @@
                                 @endphp
                                 <tr class="hover:bg-gray-50 {{ $canEdit ? 'cursor-pointer' : '' }}"
                                     {{ $canEdit ? 'onclick=window.location.href=\''.route('admin.editors.edit', $admin).'\'' : '' }}>
-                                    <td class="px-4 py-3">
+                                    <td class="px-4 py-3" data-sort="{{ strtolower($profile?->displayName() ?? $admin->name) }}">
                                         <div class="flex items-center gap-3">
                                             <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-mono font-semibold shrink-0">
                                                 @if ($photoUrl)
@@ -106,13 +106,13 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3 text-gray-500 text-sm">
+                                    <td class="px-4 py-3 text-gray-500 text-sm" data-sort="{{ strtolower($profile?->title ?? '') }}">
                                         {{ $profile?->title ?? '—' }}
                                     </td>
-                                    <td class="px-4 py-3 text-gray-500">
+                                    <td class="px-4 py-3 text-gray-500" data-sort="{{ $admin->email }}">
                                         <a href="mailto:{{ $admin->email }}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation()">{{ $admin->email }}</a>
                                     </td>
-                                    <td class="px-4 py-3">
+                                    <td class="px-4 py-3" data-sort="{{ $avail }}">
                                         <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
                                             <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
                                             {{ ucfirst($avail) }}
@@ -155,13 +155,13 @@
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div class="overflow-x-auto">
-                        <table class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
+                        <table id="table-editors" class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:30%">Editor</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:16%">Title</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:28%">Email</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:26%">Availability</th>
+                                    <th data-col="0" onclick="teamSort('table-editors',0)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:30%">Editor <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                    <th data-col="1" onclick="teamSort('table-editors',1)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:16%">Title <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                    <th data-col="2" onclick="teamSort('table-editors',2)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:28%">Email <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                    <th data-col="3" onclick="teamSort('table-editors',3)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:26%">Availability <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -171,11 +171,11 @@
                                         $initials   = $profile?->initials ?? strtoupper(substr($editor->name, 0, 2));
                                         $photoUrl   = $profile?->photo ? asset('storage/' . $profile->photo) : null;
                                         $avail      = $profile?->availability ?? 'available';
-                                        $hasPending = $profile?->bio_pending !== null || (bool) $profile?->photo_pending;
+                                        $hasPending = $profile?->bio_pending !== null || (bool) $profile?->about_photo_pending;
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $canEditEditors ? 'cursor-pointer' : '' }}"
                                         {{ $canEditEditors ? 'onclick=window.location.href=\''.route('admin.editors.edit', $editor).'\'' : '' }}>
-                                        <td class="px-4 py-3">
+                                        <td class="px-4 py-3" data-sort="{{ strtolower($profile?->displayName() ?? $editor->name) }}">
                                             <div class="flex items-center gap-3">
                                                 <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-mono font-semibold shrink-0">
                                                     @if ($photoUrl)
@@ -197,13 +197,13 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-4 py-3 text-gray-500 text-sm">
+                                        <td class="px-4 py-3 text-gray-500 text-sm" data-sort="{{ strtolower($profile?->title ?? '') }}">
                                             {{ $profile?->title ?? '—' }}
                                         </td>
-                                        <td class="px-4 py-3 text-gray-500">
+                                        <td class="px-4 py-3 text-gray-500" data-sort="{{ $editor->email }}">
                                             <a href="mailto:{{ $editor->email }}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation()">{{ $editor->email }}</a>
                                         </td>
-                                        <td class="px-4 py-3">
+                                        <td class="px-4 py-3" data-sort="{{ $avail }}">
                                             <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
                                                 <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
                                                 {{ ucfirst($avail) }}
@@ -252,13 +252,13 @@
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div class="overflow-x-auto">
-                        <table class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
+                        <table id="table-readers" class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:30%">Reader</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:16%">Title</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:28%">Email</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:26%">Availability</th>
+                                    <th data-col="0" onclick="teamSort('table-readers',0)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:30%">Reader <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                    <th data-col="1" onclick="teamSort('table-readers',1)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:16%">Title <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                    <th data-col="2" onclick="teamSort('table-readers',2)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:28%">Email <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
+                                    <th data-col="3" onclick="teamSort('table-readers',3)" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700" style="width:26%">Availability <span class="sort-arrow opacity-0 ml-0.5">↑</span></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -268,11 +268,11 @@
                                         $initials     = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                                         $photoUrl     = $profile?->photo ? asset('storage/' . $profile->photo) : null;
                                         $avail        = $profile?->availability ?? 'available';
-                                        $hasPending   = $profile?->bio_pending !== null || (bool) $profile?->photo_pending;
+                                        $hasPending   = $profile?->bio_pending !== null || (bool) $profile?->about_photo_pending;
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $canEditReaders ? 'cursor-pointer' : '' }}"
                                         {{ $canEditReaders ? 'onclick=window.location.href=\''.route('readers.edit', $reader).'\'' : '' }}>
-                                        <td class="px-4 py-3">
+                                        <td class="px-4 py-3" data-sort="{{ strtolower($profile?->displayName() ?? $reader->name) }}">
                                             <div class="flex items-center gap-3">
                                                 <span class="relative inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-mono font-semibold shrink-0 {{ $avail !== 'available' ? 'border-2 border-dashed border-red-300' : '' }}">
                                                     @if ($photoUrl)
@@ -294,13 +294,13 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-4 py-3 text-gray-500 text-sm">
+                                        <td class="px-4 py-3 text-gray-500 text-sm" data-sort="{{ strtolower($profile?->title ?? '') }}">
                                             {{ $profile?->title ?? '—' }}
                                         </td>
-                                        <td class="px-4 py-3 text-gray-500">
+                                        <td class="px-4 py-3 text-gray-500" data-sort="{{ $reader->email }}">
                                             <a href="mailto:{{ $reader->email }}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation()">{{ $reader->email }}</a>
                                         </td>
-                                        <td class="px-4 py-3">
+                                        <td class="px-4 py-3" data-sort="{{ $avail }}">
                                             <span class="inline-flex items-center gap-1 text-xs font-medium {{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }}">
                                                 <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
                                                 {{ ucfirst($avail) }}
@@ -337,4 +337,33 @@
 
         </div>
     </div>
+
+    <script>
+    function teamSort(tableId, colIdx) {
+        const table    = document.getElementById(tableId);
+        const headers  = table.querySelectorAll('th[data-col]');
+        const header   = table.querySelector(`th[data-col="${colIdx}"]`);
+        const tbody    = table.querySelector('tbody');
+        const rows     = Array.from(tbody.querySelectorAll('tr'));
+        const wasAsc   = header.dataset.dir === 'asc';
+        const newDir   = wasAsc ? 'desc' : 'asc';
+
+        headers.forEach(h => {
+            h.dataset.dir = '';
+            const arrow = h.querySelector('.sort-arrow');
+            if (arrow) { arrow.textContent = '↑'; arrow.classList.add('opacity-0'); }
+        });
+        header.dataset.dir = newDir;
+        const activeArrow = header.querySelector('.sort-arrow');
+        if (activeArrow) { activeArrow.textContent = newDir === 'asc' ? '↑' : '↓'; activeArrow.classList.remove('opacity-0'); }
+
+        rows.sort((a, b) => {
+            const av = a.cells[colIdx]?.dataset.sort ?? '';
+            const bv = b.cells[colIdx]?.dataset.sort ?? '';
+            const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
+            return newDir === 'asc' ? cmp : -cmp;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    }
+    </script>
 </x-app-layout>
