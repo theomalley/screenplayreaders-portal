@@ -53,6 +53,8 @@ class ReaderProfile extends Model
         'email_notify_requests',
         'email_notify_followup',
         'sms_notify_followup',
+        'email_notify_qc_fail',
+        'sms_notify_qc_fail',
         'availability',
         'availability_message',
         'upload_warning',
@@ -72,6 +74,8 @@ class ReaderProfile extends Model
         'email_notify_requests' => 'boolean',
         'email_notify_followup' => 'boolean',
         'sms_notify_followup'   => 'boolean',
+        'email_notify_qc_fail'  => 'boolean',
+        'sms_notify_qc_fail'    => 'boolean',
     ];
 
     public function user(): BelongsTo

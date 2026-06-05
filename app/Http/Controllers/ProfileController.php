@@ -72,6 +72,8 @@ class ProfileController extends Controller
                 'email_notify_requests'  => $request->boolean('email_notify_requests'),
                 'email_notify_followup'  => $request->boolean('email_notify_followup'),
                 'sms_notify_followup'    => $request->boolean('sms_notify_followup'),
+                'email_notify_qc_fail'   => $request->boolean('email_notify_qc_fail'),
+                'sms_notify_qc_fail'     => $request->boolean('sms_notify_qc_fail'),
             ]
         );
 

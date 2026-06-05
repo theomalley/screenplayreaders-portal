@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-06-05 | sendBack() emails reader if email_notify_qc_fail is enabled.
 // v1.6 — 2026-05-29 | Pass qcSavedReplies to show() for Send Back modal quick-insert checkboxes.
 // v1.5 — 2026-05-25 | Add sendBack() — returns assignment to reader as needs_attention with optional notes
 // v1.4 — 2026-05-24 | Standardize draftAll() auth to Permission::check('qc').
@@ -22,6 +23,7 @@ use App\Services\HelpScoutService;
 use App\Support\FilenameGenerator;
 use App\Support\Permission;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class QcController extends Controller
 {
@@ -230,6 +232,12 @@ class QcController extends Controller
             'status'                => Assignment::STATUS_NEEDS_ATTENTION,
             'needs_attention_notes' => $notes ?: null,
         ]);
+
+        $reader = $assignment->assignedReader;
+        if ($reader?->readerProfile?->email_notify_qc_fail) {
+            Mail::to($reader->email)->send(new \App\Mail\QcFailedMail($assignment->fresh(), $reader));
+        }
+        // SMS: pending Twilio integration — flag: sms_notify_qc_fail
 
         return redirect()->route('qc.index')
             ->with('success', "#{$assignment->order_number} — {$assignment->script_title} sent back to reader.");
