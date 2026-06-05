@@ -145,20 +145,38 @@ class TestDataController extends Controller
 
         if ($request->hasFile('pdf')) {
             $request->validate(['pdf' => 'required|file|mimes:pdf|max:20480']);
-            $request->file('pdf')->storeAs('', 'test-script.pdf', ['disk' => 'local']);
+
+            // Store explicitly at storage/app/test-script.pdf
+            $bytes    = file_get_contents($request->file('pdf')->getRealPath());
+            $destPath = storage_path('app/test-script.pdf');
+            file_put_contents($destPath, $bytes);
+
             $filename = $request->file('pdf')->getClientOriginalName();
-            Setting::setValue('test_script_drive_file_id', '__LOCAL_TEST__');
+            Setting::setValue('test_script_drive_file_id',  '__LOCAL_TEST__');
             Setting::setValue('test_script_drive_filename', $filename);
-            return back()->with('success', 'Test script uploaded — all seeded assignments will use this file.');
+
+            // Update ALL existing test assignments so they use the new script immediately
+            Assignment::where('is_test', true)->update([
+                'drive_script_file_id'  => '__LOCAL_TEST__',
+                'drive_script_filename' => $filename,
+            ]);
+
+            $count = Assignment::where('is_test', true)->count();
+            return back()->with('success', "Test script uploaded and applied to {$count} existing test assignment(s).");
         }
 
         // Clear
-        Setting::setValue('test_script_drive_file_id', '');
+        Setting::setValue('test_script_drive_file_id',  '');
         Setting::setValue('test_script_drive_filename', '');
-        if (file_exists(storage_path('app/test-script.pdf'))) {
-            unlink(storage_path('app/test-script.pdf'));
+        Assignment::where('is_test', true)->update([
+            'drive_script_file_id'  => null,
+            'drive_script_filename' => null,
+        ]);
+        $dest = storage_path('app/test-script.pdf');
+        if (file_exists($dest)) {
+            unlink($dest);
         }
-        return back()->with('success', 'Test script cleared.');
+        return back()->with('success', 'Test script cleared from all test assignments.');
     }
 
     public function toggleAutoReset(Request $request)
