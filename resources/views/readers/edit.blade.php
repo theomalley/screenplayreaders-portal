@@ -302,11 +302,9 @@
 
                 </form>
 
-                @if(auth()->user()->isAdmin())
+                @if(auth()->user()->canManageAssignments())
                 <div class="px-6 py-5 border-t border-gray-100 space-y-5">
-                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Settings</div>
-
-                    {{-- Tier Membership (inside update-form so they save with the profile) --}}
+                    {{-- Tier Membership --}}
                     <div>
                         <x-input-label value="Tier Membership" />
                         <p class="mt-0.5 text-xs text-gray-500 mb-2">Which assignment pools this reader can see and accept from.</p>
@@ -326,7 +324,8 @@
                         </div>
                     </div>
 
-                    {{-- Role Change --}}
+                    {{-- Role Change (admin only) --}}
+                    @if(auth()->user()->isAdmin())
                     <div>
                         <x-input-label for="role" value="Role" />
                         <p class="mt-0.5 text-xs text-gray-500 mb-1">Changing to Editor moves this user to the editors list.</p>
@@ -336,6 +335,7 @@
                             <option value="editor" {{ $user->role === 'editor' ? 'selected' : '' }}>Editor</option>
                         </select>
                     </div>
+                    @endif
                 </div>
                 @endif
 
