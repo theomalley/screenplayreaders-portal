@@ -28,103 +28,123 @@
                 $aboutPhotoRejectionNote = $meProfile?->about_photo_rejection_note;
                 $bioRejectionNote        = $meProfile?->bio_rejection_note;
             @endphp
+            {{-- Profile Photo (reader icon) --}}
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl" x-data="{ preview: null }">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Profile Photo</h2>
-                    <p class="text-sm text-gray-600 mb-4">Used as your avatar throughout the portal and on the public website. Minimum 600×600 px.</p>
-
-                    <div class="flex items-center gap-5 mb-4">
-                        <div class="relative w-16 h-16 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                            <img :src="preview || '{{ $currentPhoto }}'"
-                                 x-show="preview || {{ $currentPhoto ? 'true' : 'false' }}"
-                                 alt="Profile photo" class="absolute inset-0 w-full h-full object-cover" />
-                            @if(!$currentPhoto)
-                            <span x-show="!preview" class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs font-mono font-semibold">
-                                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                            </span>
-                            @endif
-                        </div>
-                        <form method="POST" action="{{ route('profile.photo') }}" enctype="multipart/form-data" class="flex-1">
-                            @csrf
-                            <x-input-label for="profile_photo" value="Choose photo" />
-                            <input id="profile_photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"
-                                   @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => preview = e.target.result; r.readAsDataURL(f) }"
-                                   class="mt-1 block w-full text-sm text-gray-500
-                                          file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
-                                          file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
-                                          hover:file:bg-gray-200 cursor-pointer" />
-                            <p class="mt-1 text-xs text-gray-400">JPG, PNG, or WebP · min 600×600 px · max 8 MB</p>
-                            <x-input-error :messages="$errors->get('photo')" class="mt-1" />
-                            <div class="mt-3">
-                                <x-primary-button>Upload Photo</x-primary-button>
-                                @if (session('status') === 'photo-updated')
-                                    <span class="ml-3 text-sm text-green-600">Saved.</span>
-                                @elseif (session('status') === 'photo-pending')
-                                    <span class="ml-3 text-sm text-amber-600">Submitted for admin approval.</span>
-                                @endif
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Reader Icon</h2>
+                    <p class="text-sm text-gray-600 mb-3">Your avatar in the portal and on the public website. Min 600×600 px.</p>
+                    <form method="POST" action="{{ route('profile.photo') }}" enctype="multipart/form-data"
+                          x-data="{
+                            preview: '{{ $currentPhoto }}',
+                            dragging: false,
+                            uploading: false,
+                            pick(file) {
+                                if (!file) return;
+                                const dt = new DataTransfer(); dt.items.add(file);
+                                this.$refs.photoInput.files = dt.files;
+                                const r = new FileReader();
+                                r.onload = e => { this.preview = e.target.result; this.uploading = true; this.$nextTick(() => this.$el.submit()); };
+                                r.readAsDataURL(file);
+                            }
+                          }">
+                        @csrf
+                        <input x-ref="photoInput" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
+                               @change="pick($event.target.files[0])" />
+                        <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors"
+                             :class="dragging ? 'border-indigo-400 bg-indigo-50' : 'border-dashed border-gray-300 hover:border-gray-400'"
+                             style="height: 180px"
+                             @click="$refs.photoInput.click()"
+                             @dragover.prevent="dragging = true"
+                             @dragleave.prevent="dragging = false"
+                             @drop.prevent="dragging = false; pick($event.dataTransfer.files[0])">
+                            <template x-if="preview">
+                                <img :src="preview" class="absolute inset-0 w-full h-full object-cover" alt="Photo preview" />
+                            </template>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
+                                 :class="preview ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                                <svg class="w-8 h-8" :class="preview ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                                <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'" x-text="uploading ? 'Uploading…' : 'Drop photo here or click to browse'"></span>
+                                <span class="text-xs" :class="preview ? 'text-white/80' : 'text-gray-400'">JPG, PNG or WebP · min 600×600 px · max 8 MB</span>
                             </div>
-                            @if ($photoRejectionNote)
-                                <div class="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                                    <p class="font-medium">Photo rejected by admin:</p>
-                                    <p class="mt-0.5">{{ $photoRejectionNote }}</p>
-                                </div>
-                            @elseif ($pendingPhoto)
-                                <div class="mt-3 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-                                    <img src="{{ $pendingPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending photo" />
-                                    <span>Photo pending admin approval.</span>
-                                </div>
-                            @endif
-                        </form>
-                    </div>
+                        </div>
+                        <x-input-error :messages="$errors->get('photo')" class="mt-2" />
+                        @if (session('status') === 'photo-updated')
+                            <p class="mt-2 text-sm text-green-600">Saved.</p>
+                        @elseif (session('status') === 'photo-pending')
+                            <p class="mt-2 text-sm text-amber-600">Submitted for admin approval.</p>
+                        @endif
+                        @if ($photoRejectionNote)
+                            <div class="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                <p class="font-medium">Photo rejected by admin:</p>
+                                <p class="mt-0.5">{{ $photoRejectionNote }}</p>
+                            </div>
+                        @elseif ($pendingPhoto)
+                            <div class="mt-2 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                <img src="{{ $pendingPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending photo" />
+                                <span>Pending admin approval.</span>
+                            </div>
+                        @endif
+                    </form>
                 </div>
             </div>
 
+            {{-- About Page Photo --}}
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl" x-data="{ preview: null }">
+                <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">About Page Photo</h2>
-                    <p class="text-sm text-gray-600 mb-4">Displayed on the public website's About page. Minimum 600×600 px.</p>
-
-                    <div class="flex items-center gap-5 mb-4">
-                        <div class="relative w-16 h-16 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                            <img :src="preview || '{{ $currentAboutPhoto }}'"
-                                 x-show="preview || {{ $currentAboutPhoto ? 'true' : 'false' }}"
-                                 alt="About page photo" class="absolute inset-0 w-full h-full object-cover" />
-                            @if(!$currentAboutPhoto)
-                            <span x-show="!preview" class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">None</span>
-                            @endif
-                        </div>
-                        <form method="POST" action="{{ route('profile.about-photo') }}" enctype="multipart/form-data" class="flex-1">
-                            @csrf
-                            <x-input-label for="about_photo_input" value="Choose photo" />
-                            <input id="about_photo_input" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp"
-                                   @change="const f = $event.target.files[0]; if (f) { const r = new FileReader(); r.onload = e => preview = e.target.result; r.readAsDataURL(f) }"
-                                   class="mt-1 block w-full text-sm text-gray-500
-                                          file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0
-                                          file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700
-                                          hover:file:bg-gray-200 cursor-pointer" />
-                            <p class="mt-1 text-xs text-gray-400">JPG, PNG, or WebP · min 600×600 px · max 8 MB</p>
-                            <x-input-error :messages="$errors->get('about_photo')" class="mt-1" />
-                            <div class="mt-3">
-                                <x-primary-button>Upload Photo</x-primary-button>
-                                @if (session('status') === 'about-photo-updated')
-                                    <span class="ml-3 text-sm text-green-600">Saved.</span>
-                                @elseif (session('status') === 'about-photo-pending')
-                                    <span class="ml-3 text-sm text-amber-600">Submitted for admin approval.</span>
-                                @endif
+                    <p class="text-sm text-gray-600 mb-3">Displayed on the public website's About page. Min 600×600 px.</p>
+                    <form method="POST" action="{{ route('profile.about-photo') }}" enctype="multipart/form-data"
+                          x-data="{
+                            preview: '{{ $currentAboutPhoto }}',
+                            dragging: false,
+                            uploading: false,
+                            pick(file) {
+                                if (!file) return;
+                                const dt = new DataTransfer(); dt.items.add(file);
+                                this.$refs.aboutInput.files = dt.files;
+                                const r = new FileReader();
+                                r.onload = e => { this.preview = e.target.result; this.uploading = true; this.$nextTick(() => this.$el.submit()); };
+                                r.readAsDataURL(file);
+                            }
+                          }">
+                        @csrf
+                        <input x-ref="aboutInput" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
+                               @change="pick($event.target.files[0])" />
+                        <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors"
+                             :class="dragging ? 'border-indigo-400 bg-indigo-50' : 'border-dashed border-gray-300 hover:border-gray-400'"
+                             style="height: 180px"
+                             @click="$refs.aboutInput.click()"
+                             @dragover.prevent="dragging = true"
+                             @dragleave.prevent="dragging = false"
+                             @drop.prevent="dragging = false; pick($event.dataTransfer.files[0])">
+                            <template x-if="preview">
+                                <img :src="preview" class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
+                            </template>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
+                                 :class="preview ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                                <svg class="w-8 h-8" :class="preview ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                                <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'" x-text="uploading ? 'Uploading…' : 'Drop photo here or click to browse'"></span>
+                                <span class="text-xs" :class="preview ? 'text-white/80' : 'text-gray-400'">JPG, PNG or WebP · min 600×600 px · max 8 MB</span>
                             </div>
-                            @if ($aboutPhotoRejectionNote)
-                                <div class="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                                    <p class="font-medium">About photo rejected by admin:</p>
-                                    <p class="mt-0.5">{{ $aboutPhotoRejectionNote }}</p>
-                                </div>
-                            @elseif ($pendingAboutPhoto)
-                                <div class="mt-3 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-                                    <img src="{{ $pendingAboutPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending about photo" />
-                                    <span>About photo pending admin approval.</span>
-                                </div>
-                            @endif
-                        </form>
-                    </div>
+                        </div>
+                        <x-input-error :messages="$errors->get('about_photo')" class="mt-2" />
+                        @if (session('status') === 'about-photo-updated')
+                            <p class="mt-2 text-sm text-green-600">Saved.</p>
+                        @elseif (session('status') === 'about-photo-pending')
+                            <p class="mt-2 text-sm text-amber-600">Submitted for admin approval.</p>
+                        @endif
+                        @if ($aboutPhotoRejectionNote)
+                            <div class="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                <p class="font-medium">About photo rejected by admin:</p>
+                                <p class="mt-0.5">{{ $aboutPhotoRejectionNote }}</p>
+                            </div>
+                        @elseif ($pendingAboutPhoto)
+                            <div class="mt-2 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                <img src="{{ $pendingAboutPhoto }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending about photo" />
+                                <span>Pending admin approval.</span>
+                            </div>
+                        @endif
+                    </form>
                 </div>
             </div>
 
