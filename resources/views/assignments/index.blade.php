@@ -1773,7 +1773,7 @@
                             <button type="button"
                                     @if ($rHasLogline) onclick="srStaffCard.toggle(event, {{ $reader->id }}, '{{ addslashes($rCardUrl) }}', this)" @endif
                                     title="{{ $reader->lastOnlineText() }}"
-                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold focus:outline-none transition-colors
+                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold focus-visible:outline-none transition-colors
                                         {{ $rHasLogline ? ($rFull ? 'cursor-pointer hover:bg-amber-300' : 'cursor-pointer hover:bg-gray-300') : 'cursor-default' }}
                                         {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700' }}
                                         {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}">
