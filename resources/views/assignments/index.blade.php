@@ -219,6 +219,43 @@
                 </div>
                 @endif
 
+                {{-- ---- Pending Profile Approvals panel ---- --}}
+                @if (($pendingApprovals ?? collect())->isNotEmpty())
+                <div class="mb-5">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        Profile Approvals Needed
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">{{ $pendingApprovals->count() }}</span>
+                    </h3>
+                    <div class="space-y-2">
+                        @foreach ($pendingApprovals as $pa)
+                            @php
+                                $paProfile  = $pa->isReader() ? $pa->readerProfile : $pa->editorProfile;
+                                $paInitials = $paProfile?->initials ?? strtoupper(substr($pa->name, 0, 2));
+                                $paEditUrl  = $pa->isReader()
+                                    ? route('readers.edit', $pa)
+                                    : route('admin.editors.edit', $pa);
+                                $paItems = collect([
+                                    $paProfile?->photo_pending       ? 'Reader icon'    : null,
+                                    $paProfile?->about_photo_pending ? 'About photo'    : null,
+                                    $paProfile?->bio_pending         ? 'Bio'            : null,
+                                ])->filter()->implode(', ');
+                            @endphp
+                            <a href="{{ $paEditUrl }}" class="flex items-center gap-3 px-4 py-3 border border-indigo-200 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                                <div class="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-xs font-mono font-semibold text-indigo-700 shrink-0">
+                                    {{ $paInitials }}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="text-sm font-medium text-gray-800">{{ $paProfile?->displayName() ?? $pa->name }}</span>
+                                    <span class="text-xs text-gray-500 ml-2">({{ ucfirst($pa->role) }})</span>
+                                </div>
+                                <span class="text-xs text-indigo-700 font-medium shrink-0">{{ $paItems }} pending</span>
+                                <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
                 {{-- ---- Followup Questions panel (pending only) ---- --}}
                 @php $followupsTop = ($followups ?? collect())->whereIn('status', ['pending', 'answered']); @endphp
                 @if ($followupsTop->isNotEmpty())

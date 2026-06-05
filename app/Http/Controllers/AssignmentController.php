@@ -129,6 +129,19 @@ class AssignmentController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
+            $pendingApprovals = User::where(function ($q) {
+                    $q->whereHas('readerProfile', fn($rq) => $rq
+                        ->whereNotNull('photo_pending')
+                        ->orWhereNotNull('about_photo_pending')
+                        ->orWhereNotNull('bio_pending'))
+                      ->orWhereHas('editorProfile', fn($eq) => $eq
+                        ->whereNotNull('photo_pending')
+                        ->orWhereNotNull('about_photo_pending')
+                        ->orWhereNotNull('bio_pending'));
+                })
+                ->with(['readerProfile', 'editorProfile'])
+                ->get();
+
             $assignmentNotes = AssignmentNote::with(['assignment', 'author.readerProfile', 'author.editorProfile', 'replies.author'])
                 ->orderBy('created_at', 'desc')
                 ->get()
@@ -150,6 +163,7 @@ class AssignmentController extends Controller
                 'appTimezone'      => Setting::getAppTimezone(),
                 'followups'        => $followups,
                 'assignmentNotes'  => $assignmentNotes,
+                'pendingApprovals' => $pendingApprovals,
             ]);
         }
 
