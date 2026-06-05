@@ -21,13 +21,17 @@ class CheckSessionTimeout
                 $idleMinutes = Carbon::createFromTimestamp($lastActivity)->diffInMinutes(now());
 
                 if ($idleMinutes >= $timeoutMinutes) {
+                    $wasAdmin = Auth::user()->isAdmin();
+
                     Auth::logout();
                     $request->session()->invalidate();
                     $request->session()->regenerateToken();
 
-                    $quickLoginUrl = \App\Http\Controllers\QuickLoginController::quickLoginUrl();
-                    if ($quickLoginUrl) {
-                        return redirect($quickLoginUrl);
+                    if ($wasAdmin) {
+                        $quickLoginUrl = \App\Http\Controllers\QuickLoginController::quickLoginUrl();
+                        if ($quickLoginUrl) {
+                            return redirect($quickLoginUrl);
+                        }
                     }
 
                     return redirect()->route('login')
