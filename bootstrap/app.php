@@ -18,18 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // When a session has no valid auth, redirect to quick-login URL if configured
         $exceptions->renderable(function (
             \Illuminate\Auth\AuthenticationException $e,
             \Illuminate\Http\Request $request
         ) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
-            }
-
-            $quickLoginUrl = \App\Http\Controllers\QuickLoginController::quickLoginUrl();
-            if ($quickLoginUrl) {
-                return redirect($quickLoginUrl);
             }
 
             return redirect()->guest(route('login'));
