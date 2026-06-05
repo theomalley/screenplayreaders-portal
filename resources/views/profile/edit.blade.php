@@ -67,10 +67,10 @@
                                  :class="preview ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
                                 <svg class="w-8 h-8" :class="preview ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
                                 <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'">Drop photo here or click to browse</span>
-                                <span class="text-xs" :class="preview ? 'text-white/80' : 'text-gray-400'">JPG, PNG or WebP · min 600×600 px · max 8 MB</span>
                             </div>
                         </div>
-                        <div class="mt-3">
+                        <p class="mt-2 text-xs text-gray-500">JPG, PNG or WebP &nbsp;·&nbsp; minimum 600×600 px &nbsp;·&nbsp; max 8 MB</p>
+                        <div class="mt-2">
                             <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
                         </div>
                         <x-input-error :messages="$errors->get('photo')" class="mt-2" />
@@ -133,10 +133,10 @@
                                  :class="preview ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
                                 <svg class="w-8 h-8" :class="preview ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
                                 <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'">Drop photo here or click to browse</span>
-                                <span class="text-xs" :class="preview ? 'text-white/80' : 'text-gray-400'">JPG, PNG or WebP · min 600×600 px · max 8 MB</span>
                             </div>
                         </div>
-                        <div class="mt-3">
+                        <p class="mt-2 text-xs text-gray-500">JPG, PNG or WebP &nbsp;·&nbsp; minimum 600×600 px &nbsp;·&nbsp; max 8 MB</p>
+                        <div class="mt-2">
                             <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
                         </div>
                         <x-input-error :messages="$errors->get('about_photo')" class="mt-2" />
