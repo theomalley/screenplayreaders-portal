@@ -23,39 +23,37 @@
                 <div>
                     <h3 class="text-sm font-semibold text-gray-700">Test Script</h3>
                     <p class="text-xs text-gray-500 mt-0.5">
-                        Paste a Google Drive file ID here. All seeded test assignments will link to this script so readers can open, view, and submit coverage end-to-end.
-                        To get the file ID: upload a PDF to Google Drive, open it, and copy the long ID from the URL
-                        (<span class="font-mono">drive.google.com/file/d/<strong>FILE_ID</strong>/view</span>).
-                        Share the file with your service account so the portal can proxy it.
+                        Upload any PDF (a short screenplay works great). All seeded test assignments will use it so readers can view the script and submit coverage end-to-end. The file is stored on the server — no Google Drive sharing required.
                     </p>
                 </div>
-                <form method="POST" action="{{ route('test-data.script') }}" class="space-y-3">
+
+                @if($testScriptId === '__LOCAL_TEST__')
+                    <div class="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                        <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="flex-1 min-w-0">
+                            <span class="text-xs font-medium text-green-700">Script uploaded: </span>
+                            <span class="text-xs text-green-600 font-mono">{{ $testScriptName ?: 'test-script.pdf' }}</span>
+                        </div>
+                        <form method="POST" action="{{ route('test-data.script') }}">
+                            @csrf
+                            <button type="submit" class="text-xs text-red-500 hover:text-red-700 whitespace-nowrap">Remove</button>
+                        </form>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('test-data.script') }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
                     @csrf
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <div class="flex-1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Drive File ID</label>
-                            <input type="text" name="file_id" value="{{ $testScriptId }}"
-                                   placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-                                   class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono">
-                        </div>
-                        <div class="sm:w-56">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Filename (shown to reader)</label>
-                            <input type="text" name="filename" value="{{ $testScriptName }}"
-                                   placeholder="test-script.pdf"
-                                   class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button type="submit"
-                                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors">
-                            Save
-                        </button>
-                        @if($testScriptId)
-                            <span class="text-xs text-green-600 font-medium">✓ Script configured</span>
-                        @else
-                            <span class="text-xs text-amber-600">No script set — test assignments will have no viewable script</span>
-                        @endif
-                    </div>
+                    <input type="file" name="pdf" accept="application/pdf" required
+                           class="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    <button type="submit"
+                            class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors whitespace-nowrap">
+                        {{ $testScriptId ? 'Replace' : 'Upload Script' }}
+                    </button>
+                    @if(!$testScriptId)
+                        <span class="text-xs text-amber-600">Not set — test assignments will have no viewable script</span>
+                    @endif
                 </form>
             </div>
 

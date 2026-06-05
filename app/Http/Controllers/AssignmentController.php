@@ -547,7 +547,15 @@ class AssignmentController extends Controller
         abort_unless($assignment->drive_script_file_id, 404);
 
         $filename = $assignment->drive_script_filename ?? 'script.pdf';
-        $contents = $drive->downloadContents($assignment->drive_script_file_id);
+
+        // Test assignments may use a locally-uploaded script instead of Google Drive
+        if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
+            $localPath = storage_path('app/test-script.pdf');
+            abort_unless(file_exists($localPath), 404);
+            $contents = file_get_contents($localPath);
+        } else {
+            $contents = $drive->downloadContents($assignment->drive_script_file_id);
+        }
 
         return response($contents, 200, [
             'Content-Type'        => 'application/pdf',

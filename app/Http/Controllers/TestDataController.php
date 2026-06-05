@@ -139,17 +139,26 @@ class TestDataController extends Controller
         return back()->with('success', "Deleted all {$testIds->count()} test assignment(s).");
     }
 
-    public function saveTestScript(Request $request)
+    public function saveTestScript(\Illuminate\Http\Request $request)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $fileId   = trim($request->input('file_id', ''));
-        $filename = trim($request->input('filename', ''));
+        if ($request->hasFile('pdf')) {
+            $request->validate(['pdf' => 'required|file|mimes:pdf|max:20480']);
+            $request->file('pdf')->storeAs('', 'test-script.pdf', ['disk' => 'local']);
+            $filename = $request->file('pdf')->getClientOriginalName();
+            Setting::setValue('test_script_drive_file_id', '__LOCAL_TEST__');
+            Setting::setValue('test_script_drive_filename', $filename);
+            return back()->with('success', 'Test script uploaded — all seeded assignments will use this file.');
+        }
 
-        Setting::setValue('test_script_drive_file_id', $fileId);
-        Setting::setValue('test_script_drive_filename', $filename ?: 'test-script.pdf');
-
-        return back()->with('success', $fileId ? 'Test script saved.' : 'Test script cleared.');
+        // Clear
+        Setting::setValue('test_script_drive_file_id', '');
+        Setting::setValue('test_script_drive_filename', '');
+        if (file_exists(storage_path('app/test-script.pdf'))) {
+            unlink(storage_path('app/test-script.pdf'));
+        }
+        return back()->with('success', 'Test script cleared.');
     }
 
     public function toggleAutoReset(Request $request)

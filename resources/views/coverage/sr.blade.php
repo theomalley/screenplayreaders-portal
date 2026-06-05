@@ -163,25 +163,25 @@
 
                 {{-- ── Section 3: Scoresheet ────────────────────────────────────────────── --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-5">
-                    <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-2">
                         <h3 class="font-semibold text-gray-700 text-base flex items-baseline gap-3">
                             Scoresheet <span class="text-gray-400 font-normal text-sm">(50–100)</span>
                             <span class="text-base font-bold tabular-nums"
                                 :style="`color: ${scoreColor(averageScore())}`"
                                 x-text="'Avg: ' + averageScore()"></span>
                         </h3>
-                        <div class="text-right">
+                        <div>
                             <div class="flex items-center gap-2">
-                                <x-input-label for="randomAnchor" value="Randomize around:" class="whitespace-nowrap" />
-                                <x-text-input id="randomAnchor" type="number" class="w-20 text-sm"
+                                <x-input-label for="randomAnchor" value="Randomize around:" class="whitespace-nowrap text-xs" />
+                                <x-text-input id="randomAnchor" type="number" class="w-16 text-sm"
                                     x-model.number="randomAnchor" min="50" max="100" placeholder="75" />
                                 <button type="button"
                                     @click="randomizeScores()"
-                                    class="text-xs px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium">
+                                    class="text-xs px-2.5 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium whitespace-nowrap">
                                     Randomize
                                 </button>
                             </div>
-                            <p class="text-xs text-gray-400 mt-1">Use only as a starting point, then dial in.</p>
+                            <p class="text-xs text-gray-400 mt-1">Starting point only — dial in from there.</p>
                         </div>
                     </div>
 
