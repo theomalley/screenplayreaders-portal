@@ -32,7 +32,7 @@
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Reader Icon</h2>
-                    <p class="text-sm text-gray-600 mb-3">Your avatar in the portal and on the public website. Min 600×600 px.</p>
+                    <p class="text-sm text-gray-600 mb-3">Your avatar in the portal (not public). Min 600×600 px.</p>
                     <form method="POST" action="{{ route('profile.photo') }}" enctype="multipart/form-data"
                           x-data="{
                             preview: '{{ $currentPhoto }}',
