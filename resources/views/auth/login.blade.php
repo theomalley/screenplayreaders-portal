@@ -1,6 +1,13 @@
 <x-guest-layout>
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
+    @if (session('magic_link_status'))
+        <div class="mb-6 px-4 py-3 bg-green-50 border border-green-300 rounded-lg text-sm text-green-800">
+            {{ session('magic_link_status') }}
+        </div>
+    @endif
+
+    {{-- Password login --}}
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
@@ -34,5 +41,23 @@
                 {{ __('Log in') }}
             </x-primary-button>
         </div>
+    </form>
+
+    {{-- Divider --}}
+    <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+        <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-3 text-gray-400 tracking-wider">or</span></div>
+    </div>
+
+    {{-- Magic link --}}
+    <form method="POST" action="{{ route('magic-link.send') }}">
+        @csrf
+        <p class="text-sm text-gray-600 mb-3">Enter your email and we'll send you a one-click login link — no password needed.</p>
+        <div class="flex gap-2">
+            <x-text-input name="email" type="email" class="flex-1" placeholder="your@email.com"
+                          :value="old('email')" autocomplete="email" />
+            <x-primary-button type="submit">Email me a link</x-primary-button>
+        </div>
+        <x-input-error :messages="$errors->get('email')" class="mt-2" />
     </form>
 </x-guest-layout>
