@@ -437,13 +437,16 @@
                     try {
                         const page = await pdfDoc.getPage(num);
                         const wrap = this.$refs.canvasWrap;
+                        const dpr  = window.devicePixelRatio || 1;
                         const maxW = Math.max(wrap.clientWidth - 32, 200);
-                        const base = page.getViewport({ scale: 1 });
+                        const base  = page.getViewport({ scale: 1 });
                         const scale = Math.min(maxW / base.width, 2.0);
-                        const vp = page.getViewport({ scale });
+                        const vp    = page.getViewport({ scale: scale * dpr });
                         const canvas = this.$refs.canvas;
                         canvas.width  = vp.width;
                         canvas.height = vp.height;
+                        canvas.style.width  = (vp.width  / dpr) + 'px';
+                        canvas.style.height = (vp.height / dpr) + 'px';
                         await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
                         this.currentPage = num;
                         if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;

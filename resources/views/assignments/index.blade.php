@@ -2827,17 +2827,20 @@
 
                     async renderAllPages() {
                         const wrap = this.$refs.canvasWrap;
+                        const dpr  = window.devicePixelRatio || 1;
                         pages = [];
                         const maxW = Math.max(wrap.clientWidth - 48, 200);
                         for (let i = 1; i <= this.totalPages; i++) {
                             this.currentPage = i;
                             const page = await pdfDoc.getPage(i);
-                            const base = page.getViewport({ scale: 1 });
+                            const base  = page.getViewport({ scale: 1 });
                             const scale = Math.min(maxW / base.width, 2.0);
-                            const vp = page.getViewport({ scale });
+                            const vp    = page.getViewport({ scale: scale * dpr });
                             const canvas = document.createElement('canvas');
                             canvas.width  = vp.width;
                             canvas.height = vp.height;
+                            canvas.style.width  = (vp.width  / dpr) + 'px';
+                            canvas.style.height = (vp.height / dpr) + 'px';
                             canvas.className = 'shadow-2xl shrink-0';
                             wrap.appendChild(canvas);
                             pages.push(canvas);
