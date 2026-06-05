@@ -88,13 +88,18 @@
                         <x-input-error :messages="$errors->get('initials')" class="mt-1" />
                     </div>
 
-                    {{-- Name --}}
+                    {{-- Name — fall back to splitting users.name if profile fields not yet set --}}
+                    @php
+                        $nameParts    = explode(' ', $user->name, 2);
+                        $fallbackFirst = $nameParts[0] ?? '';
+                        $fallbackLast  = $nameParts[1] ?? '';
+                    @endphp
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <x-input-label for="first_name" value="First Name" />
                             <x-text-input id="first_name" name="first_name" type="text"
                                 class="mt-1 block w-full"
-                                value="{{ old('first_name', $profile?->first_name) }}"
+                                value="{{ old('first_name', $profile?->first_name ?? $fallbackFirst) }}"
                                 required />
                             <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
                         </div>
@@ -102,7 +107,7 @@
                             <x-input-label for="last_name" value="Last Name" />
                             <x-text-input id="last_name" name="last_name" type="text"
                                 class="mt-1 block w-full"
-                                value="{{ old('last_name', $profile?->last_name) }}"
+                                value="{{ old('last_name', $profile?->last_name ?? $fallbackLast) }}"
                                 required />
                             <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
                         </div>
