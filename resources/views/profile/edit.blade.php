@@ -252,18 +252,18 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-indigo-50 shadow sm:rounded-lg border border-indigo-100">
                 <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">My Current Logline</h2>
-                    <p class="text-sm text-gray-600 mb-4">A short line shown when teammates click your staff icon — think of it as your current status or a one-liner about what you're working on.</p>
+                    <h2 class="text-lg font-semibold text-indigo-900 mb-1">My Current Logline</h2>
+                    <p class="text-sm text-indigo-700 mb-4">A short line shown when teammates click your staff icon — think of it as your current status or a one-liner about what you're working on.</p>
                     <form method="POST" action="{{ route('profile.custom-message') }}" class="space-y-4">
                         @csrf
                         @method('PATCH')
                         <textarea name="custom_message" rows="2"
-                                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none"
+                                  class="w-full border border-indigo-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white resize-none"
                                   maxlength="200"
                                   placeholder="e.g. On holiday until Jan 15. Feel free to reach out!">{{ old('custom_message', $profile?->custom_message) }}</textarea>
-                        <p class="text-xs text-gray-400 -mt-2">Plain text only · Max 200 characters</p>
+                        <p class="text-xs text-indigo-400 -mt-2">Plain text only · Max 200 characters</p>
                         <x-input-error :messages="$errors->get('custom_message')" class="mt-1" />
                         <div>
                             <x-primary-button>Save Message</x-primary-button>
