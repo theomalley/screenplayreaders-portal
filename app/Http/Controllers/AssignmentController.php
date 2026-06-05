@@ -765,6 +765,17 @@ class AssignmentController extends Controller
                 return;
             }
 
+            // Prevent accepting more than one sibling on a multi-reader order
+            $alreadyOnOrder = Assignment::where('order_number', $fresh->order_number)
+                ->where('assigned_reader_id', $user->id)
+                ->where('id', '!=', $fresh->id)
+                ->exists();
+
+            if ($alreadyOnOrder) {
+                $error = 'You are already assigned to a coverage on this order.';
+                return;
+            }
+
             $profile = $user->readerProfile;
             $isRequestedForMe = $fresh->requested_reader_id === $user->id;
             if ($profile && $profile->isAtCapacity(isRequestedAssignment: $isRequestedForMe)) {
