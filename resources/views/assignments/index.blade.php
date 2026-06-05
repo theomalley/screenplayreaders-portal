@@ -2104,8 +2104,7 @@
                                                                         }
                                                                     }).then(r => {
                                                                         if (r.ok) {
-                                                                            $el.closest('tr').remove();
-                                                                            location.reload();
+                                                                            window.dispatchEvent(new CustomEvent('assignment-accepted', { detail: @js($assignment->script_title) }));
                                                                         } else {
                                                                             r.json().then(d => { accepting = false; error = d.message ?? 'No longer available.'; }).catch(() => { accepting = false; error = 'No longer available.'; });
                                                                         }
@@ -2946,6 +2945,43 @@
 
             Alpine.data('pdfViewer', makePdfViewerData);
 
+            Alpine.data('acceptedCelebration', () => ({
+                show: false,
+                title: '',
+                _timer: null,
+
+                async celebrate(title) {
+                    this.title = title || '';
+                    this.show = true;
+
+                    if (!window.confetti) {
+                        await new Promise((res, rej) => {
+                            const s = document.createElement('script');
+                            s.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
+                            s.onload = res; s.onerror = rej;
+                            document.head.appendChild(s);
+                        });
+                    }
+
+                    const colors = ['#a78bfa', '#818cf8', '#67e8f9', '#fbbf24', '#f9a8d4', '#6ee7b7'];
+                    const end = Date.now() + 2400;
+                    const burst = () => {
+                        confetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0, y: 0.6 }, colors });
+                        confetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1, y: 0.6 }, colors });
+                        if (Date.now() < end) requestAnimationFrame(burst);
+                    };
+                    requestAnimationFrame(burst);
+
+                    this._timer = setTimeout(() => this.dismiss(), 2800);
+                },
+
+                dismiss() {
+                    clearTimeout(this._timer);
+                    this.show = false;
+                    setTimeout(() => location.reload(), 500);
+                },
+            }));
+
             Alpine.data('readerPdfViewer', (url, assignmentId, csrfToken) => ({
                 ...makePdfViewerData(url),
                 notesOpen: false,
@@ -2999,4 +3035,26 @@
         </script>
         @endpush
     @endonce
+
+    {{-- Assignment accepted celebration overlay --}}
+    <div x-data="acceptedCelebration()"
+         x-show="show"
+         x-cloak
+         x-transition:enter="transition-opacity ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-in duration-500"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @assignment-accepted.window="celebrate($event.detail)"
+         @click="dismiss()"
+         class="fixed inset-0 z-[9000] flex flex-col items-center justify-center bg-indigo-950/95 backdrop-blur-sm cursor-pointer select-none">
+        <div class="text-center px-6 max-w-sm w-full mx-auto">
+            <div class="text-8xl font-black text-white leading-none mb-4">✓</div>
+            <div class="text-5xl sm:text-7xl font-black text-white leading-tight tracking-tight">Accepted!</div>
+            <div x-show="title" x-text="title"
+                 class="mt-3 text-base sm:text-lg text-indigo-300 font-medium leading-snug"></div>
+            <div class="mt-10 text-sm text-indigo-400">Tap to continue</div>
+        </div>
+    </div>
 </x-app-layout>
