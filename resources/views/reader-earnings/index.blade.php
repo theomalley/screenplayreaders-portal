@@ -74,7 +74,7 @@
                                             'notes_only'        => 'Notes-Only',
                                             'deep_dive'         => 'Deep-Dive',
                                             'short'             => 'Short',
-                                            'budget'            => 'Budget',
+                                            'budget'            => 'Budget Coverage',
                                             'book'              => 'Book',
                                             'coverage'          => 'Coverage',
                                             'development_notes' => 'Dev Notes',
