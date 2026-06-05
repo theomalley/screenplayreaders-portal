@@ -1722,17 +1722,18 @@
                     {{-- Editors / Admins --}}
                     @foreach ($staffEditors as $editor)
                         @php
-                            $eProfile  = $editor->editorProfile;
-                            $eInitials = $eProfile?->initials ?? strtoupper(substr($editor->name, 0, 2));
-                            $ePhotoUrl = $eProfile?->photo ? asset('storage/' . $eProfile->photo) : null;
-                            $eOnline   = $editor->isOnline();
-                            $eCardUrl  = route('staff.reader-card', $editor);
+                            $eProfile   = $editor->editorProfile;
+                            $eInitials  = $eProfile?->initials ?? strtoupper(substr($editor->name, 0, 2));
+                            $ePhotoUrl  = $eProfile?->photo ? asset('storage/' . $eProfile->photo) : null;
+                            $eOnline    = $editor->isOnline();
+                            $eCardUrl   = route('staff.reader-card', $editor);
+                            $eHasLogline = !empty($eProfile?->custom_message);
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
                             <button type="button"
-                                    onclick="srStaffCard.toggle(event, {{ $editor->id }}, '{{ addslashes($eCardUrl) }}', this)"
+                                    @if ($eHasLogline) onclick="srStaffCard.toggle(event, {{ $editor->id }}, '{{ addslashes($eCardUrl) }}', this)" @endif
                                     title="{{ $editor->lastOnlineText() }}"
-                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700 cursor-pointer focus:outline-none hover:bg-indigo-200 transition-colors">
+                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold bg-indigo-100 text-indigo-700 {{ $eHasLogline ? 'cursor-pointer hover:bg-indigo-200' : 'cursor-default' }} focus:outline-none transition-colors">
                                 @if ($ePhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">
                                         <img src="{{ $ePhotoUrl }}" alt="{{ $eInitials }}" class="w-full h-full object-cover" />
@@ -1766,13 +1767,15 @@
                             $rOnline      = $reader->isOnline();
                             $rIsSelf      = $reader->id === auth()->id();
                             $rCardUrl     = route('staff.reader-card', $reader);
+                            $rHasLogline  = !empty($rProfile?->custom_message);
                         @endphp
                         <div class="flex flex-col items-center gap-0.5">
                             <button type="button"
-                                    onclick="srStaffCard.toggle(event, {{ $reader->id }}, '{{ addslashes($rCardUrl) }}', this)"
+                                    @if ($rHasLogline) onclick="srStaffCard.toggle(event, {{ $reader->id }}, '{{ addslashes($rCardUrl) }}', this)" @endif
                                     title="{{ $reader->lastOnlineText() }}"
-                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold cursor-pointer focus:outline-none transition-colors
-                                        {{ $rFull ? 'bg-amber-200 text-amber-800 hover:bg-amber-300' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}
+                                    class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold focus:outline-none transition-colors
+                                        {{ $rHasLogline ? ($rFull ? 'cursor-pointer hover:bg-amber-300' : 'cursor-pointer hover:bg-gray-300') : 'cursor-default' }}
+                                        {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700' }}
                                         {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}">
                                 @if ($rPhotoUrl)
                                     <span class="absolute inset-0 rounded-full overflow-hidden">

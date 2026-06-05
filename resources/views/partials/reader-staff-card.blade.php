@@ -1,13 +1,12 @@
-{{-- Reader-facing staff card — photo, name, role, bio, online only. No assignments, pay, or admin links. --}}
+{{-- Reader-facing staff card — photo, name, role, current logline only. No bio, assignments, pay, or admin links. --}}
 @php
-    $isReader = $user->isReader();
-    $isAdmin  = $user->isAdmin();
-    $initials = $profile?->initials ?? strtoupper(substr($user->name, 0, 2));
-    $photoUrl = $profile?->photo ? asset('storage/' . $profile->photo) : null;
-    $online   = $user->isOnline();
-    $bgClass  = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
+    $isReader  = $user->isReader();
+    $isAdmin   = $user->isAdmin();
+    $initials  = $profile?->initials ?? strtoupper(substr($user->name, 0, 2));
+    $photoUrl  = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+    $online    = $user->isOnline();
+    $bgClass   = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
     $customMsg = $profile?->custom_message ? trim($profile->custom_message) : null;
-    $bio       = $profile?->bio ? strip_tags($profile->bio) : null;
 @endphp
 
 <div class="flex items-start gap-3">
@@ -41,10 +40,6 @@
 
         @if ($customMsg)
             <p class="mt-2 text-xs text-gray-600 leading-relaxed" style="white-space:pre-line">{{ $customMsg }}</p>
-        @elseif ($bio)
-            <p class="mt-2 text-xs text-gray-600 leading-relaxed" style="white-space:pre-line">{{ $bio }}</p>
-        @else
-            <p class="mt-2 text-xs text-gray-400 italic">No bio yet.</p>
         @endif
     </div>
 </div>
