@@ -1073,7 +1073,7 @@
                                                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
                                                                         'Accept': 'application/json',
                                                                     }
-                                                                }).then(r => r.ok ? location.reload() : r.json().then(d => { busy = false; err = d.message ?? 'Failed'; }))
+                                                                }).then(r => r.ok ? window.dispatchEvent(new CustomEvent('assignment-accepted', { detail: @js($assignment->script_title) })) : r.json().then(d => { busy = false; err = d.message ?? 'Failed'; }))
                                                                 .catch(() => { busy = false; err = 'Failed'; })"
                                                             class="inline-flex items-center px-2.5 py-1 bg-green-600 hover:bg-green-500 text-white text-[10px] font-semibold rounded transition-colors disabled:opacity-50 whitespace-nowrap"
                                                             x-text="busy ? 'Accepting…' : 'Accept'">
