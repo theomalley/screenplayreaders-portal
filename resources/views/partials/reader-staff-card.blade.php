@@ -39,7 +39,7 @@
         @endif
 
         @if ($customMsg)
-            <p class="mt-2 text-xs text-gray-600 leading-relaxed" style="white-space:pre-line">{{ $customMsg }}</p>
+            <p class="mt-2 text-xs font-semibold text-indigo-600 leading-relaxed" style="white-space:pre-line">{{ $customMsg }}</p>
         @endif
     </div>
 </div>

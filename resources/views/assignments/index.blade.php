@@ -507,7 +507,7 @@
                                             <div class="text-xs text-gray-400 mt-0.5">{{ $eProfile->title }}</div>
                                         @endif
                                         @if ($eProfile?->custom_message)
-                                            <p class="mt-1.5 text-xs text-gray-600 leading-relaxed italic" style="white-space:pre-line">{{ $eProfile->custom_message }}</p>
+                                            <p class="mt-1.5 text-xs font-semibold text-indigo-600 leading-relaxed" style="white-space:pre-line">{{ $eProfile->custom_message }}</p>
                                         @endif
                                         @if ($editor->assignments->isNotEmpty())
                                             <ul class="mt-2 space-y-1">
@@ -581,7 +581,7 @@
                                             <div class="text-xs text-gray-400 mt-0.5">{{ $rProfile->title }}</div>
                                         @endif
                                         @if ($rProfile?->custom_message)
-                                            <p class="mt-1.5 text-xs text-gray-600 leading-relaxed italic" style="white-space:pre-line">{{ $rProfile->custom_message }}</p>
+                                            <p class="mt-1.5 text-xs font-semibold text-indigo-600 leading-relaxed" style="white-space:pre-line">{{ $rProfile->custom_message }}</p>
                                         @endif
 
                                         {{-- Weekly pay stats --}}
