@@ -19,7 +19,6 @@ use App\Models\EditorProductCommission;
 use App\Models\User;
 use App\Support\Permission;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
@@ -71,7 +70,7 @@ class EditorProfileController extends Controller
         $user = User::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
+            'password' => $data['password'],
             'role'     => 'editor',
         ]);
 
@@ -138,7 +137,7 @@ class EditorProfileController extends Controller
             'email' => $data['email'],
         ];
         if (!empty($data['password'])) {
-            $userUpdate['password'] = Hash::make($data['password']);
+            $userUpdate['password'] = $data['password'];
         }
         $user->update($userUpdate);
 
