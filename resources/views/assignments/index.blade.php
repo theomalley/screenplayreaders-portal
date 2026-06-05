@@ -2340,6 +2340,15 @@
                                                                         </span>
                                                                     </div>
                                                                     <button type="button"
+                                                                            @click="searchOpen = !searchOpen; if (searchOpen) $nextTick(() => $refs.searchInput?.focus())"
+                                                                            :class="searchOpen ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                                                                            class="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 shrink-0">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                                                        </svg>
+                                                                        Search
+                                                                    </button>
+                                                                    <button type="button"
                                                                             @click="notesOpen = !notesOpen; if (notesOpen && !notesLoaded) loadNotes()"
                                                                             :class="notesOpen ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
                                                                             class="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors">
@@ -2352,6 +2361,35 @@
                                                                     <button @click="open = false" type="button"
                                                                             class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                                 </div>
+                                                            </div>
+                                                            {{-- Search bar row --}}
+                                                            <div x-show="searchOpen" x-cloak
+                                                                 class="px-4 py-2.5 bg-gray-800 border-t border-gray-700 shrink-0">
+                                                                <div class="flex items-center gap-2">
+                                                                    <input x-model="searchQuery"
+                                                                           @input="doSearch()"
+                                                                           x-ref="searchInput"
+                                                                           type="search"
+                                                                           placeholder="Search script…"
+                                                                           class="flex-1 bg-gray-700 border border-gray-600 rounded px-2.5 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-400 min-w-0" />
+                                                                    <button x-show="searchQuery" @click="searchQuery = ''; searchResults = []" type="button"
+                                                                            class="text-gray-400 hover:text-white text-lg leading-none shrink-0">×</button>
+                                                                </div>
+                                                                <div x-show="searchResults.length > 0" class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1.5">
+                                                                    <span class="text-[10px] text-gray-400 shrink-0"
+                                                                          x-text="searchResults.length + (searchResults.length === 1 ? ' match — page:' : ' matches — pages:')"></span>
+                                                                    <div class="flex flex-wrap gap-1">
+                                                                        <template x-for="pg in searchResults" :key="pg">
+                                                                            <button @click="searchOpen = false; $nextTick(() => scrollToPage(pg))" type="button"
+                                                                                    class="inline-flex px-2 py-0.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] rounded font-medium transition-colors"
+                                                                                    x-text="pg"></button>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
+                                                                <div x-show="!pageTexts.length && searchQuery.trim()"
+                                                                     class="mt-1.5 text-[10px] text-gray-500 italic">Indexing pages…</div>
+                                                                <div x-show="pageTexts.length > 0 && searchQuery.trim() && !searchResults.length"
+                                                                     class="mt-1.5 text-[10px] text-gray-500 italic">No matches found</div>
                                                             </div>
                                                             <div class="flex-1 flex min-h-0">
                                                                 <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
@@ -2906,12 +2944,15 @@
                             }).promise;
                             this.totalPages = pdfDoc.numPages;
                             await this.renderAllPages();
+                            await this.onPdfLoaded(pdfDoc);
                         } catch (e) {
                             console.error('PDF load error:', e);
                         } finally {
                             this.loading = false;
                         }
                     },
+
+                    async onPdfLoaded(pdfDoc) {},
 
                     async renderAllPages() {
                         const wrap = this.$refs.canvasWrap;
@@ -2989,6 +3030,29 @@
                 noteBody: '',
                 noteSaving: false,
                 notesLoaded: false,
+                searchOpen: false,
+                searchQuery: '',
+                searchResults: [],
+                pageTexts: [],
+
+                async onPdfLoaded(pdfDoc) {
+                    const texts = [];
+                    for (let i = 1; i <= pdfDoc.numPages; i++) {
+                        const page = await pdfDoc.getPage(i);
+                        const content = await page.getTextContent();
+                        texts.push(content.items.map(item => item.str).join(' '));
+                    }
+                    this.pageTexts = texts;
+                    if (this.searchQuery.trim()) this.doSearch();
+                },
+
+                doSearch() {
+                    const q = this.searchQuery.trim().toLowerCase();
+                    if (!q) { this.searchResults = []; return; }
+                    this.searchResults = this.pageTexts
+                        .map((text, i) => text.toLowerCase().includes(q) ? i + 1 : null)
+                        .filter(Boolean);
+                },
 
                 async loadNotes() {
                     if (this.notesLoaded) return;
