@@ -109,6 +109,7 @@ class ReaderProfileController extends Controller
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
             'photo'                      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192', 'dimensions:min_width=600,min_height=600'],
+            'about_photo'                => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192', 'dimensions:min_width=600,min_height=600'],
             'email'                      => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password'                   => ['nullable', 'confirmed', Password::defaults()],
             'availability'               => ['required', 'in:available,unavailable'],
@@ -126,6 +127,16 @@ class ReaderProfileController extends Controller
             $data['photo'] = $request->file('photo')->store('reader-photos', 'public');
         } else {
             unset($data['photo']);
+        }
+
+        if ($request->hasFile('about_photo')) {
+            $profile = $profile ?? $user->readerProfile;
+            if ($profile?->about_photo) {
+                Storage::disk('public')->delete($profile->about_photo);
+            }
+            $data['about_photo'] = $request->file('about_photo')->store('reader-photos', 'public');
+        } else {
+            unset($data['about_photo']);
         }
 
         $userUpdate = [

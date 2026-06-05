@@ -28,37 +28,63 @@
                         </div>
                     @endif
 
-                    {{-- Photo --}}
+                    {{-- Photos --}}
                     @php
                         $currentPhotoUrl        = $profile?->photo ? asset('storage/' . $profile->photo) : '';
+                        $currentAboutPhotoUrl   = $profile?->about_photo ? asset('storage/' . $profile->about_photo) : '';
                         $pendingPhotoUrl        = $profile?->photo_pending ? asset('storage/' . $profile->photo_pending) : null;
                         $pendingAboutPhotoUrl   = $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null;
                         $pendingBioContent      = $profile?->bio_pending;
                     @endphp
+
+                    {{-- Reader Icon --}}
                     <div x-data="{ previewUrl: '{{ $currentPhotoUrl }}' }">
-                        <x-input-label value="Photo" />
-                        <div class="mt-2 flex items-center gap-4">
+                        <x-input-label value="Reader Icon" />
+                        <p class="mt-0.5 text-xs text-gray-500 mb-2">Portal avatar and public website icon. JPG, PNG or WebP · min 600×600 px · max 8 MB · leave blank to keep current.</p>
+                        <div class="flex items-center gap-4">
                             <div class="relative w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-lg font-mono font-semibold shrink-0 overflow-hidden">
                                 <img x-show="previewUrl" :src="previewUrl" alt="" class="absolute inset-0 w-full h-full object-cover" />
                                 <span x-show="!previewUrl">{{ $profile?->initials ?? '?' }}</span>
                             </div>
-                            <div class="flex-1">
-                                <input type="file" name="photo" id="photo" accept="image/*"
-                                       @change="if ($event.target.files[0]) {
-                                           const r = new FileReader();
-                                           r.onload = e => previewUrl = e.target.result;
-                                           r.readAsDataURL($event.target.files[0]);
-                                       }"
-                                       class="block w-full text-sm text-gray-500
-                                              file:mr-3 file:py-1.5 file:px-3
-                                              file:rounded file:border file:border-gray-300
-                                              file:text-xs file:font-medium file:text-gray-700
-                                              file:bg-white hover:file:bg-gray-50 file:cursor-pointer
-                                              cursor-pointer" />
-                                <p class="mt-1 text-xs text-gray-400">JPEG or PNG, max 4 MB. Leave blank to keep current photo.</p>
-                            </div>
+                            <input type="file" name="photo" id="photo" accept="image/jpeg,image/png,image/webp"
+                                   @change="if ($event.target.files[0]) {
+                                       const r = new FileReader();
+                                       r.onload = e => previewUrl = e.target.result;
+                                       r.readAsDataURL($event.target.files[0]);
+                                   }"
+                                   class="flex-1 block text-sm text-gray-500
+                                          file:mr-3 file:py-1.5 file:px-3
+                                          file:rounded file:border file:border-gray-300
+                                          file:text-xs file:font-medium file:text-gray-700
+                                          file:bg-white hover:file:bg-gray-50 file:cursor-pointer
+                                          cursor-pointer" />
                         </div>
                         <x-input-error :messages="$errors->get('photo')" class="mt-1" />
+                    </div>
+
+                    {{-- About Page Photo --}}
+                    <div x-data="{ previewUrl: '{{ $currentAboutPhotoUrl }}' }">
+                        <x-input-label value="About Page Photo" />
+                        <p class="mt-0.5 text-xs text-gray-500 mb-2">Displayed on the public website's About page. JPG, PNG or WebP · min 600×600 px · max 8 MB · leave blank to keep current.</p>
+                        <div class="flex items-center gap-4">
+                            <div class="relative w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs shrink-0 overflow-hidden">
+                                <img x-show="previewUrl" :src="previewUrl" alt="" class="absolute inset-0 w-full h-full object-cover" />
+                                <span x-show="!previewUrl">None</span>
+                            </div>
+                            <input type="file" name="about_photo" id="about_photo" accept="image/jpeg,image/png,image/webp"
+                                   @change="if ($event.target.files[0]) {
+                                       const r = new FileReader();
+                                       r.onload = e => previewUrl = e.target.result;
+                                       r.readAsDataURL($event.target.files[0]);
+                                   }"
+                                   class="flex-1 block text-sm text-gray-500
+                                          file:mr-3 file:py-1.5 file:px-3
+                                          file:rounded file:border file:border-gray-300
+                                          file:text-xs file:font-medium file:text-gray-700
+                                          file:bg-white hover:file:bg-gray-50 file:cursor-pointer
+                                          cursor-pointer" />
+                        </div>
+                        <x-input-error :messages="$errors->get('about_photo')" class="mt-1" />
                     </div>
 
                     @if ($pendingPhotoUrl)
