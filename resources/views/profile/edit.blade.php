@@ -518,7 +518,7 @@
                 </div>
 
                 {{-- Identity — admin only --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
                         <h2 class="text-lg font-medium text-gray-900">Identity <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <div>
@@ -562,7 +562,7 @@
 
                 @if ($isEditingReader)
                 {{-- Capacity & Pay (readers only) — admin only --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
                         <h2 class="text-lg font-medium text-gray-900">Capacity &amp; Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <div class="grid grid-cols-2 gap-3">
@@ -600,7 +600,7 @@
                 </div>
                 @else
                 {{-- Pay (editors/admins only) — admin only --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
                         <h2 class="text-lg font-medium text-gray-900">Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <div>
@@ -617,7 +617,7 @@
                 @endif
 
                 {{-- Upload Form Warning — admin only --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Upload Form Warning <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <p class="text-sm text-gray-600 -mt-2">Shown as an orange warning box on the customer upload form when this {{ $isEditingReader ? 'reader' : 'editor' }} is selected. Leave blank for no warning.</p>
@@ -635,7 +635,7 @@
 
             {{-- Delete (separate form — DELETE method) --}}
             @if (auth()->user()->isAdmin() && !$user->isAdmin())
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-red-700 mb-1">Delete {{ $isEditingReader ? 'Reader' : 'Editor' }} <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                     <p class="text-sm text-gray-600 mb-4">Permanently removes this account. This cannot be undone.</p>
@@ -655,7 +655,7 @@
 
             {{-- Editor Rates + Commission Config (editors only, own forms) --}}
             @if ($user->isEditor())
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                 <div class="max-w-xl space-y-4">
                     <h2 class="text-lg font-medium text-gray-900">Editor Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                     <p class="text-sm text-gray-600 -mt-2">Commission rate and weekly flat pay for this editor.</p>
@@ -694,7 +694,7 @@
             </div>
 
             @php $commissionConfig = $profile?->productCommissionsKeyed() ?? collect(); @endphp
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Commission Config <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                     <p class="text-sm text-gray-600 mb-4">Toggle which products earn commission and set a custom fixed amount per occurrence. Leave blank to use this editor's commission rate.</p>
