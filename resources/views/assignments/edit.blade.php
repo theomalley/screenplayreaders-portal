@@ -691,7 +691,7 @@
     {{-- Script upload — separate form so enctype doesn't affect the PATCH form --}}
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-5">
-            @if ($assignment->drive_script_file_id)
+            @if ($assignment->hasCloudScript())
                 @php
                     $viewUrl = route('assignments.streamScript', $assignment);
                 @endphp

@@ -33,7 +33,7 @@
                         <tbody class="divide-y divide-gray-100">
                             @foreach($assignments as $assignment)
                                 @php
-                                    $viewUrl   = $assignment->drive_script_file_id
+                                    $viewUrl   = $assignment->hasCloudScript()
                                         ? route('assignments.streamScript', $assignment)
                                         : null;
                                     $typeLabel = match($assignment->assignment_type) {

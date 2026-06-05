@@ -1,5 +1,6 @@
 <?php
 
+// v1.14 — 2026-06-05 | Add hasCloudScript() helper — true when drive_script_file_id is a real Drive ID
 // v1.13 — 2026-06-04 | Add is_test flag; auto-reset completed test assignments after 4 h
 // v1.12 — 2026-06-03 | Add exempt_from_word_counts to fillable and casts
 // v1.11 — 2026-06-02 | Add available_at to fillable and casts (scheduled auto-release to Available)
@@ -113,6 +114,13 @@ class Assignment extends Model
     public function isAvailable(): bool
     {
         return $this->status === self::STATUS_UNASSIGNED;
+    }
+
+    /** True when a real Drive file is attached (not the local-test placeholder). */
+    public function hasCloudScript(): bool
+    {
+        return !empty($this->drive_script_file_id)
+            && $this->drive_script_file_id !== '__LOCAL_TEST__';
     }
 
     // --- Relationships ---

@@ -721,7 +721,7 @@
                                             ?? $assignment->assignedReader?->editorProfile?->photo;
                                         $assignedPhotoUrl = $assignedPhoto ? asset('storage/' . $assignedPhoto) : null;
 
-                                        $viewUrl  = $assignment->drive_script_file_id
+                                        $viewUrl  = $assignment->hasCloudScript()
                                             ? route('assignments.streamScript', $assignment)
                                             : null;
                                         $rowClass = ($assignment->rush && $assignment->status === 'unassigned')
@@ -1125,7 +1125,7 @@
                                             : null;
                                         $accTitle    = $assignment->accepted_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia T') ?? null;
                                         $typeLabel   = $assignment->assignment_type === 'formatting' ? 'Formatting' : 'Proofreading';
-                                        $downloadUrl = ($assignment->drive_script_file_id && \App\Support\Permission::check('script.download'))
+                                        $downloadUrl = ($assignment->hasCloudScript() && \App\Support\Permission::check('script.download'))
                                             ? route('assignments.downloadScript', $assignment)
                                             : null;
 
@@ -1570,7 +1570,7 @@
                                                 : ($accDiff->h >= 1 ? ($accDiff->h . 'h ' . $accDiff->i . 'm') : (max(0, $accDiff->i) . 'm')))
                                             : null;
                                         $accTitle = $assignment->accepted_at?->format('D M j, Y g:ia') ?? null;
-                                        $viewUrl = $assignment->drive_script_file_id
+                                        $viewUrl = $assignment->hasCloudScript()
                                             ? route('assignments.streamScript', $assignment)
                                             : null;
                                         $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
@@ -1960,7 +1960,7 @@
                                                 $rowClass = $isRequestedForMe
                                                     ? 'border-l-4 request-pulse'
                                                     : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
-                                                $viewUrl  = $assignment->drive_script_file_id
+                                                $viewUrl  = $assignment->hasCloudScript()
                                                     ? route('assignments.streamScript', $assignment)
                                                     : null;
                                                 $typeLabel = match($assignment->assignment_type) {
@@ -2273,7 +2273,7 @@
                                                 $rowClass = $isRequestedForMe
                                                     ? 'border-l-4 request-pulse'
                                                     : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
-                                                $viewUrl  = $assignment->drive_script_file_id
+                                                $viewUrl  = $assignment->hasCloudScript()
                                                     ? route('assignments.streamScript', $assignment)
                                                     : null;
                                                 $typeLabel = match($assignment->assignment_type) {
@@ -2490,7 +2490,7 @@
                                                         : null;
                                                     $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
                                                     $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
-                                                    $viewUrl  = $assignment->drive_script_file_id
+                                                    $viewUrl  = $assignment->hasCloudScript()
                                                         ? route('assignments.streamScript', $assignment)
                                                         : null;
                                                     $mePhotoUrl   = auth()->user()->readerProfile?->photo

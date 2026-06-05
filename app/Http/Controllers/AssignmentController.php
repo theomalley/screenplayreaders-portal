@@ -405,7 +405,7 @@ class AssignmentController extends Controller
     {
         $this->authorize('update', $assignment);
 
-        abort_unless($assignment->drive_script_file_id, 422, 'No script on file.');
+        abort_unless($assignment->hasCloudScript(), 422, 'No script on file.');
 
         $request->validate([
             'pages' => 'required|string|max:200',

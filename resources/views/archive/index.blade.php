@@ -43,7 +43,7 @@
                                 @php
                                     $first       = $group->first();
                                     $latestDone  = $group->max(fn($a) => $a->completed_at?->timestamp ?? 0);
-                                    $scriptId    = $group->firstWhere(fn($a) => !empty($a->drive_script_file_id))?->drive_script_file_id;
+                                    $scriptId    = $group->firstWhere(fn($a) => $a->hasCloudScript())?->drive_script_file_id;
                                     $draftSent   = $group->some(fn($a) => !empty($a->helpscout_draft_sent_at));
 
                                     $hsSentAt    = $group->filter(fn($a) => !empty($a->helpscout_draft_sent_at))->first()?->helpscout_draft_sent_at;
