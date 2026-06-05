@@ -116,6 +116,22 @@ class QuickLoginController extends Controller
         return back()->with('success', 'Quick-login link revoked.');
     }
 
+    /**
+     * Return the full quick-login URL if a token is configured, null otherwise.
+     * Used by auth redirects so expired sessions land on the quick-login URL.
+     */
+    public static function quickLoginUrl(): ?string
+    {
+        $stored = Setting::getValue(self::TOKEN_KEY);
+        if (! $stored) return null;
+        try {
+            $plain = Crypt::decryptString($stored);
+            return url('/ql/' . $plain);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /** Retrieve the plain token for display (null if not set). */
     public static function currentToken(): ?string
     {

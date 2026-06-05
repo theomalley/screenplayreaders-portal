@@ -25,6 +25,11 @@ class CheckSessionTimeout
                     $request->session()->invalidate();
                     $request->session()->regenerateToken();
 
+                    $quickLoginUrl = \App\Http\Controllers\QuickLoginController::quickLoginUrl();
+                    if ($quickLoginUrl) {
+                        return redirect($quickLoginUrl);
+                    }
+
                     return redirect()->route('login')
                         ->with('status', 'Your session expired due to inactivity. Please log in again.');
                 }
