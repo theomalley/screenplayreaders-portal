@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-<div class="flex items-center justify-between">
+<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <div class="flex items-center gap-3">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Assignments</h2>
             </div>
@@ -11,9 +11,9 @@
                 </a>
             @endcan
             @if(!$canManage && isset($periodStart))
-                <div class="text-sm text-gray-500">
+                <div class="text-xs text-gray-500 w-full sm:w-auto">
                     Current period: <span class="font-medium text-gray-700">{{ \App\Support\PayPeriod::label($periodStart) }}</span>
-                    &nbsp;· next payout Sat {{ $periodEnd->addHour()->format('M j') }}
+                    <span class="text-gray-400">&nbsp;· next payout Sat {{ $periodEnd->addHour()->format('M j') }}</span>
                 </div>
             @endif
         </div>
