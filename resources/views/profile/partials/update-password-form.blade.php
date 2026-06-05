@@ -39,7 +39,7 @@
             <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
 
             {{-- Live requirements checklist --}}
-            <ul class="mt-3 space-y-1" x-show="password.length > 0" x-cloak>
+            <ul class="mt-3 space-y-1">
                 <li class="flex items-center gap-2 text-xs" :class="hasLength ? 'text-green-700' : 'text-gray-500'">
                     <svg x-show="hasLength"  class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     <svg x-show="!hasLength" class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"/></svg>
