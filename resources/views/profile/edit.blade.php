@@ -398,7 +398,7 @@
                 {{-- Identity --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Identity</h2>
+                        <h2 class="text-lg font-medium text-gray-900">Identity <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <div>
                             <x-input-label for="initials" value="Initials" />
                             <div class="mt-1 flex items-center gap-3">
@@ -442,7 +442,7 @@
                 {{-- Capacity & Pay (readers only) --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Capacity &amp; Pay</h2>
+                        <h2 class="text-lg font-medium text-gray-900">Capacity &amp; Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <x-input-label for="max_concurrent_assignments" value="Max Concurrent Assignments" />
@@ -480,7 +480,7 @@
                 {{-- Pay (editors/admins only) --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Pay</h2>
+                        <h2 class="text-lg font-medium text-gray-900">Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <div>
                             <x-input-label for="paypal_email" value="PayPal Email" />
                             <x-text-input id="paypal_email" name="paypal_email" type="email" class="mt-1 block w-full"
@@ -533,7 +533,7 @@
                 {{-- Upload Form Warning --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">Upload Form Warning</h2>
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Upload Form Warning <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <p class="text-sm text-gray-600 -mt-2">Shown as an orange warning box on the customer upload form when this {{ $isEditingReader ? 'reader' : 'editor' }} is selected. Leave blank for no warning.</p>
                         <textarea id="upload_warning" name="upload_warning" rows="3"
                                   class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -637,7 +637,7 @@
             @if (auth()->user()->isAdmin() && !$user->isAdmin())
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-red-700 mb-1">Delete {{ $isEditingReader ? 'Reader' : 'Editor' }}</h2>
+                    <h2 class="text-lg font-medium text-red-700 mb-1">Delete {{ $isEditingReader ? 'Reader' : 'Editor' }} <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                     <p class="text-sm text-gray-600 mb-4">Permanently removes this account. This cannot be undone.</p>
                     <form method="POST"
                           action="{{ $isEditingReader ? route('readers.destroy', $user) : route('admin.editors.destroy', $user) }}"
@@ -657,7 +657,7 @@
             @if ($user->isEditor())
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl space-y-4">
-                    <h2 class="text-lg font-medium text-gray-900">Editor Rates</h2>
+                    <h2 class="text-lg font-medium text-gray-900">Editor Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                     <p class="text-sm text-gray-600 -mt-2">Commission rate and weekly flat pay for this editor.</p>
                     <form method="POST" action="{{ route('admin.editors.updateRates', $user) }}" class="space-y-4">
                         @csrf
@@ -696,7 +696,7 @@
             @php $commissionConfig = $profile?->productCommissionsKeyed() ?? collect(); @endphp
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Commission Config</h2>
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Commission Config <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                     <p class="text-sm text-gray-600 mb-4">Toggle which products earn commission and set a custom fixed amount per occurrence. Leave blank to use this editor's commission rate.</p>
                     <form method="POST" action="{{ route('admin.editors.commissions', $user) }}">
                         @csrf
