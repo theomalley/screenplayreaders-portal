@@ -411,16 +411,19 @@ class AssignmentController extends Controller
             'pages' => 'required|string|max:200',
         ]);
 
-        $drive     = app(\App\Services\GoogleDriveService::class);
-        $rawInput  = trim($request->input('pages'));
+        $isLocal  = $assignment->drive_script_file_id === '__LOCAL_TEST__';
+        $drive    = app(\App\Services\GoogleDriveService::class);
+        $rawInput = trim($request->input('pages'));
 
         // "last" is a special token — resolve to actual last page number
         if ($rawInput === 'last') {
             try {
-                $tmp       = $drive->downloadToTemp($assignment->drive_script_file_id);
+                $tmp = $isLocal
+                    ? (function () { $p = storage_path('app/test-script.pdf'); abort_unless(file_exists($p), 404); return $p; })()
+                    : $drive->downloadToTemp($assignment->drive_script_file_id);
                 $pdf       = new \setasign\Fpdi\Fpdi();
                 $pageCount = $pdf->setSourceFile($tmp);
-                @unlink($tmp);
+                if (! $isLocal) @unlink($tmp);
                 $pages = [$pageCount];
             } catch (\Throwable $e) {
                 return redirect()->back()->with('error', 'Could not determine page count: ' . $e->getMessage());
@@ -435,7 +438,13 @@ class AssignmentController extends Controller
         abort_if(empty($pages), 422, 'No valid page numbers provided.');
 
         try {
-            $drive->deletePages($assignment->drive_script_file_id, $pages);
+            if ($isLocal) {
+                $localPath = storage_path('app/test-script.pdf');
+                abort_unless(file_exists($localPath), 404, 'Test script file not found.');
+                $drive->deletePagesLocal($localPath, $pages);
+            } else {
+                $drive->deletePages($assignment->drive_script_file_id, $pages);
+            }
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', 'Could not remove page: ' . $e->getMessage());
         }
@@ -586,10 +595,17 @@ class AssignmentController extends Controller
         $this->authorize('view', $assignment);
         abort_if(auth()->user()->isReader(), 403);
         abort_unless(Permission::check('script.download'), 403);
-        abort_unless($assignment->drive_script_file_id, 404);
+        abort_unless($assignment->hasCloudScript(), 404);
 
         $filename = $assignment->drive_script_filename ?? 'script.pdf';
-        $contents = $drive->downloadContents($assignment->drive_script_file_id);
+
+        if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
+            $localPath = storage_path('app/test-script.pdf');
+            abort_unless(file_exists($localPath), 404);
+            $contents = file_get_contents($localPath);
+        } else {
+            $contents = $drive->downloadContents($assignment->drive_script_file_id);
+        }
 
         return response($contents, 200, [
             'Content-Type'        => 'application/pdf',

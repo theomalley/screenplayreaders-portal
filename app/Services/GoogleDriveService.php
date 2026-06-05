@@ -212,6 +212,39 @@ class GoogleDriveService
     }
 
     /**
+     * Delete specific pages from a local PDF file in place (no Drive involved).
+     * Used for test-script assignments where drive_script_file_id === '__LOCAL_TEST__'.
+     */
+    public function deletePagesLocal(string $localPath, array $pages): void
+    {
+        // flattenForFpdi deletes its input (assumes temp file) — copy first to protect the original.
+        $tmp = tempnam(sys_get_temp_dir(), 'sr_local_') . '.pdf';
+        copy($localPath, $tmp);
+        $source = $this->flattenForFpdi($tmp);
+
+        try {
+            $pdf       = new Fpdi();
+            $pageCount = $pdf->setSourceFile($source);
+            $keep      = array_diff(range(1, $pageCount), $pages);
+
+            if (empty($keep)) {
+                throw new \RuntimeException('Cannot delete all pages from the PDF.');
+            }
+
+            foreach ($keep as $pageNum) {
+                $tpl  = $pdf->importPage($pageNum);
+                $size = $pdf->getTemplateSize($tpl);
+                $pdf->AddPage($size['width'] > $size['height'] ? 'L' : 'P', [$size['width'], $size['height']]);
+                $pdf->useTemplate($tpl);
+            }
+
+            $pdf->Output('F', $localPath);
+        } finally {
+            @unlink($source);
+        }
+    }
+
+    /**
      * Create a Google Doc from formatted coverage HTML and return the Doc file ID.
      * Called by the coverage submission job after a reader submits.
      */

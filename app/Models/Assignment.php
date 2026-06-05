@@ -116,11 +116,10 @@ class Assignment extends Model
         return $this->status === self::STATUS_UNASSIGNED;
     }
 
-    /** True when a real Drive file is attached (not the local-test placeholder). */
+    /** True when a script is attached (Drive file or local test placeholder). */
     public function hasCloudScript(): bool
     {
-        return !empty($this->drive_script_file_id)
-            && $this->drive_script_file_id !== '__LOCAL_TEST__';
+        return !empty($this->drive_script_file_id);
     }
 
     // --- Relationships ---
