@@ -143,6 +143,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/assignment-editor-notes/{note}',             [AssignmentEditorNoteController::class, 'destroy'])->name('assignment-editor-notes.destroy');
 
     // Personal reading notes (private per-user — for note-taking while reading a script)
+    Route::get('/assignments/{assignment}/reading-notes',   [\App\Http\Controllers\ReaderScriptNoteController::class, 'index'])->name('reading-notes.index');
     Route::post('/assignments/{assignment}/reading-notes',  [\App\Http\Controllers\ReaderScriptNoteController::class, 'store'])->name('reading-notes.store');
     Route::delete('/reading-notes/{note}',                  [\App\Http\Controllers\ReaderScriptNoteController::class, 'destroy'])->name('reading-notes.destroy');
 

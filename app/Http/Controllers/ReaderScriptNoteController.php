@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-05 | Add index() to list notes for a given assignment (used by reader modal lazy-load).
 // v1.0 — 2026-06-05 | AJAX CRUD for personal reading notes on a script assignment.
 
 namespace App\Http\Controllers;
@@ -11,6 +12,20 @@ use Illuminate\Http\Request;
 
 class ReaderScriptNoteController extends Controller
 {
+    public function index(Assignment $assignment): JsonResponse
+    {
+        $notes = ReaderScriptNote::where('assignment_id', $assignment->id)
+            ->where('user_id', auth()->id())
+            ->orderBy('created_at')
+            ->get(['id', 'body', 'created_at']);
+
+        return response()->json($notes->map(fn($n) => [
+            'id'         => $n->id,
+            'body'       => $n->body,
+            'created_at' => $n->created_at->format('M j, g:ia'),
+        ]));
+    }
+
     public function store(Request $request, Assignment $assignment): JsonResponse
     {
         $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);

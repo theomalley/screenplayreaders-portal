@@ -2316,7 +2316,7 @@
                                                         @endif
                                                     </div>
                                                 </td>
-                                                <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
+                                                <td class="px-3 py-3" x-data="readerPdfViewer(@js($viewUrl), @js($assignment->id), @js(csrf_token()))">
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
@@ -2340,12 +2340,56 @@
                                                                             / <span x-text="totalPages"></span>
                                                                         </span>
                                                                     </div>
+                                                                    <button type="button"
+                                                                            @click="notesOpen = !notesOpen; if (notesOpen && !notesLoaded) loadNotes()"
+                                                                            :class="notesOpen ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                                                                            class="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 shrink-0">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                                        </svg>
+                                                                        Notes
+                                                                        <span x-show="notes.length > 0" x-text="'(' + notes.length + ')'" class="text-[10px] opacity-75"></span>
+                                                                    </button>
                                                                     <button @click="open = false" type="button"
                                                                             class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                                 </div>
                                                             </div>
-                                                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
-                                                                <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
+                                                            <div class="flex-1 flex min-h-0">
+                                                                <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                                                    <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
+                                                                </div>
+                                                                {{-- Reading notes side panel --}}
+                                                                <div x-show="notesOpen" x-cloak
+                                                                     class="w-72 flex flex-col bg-gray-900 border-l border-gray-700 shrink-0">
+                                                                    <div class="px-3 py-2 border-b border-gray-700 flex items-center justify-between shrink-0">
+                                                                        <span class="text-sm font-medium text-gray-200">Reading Notes</span>
+                                                                        <button @click="notesOpen = false" type="button" class="text-gray-400 hover:text-white text-xl leading-none">×</button>
+                                                                    </div>
+                                                                    <div class="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+                                                                        <template x-for="n in notes" :key="n.id">
+                                                                            <div class="group bg-gray-800 border border-gray-700 rounded px-2.5 py-2">
+                                                                                <p class="text-xs text-gray-200 whitespace-pre-wrap leading-snug" x-text="n.body"></p>
+                                                                                <div class="flex items-center justify-between mt-1">
+                                                                                    <p class="text-[10px] text-gray-500" x-text="n.created_at"></p>
+                                                                                    <button @click="deleteNote(n.id)" type="button"
+                                                                                            class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-[10px] transition-opacity leading-none">Delete</button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </template>
+                                                                        <div x-show="notes.length === 0" class="text-xs text-gray-500 text-center py-6 italic">No notes yet</div>
+                                                                    </div>
+                                                                    <div class="px-3 py-3 border-t border-gray-700 shrink-0">
+                                                                        <textarea x-model="noteBody" rows="3" placeholder="Jot a note…"
+                                                                                  @keydown.ctrl.enter.prevent="addNote()"
+                                                                                  class="w-full text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-gray-200 placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"></textarea>
+                                                                        <div class="flex items-center justify-between mt-1.5">
+                                                                            <span class="text-[10px] text-gray-500">Ctrl+Enter to save</span>
+                                                                            <button type="button" @click="addNote()" :disabled="noteSaving || !noteBody.trim()"
+                                                                                    class="px-2 py-1 text-[10px] bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                                                                                    x-text="noteSaving ? 'Saving…' : 'Add Note'"></button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     @else
@@ -2836,10 +2880,9 @@
                 });
             }
 
-            Alpine.data('pdfViewer', (url) => {
+            function makePdfViewerData(url) {
                 let pdfDoc = null;
                 let pages  = [];
-
                 return {
                     open: false,
                     url: url,
@@ -2899,7 +2942,58 @@
                         if (pages[n - 1]) pages[n - 1].scrollIntoView({ behavior: 'smooth' });
                     },
                 };
-            });
+            }
+
+            Alpine.data('pdfViewer', makePdfViewerData);
+
+            Alpine.data('readerPdfViewer', (url, assignmentId, csrfToken) => ({
+                ...makePdfViewerData(url),
+                notesOpen: false,
+                notes: [],
+                noteBody: '',
+                noteSaving: false,
+                notesLoaded: false,
+
+                async loadNotes() {
+                    if (this.notesLoaded) return;
+                    try {
+                        const r = await fetch(`/assignments/${assignmentId}/reading-notes`, {
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        });
+                        if (r.ok) {
+                            this.notes = await r.json();
+                            this.notesLoaded = true;
+                        }
+                    } catch (e) { console.error(e); }
+                },
+
+                async addNote() {
+                    if (!this.noteBody.trim() || this.noteSaving) return;
+                    this.noteSaving = true;
+                    try {
+                        const r = await fetch(`/assignments/${assignmentId}/reading-notes`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                            body: JSON.stringify({ body: this.noteBody.trim() }),
+                        });
+                        if (r.ok) {
+                            this.notes.push(await r.json());
+                            this.noteBody = '';
+                        }
+                    } catch (e) { console.error(e); } finally { this.noteSaving = false; }
+                },
+
+                async deleteNote(id) {
+                    if (!confirm('Delete this note?')) return;
+                    try {
+                        await fetch(`/reading-notes/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        });
+                        this.notes = this.notes.filter(n => n.id !== id);
+                    } catch (e) { console.error(e); }
+                },
+            }));
 
         });
         </script>
