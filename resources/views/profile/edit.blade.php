@@ -395,105 +395,6 @@
                     </div>
                 </div>
 
-                {{-- Identity --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Identity <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <div>
-                            <x-input-label for="initials" value="Initials" />
-                            <div class="mt-1 flex items-center gap-3">
-                                <x-text-input id="initials" name="initials" type="text"
-                                    class="block w-24 uppercase tracking-widest font-mono text-center text-lg"
-                                    value="{{ old('initials', $profile?->initials) }}"
-                                    maxlength="3" placeholder="AB"
-                                    oninput="this.value = this.value.toUpperCase()" required />
-                                <p class="text-xs text-gray-400">1–3 uppercase letters — primary identifier throughout the app</p>
-                            </div>
-                            <x-input-error :messages="$errors->get('initials')" class="mt-1" />
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <x-input-label for="first_name" value="First Name" />
-                                <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
-                                    value="{{ old('first_name', $profile?->first_name ?? $fallbackFirst) }}" required />
-                                <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
-                            </div>
-                            <div>
-                                <x-input-label for="last_name" value="Last Name" />
-                                <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full"
-                                    value="{{ old('last_name', $profile?->last_name ?? $fallbackLast) }}" required />
-                                <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
-                            </div>
-                        </div>
-                        <div>
-                            <x-input-label for="title" value="Title" />
-                            <x-text-input id="title" name="title" type="text" class="mt-1 block w-full"
-                                value="{{ old('title', $profile?->title) }}"
-                                placeholder="{{ $isEditingReader ? 'e.g. Lead Reader, Formatting Specialist' : 'e.g. Senior Editor, Managing Editor' }}" />
-                            <x-input-error :messages="$errors->get('title')" class="mt-1" />
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Identity</x-primary-button>
-                        </div>
-                    </div>
-                </div>
-
-                @if ($isEditingReader)
-                {{-- Capacity & Pay (readers only) --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Capacity &amp; Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <x-input-label for="max_concurrent_assignments" value="Max Concurrent Assignments" />
-                                <x-text-input id="max_concurrent_assignments" name="max_concurrent_assignments" type="number"
-                                    class="mt-1 block w-full"
-                                    value="{{ old('max_concurrent_assignments', $profile?->max_concurrent_assignments ?? 3) }}"
-                                    min="0" max="20" required />
-                                <x-input-error :messages="$errors->get('max_concurrent_assignments')" class="mt-1" />
-                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                                    <input type="checkbox" name="requests_bypass_capacity" value="1"
-                                        {{ old('requests_bypass_capacity', $profile?->requests_bypass_capacity) ? 'checked' : '' }}
-                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                    <span class="text-sm text-gray-600">Requests don't count toward capacity</span>
-                                </label>
-                            </div>
-                            <div>
-                                <x-input-label for="paypal_email" value="PayPal Email" />
-                                <x-text-input id="paypal_email" name="paypal_email" type="email" class="mt-1 block w-full"
-                                    value="{{ old('paypal_email', $profile?->paypal_email) }}" placeholder="optional" />
-                                <x-input-error :messages="$errors->get('paypal_email')" class="mt-1" />
-                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                                    <input type="checkbox" name="is_1099" value="1"
-                                        {{ old('is_1099', $profile?->is_1099) ? 'checked' : '' }}
-                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                    <span class="text-sm text-gray-600">1099 contractor</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Capacity &amp; Pay</x-primary-button>
-                        </div>
-                    </div>
-                </div>
-                @else
-                {{-- Pay (editors/admins only) --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <div>
-                            <x-input-label for="paypal_email" value="PayPal Email" />
-                            <x-text-input id="paypal_email" name="paypal_email" type="email" class="mt-1 block w-full"
-                                value="{{ old('paypal_email', $profile?->paypal_email) }}" placeholder="optional" />
-                            <x-input-error :messages="$errors->get('paypal_email')" class="mt-1" />
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Pay</x-primary-button>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
                 {{-- Availability --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
@@ -526,21 +427,6 @@
                         </div>
                         <div class="flex justify-end">
                             <x-primary-button>Save Availability</x-primary-button>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Upload Form Warning --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">Upload Form Warning <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <p class="text-sm text-gray-600 -mt-2">Shown as an orange warning box on the customer upload form when this {{ $isEditingReader ? 'reader' : 'editor' }} is selected. Leave blank for no warning.</p>
-                        <textarea id="upload_warning" name="upload_warning" rows="3"
-                                  class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                  placeholder="e.g. Currently on reduced availability — allow extra time.">{{ old('upload_warning', $profile?->upload_warning) }}</textarea>
-                        <x-input-error :messages="$errors->get('upload_warning')" class="mt-1" />
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Warning</x-primary-button>
                         </div>
                     </div>
                 </div>
@@ -627,6 +513,120 @@
                         </div>
                         <div class="flex justify-end">
                             <x-primary-button>Save Account</x-primary-button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Identity — admin only --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900">Identity <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <div>
+                            <x-input-label for="initials" value="Initials" />
+                            <div class="mt-1 flex items-center gap-3">
+                                <x-text-input id="initials" name="initials" type="text"
+                                    class="block w-24 uppercase tracking-widest font-mono text-center text-lg"
+                                    value="{{ old('initials', $profile?->initials) }}"
+                                    maxlength="3" placeholder="AB"
+                                    oninput="this.value = this.value.toUpperCase()" required />
+                                <p class="text-xs text-gray-400">1–3 uppercase letters — primary identifier throughout the app</p>
+                            </div>
+                            <x-input-error :messages="$errors->get('initials')" class="mt-1" />
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <x-input-label for="first_name" value="First Name" />
+                                <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
+                                    value="{{ old('first_name', $profile?->first_name ?? $fallbackFirst) }}" required />
+                                <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="last_name" value="Last Name" />
+                                <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full"
+                                    value="{{ old('last_name', $profile?->last_name ?? $fallbackLast) }}" required />
+                                <x-input-error :messages="$errors->get('last_name')" class="mt-1" />
+                            </div>
+                        </div>
+                        <div>
+                            <x-input-label for="title" value="Title" />
+                            <x-text-input id="title" name="title" type="text" class="mt-1 block w-full"
+                                value="{{ old('title', $profile?->title) }}"
+                                placeholder="{{ $isEditingReader ? 'e.g. Lead Reader, Formatting Specialist' : 'e.g. Senior Editor, Managing Editor' }}" />
+                            <x-input-error :messages="$errors->get('title')" class="mt-1" />
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Identity</x-primary-button>
+                        </div>
+                    </div>
+                </div>
+
+                @if ($isEditingReader)
+                {{-- Capacity & Pay (readers only) — admin only --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900">Capacity &amp; Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <x-input-label for="max_concurrent_assignments" value="Max Concurrent Assignments" />
+                                <x-text-input id="max_concurrent_assignments" name="max_concurrent_assignments" type="number"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('max_concurrent_assignments', $profile?->max_concurrent_assignments ?? 3) }}"
+                                    min="0" max="20" required />
+                                <x-input-error :messages="$errors->get('max_concurrent_assignments')" class="mt-1" />
+                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                    <input type="checkbox" name="requests_bypass_capacity" value="1"
+                                        {{ old('requests_bypass_capacity', $profile?->requests_bypass_capacity) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <span class="text-sm text-gray-600">Requests don't count toward capacity</span>
+                                </label>
+                            </div>
+                            <div>
+                                <x-input-label for="paypal_email" value="PayPal Email" />
+                                <x-text-input id="paypal_email" name="paypal_email" type="email" class="mt-1 block w-full"
+                                    value="{{ old('paypal_email', $profile?->paypal_email) }}" placeholder="optional" />
+                                <x-input-error :messages="$errors->get('paypal_email')" class="mt-1" />
+                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                    <input type="checkbox" name="is_1099" value="1"
+                                        {{ old('is_1099', $profile?->is_1099) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <span class="text-sm text-gray-600">1099 contractor</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Capacity &amp; Pay</x-primary-button>
+                        </div>
+                    </div>
+                </div>
+                @else
+                {{-- Pay (editors/admins only) — admin only --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900">Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <div>
+                            <x-input-label for="paypal_email" value="PayPal Email" />
+                            <x-text-input id="paypal_email" name="paypal_email" type="email" class="mt-1 block w-full"
+                                value="{{ old('paypal_email', $profile?->paypal_email) }}" placeholder="optional" />
+                            <x-input-error :messages="$errors->get('paypal_email')" class="mt-1" />
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Pay</x-primary-button>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Upload Form Warning — admin only --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Upload Form Warning <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <p class="text-sm text-gray-600 -mt-2">Shown as an orange warning box on the customer upload form when this {{ $isEditingReader ? 'reader' : 'editor' }} is selected. Leave blank for no warning.</p>
+                        <textarea id="upload_warning" name="upload_warning" rows="3"
+                                  class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                  placeholder="e.g. Currently on reduced availability — allow extra time.">{{ old('upload_warning', $profile?->upload_warning) }}</textarea>
+                        <x-input-error :messages="$errors->get('upload_warning')" class="mt-1" />
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Warning</x-primary-button>
                         </div>
                     </div>
                 </div>
