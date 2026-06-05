@@ -38,25 +38,28 @@
                             preview: '{{ $currentPhoto }}',
                             dragging: false,
                             hasFile: false,
-                            pick(file) {
-                                if (!file) return;
-                                const dt = new DataTransfer(); dt.items.add(file);
-                                this.$refs.photoInput.files = dt.files;
+                            readPreview(file) {
                                 const r = new FileReader();
                                 r.onload = e => { this.preview = e.target.result; this.hasFile = true; };
                                 r.readAsDataURL(file);
+                            },
+                            onDrop(file) {
+                                if (!file) return;
+                                const dt = new DataTransfer(); dt.items.add(file);
+                                this.$refs.photoInput.files = dt.files;
+                                this.readPreview(file);
                             }
                           }">
                         @csrf
                         <input x-ref="photoInput" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
-                               @change="pick($event.target.files[0])" />
+                               @change="if ($event.target.files[0]) readPreview($event.target.files[0])" />
                         <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors"
                              :class="dragging ? 'border-indigo-400 bg-indigo-50' : 'border-dashed border-gray-300 hover:border-gray-400'"
                              style="width:200px;height:200px"
                              @click="$refs.photoInput.click()"
                              @dragover.prevent="dragging = true"
                              @dragleave.prevent="dragging = false"
-                             @drop.prevent="dragging = false; pick($event.dataTransfer.files[0])">
+                             @drop.prevent="dragging = false; onDrop($event.dataTransfer.files[0])">
                             <template x-if="preview">
                                 <img :src="preview" class="absolute inset-0 w-full h-full object-cover" alt="Photo preview" />
                             </template>
@@ -101,25 +104,28 @@
                             preview: '{{ $currentAboutPhoto }}',
                             dragging: false,
                             hasFile: false,
-                            pick(file) {
-                                if (!file) return;
-                                const dt = new DataTransfer(); dt.items.add(file);
-                                this.$refs.aboutInput.files = dt.files;
+                            readPreview(file) {
                                 const r = new FileReader();
                                 r.onload = e => { this.preview = e.target.result; this.hasFile = true; };
                                 r.readAsDataURL(file);
+                            },
+                            onDrop(file) {
+                                if (!file) return;
+                                const dt = new DataTransfer(); dt.items.add(file);
+                                this.$refs.aboutInput.files = dt.files;
+                                this.readPreview(file);
                             }
                           }">
                         @csrf
                         <input x-ref="aboutInput" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
-                               @change="pick($event.target.files[0])" />
+                               @change="if ($event.target.files[0]) readPreview($event.target.files[0])" />
                         <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors"
                              :class="dragging ? 'border-indigo-400 bg-indigo-50' : 'border-dashed border-gray-300 hover:border-gray-400'"
                              style="width:200px;height:200px"
                              @click="$refs.aboutInput.click()"
                              @dragover.prevent="dragging = true"
                              @dragleave.prevent="dragging = false"
-                             @drop.prevent="dragging = false; pick($event.dataTransfer.files[0])">
+                             @drop.prevent="dragging = false; onDrop($event.dataTransfer.files[0])">
                             <template x-if="preview">
                                 <img :src="preview" class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
                             </template>
