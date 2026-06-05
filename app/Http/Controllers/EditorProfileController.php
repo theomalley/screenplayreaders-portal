@@ -94,9 +94,14 @@ class EditorProfileController extends Controller
         abort_unless(Permission::check('editors.edit'), 403);
         abort_unless($user->isEditor() || $user->isAdmin(), 404);
 
-        return view('admin.editors.edit', [
-            'user'    => $user,
-            'profile' => $user->editorProfile,
+        $profile = $user->editorProfile;
+
+        return view('profile.edit', [
+            'user'                 => $user,
+            'profile'              => $profile,
+            'isSelf'               => false,
+            'pendingAboutPhotoUrl' => $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null,
+            'pendingBioContent'    => $profile?->bio_pending,
         ]);
     }
 
@@ -118,7 +123,6 @@ class EditorProfileController extends Controller
             'availability_message' => ['nullable', 'string', 'max:500'],
             'upload_warning'       => ['nullable', 'string', 'max:1000'],
             'bio'                  => ['nullable', 'string', 'max:5000'],
-            'custom_message'       => ['nullable', 'string', 'max:200'],
             'timezone'             => ['nullable', 'timezone'],
         ]);
 
@@ -147,7 +151,7 @@ class EditorProfileController extends Controller
         );
 
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
-        return redirect()->route('team.index')->with('success', "{$label} profile updated.");
+        return redirect()->route('admin.editors.edit', $user)->with('success', "{$label} profile updated.");
     }
 
     public function updateRates(Request $request, User $user)

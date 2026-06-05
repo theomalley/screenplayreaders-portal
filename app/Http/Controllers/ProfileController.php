@@ -14,8 +14,13 @@ class ProfileController extends Controller
 {
     public function edit(Request $request): View
     {
+        $user    = $request->user();
+        $profile = $user->isAdminOrEditor() ? $user->editorProfile : $user->readerProfile;
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user'    => $user,
+            'profile' => $profile,
+            'isSelf'  => true,
         ]);
     }
 

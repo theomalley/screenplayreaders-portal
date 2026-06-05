@@ -89,9 +89,14 @@ class ReaderProfileController extends Controller
         abort_unless(Permission::check('readers.edit'), 403);
         abort_unless($user->isReader(), 404);
 
-        return view('readers.edit', [
-            'user'    => $user,
-            'profile' => $user->readerProfile,
+        $profile = $user->readerProfile;
+
+        return view('profile.edit', [
+            'user'                 => $user,
+            'profile'              => $profile,
+            'isSelf'               => false,
+            'pendingAboutPhotoUrl' => $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null,
+            'pendingBioContent'    => $profile?->bio_pending,
         ]);
     }
 
@@ -115,7 +120,6 @@ class ReaderProfileController extends Controller
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
             'bio'                        => ['nullable', 'string', 'max:5000'],
-            'custom_message'             => ['nullable', 'string', 'max:200'],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -155,7 +159,7 @@ class ReaderProfileController extends Controller
             collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
         );
 
-        return redirect()->route('team.index')->with('success', 'Reader profile updated.');
+        return redirect()->route('readers.edit', $user)->with('success', 'Reader profile updated.');
     }
 
     public function destroy(User $user)
