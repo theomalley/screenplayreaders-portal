@@ -66,7 +66,7 @@
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admins</h3>
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div class="overflow-x-auto">
-                    <table class="min-w-[480px] divide-y divide-gray-200 text-sm">
+                    <table class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
@@ -155,7 +155,7 @@
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div class="overflow-x-auto">
-                        <table class="min-w-[480px] divide-y divide-gray-200 text-sm">
+                        <table class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Editor</th>
@@ -252,7 +252,7 @@
                 @else
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div class="overflow-x-auto">
-                        <table class="min-w-[480px] divide-y divide-gray-200 text-sm">
+                        <table class="w-full min-w-[480px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reader</th>

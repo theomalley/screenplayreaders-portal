@@ -63,6 +63,9 @@ class QuickLoginController extends Controller
 
         RateLimiter::clear($key);
 
+        // Clear any active impersonation so the bookmark always lands you as yourself
+        session()->forget('impersonator_id');
+
         Auth::login($user, remember: true);
         request()->session()->regenerate();
 

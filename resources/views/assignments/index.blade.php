@@ -616,7 +616,7 @@
                             @endforeach
                         </div>
                         <div class="overflow-x-auto">
-                        <table class="min-w-[600px] divide-y divide-gray-200 text-sm">
+                        <table class="w-full min-w-[600px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
@@ -1054,7 +1054,7 @@
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Formatting / Proofreading</h3>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div class="overflow-x-auto">
-                        <table class="min-w-[600px] divide-y divide-gray-200 text-sm">
+                        <table class="w-full min-w-[600px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
@@ -1472,7 +1472,7 @@
                     </h3>
                     <div class="bg-white rounded-lg shadow-sm border border-indigo-200 overflow-hidden" x-data>
                         <div class="overflow-x-auto">
-                        <table class="min-w-[640px] divide-y divide-gray-200 text-sm">
+                        <table class="w-full min-w-[640px] divide-y divide-gray-200 text-sm">
                             <thead class="bg-indigo-50">
                                 <tr>
                                     <th class="px-3 py-3 text-left text-xs font-medium text-indigo-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
@@ -1879,7 +1879,8 @@
                                         </button>
                                     @endforeach
                                 </div>
-                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <div class="overflow-x-auto">
+                                <table class="w-full min-w-[520px] divide-y divide-gray-200 text-sm">
                                     <thead class="bg-gray-50">
                                         <tr>
                                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Order Details</th>
@@ -2096,6 +2097,7 @@
 
                                     </tbody>
                                 </table>
+                                </div>{{-- /overflow-x-auto --}}
                             </div>
                         @endif
                     </div>
