@@ -147,6 +147,57 @@
                 </div>
             </div>
 
+            @if ($meProfile)
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">My Availability</h2>
+                    <p class="text-sm text-gray-600 mb-4">Visible to the assignments team — not shown to customers.</p>
+
+                    @if (session('availability_success'))
+                        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                            {{ session('availability_success') }}
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('availability.update') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div>
+                            <x-input-label value="Status" />
+                            <div class="mt-2 flex gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="availability" value="available"
+                                           {{ old('availability', $meProfile->availability ?? 'available') === 'available' ? 'checked' : '' }}
+                                           class="text-green-600 focus:ring-green-500" />
+                                    <span class="text-sm font-medium text-green-700">Available</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="availability" value="unavailable"
+                                           {{ old('availability', $meProfile->availability ?? 'available') === 'unavailable' ? 'checked' : '' }}
+                                           class="text-red-600 focus:ring-red-500" />
+                                    <span class="text-sm font-medium text-red-700">Unavailable</span>
+                                </label>
+                            </div>
+                            <x-input-error :messages="$errors->get('availability')" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="avail_message" value="Availability Note (internal only, optional)" />
+                            <textarea id="avail_message" name="availability_message" rows="2"
+                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="e.g. Back Jan 15, on vacation through end of month…">{{ old('availability_message', $meProfile->availability_message) }}</textarea>
+                            <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Availability</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     @php $currentBio = $meProfile?->bio; @endphp
@@ -197,8 +248,8 @@
             @if(auth()->user()->isAdminOrEditor() || auth()->user()->isReader())
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Staff Card Message</h2>
-                    <p class="text-sm text-gray-600 mb-4">A short message shown when teammates click your staff icon. If set, this replaces your bio in the popup. Leave blank to show your bio instead.</p>
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">My Current Logline</h2>
+                    <p class="text-sm text-gray-600 mb-4">A short line shown when teammates click your staff icon — think of it as your current status or a one-liner about what you're working on. Replaces your bio in the popup if set.</p>
 
                     <form method="POST" action="{{ route('profile.custom-message') }}" class="space-y-4">
                         @csrf
@@ -225,62 +276,6 @@
                     @include('profile.partials.update-profile-information-form')
                 </div>
             </div>
-
-            @php
-                $availProfile = auth()->user()->isReader()
-                    ? auth()->user()->readerProfile
-                    : auth()->user()->editorProfile;
-            @endphp
-            @if ($availProfile)
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">My Availability</h2>
-                    <p class="text-sm text-gray-600 mb-4">Visible to the assignments team — not shown to customers.</p>
-
-                    @if (session('availability_success'))
-                        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-                            {{ session('availability_success') }}
-                        </div>
-                    @endif
-
-                    <form method="POST" action="{{ route('availability.update') }}" class="space-y-4">
-                        @csrf
-                        @method('PATCH')
-
-                        <div>
-                            <x-input-label value="Status" />
-                            <div class="mt-2 flex gap-6">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="availability" value="available"
-                                           {{ old('availability', $availProfile->availability ?? 'available') === 'available' ? 'checked' : '' }}
-                                           class="text-green-600 focus:ring-green-500" />
-                                    <span class="text-sm font-medium text-green-700">Available</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="availability" value="unavailable"
-                                           {{ old('availability', $availProfile->availability ?? 'available') === 'unavailable' ? 'checked' : '' }}
-                                           class="text-red-600 focus:ring-red-500" />
-                                    <span class="text-sm font-medium text-red-700">Unavailable</span>
-                                </label>
-                            </div>
-                            <x-input-error :messages="$errors->get('availability')" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="avail_message" value="Note (optional)" />
-                            <textarea id="avail_message" name="availability_message" rows="2"
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                      placeholder="e.g. Back Jan 15, on vacation through end of month…">{{ old('availability_message', $availProfile->availability_message) }}</textarea>
-                            <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
-                        </div>
-
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Availability</x-primary-button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            @endif
 
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
