@@ -43,6 +43,7 @@ class UpdateAssignmentRequest extends FormRequest
             'status'               => ['required', 'in:' . $allStatuses],
             'available_at'              => ['nullable', 'date_format:Y-m-d\TH:i'],
             'exempt_from_word_counts'   => ['nullable', 'boolean'],
+            'tier'                      => ['nullable', 'integer', 'in:1,2'],
         ];
     }
 }

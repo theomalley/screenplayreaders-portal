@@ -261,6 +261,21 @@
 
                 </form>
 
+                @if(auth()->user()->isAdmin() && $user->isEditor())
+                <div class="px-6 py-5 border-t border-gray-100">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Admin Settings</div>
+                    <div>
+                        <x-input-label for="editor_role" value="Role" />
+                        <p class="mt-0.5 text-xs text-gray-500 mb-1">Changing to Reader moves this user to the readers list.</p>
+                        <select id="editor_role" name="role" form="update-form"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="editor" selected>Editor</option>
+                            <option value="reader">Reader</option>
+                        </select>
+                    </div>
+                </div>
+                @endif
+
                 <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100">
                     @if($user->isEditor() && auth()->user()->isAdmin())
                     <form method="POST" action="{{ route('admin.editors.destroy', $user) }}"

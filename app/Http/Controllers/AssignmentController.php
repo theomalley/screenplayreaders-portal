@@ -1,5 +1,6 @@
 <?php
 
+// v2.8 — 2026-06-05 | Admin: split assignments by tier; Reader: filter available by reader's tiers
 // v2.7 — 2026-06-03 | Reader view: show all non-hidden admins/editors too; clickable peer cards via staff.reader-card.
 // v2.6 — 2026-06-03 | Reader view: show all non-hidden readers in staff icon panel (not just online); suppress tooltip on peers.
 // v2.5 — 2026-05-30 | Fire reader notifications on status→unassigned in update() and updateStatus().
@@ -50,11 +51,14 @@ class AssignmentController extends Controller
         if ($user->canManageAssignments()) {
             $formattingTypes = ['formatting', 'proofreading'];
 
-            $assignments = Assignment::with(['assignedReader.readerProfile', 'assignedReader.editorProfile', 'requestedReader.readerProfile', 'helpscoutConversation'])
+            $allAssignments = Assignment::with(['assignedReader.readerProfile', 'assignedReader.editorProfile', 'requestedReader.readerProfile', 'helpscoutConversation'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->whereNotIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'asc')
                 ->get();
+
+            $tier1Assignments = $allAssignments->where('tier', 1)->values();
+            $tier2Assignments = $allAssignments->where('tier', '!=', 1)->values();
 
             $formatting = Assignment::with(['helpscoutConversation', 'assignedReader.readerProfile', 'assignedReader.editorProfile'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
@@ -149,7 +153,8 @@ class AssignmentController extends Controller
 
             return view('assignments.index', [
                 'canManage'        => true,
-                'assignments'      => $assignments,
+                'tier1Assignments' => $tier1Assignments,
+                'tier2Assignments' => $tier2Assignments,
                 'formatting'       => $formatting,
                 'editors'          => $editors,
                 'readers'          => $readers,
@@ -167,7 +172,10 @@ class AssignmentController extends Controller
         }
 
         // Reader: available pool (rush first, oldest first) + their own active assignments
-        $available = Assignment::available($user->id)
+        $profile      = $user->readerProfile;
+        $readerTiers  = $profile ? $profile->tiers() : [1];
+
+        $available = Assignment::available($user->id, $readerTiers)
             ->with(['requestedReader.readerProfile'])
             ->orderByRaw('rush DESC')
             ->orderBy('unassigned_at', 'asc')
@@ -196,7 +204,6 @@ class AssignmentController extends Controller
             fn ($a) => PayPeriod::start($a->completed_at)->format('Y-m-d H:i:s')
         )->sortKeysDesc();
 
-        $profile        = $user->readerProfile;
         $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
         $readerMax      = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
 
@@ -274,6 +281,7 @@ class AssignmentController extends Controller
 
         $data         = $request->validated();
         $data['rush'] = $request->boolean('rush');
+        $data['tier'] = (int) ($data['tier'] ?? 1) ?: 1;
         $numReaders   = (int) $data['num_readers'];
 
         // Extract per-slot reader IDs then strip form-only keys from $data
@@ -666,6 +674,7 @@ class AssignmentController extends Controller
         $data         = $request->validated();
         $data['rush']                   = $request->boolean('rush');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
+        $data['tier']                   = (int) ($data['tier'] ?? 1) ?: 1;
 
         $newCreatedAt = null;
         if (!empty($data['date']) && !empty($data['time'])) {

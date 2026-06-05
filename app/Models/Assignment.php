@@ -1,5 +1,6 @@
 <?php
 
+// v1.15 — 2026-06-05 | Add tier to fillable/casts; scopeAvailable() filters by reader tiers
 // v1.14 — 2026-06-05 | Add hasCloudScript() helper — true when drive_script_file_id is a real Drive ID
 // v1.13 — 2026-06-04 | Add is_test flag; auto-reset completed test assignments after 4 h
 // v1.12 — 2026-06-03 | Add exempt_from_word_counts to fillable and casts
@@ -64,6 +65,7 @@ class Assignment extends Model
         'available_at',
         'exempt_from_word_counts',
         'is_test',
+        'tier',
     ];
 
     protected function casts(): array
@@ -82,6 +84,7 @@ class Assignment extends Model
             'available_at'              => 'datetime',
             'exempt_from_word_counts'   => 'boolean',
             'is_test'                   => 'boolean',
+            'tier'                      => 'integer',
         ];
     }
 
@@ -156,10 +159,14 @@ class Assignment extends Model
 
     // --- Scopes ---
 
-    /** Assignments visible to a specific reader in the available list */
-    public function scopeAvailable($query, int $userId)
+    /** Assignments visible to a specific reader in the available list, filtered to their tiers */
+    public function scopeAvailable($query, int $userId, array $tiers = [1])
     {
+        if (empty($tiers)) {
+            return $query->whereRaw('1 = 0');
+        }
         return $query->where('status', self::STATUS_UNASSIGNED)
+            ->whereIn('tier', $tiers)
             ->where(function ($q) use ($userId) {
                 $q->whereNull('requested_reader_id')
                   ->orWhere('requested_reader_id', $userId);

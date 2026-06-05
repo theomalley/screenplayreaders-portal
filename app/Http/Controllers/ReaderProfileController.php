@@ -153,6 +153,18 @@ class ReaderProfileController extends Controller
 
         $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
         $data['is_1099']                  = $request->boolean('is_1099');
+        $data['tier_1']                   = $request->boolean('tier_1');
+        $data['tier_2']                   = $request->boolean('tier_2');
+
+        // Admin-only: change user role to editor
+        if (auth()->user()->isAdmin() && $request->input('role') === 'editor') {
+            $user->update(['role' => 'editor']);
+            $user->editorProfile()->firstOrCreate(
+                ['user_id' => $user->id],
+                ['initials' => $user->readerProfile?->initials ?? strtoupper(substr($user->name, 0, 2))]
+            );
+            return redirect()->route('readers.index')->with('success', 'Role changed to editor.');
+        }
 
         $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],

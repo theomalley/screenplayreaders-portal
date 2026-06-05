@@ -1,5 +1,6 @@
 <?php
 
+// v1.12 — 2026-06-05 | Add tier_1/tier_2 fields; tiers() helper
 // v1.11 — 2026-06-05 | Add about_photo fields to fillable
 // v1.10 — 2026-06-03 | Add custom_message to fillable
 // v1.9 — 2026-05-30 | Add followup notification fields to fillable
@@ -55,6 +56,8 @@ class ReaderProfile extends Model
         'sms_notify_followup',
         'email_notify_qc_fail',
         'sms_notify_qc_fail',
+        'tier_1',
+        'tier_2',
         'availability',
         'availability_message',
         'upload_warning',
@@ -76,6 +79,8 @@ class ReaderProfile extends Model
         'sms_notify_followup'   => 'boolean',
         'email_notify_qc_fail'  => 'boolean',
         'sms_notify_qc_fail'    => 'boolean',
+        'tier_1'                => 'boolean',
+        'tier_2'                => 'boolean',
     ];
 
     public function user(): BelongsTo
@@ -102,6 +107,15 @@ class ReaderProfile extends Model
         return $this->user->assignments()
                           ->where('status', Assignment::STATUS_ASSIGNED)
                           ->count() >= $max;
+    }
+
+    /** Returns the tier numbers (1 and/or 2) this reader belongs to. */
+    public function tiers(): array
+    {
+        $t = [];
+        if ($this->tier_1) $t[] = 1;
+        if ($this->tier_2) $t[] = 2;
+        return $t;
     }
 
     public function displayName(): string

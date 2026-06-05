@@ -302,6 +302,43 @@
 
                 </form>
 
+                @if(auth()->user()->isAdmin())
+                <div class="px-6 py-5 border-t border-gray-100 space-y-5">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Settings</div>
+
+                    {{-- Tier Membership (inside update-form so they save with the profile) --}}
+                    <div>
+                        <x-input-label value="Tier Membership" />
+                        <p class="mt-0.5 text-xs text-gray-500 mb-2">Which assignment pools this reader can see and accept from.</p>
+                        <div class="flex gap-5">
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="tier_1" value="1" form="update-form"
+                                       {{ ($profile?->tier_1 ?? true) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                Tier 1
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="tier_2" value="1" form="update-form"
+                                       {{ $profile?->tier_2 ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                Tier 2
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Role Change --}}
+                    <div>
+                        <x-input-label for="role" value="Role" />
+                        <p class="mt-0.5 text-xs text-gray-500 mb-1">Changing to Editor moves this user to the editors list.</p>
+                        <select id="role" name="role" form="update-form"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="reader" {{ $user->role === 'reader' ? 'selected' : '' }}>Reader</option>
+                            <option value="editor" {{ $user->role === 'editor' ? 'selected' : '' }}>Editor</option>
+                        </select>
+                    </div>
+                </div>
+                @endif
+
                 <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100">
                     @if(auth()->user()->isAdmin())
                     <form method="POST" action="{{ route('readers.destroy', $user) }}"

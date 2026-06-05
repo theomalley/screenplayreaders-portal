@@ -40,6 +40,10 @@
                           numReaders: '{{ $v('num_readers', (string) min($siblingCount, 3)) }}',
                           requestedReaders: ['{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}', '', ''],
                           overrideRate: true,
+                          tier: '{{ $v('tier', (string)($assignment->tier ?? 1)) }}',
+                          init() {
+                              this.$watch('assignmentType', val => { if (val === 'budget') this.tier = '2'; });
+                          },
                           updatePayDisplay() {
                               const r = window._srRates;
                               const map = {
@@ -272,6 +276,17 @@
                             <option value="development_notes" {{ $v('assignment_type', $assignment->assignment_type) === 'development_notes' ? 'selected' : '' }}>Development Notes</option>
                         </select>
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
+                    </div>
+
+                    {{-- Tier --}}
+                    <div>
+                        <x-input-label for="tier" value="Tier" />
+                        <select id="tier" name="tier" x-model="tier"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="1">Tier 1</option>
+                            <option value="2">Tier 2 (Budget Coverage)</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-400">Budget Coverage auto-sets to Tier 2.</p>
                     </div>
 
                     {{-- Page Count --}}

@@ -30,6 +30,7 @@ class StoreAssignmentRequest extends FormRequest
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'notes'                    => ['nullable', 'string', 'max:2000'],
             'helpscout_ticket_number'  => ['nullable', 'string', 'max:64'],
+            'tier'                 => ['nullable', 'integer', 'in:1,2'],
             'script'               => ['nullable', 'file', 'mimes:pdf', 'max:51200'],
             'status'               => ['required', 'in:' . implode(',', [
                                           Assignment::STATUS_INCOMING,

@@ -145,6 +145,16 @@ class EditorProfileController extends Controller
         }
         $user->update($userUpdate);
 
+        // Admin-only: change role to reader
+        if (auth()->user()->isAdmin() && $user->isEditor() && $request->input('role') === 'reader') {
+            $user->update(['role' => 'reader']);
+            $user->readerProfile()->firstOrCreate(
+                ['user_id' => $user->id],
+                ['initials' => $user->editorProfile?->initials ?? strtoupper(substr($user->name, 0, 2)), 'tier_1' => true]
+            );
+            return redirect()->route('readers.edit', $user)->with('success', 'Role changed to reader.');
+        }
+
         $user->editorProfile()->updateOrCreate(
             ['user_id' => $user->id],
             collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
