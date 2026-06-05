@@ -68,7 +68,7 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Upload Photo</x-primary-button>
+                            <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
                         </div>
                         <x-input-error :messages="$errors->get('photo')" class="mt-2" />
                         @if (session('status') === 'photo-updated')
@@ -131,7 +131,7 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Upload Photo</x-primary-button>
+                            <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
                         </div>
                         <x-input-error :messages="$errors->get('about_photo')" class="mt-2" />
                         @if (session('status') === 'about-photo-updated')
