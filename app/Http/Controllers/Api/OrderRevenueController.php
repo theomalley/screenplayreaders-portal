@@ -213,6 +213,6 @@ class OrderRevenueController extends Controller
     private function authorised(Request $request): bool
     {
         $secret = config('services.portal.webhook_secret');
-        return ! empty($secret) && $request->bearerToken() === $secret;
+        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }

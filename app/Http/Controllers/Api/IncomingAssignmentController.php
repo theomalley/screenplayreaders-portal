@@ -176,6 +176,6 @@ class IncomingAssignmentController extends Controller
     {
         $secret = config('services.portal.webhook_secret');
 
-        return ! empty($secret) && $request->bearerToken() === $secret;
+        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }
