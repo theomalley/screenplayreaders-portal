@@ -416,11 +416,15 @@ class AssignmentController extends Controller
 
         // "last" is a special token — resolve to actual last page number
         if ($rawInput === 'last') {
-            $tmp       = $drive->downloadToTemp($assignment->drive_script_file_id);
-            $pdf       = new \setasign\Fpdi\Fpdi();
-            $pageCount = $pdf->setSourceFile($tmp);
-            @unlink($tmp);
-            $pages = [$pageCount];
+            try {
+                $tmp       = $drive->downloadToTemp($assignment->drive_script_file_id);
+                $pdf       = new \setasign\Fpdi\Fpdi();
+                $pageCount = $pdf->setSourceFile($tmp);
+                @unlink($tmp);
+                $pages = [$pageCount];
+            } catch (\Throwable $e) {
+                return redirect()->back()->with('error', 'Could not determine page count: ' . $e->getMessage());
+            }
         } else {
             $pages = array_values(array_filter(
                 array_map('intval', explode(',', $rawInput)),
@@ -432,8 +436,8 @@ class AssignmentController extends Controller
 
         try {
             $drive->deletePages($assignment->drive_script_file_id, $pages);
-        } catch (\RuntimeException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Could not remove page: ' . $e->getMessage());
         }
 
         $label = count($pages) === 1
