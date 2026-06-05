@@ -9,12 +9,12 @@
         csrf: document.querySelector('meta[name=csrf-token]')?.content ?? '',
         async approve() {
             const r = await fetch('{{ $approveUrl }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': this.csrf } });
-            if (r.ok) this.done = true;
+            if (r.ok) { this.done = true; setTimeout(() => location.reload(), 400); }
         },
         async reject() {
             const fd = new FormData(); fd.append('note', this.note);
             const r = await fetch('{{ $rejectUrl }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': this.csrf }, body: fd });
-            if (r.ok) this.done = true;
+            if (r.ok) { this.done = true; setTimeout(() => location.reload(), 400); }
         }
     }"
      x-show="!done"
