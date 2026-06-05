@@ -215,62 +215,6 @@
             {{-- Admin-only sections --}}
             @if ($isAdmin)
 
-                {{-- Admin Profile Photos --}}
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-                    <h3 class="text-sm font-semibold text-gray-800 border-b border-gray-100 pb-2">My Profile Photos</h3>
-
-                    {{-- Portal profile photo --}}
-                    <div x-data="{ preview: null }">
-                        <p class="text-xs font-medium text-gray-700 mb-1">Portal Profile Photo</p>
-                        <p class="text-xs text-gray-500 mb-3">Shown next to your name inside the portal (staff cards, reader-pay, etc.).</p>
-                        <div class="flex items-center gap-4 mb-3">
-                            @if($adminPortalPhotoUrl)
-                                <img src="{{ $adminPortalPhotoUrl }}" alt="Portal photo"
-                                     class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-200">
-                            @else
-                                <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-400 flex items-center justify-center text-xs">None</div>
-                            @endif
-                            <img x-show="preview" :src="preview" x-cloak
-                                 class="w-16 h-16 rounded-full object-cover ring-2 ring-indigo-300" alt="Preview">
-                        </div>
-                        <form method="POST" action="{{ route('settings.portal-photo') }}" enctype="multipart/form-data" class="flex items-center gap-3">
-                            @csrf
-                            <input type="file" name="photo" accept="image/*" required
-                                   @change="preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null"
-                                   class="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                            <x-primary-button type="submit">Upload</x-primary-button>
-                        </form>
-                    </div>
-
-                    {{-- About page photo --}}
-                    <div x-data="{ preview: null }" class="border-t border-gray-100 pt-5">
-                        <p class="text-xs font-medium text-gray-700 mb-1">About Page Photo</p>
-                        <p class="text-xs text-gray-500 mb-3">Used on the Screenplay Readers main website About page. Separate from your portal photo.</p>
-                        <div class="flex items-center gap-4 mb-3">
-                            @if($adminAboutPhotoUrl)
-                                <img src="{{ $adminAboutPhotoUrl }}" alt="About page photo"
-                                     class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-200">
-                            @else
-                                <div class="w-16 h-16 rounded-full bg-teal-50 text-teal-400 flex items-center justify-center text-xs">None</div>
-                            @endif
-                            <img x-show="preview" :src="preview" x-cloak
-                                 class="w-16 h-16 rounded-full object-cover ring-2 ring-teal-300" alt="Preview">
-                        </div>
-                        <form method="POST" action="{{ route('settings.about-photo') }}" enctype="multipart/form-data" class="flex items-center gap-3">
-                            @csrf
-                            <input type="file" name="about_photo" accept="image/*" required
-                                   @change="preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null"
-                                   class="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
-                            <x-primary-button type="submit">Upload</x-primary-button>
-                        </form>
-                        @if($adminAboutPhotoUrl)
-                            <p class="mt-2 text-xs text-gray-400">
-                                Direct URL: <span class="font-mono text-gray-600 select-all">{{ $adminAboutPhotoUrl }}</span>
-                            </p>
-                        @endif
-                    </div>
-                </div>
-
                 {{-- Navigation Logo --}}
                 <div x-data="{ preview: null, existing: @js($logoUrl) }"
                      class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
