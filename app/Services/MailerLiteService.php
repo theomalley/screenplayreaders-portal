@@ -133,12 +133,13 @@ class MailerLiteService
 
     /**
      * Send a test email for a campaign to a specific address.
-     * The campaign must already exist in MailerLite (have a campaign ID).
+     * MailerLite's new API ties the test action to the email object, not the campaign.
+     * $emailId comes from campaign['emails'][0]['id'] returned by createCampaign.
      */
-    public function sendTest(string $campaignId, string $email): void
+    public function sendTest(string $campaignId, string $emailId, string $email): void
     {
         $response = Http::withToken($this->apiKey)
-            ->post("{$this->baseUrl}/campaigns/{$campaignId}/actions/send-test", [
+            ->post("{$this->baseUrl}/campaigns/{$campaignId}/emails/{$emailId}/test", [
                 'emails' => [$email],
             ]);
 
