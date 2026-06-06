@@ -104,7 +104,6 @@ class MailerLiteService
      */
     public function scheduleCampaign(string $campaignId, string $scheduledAt): void
     {
-        // MailerLite expects split date/hours/minutes + an integer timezone ID (0 = UTC)
         $dt = new \DateTime($scheduledAt, new \DateTimeZone('UTC'));
 
         $response = Http::withToken($this->apiKey)
@@ -114,13 +113,36 @@ class MailerLiteService
                     'date'     => $dt->format('Y-m-d'),
                     'hours'    => $dt->format('H'),
                     'minutes'  => $dt->format('i'),
-                    'timezone' => 0,
+                    'timezone' => $this->utcTimezoneId(),
                 ],
             ]);
 
         if ($response->failed()) {
             throw new RuntimeException('MailerLite schedule error (' . $response->status() . '): ' . $response->body());
         }
+    }
+
+    /** Fetch MailerLite's integer ID for UTC from their /timezones endpoint. */
+    private function utcTimezoneId(): int
+    {
+        static $id = null;
+        if ($id !== null) {
+            return $id;
+        }
+
+        $response = Http::withToken($this->apiKey)->get("{$this->baseUrl}/timezones");
+        if ($response->failed()) {
+            throw new RuntimeException('MailerLite timezones error (' . $response->status() . '): ' . $response->body());
+        }
+
+        foreach ($response->json('data') ?? [] as $tz) {
+            if (($tz['gmt'] ?? '') === '+00:00' || ($tz['title'] ?? '') === 'UTC') {
+                $id = (int) $tz['id'];
+                return $id;
+            }
+        }
+
+        throw new RuntimeException('Could not find UTC timezone in MailerLite timezone list. Response: ' . $response->body());
     }
 
     /**
