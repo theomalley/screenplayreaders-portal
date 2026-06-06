@@ -176,8 +176,8 @@
                     async loadTemplate(id) {
                         const tpl = this.templates.find(t => t.id === id);
                         if (!tpl) return;
-                        if (this.htmlSource && !confirm('Replace current HTML with "' + tpl.name + '"?')) return;
-                        const r = await fetch(`/marketing/email-templates/${id}`, {
+                        if (this.htmlSource && !confirm('Replace current HTML with this template?')) return;
+                        const r = await fetch('/marketing/email-templates/' + id, {
                             headers: { 'Accept': 'application/json' }
                         });
                         const j = await r.json();
@@ -187,8 +187,8 @@
                     },
 
                     async deleteTemplate(id, name) {
-                        if (!confirm('Delete template "' + name + '"?')) return;
-                        const r = await fetch(`/marketing/email-templates/${id}`, {
+                        if (!confirm('Delete template ' + name + '?')) return;
+                        const r = await fetch('/marketing/email-templates/' + id, {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
                         });
