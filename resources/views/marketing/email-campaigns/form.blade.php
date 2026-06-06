@@ -124,6 +124,7 @@
                         this.previewLoading = true;
                         const form = document.getElementById('campaign-form');
                         const data = new FormData(form);
+                        data.delete('_method');
                         const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
                             method: 'POST',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
@@ -136,6 +137,7 @@
                         this.previewLoading = true;
                         const form = document.getElementById('campaign-form');
                         const data = new FormData(form);
+                        data.delete('_method');
                         data.delete('custom_html');
                         const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
                             method: 'POST',
