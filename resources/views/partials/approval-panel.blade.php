@@ -20,9 +20,11 @@
      x-show="!done"
      class="mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 space-y-2">
 
-    <div class="flex items-center gap-3 flex-wrap">
+    <p class="font-medium">{{ $label }}</p>
+    <div class="w-full">
         {!! $preview !!}
-        <p class="font-medium flex-1">{{ $label }}</p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
         <button type="button" @click="approve()"
                 class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 shrink-0">Approve</button>
         <button type="button" @click="rejecting = !rejecting"
