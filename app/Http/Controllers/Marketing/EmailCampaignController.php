@@ -45,11 +45,12 @@ class EmailCampaignController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $campaign        = new EmailCampaign();
+        $campaign         = new EmailCampaign();
         $mailerliteGroups = $this->fetchGroups();
-        $initialHtml     = '';
+        $wooProducts      = $this->fetchProducts();
+        $initialHtml      = '';
 
-        return view('marketing.email-campaigns.form', compact('campaign', 'mailerliteGroups', 'initialHtml'));
+        return view('marketing.email-campaigns.form', compact('campaign', 'mailerliteGroups', 'wooProducts', 'initialHtml'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -75,11 +76,13 @@ class EmailCampaignController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
 
         $mailerliteGroups = $this->fetchGroups();
+        $wooProducts      = $this->fetchProducts();
         $initialHtml      = $this->renderHtml($emailCampaign, preview: true);
 
         return view('marketing.email-campaigns.form', [
             'campaign'         => $emailCampaign,
             'mailerliteGroups' => $mailerliteGroups,
+            'wooProducts'      => $wooProducts,
             'initialHtml'      => $initialHtml,
         ]);
     }
@@ -327,7 +330,7 @@ class EmailCampaignController extends Controller
             'headline_top'        => 'nullable|string|max:255',
             'paragraph_top1'      => 'nullable|string',
             'paragraph_top2'      => 'nullable|string',
-            'url1'                => 'nullable|url|max:500',
+            'url1'                => 'nullable|string|max:500',
             'headline_bottom'     => 'nullable|string|max:255',
             'paragraph_bottom'    => 'nullable|string',
             'image_path'          => 'nullable|string|max:500',
@@ -339,6 +342,12 @@ class EmailCampaignController extends Controller
             'coupon_product_ids'  => 'nullable|string',  // comma-separated IDs → parsed below
             'mailerlite_group_id' => 'nullable|string|max:100',
         ]);
+
+        // Coerce nullable string fields to '' — migration defines them NOT NULL with default ''
+        // and MySQL strict mode rejects explicit NULL on NOT NULL columns.
+        foreach (['subject_line', 'preheader', 'headline_top', 'url1', 'headline_bottom'] as $field) {
+            $data[$field] = $data[$field] ?? '';
+        }
 
         // Parse comma-separated product IDs into an array
         if (!empty($data['coupon_product_ids'])) {
@@ -378,6 +387,15 @@ class EmailCampaignController extends Controller
 
         try {
             return $this->mailerlite->getGroups();
+        } catch (\RuntimeException) {
+            return [];
+        }
+    }
+
+    private function fetchProducts(): array
+    {
+        try {
+            return $this->woocommerce->getProducts();
         } catch (\RuntimeException) {
             return [];
         }

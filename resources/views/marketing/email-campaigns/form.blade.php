@@ -52,9 +52,14 @@
         $formAction  = $isEdit
             ? route('marketing.email-campaigns.update', $campaign)
             : route('marketing.email-campaigns.store');
+        // Fallback comma-separated IDs for the text input when WC products can't be fetched
         $productIds  = is_array($campaign->coupon_product_ids)
             ? implode(',', $campaign->coupon_product_ids)
             : ($campaign->coupon_product_ids ?? '');
+        // For the multi-select, resolve pre-selected IDs from old() if present
+        $selectedProductIds = old('coupon_product_ids')
+            ? array_filter(array_map('trim', explode(',', old('coupon_product_ids'))))
+            : (array) ($campaign->coupon_product_ids ?? []);
     @endphp
 
     <div class="py-6">
@@ -111,7 +116,7 @@
                 @csrf
                 @if($isEdit) @method('PATCH') @endif
 
-                <div class="flex gap-6 items-start">
+                <div class="flex flex-col lg:flex-row gap-6 lg:items-start">
 
                     {{-- LEFT COLUMN: form fields --}}
                     <div class="flex-1 min-w-0 space-y-5">
@@ -286,12 +291,99 @@
                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <p class="mt-1 text-xs text-indigo-600" x-show="expiryPreview" x-text="'Expires: ' + expiryPreview"></p>
                                 </div>
-                                <div>
-                                    <x-input-label for="coupon_product_ids" value="Product IDs (comma-sep.)" />
-                                    <input type="text" id="coupon_product_ids" name="coupon_product_ids"
-                                           value="{{ old('coupon_product_ids', $productIds) }}"
-                                           placeholder="e.g. 55560,55561 (blank = sitewide)"
-                                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <div class="col-span-2"
+                                     x-data="{
+                                        open: false,
+                                        search: '',
+                                        selected: @js(array_values(array_map('strval', $selectedProductIds))),
+                                        products: @js($wooProducts),
+                                        get filtered() {
+                                            if (!this.search) return this.products;
+                                            const q = this.search.toLowerCase();
+                                            return this.products.filter(p =>
+                                                p.name.toLowerCase().includes(q) || String(p.id).includes(q)
+                                            );
+                                        },
+                                        toggle(id) {
+                                            id = String(id);
+                                            this.selected.includes(id)
+                                                ? this.selected = this.selected.filter(s => s !== id)
+                                                : this.selected.push(id);
+                                        },
+                                        isSelected(id) { return this.selected.includes(String(id)); },
+                                        label(id) {
+                                            const p = this.products.find(p => String(p.id) === String(id));
+                                            return p ? p.name : 'ID ' + id;
+                                        },
+                                        get commaIds() { return this.selected.join(','); }
+                                     }">
+                                    <x-input-label value="Restrict Coupon to Products" />
+                                    <p class="text-xs text-gray-400 mb-1">Leave empty to apply sitewide.</p>
+
+                                    {{-- Hidden field that stores the comma-separated IDs --}}
+                                    <input type="hidden" name="coupon_product_ids" :value="commaIds">
+
+                                    @if(!empty($wooProducts))
+                                        {{-- Selected tags --}}
+                                        <div class="flex flex-wrap gap-1 mb-1.5 min-h-[24px]">
+                                            <template x-for="id in selected" :key="id">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs">
+                                                    <span x-text="label(id)"></span>
+                                                    <button type="button" @click="toggle(id)"
+                                                            class="text-indigo-400 hover:text-indigo-700 leading-none">&times;</button>
+                                                </span>
+                                            </template>
+                                        </div>
+
+                                        {{-- Dropdown trigger --}}
+                                        <div class="relative">
+                                            <button type="button"
+                                                    @click="open = !open"
+                                                    class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                                <span x-text="selected.length ? selected.length + ' product(s) selected' : 'Select products…'"></span>
+                                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                </svg>
+                                            </button>
+
+                                            <div x-show="open" x-cloak
+                                                 @click.outside="open = false"
+                                                 class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
+                                                <div class="p-2 border-b border-gray-100">
+                                                    <input type="text" x-model="search"
+                                                           placeholder="Search products…"
+                                                           @click.stop
+                                                           class="w-full border-gray-300 rounded text-xs focus:border-indigo-500 focus:ring-indigo-500 py-1.5">
+                                                </div>
+                                                <div class="max-h-52 overflow-y-auto">
+                                                    <template x-for="product in filtered" :key="product.id">
+                                                        <label class="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer">
+                                                            <input type="checkbox"
+                                                                   :checked="isSelected(product.id)"
+                                                                   @change="toggle(product.id)"
+                                                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 shrink-0">
+                                                            <span class="text-sm text-gray-700 leading-tight">
+                                                                <span x-text="product.name"></span>
+                                                                <span class="text-gray-400 text-xs ml-1" x-text="product.price ? '($' + product.price + ')' : ''"></span>
+                                                                <span class="text-gray-300 text-xs ml-1" x-text="'#' + product.id"></span>
+                                                            </span>
+                                                        </label>
+                                                    </template>
+                                                    <p x-show="filtered.length === 0" class="px-3 py-2 text-xs text-gray-400">No products match.</p>
+                                                </div>
+                                                <div class="p-2 border-t border-gray-100 flex justify-between">
+                                                    <button type="button" @click="selected = []" class="text-xs text-gray-400 hover:text-gray-600">Clear all</button>
+                                                    <button type="button" @click="open = false" class="text-xs text-indigo-600 hover:underline">Done</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        {{-- Fallback text input when WC products can't be fetched --}}
+                                        <input type="text" name="coupon_product_ids"
+                                               value="{{ old('coupon_product_ids', $productIds) }}"
+                                               placeholder="e.g. 55560,55561 (blank = sitewide)"
+                                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -335,8 +427,8 @@
 
                     </div>{{-- /left column --}}
 
-                    {{-- RIGHT COLUMN: live preview --}}
-                    <div class="w-[480px] shrink-0 sticky top-6"
+                    {{-- RIGHT COLUMN: live preview (below form on mobile, sticky sidebar on desktop) --}}
+                    <div class="w-full lg:w-[480px] lg:shrink-0 lg:sticky lg:top-6"
                          x-data="{
                             view: 'desktop',
                             loading: false,
@@ -374,14 +466,13 @@
                                 </button>
                             </div>
 
-                            {{-- Preview iframe --}}
-                            <div class="overflow-auto bg-gray-100 p-2" style="height: calc(100vh - 180px);">
+                            {{-- Preview iframe — full viewport height on desktop, fixed 500px on mobile --}}
+                            <div class="overflow-auto bg-gray-100 p-2 h-[500px] lg:h-[calc(100vh-180px)]">
                                 <div :class="view === 'mobile' ? 'w-[390px] mx-auto' : 'w-full'">
                                     <iframe
                                         :srcdoc="previewHtml"
                                         sandbox="allow-same-origin"
-                                        class="w-full bg-white rounded border border-gray-200"
-                                        style="height: calc(100vh - 220px);"
+                                        class="w-full bg-white rounded border border-gray-200 h-[460px] lg:h-[calc(100vh-220px)]"
                                         scrolling="yes">
                                     </iframe>
                                 </div>

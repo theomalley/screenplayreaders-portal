@@ -113,6 +113,32 @@ class WooCommerceService
     }
 
     /**
+     * Fetch published products — used to populate the coupon product selector.
+     * Returns array of ['id' => int, 'name' => string, 'price' => string, 'type' => string].
+     */
+    public function getProducts(int $perPage = 100): array
+    {
+        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
+            ->get($this->baseUrl . '/wp-json/wc/v3/products', [
+                'per_page' => $perPage,
+                'status'   => 'publish',
+                'orderby'  => 'title',
+                'order'    => 'asc',
+            ]);
+
+        if ($response->failed()) {
+            throw new RuntimeException('WooCommerce API error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown error'));
+        }
+
+        return array_map(fn($p) => [
+            'id'    => $p['id'],
+            'name'  => $p['name'],
+            'price' => $p['price'] ?? '',
+            'type'  => $p['type'] ?? 'simple',
+        ], $response->json() ?? []);
+    }
+
+    /**
      * Create a WooCommerce coupon for marketing campaigns.
      * Returns the created coupon array (includes 'id').
      *
