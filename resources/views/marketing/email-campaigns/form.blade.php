@@ -88,6 +88,14 @@
                     imageUrl: '{{ old('image_url', $campaign->image_url ?? '') }}',
                     imagePath: '{{ old('image_path', $campaign->image_path ?? '') }}',
                     imageUploading: false,
+
+                    activeTab: 'fields',
+                    htmlSource: @js(old('custom_html', $campaign->custom_html ?? '')),
+
+                    previewView: 'desktop',
+                    previewLoading: false,
+                    previewHtml: @js($initialHtml),
+
                     get expiryPreview() {
                         if (!this.scheduledAt || !this.couponDays) return '';
                         const d = new Date(this.scheduledAt);
@@ -111,15 +119,70 @@
                         this.imageUrl  = j.url;
                         this.imagePath = j.path;
                         this.imageUploading = false;
+                    },
+                    async refreshPreview() {
+                        this.previewLoading = true;
+                        const form = document.getElementById('campaign-form');
+                        const data = new FormData(form);
+                        const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                            body: data
+                        });
+                        this.previewHtml = await r.text();
+                        this.previewLoading = false;
+                    },
+                    async generateFromFields() {
+                        this.previewLoading = true;
+                        const form = document.getElementById('campaign-form');
+                        const data = new FormData(form);
+                        data.delete('custom_html');
+                        const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                            body: data
+                        });
+                        const html = await r.text();
+                        this.htmlSource = html;
+                        this.previewHtml = html;
+                        this.previewLoading = false;
                     }
-                  }">
+                  }"
+                  x-init="refreshPreview()">
                 @csrf
                 @if($isEdit) @method('PATCH') @endif
 
                 <div class="flex flex-col lg:flex-row gap-6 lg:items-start">
 
                     {{-- LEFT COLUMN: form fields --}}
-                    <div class="flex-1 min-w-0 space-y-5">
+                    <div class="flex-1 min-w-0">
+
+                        {{-- Tab bar: Fields / HTML Source --}}
+                        <div class="flex items-center gap-1 border-b border-gray-200 mb-5">
+                            <button type="button" @click="activeTab='fields'"
+                                    :class="activeTab==='fields' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                    class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors">
+                                Fields
+                            </button>
+                            <button type="button" @click="activeTab='html'"
+                                    :class="activeTab==='html' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                    class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-2">
+                                HTML Source
+                                <span x-show="htmlSource" x-cloak
+                                      class="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-normal">custom</span>
+                            </button>
+                        </div>
+
+                        {{-- Custom HTML active warning (shown when on Fields tab but custom HTML is set) --}}
+                        <div x-show="activeTab === 'fields' && htmlSource" x-cloak
+                             class="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 flex items-center justify-between gap-3">
+                            <span>Custom HTML is active — field edits won't affect the email unless you clear or regenerate the HTML.</span>
+                            <button type="button" @click="activeTab='html'"
+                                    class="shrink-0 text-xs text-amber-700 underline hover:text-amber-900">Edit HTML</button>
+                        </div>
+
+                        {{-- FIELDS view --}}
+                        <div x-show="activeTab === 'fields'" class="space-y-5">
 
                         {{-- Card: Campaign Info --}}
                         <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
@@ -425,50 +488,98 @@
                             </div>
                         </div>
 
+                        </div>{{-- /fields view --}}
+
+                        {{-- HTML SOURCE view --}}
+                        <div x-show="activeTab === 'html'" x-cloak class="space-y-4">
+
+                            {{-- Toolbar --}}
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <button type="button" @click="generateFromFields()"
+                                        :disabled="previewLoading"
+                                        class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
+                                    <span x-show="!previewLoading">Generate from fields</span>
+                                    <span x-show="previewLoading" x-cloak>Generating…</span>
+                                </button>
+                                <button type="button" @click="htmlSource = ''; refreshPreview()"
+                                        x-show="htmlSource" x-cloak
+                                        class="px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-600 hover:bg-gray-50">
+                                    Clear custom HTML
+                                </button>
+                                <span class="ml-auto text-xs text-gray-400"
+                                      x-text="htmlSource ? htmlSource.length.toLocaleString() + ' chars' : ''"></span>
+                            </div>
+
+                            {{-- Empty state --}}
+                            <div x-show="!htmlSource"
+                                 class="px-3 py-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500">
+                                No custom HTML yet. Click "Generate from fields" to create an editable copy of the template, or paste HTML directly below.
+                            </div>
+
+                            {{-- Code editor --}}
+                            <textarea name="custom_html"
+                                      x-model="htmlSource"
+                                      @keydown.tab.prevent="
+                                          const s = $el.selectionStart;
+                                          const e = $el.selectionEnd;
+                                          $el.value = $el.value.substring(0, s) + '    ' + $el.value.substring(e);
+                                          $el.selectionStart = $el.selectionEnd = s + 4;
+                                          htmlSource = $el.value;
+                                      "
+                                      rows="32"
+                                      placeholder="Paste or generate HTML here…"
+                                      spellcheck="false"
+                                      class="block w-full font-mono text-xs border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 resize-y leading-relaxed"></textarea>
+
+                            {{-- Save / Delete row (so user doesn't need to switch tabs) --}}
+                            <div class="flex items-center justify-between">
+                                <button type="submit"
+                                        class="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
+                                    {{ $isEdit ? 'Save Changes' : 'Create Campaign' }}
+                                </button>
+                                <div class="flex items-center gap-3">
+                                    @if($isEdit && $campaign->status !== 'sent')
+                                        <form action="{{ route('marketing.email-campaigns.duplicate', $campaign) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="text-sm text-gray-500 hover:text-gray-700">Duplicate</button>
+                                        </form>
+                                        <form action="{{ route('marketing.email-campaigns.destroy', $campaign) }}" method="POST"
+                                              onsubmit="return confirm('Delete this campaign?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="text-sm text-red-400 hover:text-red-600">Delete</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+
+                        </div>{{-- /html source view --}}
+
                     </div>{{-- /left column --}}
 
                     {{-- RIGHT COLUMN: live preview (below form on mobile, sticky sidebar on desktop) --}}
-                    <div class="w-full lg:w-[480px] lg:shrink-0 lg:sticky lg:top-6"
-                         x-data="{
-                            view: 'desktop',
-                            loading: false,
-                            previewHtml: @js($initialHtml),
-                            async refresh() {
-                                this.loading = true;
-                                const form = document.getElementById('campaign-form');
-                                const data = new FormData(form);
-                                const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
-                                    method: 'POST',
-                                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                                    body: data
-                                });
-                                this.previewHtml = await r.text();
-                                this.loading = false;
-                            }
-                         }"
-                         x-init="refresh()">
+                    <div class="w-full lg:w-[480px] lg:shrink-0 lg:sticky lg:top-6">
 
                         <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
                             {{-- Preview toolbar --}}
                             <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50">
                                 <span class="text-xs font-medium text-gray-500 mr-1">Preview</span>
-                                <button type="button" @click="view='desktop'"
-                                        :class="view==='desktop' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 border border-gray-300'"
+                                <button type="button" @click="previewView='desktop'"
+                                        :class="previewView==='desktop' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 border border-gray-300'"
                                         class="px-2 py-1 text-xs rounded transition-colors">Desktop</button>
-                                <button type="button" @click="view='mobile'"
-                                        :class="view==='mobile' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 border border-gray-300'"
+                                <button type="button" @click="previewView='mobile'"
+                                        :class="previewView==='mobile' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 border border-gray-300'"
                                         class="px-2 py-1 text-xs rounded transition-colors">Mobile</button>
-                                <button type="button" @click="refresh()"
-                                        :disabled="loading"
+                                <button type="button" @click="refreshPreview()"
+                                        :disabled="previewLoading"
                                         class="ml-auto px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
-                                    <span x-show="!loading">Refresh</span>
-                                    <span x-show="loading" x-cloak>Refreshing…</span>
+                                    <span x-show="!previewLoading">Refresh</span>
+                                    <span x-show="previewLoading" x-cloak>Refreshing…</span>
                                 </button>
                             </div>
 
                             {{-- Preview iframe — full viewport height on desktop, fixed 500px on mobile --}}
                             <div class="overflow-auto bg-gray-100 p-2 h-[500px] lg:h-[calc(100vh-180px)]">
-                                <div :class="view === 'mobile' ? 'w-[390px] mx-auto' : 'w-full'">
+                                <div :class="previewView === 'mobile' ? 'w-[390px] mx-auto' : 'w-full'">
                                     <iframe
                                         :srcdoc="previewHtml"
                                         sandbox="allow-same-origin"

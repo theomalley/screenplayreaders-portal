@@ -195,6 +195,11 @@ class EmailCampaignController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
+        // When the HTML editor has content, return it directly so the preview reflects the custom HTML
+        if ($request->filled('custom_html')) {
+            return response($request->input('custom_html'))->header('Content-Type', 'text/html');
+        }
+
         $campaign = new EmailCampaign($this->previewData($request));
         $html     = $this->renderHtml($campaign, preview: true);
 
@@ -341,6 +346,7 @@ class EmailCampaignController extends Controller
             'coupon_type'         => 'nullable|in:percent,fixed_cart',
             'coupon_product_ids'  => 'nullable|string',  // comma-separated IDs → parsed below
             'mailerlite_group_id' => 'nullable|string|max:100',
+            'custom_html'         => 'nullable|string',
         ]);
 
         // Coerce nullable string fields to '' — migration defines them NOT NULL with default ''
@@ -404,9 +410,14 @@ class EmailCampaignController extends Controller
     /**
      * Render the email HTML template with campaign data.
      * $preview = true replaces MailerLite merge tags with readable placeholders.
+     * If the campaign has custom_html saved, that takes precedence over the template.
      */
     private function renderHtml(EmailCampaign $campaign, bool $preview = false): string
     {
+        if (!empty($campaign->custom_html)) {
+            return $campaign->custom_html;
+        }
+
         $couponCode = $campaign->coupon_code ?? '';
 
         $expiryDate = '';

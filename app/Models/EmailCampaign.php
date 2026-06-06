@@ -12,7 +12,7 @@ class EmailCampaign extends Model
     protected $fillable = [
         'campaign_name', 'status', 'send_order', 'scheduled_at',
         'subject_line', 'preheader', 'headline_top', 'paragraph_top1', 'paragraph_top2',
-        'url1', 'headline_bottom', 'paragraph_bottom',
+        'url1', 'headline_bottom', 'paragraph_bottom', 'custom_html',
         'image_path', 'image_url',
         'coupon_code', 'coupon_amount', 'coupon_duration_days', 'coupon_type', 'coupon_product_ids',
         'mailerlite_group_id', 'mailerlite_campaign_id', 'woo_coupon_id',
