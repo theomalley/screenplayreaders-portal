@@ -104,12 +104,17 @@ class MailerLiteService
      */
     public function scheduleCampaign(string $campaignId, string $scheduledAt): void
     {
+        // MailerLite expects split date/hours/minutes + an integer timezone ID (0 = UTC)
+        $dt = new \DateTime($scheduledAt, new \DateTimeZone('UTC'));
+
         $response = Http::withToken($this->apiKey)
             ->post("{$this->baseUrl}/campaigns/{$campaignId}/schedule", [
                 'delivery' => 'scheduled',
                 'schedule' => [
-                    'date'     => $scheduledAt,
-                    'timezone' => 'UTC',
+                    'date'     => $dt->format('Y-m-d'),
+                    'hours'    => $dt->format('H'),
+                    'minutes'  => $dt->format('i'),
+                    'timezone' => 0,
                 ],
             ]);
 
