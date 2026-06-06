@@ -27,7 +27,12 @@
                     {{-- Test send --}}
                     <form action="{{ route('marketing.email-campaigns.send-test', $campaign) }}" method="POST">
                         @csrf
-                        <button type="submit" class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
+                        {{-- Populated on click from the group select in the main form --}}
+                        <input type="hidden" name="mailerlite_group_id" id="test-send-group-id"
+                               value="{{ $campaign->mailerlite_group_id }}">
+                        <button type="submit"
+                                onclick="document.getElementById('test-send-group-id').value = (document.getElementById('mailerlite_group_id')?.value ?? '');"
+                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
                             Send Test Email
                         </button>
                     </form>

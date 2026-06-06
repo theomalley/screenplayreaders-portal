@@ -214,7 +214,7 @@ class EmailCampaignController extends Controller
     // Send test email (creates/replaces ML draft, sends to admin email)
     // -------------------------------------------------------------------------
 
-    public function sendTest(EmailCampaign $emailCampaign): RedirectResponse
+    public function sendTest(Request $request, EmailCampaign $emailCampaign): RedirectResponse
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
@@ -222,8 +222,11 @@ class EmailCampaignController extends Controller
             return back()->with('error', 'MailerLite API key is not configured.');
         }
 
-        if (!$emailCampaign->mailerlite_group_id) {
-            return back()->with('error', 'Please select a MailerLite subscriber group before sending a test — MailerLite requires at least one group on the campaign.');
+        // Accept group from the request (passed from the unsaved form) or fall back to saved value
+        $groupId = $request->input('mailerlite_group_id') ?: $emailCampaign->mailerlite_group_id;
+
+        if (!$groupId) {
+            return back()->with('error', 'Please select a MailerLite subscriber group — MailerLite requires one to send a test.');
         }
 
         try {
@@ -239,7 +242,7 @@ class EmailCampaignController extends Controller
                 fromName:  'Screenplay Readers',
                 fromEmail: 'hello@screenplayreaders.com',
                 html:      $html,
-                groupIds:  [$emailCampaign->mailerlite_group_id],
+                groupIds:  [$groupId],
             );
 
             $mlId = $mlCampaign['id'];
