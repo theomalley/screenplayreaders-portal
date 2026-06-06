@@ -218,54 +218,22 @@ class EmailCampaignController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        if (!$this->mailerlite->isConfigured()) {
-            return back()->with('error', 'MailerLite API key is not configured.');
-        }
-
-        // Accept group from the request (passed from the unsaved form) or fall back to saved value
-        $groupId = $request->input('mailerlite_group_id') ?: $emailCampaign->mailerlite_group_id;
-
-        if (!$groupId) {
-            return back()->with('error', 'Please select a MailerLite subscriber group — MailerLite requires one to send a test.');
-        }
-
+        // MailerLite's new API has no documented test-send endpoint, so we render
+        // the HTML and deliver it directly via the portal's configured mailer.
         try {
-            // Delete the old test campaign in ML if one exists
-            if ($emailCampaign->mailerlite_campaign_id) {
-                $this->mailerlite->deleteCampaign($emailCampaign->mailerlite_campaign_id);
-            }
-
             $html       = $this->renderHtml($emailCampaign, preview: false);
-            $mlCampaign = $this->mailerlite->createCampaign(
-                name:      '[TEST] ' . $emailCampaign->campaign_name,
-                subject:   $emailCampaign->subject_line ?: '(no subject)',
-                fromName:  'Screenplay Readers',
-                fromEmail: 'hello@screenplayreaders.com',
-                html:      $html,
-                groupIds:  [$groupId],
-            );
-
-            $mlId      = $mlCampaign['id'];
-            $mlEmailId = (string) ($mlCampaign['emails'][0]['id'] ?? $mlCampaign['default_email_id'] ?? null);
-
-            if (!$mlEmailId) {
-                throw new \RuntimeException("MailerLite campaign (ID: {$mlId}) has no email ID in response.");
-            }
-
-            $emailCampaign->update(['mailerlite_campaign_id' => $mlId]);
-
+            $subject    = '[TEST] ' . ($emailCampaign->subject_line ?: $emailCampaign->campaign_name);
             $adminEmail = auth()->user()->email;
-            $this->mailerlite->sendTest($mlId, $mlEmailId, $adminEmail);
+
+            \Mail::html($html, function ($message) use ($adminEmail, $subject) {
+                $message->to($adminEmail)->subject($subject);
+            });
 
             $emailCampaign->update(['test_sent_at' => now()]);
 
             return back()->with('success', "Test email sent to {$adminEmail}.");
-
-            $emailCampaign->update(['test_sent_at' => now()]);
-
-            return back()->with('success', "Test email sent to {$adminEmail}.");
-        } catch (\RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return back()->with('error', 'Test send failed: ' . $e->getMessage());
         }
     }
 
