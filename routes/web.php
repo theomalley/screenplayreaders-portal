@@ -34,6 +34,7 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\WooOrderController;
+use App\Http\Controllers\Marketing\EmailCampaignController;
 use Illuminate\Support\Facades\Route;
 
 // Public followup form — no auth required
@@ -285,6 +286,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         $dlUrl    = $drive->downloadUrl($fileId);
         return back()->with(compact('fileId', 'viewLink', 'dlUrl'));
     })->name('admin.drive-test.post');
+
+    // --- Marketing (admin only) ---
+    Route::prefix('marketing')->name('marketing.')->group(function () {
+        // Static endpoints must come before {emailCampaign} to avoid route conflicts
+        Route::post('/email-campaigns/preview',      [EmailCampaignController::class, 'preview'])->name('email-campaigns.preview');
+        Route::post('/email-campaigns/upload-image', [EmailCampaignController::class, 'uploadImage'])->name('email-campaigns.upload-image');
+        Route::patch('/email-campaigns/reorder',     [EmailCampaignController::class, 'reorder'])->name('email-campaigns.reorder');
+
+        Route::get('/email-campaigns',                    [EmailCampaignController::class, 'index'])->name('email-campaigns.index');
+        Route::get('/email-campaigns/create',             [EmailCampaignController::class, 'create'])->name('email-campaigns.create');
+        Route::post('/email-campaigns',                   [EmailCampaignController::class, 'store'])->name('email-campaigns.store');
+        Route::get('/email-campaigns/{emailCampaign}/edit',    [EmailCampaignController::class, 'edit'])->name('email-campaigns.edit');
+        Route::patch('/email-campaigns/{emailCampaign}',       [EmailCampaignController::class, 'update'])->name('email-campaigns.update');
+        Route::delete('/email-campaigns/{emailCampaign}',      [EmailCampaignController::class, 'destroy'])->name('email-campaigns.destroy');
+
+        Route::post('/email-campaigns/{emailCampaign}/duplicate',  [EmailCampaignController::class, 'duplicate'])->name('email-campaigns.duplicate');
+        Route::post('/email-campaigns/{emailCampaign}/send-test',  [EmailCampaignController::class, 'sendTest'])->name('email-campaigns.send-test');
+        Route::post('/email-campaigns/{emailCampaign}/send-live',  [EmailCampaignController::class, 'sendLive'])->name('email-campaigns.send-live');
+        Route::post('/email-campaigns/{emailCampaign}/status',     [EmailCampaignController::class, 'updateStatus'])->name('email-campaigns.status');
+    });
 });
 
 require __DIR__.'/auth.php';

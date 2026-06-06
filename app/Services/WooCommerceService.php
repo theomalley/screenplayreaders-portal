@@ -113,6 +113,49 @@ class WooCommerceService
     }
 
     /**
+     * Create a WooCommerce coupon for marketing campaigns.
+     * Returns the created coupon array (includes 'id').
+     *
+     * $type:        'percent' or 'fixed_cart'
+     * $productIds:  array of product IDs to restrict the coupon to (empty = sitewide)
+     * $expiryDate:  'YYYY-MM-DD' or null for no expiry
+     */
+    public function createCoupon(
+        string  $code,
+        string  $type,
+        float   $amount,
+        array   $productIds = [],
+        ?string $expiryDate = null,
+        string  $description = ''
+    ): array {
+        $payload = [
+            'code'               => strtoupper($code),
+            'discount_type'      => $type,
+            'amount'             => number_format($amount, 2, '.', ''),
+            'individual_use'     => true,
+            'free_shipping'      => false,
+            'description'        => $description,
+        ];
+
+        if (!empty($productIds)) {
+            $payload['product_ids'] = array_map('intval', $productIds);
+        }
+
+        if ($expiryDate) {
+            $payload['date_expires'] = $expiryDate;
+        }
+
+        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
+            ->post($this->baseUrl . '/wp-json/wc/v3/coupons', $payload);
+
+        if ($response->failed()) {
+            throw new RuntimeException('WooCommerce create coupon error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown error'));
+        }
+
+        return $response->json();
+    }
+
+    /**
      * Calculate the amount still refundable on an order (total minus already-refunded).
      * WC refund totals are stored as negative numbers, so we sum their absolute values.
      */

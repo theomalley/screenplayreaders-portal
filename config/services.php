@@ -67,6 +67,10 @@ return [
         'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
     ],
 
+    'mailerlite' => [
+        'api_key' => env('MAILERLITE_API_KEY'),
+    ],
+
     'mailersend' => [
         'api_key'                   => env('MAILERSEND_API_KEY'),
         'assignment_template_id'    => env('MAILERSEND_ASSIGNMENT_TEMPLATE_ID', 'neqvygm95xdl0p7w'),
