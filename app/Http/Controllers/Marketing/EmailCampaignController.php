@@ -245,17 +245,8 @@ class EmailCampaignController extends Controller
                 groupIds:  [$groupId],
             );
 
-            $mlId      = $mlCampaign['id'];
-            $mlEmailId = $mlCampaign['emails'][0]['id'] ?? ($mlCampaign['default_email_id'] ?? null);
-
-            if (!$mlEmailId) {
-                throw new \RuntimeException("MailerLite campaign created (ID: {$mlId}) but response contained no email ID. Response: " . json_encode($mlCampaign));
-            }
-
-            $emailCampaign->update(['mailerlite_campaign_id' => $mlId]);
-
-            $adminEmail = auth()->user()->email;
-            $this->mailerlite->sendTest($mlId, (string) $mlEmailId, $adminEmail);
+            // TEMPORARY DEBUG — remove once test send works
+            throw new \RuntimeException('ML campaign response: ' . json_encode($mlCampaign));
 
             $emailCampaign->update(['test_sent_at' => now()]);
 
