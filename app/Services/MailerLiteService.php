@@ -32,7 +32,7 @@ class MailerLiteService
             ->get("{$this->baseUrl}/groups", ['limit' => 100, 'sort' => 'name']);
 
         if ($response->failed()) {
-            throw new RuntimeException('MailerLite API error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown'));
+            throw new RuntimeException('MailerLite API error (' . $response->status() . '): ' . $response->body());
         }
 
         return $response->json('data') ?? [];
@@ -71,10 +71,16 @@ class MailerLiteService
             ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('MailerLite create campaign error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown'));
+            throw new RuntimeException('MailerLite create campaign error (' . $response->status() . '): ' . ($response->body()));
         }
 
-        return $response->json('data') ?? [];
+        $data = $response->json('data');
+
+        if (empty($data['id'])) {
+            throw new RuntimeException('MailerLite create campaign returned no ID. Response: ' . $response->body());
+        }
+
+        return $data;
     }
 
     /**
@@ -93,7 +99,7 @@ class MailerLiteService
             ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('MailerLite schedule error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown'));
+            throw new RuntimeException('MailerLite schedule error (' . $response->status() . '): ' . $response->body());
         }
     }
 
@@ -106,7 +112,7 @@ class MailerLiteService
             ->post("{$this->baseUrl}/campaigns/{$campaignId}/actions/send");
 
         if ($response->failed()) {
-            throw new RuntimeException('MailerLite send error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown'));
+            throw new RuntimeException('MailerLite send error (' . $response->status() . '): ' . $response->body());
         }
     }
 
@@ -122,7 +128,7 @@ class MailerLiteService
             ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('MailerLite test send error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown'));
+            throw new RuntimeException('MailerLite test send error (' . $response->status() . '): ' . $response->body());
         }
     }
 
