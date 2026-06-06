@@ -463,7 +463,7 @@
                                 'type'       => 'bio',
                                 'approveUrl' => route('admin.approvals.bio.approve', $user),
                                 'rejectUrl'  => route('admin.approvals.bio.reject', $user),
-                                'preview'    => '<div class="text-xs text-gray-600 italic line-clamp-3">'.e(strip_tags($pendingBioContent)).'</div>',
+                                'preview'    => '<div class="text-xs text-gray-600 italic w-full">'.e(strip_tags($pendingBioContent)).'</div>',
                                 'label'      => 'Pending bio waiting for approval:',
                             ])
                         @endif
