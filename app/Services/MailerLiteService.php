@@ -55,18 +55,24 @@ class MailerLiteService
         string $fromName,
         string $fromEmail,
         string $html,
-        array  $groupIds
+        array  $groupIds,
+        string $replyTo = ''
     ): array {
+        $email = [
+            'subject'   => $subject,
+            'from_name' => $fromName,
+            'from'      => $fromEmail,
+            'content'   => $html,
+        ];
+        if ($replyTo !== '') {
+            $email['reply_to'] = $replyTo;
+        }
+
         $response = Http::withToken($this->apiKey)
             ->post("{$this->baseUrl}/campaigns", [
                 'name'   => $name,
                 'type'   => 'regular',
-                'emails' => [[
-                    'subject'   => $subject,
-                    'from_name' => $fromName,
-                    'from'      => $fromEmail,
-                    'content'   => $html,
-                ]],
+                'emails' => [$email],
                 'groups' => $groupIds,
             ]);
 

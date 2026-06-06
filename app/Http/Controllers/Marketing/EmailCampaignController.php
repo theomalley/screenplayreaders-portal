@@ -292,6 +292,7 @@ class EmailCampaignController extends Controller
                 subject:   $emailCampaign->subject_line,
                 fromName:  'Screenplay Readers',
                 fromEmail: 'hello@screenplayreaders.com',
+                replyTo:   'support@screenplayreaders.com',
                 html:      $html,
                 groupIds:  [$emailCampaign->mailerlite_group_id],
             );
