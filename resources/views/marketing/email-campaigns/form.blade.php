@@ -146,6 +146,53 @@
                         this.htmlSource = html;
                         this.previewHtml = html;
                         this.previewLoading = false;
+                    },
+
+                    // --- Template library ---
+                    templates: @js($emailTemplates),
+                    showSaveModal: false,
+                    templateName: '',
+                    showLoadDropdown: false,
+
+                    async saveAsTemplate() {
+                        if (!this.templateName.trim() || !this.htmlSource) return;
+                        const r = await fetch('{{ route('marketing.email-templates.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ name: this.templateName, html: this.htmlSource })
+                        });
+                        if (r.ok) {
+                            const j = await r.json();
+                            this.templates.unshift(j);
+                            this.showSaveModal = false;
+                            this.templateName = '';
+                        }
+                    },
+
+                    async loadTemplate(id) {
+                        const tpl = this.templates.find(t => t.id === id);
+                        if (!tpl) return;
+                        if (this.htmlSource && !confirm('Replace current HTML with "' + tpl.name + '"?')) return;
+                        const r = await fetch(`/marketing/email-templates/${id}`, {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        const j = await r.json();
+                        this.htmlSource = j.html;
+                        this.previewHtml = j.html;
+                        this.showLoadDropdown = false;
+                    },
+
+                    async deleteTemplate(id, name) {
+                        if (!confirm('Delete template "' + name + '"?')) return;
+                        const r = await fetch(`/marketing/email-templates/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                        });
+                        if (r.ok) this.templates = this.templates.filter(t => t.id !== id);
                     }
                   }"
                   x-init="refreshPreview()">
@@ -494,18 +541,56 @@
                         <div x-show="activeTab === 'html'" x-cloak class="space-y-4">
 
                             {{-- Toolbar --}}
-                            <div class="flex items-center gap-3 flex-wrap">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <button type="button" @click="generateFromFields()"
                                         :disabled="previewLoading"
                                         class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
                                     <span x-show="!previewLoading">Generate from fields</span>
                                     <span x-show="previewLoading" x-cloak>Generating…</span>
                                 </button>
-                                <button type="button" @click="htmlSource = ''; refreshPreview()"
+
+                                {{-- Load Template dropdown --}}
+                                <div class="relative">
+                                    <button type="button" @click="showLoadDropdown = !showLoadDropdown"
+                                            class="px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-600 hover:bg-gray-50 flex items-center gap-1.5">
+                                        Load Template
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <div x-show="showLoadDropdown" x-cloak
+                                         @click.outside="showLoadDropdown = false"
+                                         class="absolute z-30 mt-1 left-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg">
+                                        <template x-if="templates.length === 0">
+                                            <p class="px-3 py-3 text-xs text-gray-400">No templates saved yet.</p>
+                                        </template>
+                                        <template x-for="tpl in templates" :key="tpl.id">
+                                            <div class="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                                                <button type="button"
+                                                        @click="loadTemplate(tpl.id)"
+                                                        class="flex-1 text-left text-sm text-gray-700 truncate"
+                                                        x-text="tpl.name"></button>
+                                                <button type="button"
+                                                        @click.stop="deleteTemplate(tpl.id, tpl.name)"
+                                                        class="shrink-0 text-xs text-red-400 hover:text-red-600 leading-none">&times;</button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                {{-- Save as Template --}}
+                                <button type="button" @click="showSaveModal = true"
                                         x-show="htmlSource" x-cloak
                                         class="px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-600 hover:bg-gray-50">
-                                    Clear custom HTML
+                                    Save as Template
                                 </button>
+
+                                <button type="button" @click="htmlSource = ''; refreshPreview()"
+                                        x-show="htmlSource" x-cloak
+                                        class="px-3 py-1.5 text-sm border border-red-200 rounded text-red-400 hover:bg-red-50">
+                                    Clear
+                                </button>
+
                                 <span class="ml-auto text-xs text-gray-400"
                                       x-text="htmlSource ? htmlSource.length.toLocaleString() + ' chars' : ''"></span>
                             </div>
@@ -593,6 +678,33 @@
                     </div>{{-- /right column --}}
 
                 </div>{{-- /flex columns --}}
+
+                {{-- Save as Template modal --}}
+                <div x-show="showSaveModal" x-cloak
+                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                     @keydown.escape.window="showSaveModal = false">
+                    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4" @click.stop>
+                        <h3 class="text-sm font-semibold text-gray-800 mb-3">Save as Template</h3>
+                        <input type="text"
+                               x-model="templateName"
+                               placeholder="Template name…"
+                               @keydown.enter="saveAsTemplate()"
+                               x-effect="if (showSaveModal) $nextTick(() => $el.focus())"
+                               class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 mb-4">
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="showSaveModal = false"
+                                    class="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="button" @click="saveAsTemplate()"
+                                    :disabled="!templateName.trim()"
+                                    class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
+                                Save Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </form>
 
         </div>

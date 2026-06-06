@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Marketing;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmailCampaign;
+use App\Models\EmailTemplate;
 use App\Services\MailerLiteService;
 use App\Services\WooCommerceService;
 use Illuminate\Http\Request;
@@ -48,9 +49,10 @@ class EmailCampaignController extends Controller
         $campaign         = new EmailCampaign();
         $mailerliteGroups = $this->fetchGroups();
         $wooProducts      = $this->fetchProducts();
+        $emailTemplates   = EmailTemplate::orderByDesc('updated_at')->get(['id', 'name'])->toArray();
         $initialHtml      = '';
 
-        return view('marketing.email-campaigns.form', compact('campaign', 'mailerliteGroups', 'wooProducts', 'initialHtml'));
+        return view('marketing.email-campaigns.form', compact('campaign', 'mailerliteGroups', 'wooProducts', 'emailTemplates', 'initialHtml'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -77,12 +79,14 @@ class EmailCampaignController extends Controller
 
         $mailerliteGroups = $this->fetchGroups();
         $wooProducts      = $this->fetchProducts();
+        $emailTemplates   = EmailTemplate::orderByDesc('updated_at')->get(['id', 'name'])->toArray();
         $initialHtml      = $this->renderHtml($emailCampaign, preview: true);
 
         return view('marketing.email-campaigns.form', [
             'campaign'         => $emailCampaign,
             'mailerliteGroups' => $mailerliteGroups,
             'wooProducts'      => $wooProducts,
+            'emailTemplates'   => $emailTemplates,
             'initialHtml'      => $initialHtml,
         ]);
     }

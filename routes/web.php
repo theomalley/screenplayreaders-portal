@@ -35,6 +35,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\WooOrderController;
 use App\Http\Controllers\Marketing\EmailCampaignController;
+use App\Http\Controllers\Marketing\EmailTemplateController;
 use Illuminate\Support\Facades\Route;
 
 // Public followup form — no auth required
@@ -289,6 +290,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- Marketing (admin only) ---
     Route::prefix('marketing')->name('marketing.')->group(function () {
+        // Email Templates
+        Route::get('/email-templates',                          [EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::post('/email-templates',                         [EmailTemplateController::class, 'store'])->name('email-templates.store');
+        Route::get('/email-templates/{emailTemplate}',          [EmailTemplateController::class, 'show'])->name('email-templates.show');
+        Route::patch('/email-templates/{emailTemplate}',        [EmailTemplateController::class, 'update'])->name('email-templates.update');
+        Route::delete('/email-templates/{emailTemplate}',       [EmailTemplateController::class, 'destroy'])->name('email-templates.destroy');
+
         // Static endpoints must come before {emailCampaign} to avoid route conflicts
         Route::post('/email-campaigns/preview',      [EmailCampaignController::class, 'preview'])->name('email-campaigns.preview');
         Route::post('/email-campaigns/upload-image', [EmailCampaignController::class, 'uploadImage'])->name('email-campaigns.upload-image');
