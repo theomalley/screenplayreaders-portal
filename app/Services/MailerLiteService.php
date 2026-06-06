@@ -138,7 +138,7 @@ class MailerLiteService
     public function sendTest(string $campaignId, string $email): void
     {
         $response = Http::withToken($this->apiKey)
-            ->post("{$this->baseUrl}/campaigns/{$campaignId}/actions/test", [
+            ->post("{$this->baseUrl}/campaigns/{$campaignId}/actions/send-test", [
                 'emails' => [$email],
             ]);
 
