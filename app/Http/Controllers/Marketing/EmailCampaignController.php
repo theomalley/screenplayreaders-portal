@@ -249,6 +249,12 @@ class EmailCampaignController extends Controller
             return back()->with('error', 'MailerLite API key is not configured.');
         }
 
+        // Accept group passed from the unsaved form; persist it so ML campaign creation can use it
+        if ($request->filled('mailerlite_group_id')) {
+            $emailCampaign->update(['mailerlite_group_id' => $request->input('mailerlite_group_id')]);
+            $emailCampaign->refresh();
+        }
+
         if (!$emailCampaign->mailerlite_group_id) {
             return back()->with('error', 'Please select a MailerLite subscriber group before sending.');
         }

@@ -36,9 +36,11 @@
                     @if($campaign->status !== 'sent')
                         <form action="{{ route('marketing.email-campaigns.send-live', $campaign) }}" method="POST">
                             @csrf
+                            <input type="hidden" name="mailerlite_group_id" id="send-live-group-id"
+                                   value="{{ $campaign->mailerlite_group_id }}">
                             <button type="submit"
                                     class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                                    onclick="return confirm('{{ $campaign->scheduled_at && $campaign->scheduled_at->isFuture() ? 'Schedule this campaign in MailerLite?' : 'Send this campaign to subscribers NOW?' }}')">
+                                    onclick="document.getElementById('send-live-group-id').value = (document.getElementById('mailerlite_group_id')?.value ?? ''); return confirm('{{ $campaign->scheduled_at && $campaign->scheduled_at->isFuture() ? 'Schedule this campaign in MailerLite?' : 'Send this campaign to subscribers NOW?' }}')">
                                 {{ $campaign->scheduled_at && $campaign->scheduled_at->isFuture() ? 'Schedule in MailerLite' : 'Send Live Now' }}
                             </button>
                         </form>
