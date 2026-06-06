@@ -84,6 +84,21 @@ class MailerLiteService
     }
 
     /**
+     * Fetch a single campaign — used to verify status and missing_data after creation.
+     */
+    public function getCampaign(string $campaignId): array
+    {
+        $response = Http::withToken($this->apiKey)
+            ->get("{$this->baseUrl}/campaigns/{$campaignId}");
+
+        if ($response->failed()) {
+            throw new RuntimeException('MailerLite get campaign error (' . $response->status() . '): ' . $response->body());
+        }
+
+        return $response->json('data') ?? [];
+    }
+
+    /**
      * Schedule a campaign for a future send time.
      * $scheduledAt: UTC datetime string "2026-01-15 09:00:00"
      */
