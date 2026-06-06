@@ -222,6 +222,10 @@ class EmailCampaignController extends Controller
             return back()->with('error', 'MailerLite API key is not configured.');
         }
 
+        if (!$emailCampaign->mailerlite_group_id) {
+            return back()->with('error', 'Please select a MailerLite subscriber group before sending a test — MailerLite requires at least one group on the campaign.');
+        }
+
         try {
             // Delete the old test campaign in ML if one exists
             if ($emailCampaign->mailerlite_campaign_id) {
@@ -229,14 +233,13 @@ class EmailCampaignController extends Controller
             }
 
             $html       = $this->renderHtml($emailCampaign, preview: false);
-            $groupIds   = $emailCampaign->mailerlite_group_id ? [$emailCampaign->mailerlite_group_id] : [];
             $mlCampaign = $this->mailerlite->createCampaign(
                 name:      '[TEST] ' . $emailCampaign->campaign_name,
                 subject:   $emailCampaign->subject_line ?: '(no subject)',
                 fromName:  'Screenplay Readers',
                 fromEmail: 'hello@screenplayreaders.com',
                 html:      $html,
-                groupIds:  $groupIds,
+                groupIds:  [$emailCampaign->mailerlite_group_id],
             );
 
             $mlId = $mlCampaign['id'];
