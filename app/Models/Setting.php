@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-06-07 | Add PAY_PERIOD_DEFAULTS and getPayPeriod() for explicit period start/end configuration
 // v1.5 — 2026-06-03 | Add WORD_COUNT_DEFAULTS and getWordCounts() for admin-configurable coverage word count minimums
 // v1.4 — 2026-06-02 | Add PAYOUT_SCHEDULE_DEFAULTS and getPayoutSchedule() for admin-configurable payout schedule
 // v1.3 — 2026-05-30 | Add EMAIL_NOTIFICATION_DEFAULTS and getEmailNotificationTexts()
@@ -168,6 +169,18 @@ class Setting extends Model
     ];
 
     /**
+     * Pay period window defaults. start = when a new period opens; end = when it closes.
+     * Default: opens Saturday 8:00 AM, closes Saturday 7:00 AM (one hour before next opening).
+     * day values: 0=Sun … 6=Sat. time: HH:MM (America/Los_Angeles).
+     */
+    public const PAY_PERIOD_DEFAULTS = [
+        'period_start_day'  => '6',
+        'period_start_time' => '08:00',
+        'period_end_day'    => '6',
+        'period_end_time'   => '07:00',
+    ];
+
+    /**
      * Returns the full payout schedule config, merging stored values with defaults.
      * Also returns override date and biweekly anchor (both nullable).
      */
@@ -185,6 +198,23 @@ class Setting extends Model
             'time'      => $stored['payout_time']      ?? self::PAYOUT_SCHEDULE_DEFAULTS['payout_time'],
             'override'  => ($stored['payout_next_override']  ?? '') ?: null,
             'anchor'    => ($stored['payout_biweekly_anchor'] ?? '') ?: null,
+        ];
+    }
+
+    /**
+     * Returns the pay period window config (start day/time, end day/time).
+     * Merges stored DB values with PAY_PERIOD_DEFAULTS.
+     */
+    public static function getPayPeriod(): array
+    {
+        $keys   = array_keys(self::PAY_PERIOD_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        return [
+            'start_day'  => (int) ($stored['period_start_day']  ?? self::PAY_PERIOD_DEFAULTS['period_start_day']),
+            'start_time' => $stored['period_start_time'] ?? self::PAY_PERIOD_DEFAULTS['period_start_time'],
+            'end_day'    => (int) ($stored['period_end_day']    ?? self::PAY_PERIOD_DEFAULTS['period_end_day']),
+            'end_time'   => $stored['period_end_time']   ?? self::PAY_PERIOD_DEFAULTS['period_end_time'],
         ];
     }
 

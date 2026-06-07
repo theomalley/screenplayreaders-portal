@@ -116,6 +116,48 @@
             </div>
             @endif
 
+            {{-- Pay Period --}}
+            @if($isAdmin)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Pay Period</h3>
+                <p class="text-xs text-gray-500 mb-4">Defines when each pay period opens and closes. Used to group reader earnings and payout calculations. All times are in the app timezone ({{ $appTimezone }}).</p>
+                <form method="POST" action="{{ route('settings.pay-period') }}">
+                    @csrf
+                    @method('PATCH')
+                    @php
+                        $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    @endphp
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="w-12 text-xs font-medium text-gray-500 shrink-0">Start</span>
+                            <select name="period_start_day"
+                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                @foreach($dayNames as $i => $name)
+                                    <option value="{{ $i }}" @selected($payPeriod['start_day'] === $i)>{{ $name }}</option>
+                                @endforeach
+                            </select>
+                            <input type="time" name="period_start_time" value="{{ $payPeriod['start_time'] }}" step="60"
+                                   class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-12 text-xs font-medium text-gray-500 shrink-0">End</span>
+                            <select name="period_end_day"
+                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                @foreach($dayNames as $i => $name)
+                                    <option value="{{ $i }}" @selected($payPeriod['end_day'] === $i)>{{ $name }}</option>
+                                @endforeach
+                            </select>
+                            <input type="time" name="period_end_time" value="{{ $payPeriod['end_time'] }}" step="60"
+                                   class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <x-primary-button type="submit">Save</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
             {{-- Assignment Age Colour Thresholds (admin only) --}}
             @if($isAdmin)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

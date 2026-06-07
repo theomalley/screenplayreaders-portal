@@ -1,5 +1,6 @@
 <?php
 
+// v2.10 — 2026-06-07 | Pay period start/end day+time — admin-configurable via settings.
 // v2.9 — 2026-06-03 | Word count minimums — per-field admin settings + global enable/disable.
 // v2.8 — 2026-05-31 | Followup form HTML — before/after injection via settings.
 // v2.7 — 2026-05-30 | Email notification text settings (headers + body messages per notification type).
@@ -73,6 +74,7 @@ class SettingController extends Controller
         $followupAfterHtml    = Setting::getValue('followup_after_html', '');
         $followupHeading      = Setting::getValue('followup_heading', '');
         $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
+        $payPeriod            = $isAdmin ? Setting::getPayPeriod()  : null;
 
         $adminProfile       = auth()->user()->editorProfile;
         $adminPortalPhotoUrl = $adminProfile?->photo      ? asset('storage/' . $adminProfile->photo)       : null;
@@ -86,7 +88,7 @@ class SettingController extends Controller
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading',
-            'wordCounts', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
+            'wordCounts', 'payPeriod', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
     }
 
@@ -405,6 +407,36 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'About page photo updated.');
+    }
+
+    public function updatePayPeriod(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $validDays = implode(',', range(0, 6));
+
+        $request->validate([
+            'period_start_day'  => ['required', "in:{$validDays}"],
+            'period_start_time' => ['required', 'regex:/^\d{2}:\d{2}$/'],
+            'period_end_day'    => ['required', "in:{$validDays}"],
+            'period_end_time'   => ['required', 'regex:/^\d{2}:\d{2}$/'],
+        ]);
+
+        foreach (['period_start_time', 'period_end_time'] as $field) {
+            [$hh, $mm] = explode(':', $request->input($field));
+            abort_if((int) $hh > 23 || (int) $mm > 59, 422, 'Invalid time value.');
+        }
+
+        Setting::setValue('period_start_day',  $request->input('period_start_day'));
+        Setting::setValue('period_start_time', $request->input('period_start_time'));
+        Setting::setValue('period_end_day',    $request->input('period_end_day'));
+        Setting::setValue('period_end_time',   $request->input('period_end_time'));
+
+        // Keep payout_day/payout_time in sync so any legacy references stay accurate.
+        Setting::setValue('payout_day',  $request->input('period_start_day'));
+        Setting::setValue('payout_time', $request->input('period_start_time'));
+
+        return back()->with('success', 'Pay period updated.');
     }
 
     public function resetAllLastSeen(): RedirectResponse

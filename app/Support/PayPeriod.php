@@ -1,9 +1,8 @@
 <?php
 
-// Pay periods run on the configured payout day/time (default: Saturday 8:00 AM America/Los_Angeles).
-// The period end is 1 hour before the next period start so same-morning completions
-// roll into the next cycle rather than the one about to close.
-// Schedule is admin-configurable via Settings (payout_day, payout_time, payout_frequency).
+// Pay periods run on the configured start day/time (default: Saturday 8:00 AM America/Los_Angeles).
+// Start and end are independently configurable via Settings (period_start_day/time, period_end_day/time).
+// Default end: Saturday 7:00 AM — one hour before next period opens.
 
 namespace App\Support;
 
@@ -21,9 +20,13 @@ class PayPeriod
     private static function config(): array
     {
         try {
-            return Setting::getPayoutSchedule();
+            return array_merge(Setting::getPayoutSchedule(), Setting::getPayPeriod());
         } catch (\Throwable $e) {
-            return ['frequency' => 'weekly', 'day' => 6, 'time' => '08:00', 'override' => null, 'anchor' => null];
+            return [
+                'frequency'  => 'weekly', 'day' => 6, 'time' => '08:00', 'override' => null, 'anchor' => null,
+                'start_day'  => 6, 'start_time' => '08:00',
+                'end_day'    => 6, 'end_time'   => '07:00',
+            ];
         }
     }
 
@@ -34,8 +37,8 @@ class PayPeriod
     public static function start(Carbon $dt): Carbon
     {
         $cfg = self::config();
-        [$h, $m] = array_map('intval', explode(':', $cfg['time']));
-        $day = $cfg['day']; // 0=Sun … 6=Sat
+        [$h, $m] = array_map('intval', explode(':', $cfg['start_time']));
+        $day = $cfg['start_day']; // 0=Sun … 6=Sat
 
         $la = $dt->copy()->setTimezone(self::TZ);
 
@@ -68,7 +71,21 @@ class PayPeriod
     {
         $cfg   = self::config();
         $weeks = $cfg['frequency'] === 'biweekly' ? 2 : 1;
-        return $periodStart->copy()->addWeeks($weeks)->subHour();
+        [$endH, $endM] = array_map('intval', explode(':', $cfg['end_time']));
+        $endDay = $cfg['end_day'];
+
+        // The next period's start defines the cycle length; work backward to end_day at end_time.
+        $nextStart = $periodStart->copy()->setTimezone(self::TZ)->addWeeks($weeks);
+        $daysBack  = ($nextStart->dayOfWeek - $endDay + 7) % 7;
+        $candidate = $nextStart->copy()->subDays($daysBack)->setTime($endH, $endM, 0);
+
+        // If end_day == next-start day and end_time >= start_time, the candidate would land
+        // on or after nextStart — push it back one week so it stays within the current period.
+        if ($candidate->gte($nextStart)) {
+            $candidate->subWeek();
+        }
+
+        return $candidate;
     }
 
     /**
@@ -95,7 +112,7 @@ class PayPeriod
     public static function nextPayoutDate(): Carbon
     {
         $cfg = self::config();
-        [$h, $m] = array_map('intval', explode(':', $cfg['time']));
+        [$h, $m] = array_map('intval', explode(':', $cfg['start_time']));
 
         // Return the override if it's set and hasn't passed yet
         if ($cfg['override']) {
