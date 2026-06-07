@@ -35,22 +35,21 @@
                     {{-- Schedule in MailerLite --}}
                     @if($campaign->status !== 'sent')
                         @php $canSchedule = $campaign->scheduled_at && $campaign->scheduled_at->isFuture(); @endphp
-                        <form id="schedule-live-form" action="{{ route('marketing.email-campaigns.send-live', $campaign) }}" method="POST">
-                            @csrf
-                            @if($canSchedule)
-                                <button type="button"
-                                        class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                                        onclick="submitScheduleForm('{{ $campaign->scheduled_at->format('M j, Y g:i A') }}')">
-                                    Schedule in MailerLite
-                                </button>
-                            @else
-                                <button type="button" disabled
-                                        title="Set a future Scheduled Send date and save first"
-                                        class="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed">
-                                    Schedule in MailerLite
-                                </button>
-                            @endif
-                        </form>
+                        @if($canSchedule)
+                            <button type="submit"
+                                    form="campaign-form"
+                                    formaction="{{ route('marketing.email-campaigns.send-live', $campaign) }}"
+                                    class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                                    onclick="return confirm('Save and schedule in MailerLite for {{ $campaign->scheduled_at->format('M j, Y g:i A') }}?')">
+                                Schedule in MailerLite
+                            </button>
+                        @else
+                            <button type="button" disabled
+                                    title="Set a future Scheduled Send date and save first"
+                                    class="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed">
+                                Schedule in MailerLite
+                            </button>
+                        @endif
                     @endif
                 </div>
             @endif
@@ -809,29 +808,5 @@
         </div>
     </div>
 
-    <script>
-    function submitScheduleForm(scheduledLabel) {
-        if (!confirm('Schedule in MailerLite for ' + scheduledLabel + '?')) return;
-
-        const mainForm  = document.getElementById('campaign-form');
-        const schedForm = document.getElementById('schedule-live-form');
-
-        // Copy every current field value from the main form into the schedule form
-        // so sendLive saves them before scheduling — even if the user forgot to hit Save.
-        const seen = new Set();
-        Array.from(new FormData(mainForm).entries()).forEach(([key, value]) => {
-            if (key === '_token' || key === '_method') return;
-            if (seen.has(key)) return; // take first occurrence only
-            seen.add(key);
-            const input = document.createElement('input');
-            input.type  = 'hidden';
-            input.name  = key;
-            input.value = value;
-            schedForm.appendChild(input);
-        });
-
-        schedForm.submit();
-    }
-    </script>
 
 </x-app-layout>
