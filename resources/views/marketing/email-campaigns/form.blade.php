@@ -198,9 +198,30 @@
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
                         });
                         if (r.ok) this.templates = this.templates.filter(t => t.id !== id);
+                    },
+
+                    _debounceTimer: null,
+                    debouncedRefresh() {
+                        if (this.htmlSource) return; // custom HTML active — fields don't drive preview
+                        clearTimeout(this._debounceTimer);
+                        this._debounceTimer = setTimeout(() => this.refreshPreview(), 700);
+                    },
+                    setupWatches() {
+                        // Auto-refresh when image URL changes (only in base template mode)
+                        this.$watch('imageUrl', () => { if (!this.htmlSource) this.debouncedRefresh(); });
+                        // Live-update preview when editing custom HTML (no server round-trip needed)
+                        // Also refresh from fields when custom HTML is cleared
+                        this.$watch('htmlSource', (val) => {
+                            clearTimeout(this._debounceTimer);
+                            if (val) {
+                                this._debounceTimer = setTimeout(() => { this.previewHtml = val; }, 400);
+                            } else {
+                                this._debounceTimer = setTimeout(() => this.refreshPreview(), 400);
+                            }
+                        });
                     }
                   }"
-                  x-init="refreshPreview()">
+                  x-init="if (!previewHtml) refreshPreview(); setupWatches()">
                 @csrf
                 @if($isEdit) @method('PATCH') @endif
 
@@ -219,18 +240,25 @@
                             <button type="button" @click="activeTab='html'"
                                     :class="activeTab==='html' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                                     class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-2">
-                                HTML Source
+                                Custom HTML
                                 <span x-show="htmlSource" x-cloak
-                                      class="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-normal">custom</span>
+                                      class="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-normal">active</span>
                             </button>
                         </div>
 
                         {{-- Custom HTML active warning (shown when on Fields tab but custom HTML is set) --}}
                         <div x-show="activeTab === 'fields' && htmlSource" x-cloak
-                             class="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700 flex items-center justify-between gap-3">
-                            <span>Custom HTML is active — field edits won't affect the email unless you clear or regenerate the HTML.</span>
-                            <button type="button" @click="activeTab='html'"
-                                    class="shrink-0 text-xs text-amber-700 underline hover:text-amber-900">Edit HTML</button>
+                             class="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                            <div class="flex items-start justify-between gap-3">
+                                <span><strong>Custom HTML is active.</strong> Your custom HTML is the email — field edits are saved but won't change the email content or preview.</span>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button type="button" @click="activeTab='html'"
+                                            class="text-xs text-amber-700 underline hover:text-amber-900 whitespace-nowrap">Edit HTML</button>
+                                    <span class="text-amber-300">|</span>
+                                    <button type="button" @click="htmlSource = ''"
+                                            class="text-xs text-amber-700 underline hover:text-amber-900 whitespace-nowrap">Revert to base template</button>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- FIELDS view --}}
@@ -280,6 +308,7 @@
                                 <input type="text" id="preheader" name="preheader"
                                        value="{{ old('preheader', $campaign->preheader) }}"
                                        maxlength="500"
+                                       @input="debouncedRefresh()"
                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
                             <div>
@@ -311,17 +340,20 @@
                                 <x-input-label for="headline_top" value="Headline" />
                                 <input type="text" id="headline_top" name="headline_top"
                                        value="{{ old('headline_top', $campaign->headline_top) }}"
+                                       @input="debouncedRefresh()"
                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
                             <div>
                                 <x-input-label for="paragraph_top1" value="Paragraph 1" />
                                 <p class="text-xs text-gray-400 mt-0.5 mb-1">HTML supported. After "Hi [name] -"</p>
                                 <textarea id="paragraph_top1" name="paragraph_top1" rows="4"
+                                          @input="debouncedRefresh()"
                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('paragraph_top1', $campaign->paragraph_top1) }}</textarea>
                             </div>
                             <div>
                                 <x-input-label for="paragraph_top2" value="Paragraph 2" />
                                 <textarea id="paragraph_top2" name="paragraph_top2" rows="3"
+                                          @input="debouncedRefresh()"
                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('paragraph_top2', $campaign->paragraph_top2) }}</textarea>
                             </div>
                             <div>
@@ -329,6 +361,7 @@
                                 <input type="url" id="url1" name="url1"
                                        value="{{ old('url1', $campaign->url1) }}"
                                        placeholder="https://screenplayreaders.com/..."
+                                       @input="debouncedRefresh()"
                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
                         </div>
@@ -372,6 +405,7 @@
                                     <div class="mt-1 flex gap-2">
                                         <input type="text" id="coupon_code" name="coupon_code"
                                                x-model="couponCode"
+                                               @input="debouncedRefresh()"
                                                placeholder="e.g. SR-SUMMER25"
                                                class="flex-1 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 uppercase">
                                         <button type="button" @click="generateCode()"
@@ -510,11 +544,13 @@
                                 <x-input-label for="headline_bottom" value="Headline" />
                                 <input type="text" id="headline_bottom" name="headline_bottom"
                                        value="{{ old('headline_bottom', $campaign->headline_bottom) }}"
+                                       @input="debouncedRefresh()"
                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
                             <div>
                                 <x-input-label for="paragraph_bottom" value="Paragraph" />
                                 <textarea id="paragraph_bottom" name="paragraph_bottom" rows="4"
+                                          @input="debouncedRefresh()"
                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('paragraph_bottom', $campaign->paragraph_bottom) }}</textarea>
                             </div>
                         </div>
@@ -546,13 +582,16 @@
                         <div x-show="activeTab === 'html'" x-cloak class="space-y-4">
 
                             {{-- Toolbar --}}
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <button type="button" @click="generateFromFields()"
-                                        :disabled="previewLoading"
-                                        class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
-                                    <span x-show="!previewLoading">Generate from fields</span>
-                                    <span x-show="previewLoading" x-cloak>Generating…</span>
-                                </button>
+                            <div class="flex items-start gap-3 flex-wrap">
+                                <div>
+                                    <button type="button" @click="generateFromFields()"
+                                            :disabled="previewLoading"
+                                            class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
+                                        <span x-show="!previewLoading">Generate editable copy</span>
+                                        <span x-show="previewLoading" x-cloak>Generating…</span>
+                                    </button>
+                                    <p class="text-xs text-gray-400 mt-1">Bakes current field values into a copy of the base template.</p>
+                                </div>
 
                                 {{-- Load Template dropdown --}}
                                 <div class="relative">
@@ -590,10 +629,10 @@
                                     Save as Template
                                 </button>
 
-                                <button type="button" @click="htmlSource = ''; refreshPreview()"
+                                <button type="button" @click="htmlSource = ''"
                                         x-show="htmlSource" x-cloak
                                         class="px-3 py-1.5 text-sm border border-red-200 rounded text-red-400 hover:bg-red-50">
-                                    Clear
+                                    Revert to base template
                                 </button>
 
                                 <span class="ml-auto text-xs text-gray-400"
@@ -602,8 +641,9 @@
 
                             {{-- Empty state --}}
                             <div x-show="!htmlSource"
-                                 class="px-3 py-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500">
-                                No custom HTML yet. Click "Generate from fields" to create an editable copy of the template, or paste HTML directly below.
+                                 class="px-4 py-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800 space-y-1.5">
+                                <p><strong>Base template mode.</strong> The email renders your field values using the built-in Screenplay Readers template. The template itself is managed in code — it can't be edited here.</p>
+                                <p>Click <strong>Generate editable copy</strong> above to create a customizable HTML version. Your field values get baked in, and you can then edit the HTML freely. Changes preview instantly.</p>
                             </div>
 
                             {{-- Code editor --}}
@@ -659,6 +699,9 @@
                                 <button type="button" @click="previewView='mobile'"
                                         :class="previewView==='mobile' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 border border-gray-300'"
                                         class="px-2 py-1 text-xs rounded transition-colors">Mobile</button>
+                                <span class="text-xs italic"
+                                      :class="htmlSource ? 'text-amber-500' : 'text-green-600'"
+                                      x-text="htmlSource ? 'Custom HTML' : 'Base template · auto-updates'"></span>
                                 <button type="button" @click="refreshPreview()"
                                         :disabled="previewLoading"
                                         class="ml-auto px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
