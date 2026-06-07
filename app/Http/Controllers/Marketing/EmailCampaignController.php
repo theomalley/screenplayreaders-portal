@@ -31,6 +31,12 @@ class EmailCampaignController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
+        // Auto-promote queued campaigns whose scheduled time has passed to 'sent'
+        EmailCampaign::where('status', 'queued')
+            ->whereNotNull('scheduled_at')
+            ->where('scheduled_at', '<=', now())
+            ->update(['status' => 'sent', 'live_sent_at' => \DB::raw('scheduled_at')]);
+
         $queued = EmailCampaign::queued()->get();
         $drafts = EmailCampaign::drafts()->get();
         $sent   = EmailCampaign::sent()->get();
