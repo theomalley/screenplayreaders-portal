@@ -146,6 +146,26 @@ class WooCommerceService
      * $productIds:  array of product IDs to restrict the coupon to (empty = sitewide)
      * $expiryDate:  'YYYY-MM-DD' or null for no expiry
      */
+    /**
+     * Fetch a single coupon by WooCommerce coupon ID.
+     * Throws ModelNotFoundException on 404.
+     */
+    public function getCoupon(int $id): array
+    {
+        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
+            ->get($this->baseUrl . "/wp-json/wc/v3/coupons/{$id}");
+
+        if ($response->status() === 404) {
+            throw new ModelNotFoundException("Coupon {$id} not found.");
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException('WooCommerce API error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown error'));
+        }
+
+        return $response->json();
+    }
+
     public function createCoupon(
         string  $code,
         string  $type,

@@ -288,24 +288,39 @@ if (!$this->mailerlite->isConfigured()) {
         }
 
         try {
-            // Create WooCommerce coupon if not already done
-            if (!$emailCampaign->woo_coupon_id && $emailCampaign->coupon_code) {
-                $expiryDate = null;
-                if ($emailCampaign->coupon_duration_days) {
-                    $base       = $emailCampaign->scheduled_at;
-                    $expiryDate = $base->copy()->addDays((int) $emailCampaign->coupon_duration_days)->format('Y-m-d');
+            // Create WooCommerce coupon if needed
+            if ($emailCampaign->coupon_code) {
+                $needsCoupon = true;
+
+                if ($emailCampaign->woo_coupon_id) {
+                    try {
+                        $this->woocommerce->getCoupon((int) $emailCampaign->woo_coupon_id);
+                        $needsCoupon = false; // coupon still exists in WooCommerce
+                    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                        // Coupon was deleted from WooCommerce — clear the stored ID and recreate
+                        $emailCampaign->update(['woo_coupon_id' => null]);
+                        $emailCampaign->refresh();
+                    }
                 }
 
-                $coupon = $this->woocommerce->createCoupon(
-                    code:        $emailCampaign->coupon_code,
-                    type:        $emailCampaign->coupon_type ?? 'percent',
-                    amount:      (float) ($emailCampaign->coupon_amount ?? 0),
-                    productIds:  $emailCampaign->coupon_product_ids ?? [],
-                    expiryDate:  $expiryDate,
-                    description: $emailCampaign->campaign_name,
-                );
+                if ($needsCoupon) {
+                    $expiryDate = null;
+                    if ($emailCampaign->coupon_duration_days) {
+                        $base       = $emailCampaign->scheduled_at;
+                        $expiryDate = $base->copy()->addDays((int) $emailCampaign->coupon_duration_days)->format('Y-m-d');
+                    }
 
-                $emailCampaign->update(['woo_coupon_id' => $coupon['id']]);
+                    $coupon = $this->woocommerce->createCoupon(
+                        code:        $emailCampaign->coupon_code,
+                        type:        $emailCampaign->coupon_type ?? 'percent',
+                        amount:      (float) ($emailCampaign->coupon_amount ?? 0),
+                        productIds:  $emailCampaign->coupon_product_ids ?? [],
+                        expiryDate:  $expiryDate,
+                        description: $emailCampaign->campaign_name,
+                    );
+
+                    $emailCampaign->update(['woo_coupon_id' => $coupon['id']]);
+                }
             }
 
             // Delete previous ML draft if it exists
