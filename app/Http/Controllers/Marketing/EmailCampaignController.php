@@ -284,6 +284,15 @@ class EmailCampaignController extends Controller
             }
         }
 
+        \Log::info('sendLive', [
+            'campaign_id'   => $emailCampaign->id,
+            'coupon_code'   => $emailCampaign->coupon_code,
+            'woo_coupon_id' => $emailCampaign->woo_coupon_id,
+            'coupon_amount' => $emailCampaign->coupon_amount,
+            'coupon_type'   => $emailCampaign->coupon_type,
+            'request_had_campaign_name' => $request->filled('campaign_name'),
+        ]);
+
         try {
             // Create WooCommerce coupon if not already done
             if (!$emailCampaign->woo_coupon_id && $emailCampaign->coupon_code) {
