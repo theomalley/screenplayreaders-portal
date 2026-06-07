@@ -245,15 +245,7 @@ class EmailCampaignController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        \Log::error('sendLive entered', [
-            'campaign_id'            => $emailCampaign->id,
-            'request_had_campaign_name' => $request->filled('campaign_name'),
-            'request_coupon_code'    => $request->input('coupon_code'),
-            'db_coupon_code'         => $emailCampaign->coupon_code,
-            'db_woo_coupon_id'       => $emailCampaign->woo_coupon_id,
-        ]);
-
-        if (!$this->mailerlite->isConfigured()) {
+if (!$this->mailerlite->isConfigured()) {
             return back()->with('error', 'MailerLite API key is not configured.');
         }
 
