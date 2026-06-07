@@ -257,14 +257,17 @@ class EmailCampaignController extends Controller
             return back()->with('error', 'MailerLite API key is not configured.');
         }
 
-        // Save all campaign fields from the form before scheduling — the schedule button now
-        // submits the full main form, so unsaved edits (e.g. coupon fields) are always persisted.
-        if ($request->filled('campaign_name')) {
-            $emailCampaign->update($this->validated($request));
-            $emailCampaign->refresh();
-        } elseif ($request->filled('mailerlite_group_id')) {
-            // Legacy path: only group was submitted
-            $emailCampaign->update(['mailerlite_group_id' => $request->input('mailerlite_group_id')]);
+        // Persist fields submitted by the schedule form so the coupon creation below
+        // always uses the latest values even if the user forgot to save first.
+        $patch = array_filter([
+            'mailerlite_group_id'  => $request->input('mailerlite_group_id'),
+            'coupon_code'          => $request->input('coupon_code'),
+            'coupon_amount'        => $request->input('coupon_amount') !== null ? (float) $request->input('coupon_amount') : null,
+            'coupon_type'          => in_array($request->input('coupon_type'), ['percent', 'fixed_cart']) ? $request->input('coupon_type') : null,
+            'coupon_duration_days' => $request->input('coupon_duration_days') ? (int) $request->input('coupon_duration_days') : null,
+        ], fn($v) => $v !== null && $v !== '');
+        if ($patch) {
+            $emailCampaign->update($patch);
             $emailCampaign->refresh();
         }
 

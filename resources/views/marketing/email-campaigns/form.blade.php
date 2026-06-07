@@ -35,21 +35,27 @@
                     {{-- Schedule in MailerLite --}}
                     @if($campaign->status !== 'sent')
                         @php $canSchedule = $campaign->scheduled_at && $campaign->scheduled_at->isFuture(); @endphp
-                        @if($canSchedule)
-                            <button type="submit"
-                                    form="campaign-form"
-                                    formaction="{{ route('marketing.email-campaigns.send-live', $campaign) }}"
-                                    class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                                    onclick="if(!confirm('Save and schedule in MailerLite for {{ $campaign->scheduled_at->format('M j, Y g:i A') }}?'))return false;document.querySelector('#campaign-form input[name=_method]').value='';return true;">
-                                Schedule in MailerLite
-                            </button>
-                        @else
-                            <button type="button" disabled
-                                    title="Set a future Scheduled Send date and save first"
-                                    class="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed">
-                                Schedule in MailerLite
-                            </button>
-                        @endif
+                        <form action="{{ route('marketing.email-campaigns.send-live', $campaign) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="mailerlite_group_id" value="{{ $campaign->mailerlite_group_id }}">
+                            <input type="hidden" name="coupon_code"          value="{{ $campaign->coupon_code }}">
+                            <input type="hidden" name="coupon_amount"        value="{{ $campaign->coupon_amount }}">
+                            <input type="hidden" name="coupon_type"          value="{{ $campaign->coupon_type }}">
+                            <input type="hidden" name="coupon_duration_days" value="{{ $campaign->coupon_duration_days }}">
+                            @if($canSchedule)
+                                <button type="submit"
+                                        class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                                        onclick="return confirm('Schedule in MailerLite for {{ $campaign->scheduled_at->format('M j, Y g:i A') }}?')">
+                                    Schedule in MailerLite
+                                </button>
+                            @else
+                                <button type="button" disabled
+                                        title="Set a future Scheduled Send date and save first"
+                                        class="px-3 py-1.5 text-sm bg-gray-100 text-gray-400 rounded cursor-not-allowed">
+                                    Schedule in MailerLite
+                                </button>
+                            @endif
+                        </form>
                     @endif
                 </div>
             @endif
