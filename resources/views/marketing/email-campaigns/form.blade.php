@@ -128,14 +128,9 @@
                         const form = document.getElementById('campaign-form');
                         const data = new FormData(form);
                         data.delete('_method');
-                        // Always set image_url from Alpine state directly — the hidden input's x-model
-                        // binding may not have flushed yet (e.g. on initial page load via $nextTick).
+                        // Set image_url from Alpine state directly — the hidden input's x-model
+                        // binding may not have flushed yet on initial page load.
                         if (this.imageUrl) data.set('image_url', this.imageUrl);
-                        // Fields tab always previews from field values — strip custom HTML so the
-                        // server renders the base template, regardless of what's saved in the editor.
-                        if (this.activeTab === 'fields') {
-                            data.delete('custom_html');
-                        }
                         const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
                             method: 'POST',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
@@ -210,38 +205,42 @@
 
                     _debounceTimer: null,
                     debouncedRefresh() {
-                        // Only auto-refresh when on the Fields tab (HTML tab updates via $watch)
-                        if (this.activeTab !== 'fields') return;
+                        // Auto-refresh only applies in base-template mode (no custom HTML).
+                        // When custom HTML is active it IS the email — field edits don't affect it.
+                        if (this.htmlSource) return;
                         clearTimeout(this._debounceTimer);
                         this._debounceTimer = setTimeout(() => this.refreshPreview(), 700);
                     },
                     setupWatches() {
-                        // Auto-refresh preview when image URL changes (Fields tab only)
-                        this.$watch('imageUrl', () => { if (this.activeTab === 'fields') this.debouncedRefresh(); });
-                        // On the HTML tab, live-update preview directly from the textarea (no server round-trip).
-                        // On the Fields tab, ignore htmlSource changes — fields drive the preview there.
+                        // Auto-refresh on image change only when base-template mode is active.
+                        this.$watch('imageUrl', () => { if (!this.htmlSource) this.debouncedRefresh(); });
+                        // On the HTML tab, live-update preview directly from the textarea (no server
+                        // round-trip). When custom HTML is cleared, refresh from field values.
                         this.$watch('htmlSource', (val) => {
-                            if (this.activeTab !== 'html') return;
                             clearTimeout(this._debounceTimer);
                             if (val) {
-                                this._debounceTimer = setTimeout(() => { this.previewHtml = val; }, 400);
+                                if (this.activeTab === 'html') {
+                                    this._debounceTimer = setTimeout(() => { this.previewHtml = val; }, 400);
+                                }
                             } else {
+                                // Cleared — preview should now reflect field values
                                 this._debounceTimer = setTimeout(() => this.refreshPreview(), 400);
                             }
                         });
                     },
                     switchTab(tab) {
                         this.activeTab = tab;
-                        if (tab === 'fields') {
-                            // Immediately preview from field values when switching to Fields tab
-                            this.refreshPreview();
-                        } else if (tab === 'html') {
-                            // Immediately preview from custom HTML when switching to HTML tab
-                            if (this.htmlSource) this.previewHtml = this.htmlSource;
+                        // When switching to HTML tab, immediately show the editor content
+                        // (no round-trip needed — the preview already reflects the actual email,
+                        // but the HTML editor may have unsaved local edits we should show).
+                        if (tab === 'html' && this.htmlSource) {
+                            this.previewHtml = this.htmlSource;
                         }
+                        // Fields tab needs no action — preview already shows the actual email
+                        // (custom HTML if active, or field-driven base template if not).
                     }
                   }"
-                  x-init="$nextTick(() => { refreshPreview(); setupWatches(); })">
+                  x-init="$nextTick(() => { if (!previewHtml) refreshPreview(); setupWatches(); })">
                 @csrf
                 @if($isEdit) @method('PATCH') @endif
 
