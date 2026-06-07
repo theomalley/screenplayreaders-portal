@@ -259,12 +259,16 @@ class EmailCampaignController extends Controller
             return back()->with('error', 'Please select a MailerLite subscriber group before sending.');
         }
 
+        if (!$emailCampaign->scheduled_at || !$emailCampaign->scheduled_at->isFuture()) {
+            return back()->with('error', 'A future scheduled date is required before scheduling in MailerLite. Set one and save first.');
+        }
+
         try {
             // Create WooCommerce coupon if not already done
             if (!$emailCampaign->woo_coupon_id && $emailCampaign->coupon_code) {
                 $expiryDate = null;
                 if ($emailCampaign->coupon_duration_days) {
-                    $base       = $emailCampaign->scheduled_at ?? now();
+                    $base       = $emailCampaign->scheduled_at;
                     $expiryDate = $base->copy()->addDays((int) $emailCampaign->coupon_duration_days)->format('Y-m-d');
                 }
 
@@ -300,16 +304,10 @@ class EmailCampaignController extends Controller
             $mlId = $mlCampaign['id'];
             $emailCampaign->update(['mailerlite_campaign_id' => $mlId]);
 
-            // Schedule or send immediately
-            if ($emailCampaign->scheduled_at && $emailCampaign->scheduled_at->isFuture()) {
-                $this->mailerlite->scheduleCampaign($mlId, $emailCampaign->scheduled_at->utc()->format('Y-m-d H:i:s'));
-                $emailCampaign->update(['status' => 'queued']);
-                return back()->with('success', 'Campaign scheduled in MailerLite.');
-            } else {
-                $this->mailerlite->sendNow($mlId);
-                $emailCampaign->update(['status' => 'sent', 'live_sent_at' => now()]);
-                return back()->with('success', 'Campaign sent.');
-            }
+            $this->mailerlite->scheduleCampaign($mlId, $emailCampaign->scheduled_at->utc()->format('Y-m-d H:i:s'));
+            $emailCampaign->update(['status' => 'queued']);
+
+            return back()->with('success', 'Campaign scheduled in MailerLite for ' . $emailCampaign->scheduled_at->format('M j, Y g:i A') . '.');
         } catch (\RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
