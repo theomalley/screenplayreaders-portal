@@ -1,5 +1,6 @@
 <?php
 
+// v2.9 — 2026-06-07 | Add unlockScript() — strips PDF encryption so page-removal can proceed on locked scripts
 // v2.8 — 2026-06-05 | Admin: split assignments by tier; Reader: filter available by reader's tiers
 // v2.7 — 2026-06-03 | Reader view: show all non-hidden admins/editors too; clickable peer cards via staff.reader-card.
 // v2.6 — 2026-06-03 | Reader view: show all non-hidden readers in staff icon panel (not just online); suppress tooltip on peers.
@@ -463,6 +464,21 @@ class AssignmentController extends Controller
             : count($pages) . ' pages removed.';
 
         return redirect()->back()->with('success', $label);
+    }
+
+    public function unlockScript(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+        abort_unless($assignment->hasCloudScript(), 422, 'No script on file.');
+        abort_if($assignment->drive_script_file_id === '__LOCAL_TEST__', 422, 'Cannot unlock test scripts.');
+
+        try {
+            app(\App\Services\GoogleDriveService::class)->unlockScript($assignment->drive_script_file_id);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Could not unlock PDF: ' . $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', 'PDF unlocked — you can now remove pages.');
     }
 
     public function uploadScript(Request $request, Assignment $assignment)

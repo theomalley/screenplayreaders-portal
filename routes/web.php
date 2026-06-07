@@ -78,6 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('assignments/{assignment}/coverage-pdf', [AssignmentController::class, 'streamCoverage'])->name('assignments.streamCoverage');
     Route::post('assignments/{assignment}/script', [AssignmentController::class, 'uploadScript'])->name('assignments.uploadScript');
     Route::post('assignments/{assignment}/remove-pages', [AssignmentController::class, 'removePages'])->name('assignments.removePages');
+    Route::post('assignments/{assignment}/script/unlock', [AssignmentController::class, 'unlockScript'])->name('assignments.unlockScript');
     Route::post('assignments/{assignment}/add-reader', [AssignmentController::class, 'addReader'])->name('assignments.addReader');
     Route::post('assignments/{assignment}/accept', [AssignmentController::class, 'accept'])->name('assignments.accept');
     Route::post('assignments/{assignment}/over-120', [AssignmentController::class, 'over120'])->name('assignments.over-120');

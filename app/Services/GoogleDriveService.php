@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-06-07 | Add unlockScript() — strips PDF encryption via qpdf (falls back to Ghostscript).
 // v1.5 — 2026-05-28 | Preprocess PDFs with Ghostscript before FPDI to support compressed cross-reference streams.
 // v1.4 — 2026-05-24 | Add deleteFile for assignment cleanup on destroy.
 // v1.3 — 2026-05-22 | Remove public Drive permissions on upload; add downloadContents for portal proxy; revokePublicAccess on replace.
@@ -149,6 +150,52 @@ class GoogleDriveService
         }
 
         return $output;
+    }
+
+    /**
+     * Strip encryption/restrictions from a Drive PDF and re-upload in place.
+     * Tries qpdf --decrypt first (handles all owner-password PDFs cleanly);
+     * falls back to Ghostscript if qpdf is unavailable.
+     * Throws RuntimeException if neither tool can unlock the file.
+     */
+    public function unlockScript(string $fileId): void
+    {
+        $tmp    = $this->downloadToTemp($fileId);
+        $output = tempnam(sys_get_temp_dir(), 'sr_unlock_') . '.pdf';
+
+        // qpdf is the preferred tool — strips owner-password restrictions cleanly
+        exec(
+            'qpdf --decrypt ' . escapeshellarg($tmp) . ' ' . escapeshellarg($output) . ' 2>/dev/null',
+            $ignored,
+            $exitCode
+        );
+
+        // Ghostscript fallback — also strips encryption as a side-effect of rewriting
+        if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
+            @unlink($output);
+            $output = tempnam(sys_get_temp_dir(), 'sr_unlock_') . '.pdf';
+            exec(
+                'gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4'
+                . ' -sOutputFile=' . escapeshellarg($output)
+                . ' ' . escapeshellarg($tmp)
+                . ' 2>/dev/null',
+                $ignored,
+                $exitCode
+            );
+        }
+
+        @unlink($tmp);
+
+        if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
+            @unlink($output);
+            throw new \RuntimeException('Could not unlock the PDF. The file may be protected with an open/user password that we do not have.');
+        }
+
+        try {
+            $this->replaceFile($fileId, $output);
+        } finally {
+            @unlink($output);
+        }
     }
 
     /**

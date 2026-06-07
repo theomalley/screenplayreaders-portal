@@ -737,6 +737,14 @@
                                         <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
                                            class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
                                     @endif
+                                    <form method="POST" action="{{ route('assignments.unlockScript', $assignment) }}"
+                                          onsubmit="return confirm('Unlock this PDF? The locked version will be replaced with an unlocked one.')">
+                                        @csrf
+                                        <button type="submit"
+                                                class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
+                                            Unlock PDF
+                                        </button>
+                                    </form>
                                     <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
                                           onsubmit="return confirm('Remove title page (page 1)?')">
                                         @csrf
@@ -793,6 +801,14 @@
                 <div class="mb-4 pb-4 border-b border-gray-100">
                     <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Remove pages</p>
                     <div class="flex flex-wrap gap-2">
+                        <form method="POST" action="{{ route('assignments.unlockScript', $assignment) }}"
+                              onsubmit="return confirm('Unlock this PDF? The locked version will be replaced with an unlocked one.')">
+                            @csrf
+                            <button type="submit"
+                                    class="px-3 py-1.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded hover:bg-yellow-100 border border-yellow-200 transition">
+                                Unlock PDF
+                            </button>
+                        </form>
                         <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
                               onsubmit="return confirm('Remove title page (page 1)?')">
                             @csrf

@@ -320,6 +320,14 @@
                             <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
                         @endif
+                        <form method="POST" action="{{ route('assignments.unlockScript', $assignment) }}"
+                              onsubmit="return confirm('Unlock this PDF? The locked version will be replaced with an unlocked one.')">
+                            @csrf
+                            <button type="submit"
+                                    class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
+                                Unlock PDF
+                            </button>
+                        </form>
                         <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
                               onsubmit="return confirm('Remove title page (page 1)?')">
                             @csrf
