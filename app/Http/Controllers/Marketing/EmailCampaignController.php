@@ -295,10 +295,15 @@ if (!$this->mailerlite->isConfigured()) {
 
                 if ($emailCampaign->woo_coupon_id) {
                     try {
-                        $this->woocommerce->getCoupon((int) $emailCampaign->woo_coupon_id);
-                        $needsCoupon = false; // coupon still exists in WooCommerce
+                        $existing = $this->woocommerce->getCoupon((int) $emailCampaign->woo_coupon_id);
+                        // Treat trashed coupons as deleted — WC returns 200 for trash, not 404
+                        if (($existing['status'] ?? '') === 'publish') {
+                            $needsCoupon = false;
+                        } else {
+                            $emailCampaign->update(['woo_coupon_id' => null]);
+                            $emailCampaign->refresh();
+                        }
                     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-                        // Coupon was deleted from WooCommerce — clear the stored ID and recreate
                         $emailCampaign->update(['woo_coupon_id' => null]);
                         $emailCampaign->refresh();
                     }
