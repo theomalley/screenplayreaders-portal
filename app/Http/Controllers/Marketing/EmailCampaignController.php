@@ -310,9 +310,9 @@ class EmailCampaignController extends Controller
             $mlCampaign = $this->mailerlite->createCampaign(
                 name:      $emailCampaign->campaign_name,
                 subject:   $emailCampaign->subject_line,
-                fromName:  'Screenplay Readers',
-                fromEmail: 'hello@screenplayreaders.com',
-                replyTo:   'support@screenplayreaders.com',
+                fromName:  $emailCampaign->from_name ?: 'Screenplay Readers',
+                fromEmail: $emailCampaign->from_email ?: 'support@screenplayreaders.com',
+                replyTo:   $emailCampaign->reply_to ?: 'support@screenplayreaders.com',
                 html:      $html,
                 groupIds:  [$emailCampaign->mailerlite_group_id],
             );
@@ -340,6 +340,9 @@ class EmailCampaignController extends Controller
             'status'              => 'required|in:draft,queued,paused',
             'scheduled_at'        => 'nullable|date',
             'subject_line'        => 'nullable|string|max:255',
+            'from_name'           => 'nullable|string|max:100',
+            'from_email'          => 'nullable|email|max:255',
+            'reply_to'            => 'nullable|email|max:255',
             'preheader'           => 'nullable|string|max:500',
             'headline_top'        => 'nullable|string|max:255',
             'paragraph_top1'      => 'nullable|string',

@@ -361,6 +361,31 @@
                             </div>
                         </div>
 
+                        {{-- Card: Sender --}}
+                        <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
+                            <h3 class="text-sm font-semibold text-gray-700">Sender</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="col-span-2">
+                                    <x-input-label for="from_name" value="From Name" />
+                                    <input type="text" id="from_name" name="from_name"
+                                           value="{{ old('from_name', $campaign->from_name ?: 'Screenplay Readers') }}"
+                                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <x-input-label for="from_email" value="From Email" />
+                                    <input type="email" id="from_email" name="from_email"
+                                           value="{{ old('from_email', $campaign->from_email ?: 'support@screenplayreaders.com') }}"
+                                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <x-input-label for="reply_to" value="Reply-To Email" />
+                                    <input type="email" id="reply_to" name="reply_to"
+                                           value="{{ old('reply_to', $campaign->reply_to ?: 'support@screenplayreaders.com') }}"
+                                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- Card: Content Top --}}
                         <div class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
                             <h3 class="text-sm font-semibold text-gray-700">Content — Top</h3>
