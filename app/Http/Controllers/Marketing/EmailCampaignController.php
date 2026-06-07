@@ -263,6 +263,10 @@ class EmailCampaignController extends Controller
             return back()->with('error', 'A future scheduled date is required before scheduling in MailerLite. Set one and save first.');
         }
 
+        if (empty(trim($emailCampaign->subject_line))) {
+            return back()->with('error', 'Subject line is required before scheduling. MailerLite will use a generated name instead of a real subject if this is blank.');
+        }
+
         // When custom HTML is active the email uses it verbatim — field edits aren't reflected.
         // If a coupon code is set on the campaign but doesn't appear in the custom HTML, the
         // subscriber won't see a code and no WooCommerce coupon gets created — block early.
