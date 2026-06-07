@@ -311,7 +311,40 @@
                  class="fixed inset-0 z-50 flex flex-col bg-black/80">
                 <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
                     <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                    <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-2 shrink-0"
+                         x-data="{
+                             pgStatus: '',
+                             pgError: false,
+                             pg: '',
+                             async act(url, body, confirmMsg) {
+                                 if (!confirm(confirmMsg)) return;
+                                 this.pgStatus = 'Working…';
+                                 this.pgError = false;
+                                 try {
+                                     const r = await fetch(url, {
+                                         method: 'POST',
+                                         headers: {
+                                             'Content-Type': 'application/x-www-form-urlencoded',
+                                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                             'X-Requested-With': 'XMLHttpRequest',
+                                         },
+                                         body,
+                                     });
+                                     const d = await r.json();
+                                     if (d.success) {
+                                         this.pgStatus = d.message || 'Done.';
+                                         window.dispatchEvent(new CustomEvent('sr-reload-pdf-{{ $assignment->id }}'));
+                                         setTimeout(() => { this.pgStatus = ''; }, 4000);
+                                     } else {
+                                         this.pgStatus = d.message || 'Error.';
+                                         this.pgError = true;
+                                     }
+                                 } catch(e) {
+                                     this.pgStatus = 'Request failed.';
+                                     this.pgError = true;
+                                 }
+                             },
+                         }">
                         @if (\App\Support\Permission::check('script.download'))
                             <a href="{{ route('assignments.downloadScript', $assignment) }}"
                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
@@ -320,44 +353,31 @@
                             <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
                         @endif
-                        <form method="POST" action="{{ route('assignments.unlockScript', $assignment) }}"
-                              onsubmit="return confirm('Unlock this PDF? The locked version will be replaced with an unlocked one.')">
-                            @csrf
-                            <button type="submit"
-                                    class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
-                                Unlock PDF
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
-                              onsubmit="return confirm('Remove title page (page 1)?')">
-                            @csrf
-                            <input type="hidden" name="pages" value="1">
-                            <button type="submit"
-                                    class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
-                                Remove title page
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
-                              onsubmit="return confirm('Remove last page?')">
-                            @csrf
-                            <input type="hidden" name="pages" value="last">
-                            <button type="submit"
-                                    class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
-                                Remove last page
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ route('assignments.removePages', $assignment) }}"
-                              class="flex items-center gap-1"
-                              x-data="{ pg: '' }"
-                              @submit.prevent="if (pg.trim()) { if (confirm('Remove page ' + pg + '?')) $el.submit(); }">
-                            @csrf
-                            <input type="text" name="pages" x-model="pg" placeholder="pg #"
+                        <span x-show="pgStatus" x-cloak x-text="pgStatus" :class="pgError ? 'text-red-400' : 'text-green-400'" class="text-xs"></span>
+                        <button type="button"
+                                @click="act('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.')"
+                                class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
+                            Unlock PDF
+                        </button>
+                        <button type="button"
+                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?')"
+                                class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                            Remove title page
+                        </button>
+                        <button type="button"
+                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?')"
+                                class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                            Remove last page
+                        </button>
+                        <span class="flex items-center gap-1">
+                            <input type="text" x-model="pg" placeholder="pg #"
                                    class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
-                            <button type="submit"
+                            <button type="button"
+                                    @click="if (pg.trim()) act('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page ' + pg + '?')"
                                     class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
                                 Remove
                             </button>
-                        </form>
+                        </span>
                         <button @click="viewerOpen = false" type="button"
                                 class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                     </div>
@@ -365,6 +385,7 @@
                 {{-- PDF.js multi-page canvas viewer --}}
                 <div x-data="pdfViewer(@js($viewUrl))"
                      @sr-load-pdf-{{ $assignment->id }}.window="if (totalPages === 0 && !loading) loadPdf()"
+                     @sr-reload-pdf-{{ $assignment->id }}.window="reloadPdf()"
                      class="flex-1 flex flex-col min-h-0">
                     <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
                         <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>

@@ -122,44 +122,31 @@
                                                             <a href="{{ $viewUrl }}" target="_blank" rel="noopener"
                                                                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
                                                         @endif
-                                                        <form method="POST" action="{{ route('assignments.unlockScript', $first) }}"
-                                                              onsubmit="return confirm('Unlock this PDF? The locked version will be replaced with an unlocked one.')">
-                                                            @csrf
-                                                            <button type="submit"
-                                                                    class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
-                                                                Unlock PDF
-                                                            </button>
-                                                        </form>
-                                                        <form method="POST" action="{{ route('assignments.removePages', $first) }}"
-                                                              onsubmit="return confirm('Remove title page (page 1)?')">
-                                                            @csrf
-                                                            <input type="hidden" name="pages" value="1">
-                                                            <button type="submit"
-                                                                    class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
-                                                                Remove title page
-                                                            </button>
-                                                        </form>
-                                                        <form method="POST" action="{{ route('assignments.removePages', $first) }}"
-                                                              onsubmit="return confirm('Remove last page?')">
-                                                            @csrf
-                                                            <input type="hidden" name="pages" value="last">
-                                                            <button type="submit"
-                                                                    class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
-                                                                Remove last page
-                                                            </button>
-                                                        </form>
-                                                        <form method="POST" action="{{ route('assignments.removePages', $first) }}"
-                                                              class="flex items-center gap-1"
-                                                              x-data="{ pg: '' }"
-                                                              @submit.prevent="if (pg.trim()) { if (confirm('Remove page ' + pg + '?')) $el.submit(); }">
-                                                            @csrf
-                                                            <input type="text" name="pages" x-model="pg" placeholder="pg #"
+                                                        <span x-show="pgStatus" x-cloak x-text="pgStatus" :class="pgError ? 'text-red-400' : 'text-green-400'" class="text-xs"></span>
+                                                        <button type="button"
+                                                                @click="pdfAction('{{ route('assignments.unlockScript', $first) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.')"
+                                                                class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
+                                                            Unlock PDF
+                                                        </button>
+                                                        <button type="button"
+                                                                @click="pdfAction('{{ route('assignments.removePages', $first) }}', 'pages=1', 'Remove title page (page 1)?')"
+                                                                class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                                            Remove title page
+                                                        </button>
+                                                        <button type="button"
+                                                                @click="pdfAction('{{ route('assignments.removePages', $first) }}', 'pages=last', 'Remove last page?')"
+                                                                class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                                            Remove last page
+                                                        </button>
+                                                        <span class="flex items-center gap-1">
+                                                            <input type="text" x-model="pg" placeholder="pg #"
                                                                    class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
-                                                            <button type="submit"
+                                                            <button type="button"
+                                                                    @click="if (pg.trim()) pdfAction('{{ route('assignments.removePages', $first) }}', 'pages=' + encodeURIComponent(pg), 'Remove page ' + pg + '?')"
                                                                     class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
                                                                 Remove
                                                             </button>
-                                                        </form>
+                                                        </span>
                                                         <button @click="open = false" type="button"
                                                                 class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                     </div>
@@ -465,6 +452,9 @@
                 currentPage: 0,
                 totalPages: 0,
                 loading: false,
+                pg: '',
+                pgStatus: '',
+                pgError: false,
 
                 async openViewer() {
                     this.open = true;
@@ -516,6 +506,46 @@
                 scrollToPage(num) {
                     const n = Math.max(1, Math.min(parseInt(num) || 1, this.totalPages));
                     if (pages[n - 1]) pages[n - 1].scrollIntoView({ behavior: 'smooth' });
+                },
+
+                async reloadPdf() {
+                    const wrap = this.$refs.canvasWrap;
+                    if (wrap) for (const c of [...wrap.querySelectorAll('canvas')]) c.remove();
+                    pages = [];
+                    pdfDoc = null;
+                    this.totalPages = 0;
+                    this.currentPage = 0;
+                    this.url = this.url.split('?')[0] + '?t=' + Date.now();
+                    await this.loadPdf();
+                },
+
+                async pdfAction(url, body, confirmMsg) {
+                    if (!confirm(confirmMsg)) return;
+                    this.pgStatus = 'Working…';
+                    this.pgError = false;
+                    try {
+                        const r = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body,
+                        });
+                        const d = await r.json();
+                        if (d.success) {
+                            this.pgStatus = d.message || 'Done.';
+                            await this.reloadPdf();
+                            setTimeout(() => { this.pgStatus = ''; }, 4000);
+                        } else {
+                            this.pgStatus = d.message || 'Error.';
+                            this.pgError = true;
+                        }
+                    } catch(e) {
+                        this.pgStatus = 'Request failed.';
+                        this.pgError = true;
+                    }
                 },
             };
         });

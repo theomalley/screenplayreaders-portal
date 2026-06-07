@@ -1,5 +1,6 @@
 <?php
 
+// v2.10 — 2026-06-07 | removePages/unlockScript return JSON for AJAX requests (PDF in-place refresh)
 // v2.9 — 2026-06-07 | Add unlockScript() — strips PDF encryption so page-removal can proceed on locked scripts
 // v2.8 — 2026-06-05 | Admin: split assignments by tier; Reader: filter available by reader's tiers
 // v2.7 — 2026-06-03 | Reader view: show all non-hidden admins/editors too; clickable peer cards via staff.reader-card.
@@ -436,6 +437,9 @@ class AssignmentController extends Controller
                 if (! $isLocal) @unlink($tmp);
                 $pages = [$pageCount];
             } catch (\Throwable $e) {
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Could not determine page count: ' . $e->getMessage()], 422);
+                }
                 return redirect()->back()->with('error', 'Could not determine page count: ' . $e->getMessage());
             }
         } else {
@@ -456,12 +460,19 @@ class AssignmentController extends Controller
                 $drive->deletePages($assignment->drive_script_file_id, $pages);
             }
         } catch (\Throwable $e) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Could not remove page: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Could not remove page: ' . $e->getMessage());
         }
 
         $label = count($pages) === 1
             ? 'Page ' . $pages[0] . ' removed.'
             : count($pages) . ' pages removed.';
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => $label]);
+        }
 
         return redirect()->back()->with('success', $label);
     }
@@ -475,7 +486,14 @@ class AssignmentController extends Controller
         try {
             app(\App\Services\GoogleDriveService::class)->unlockScript($assignment->drive_script_file_id);
         } catch (\Throwable $e) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Could not unlock PDF: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Could not unlock PDF: ' . $e->getMessage());
+        }
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'PDF unlocked — you can now remove pages.']);
         }
 
         return redirect()->back()->with('success', 'PDF unlocked — you can now remove pages.');

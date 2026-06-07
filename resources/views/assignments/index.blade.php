@@ -2610,6 +2610,17 @@
                         const n = Math.max(1, Math.min(parseInt(num) || 1, this.totalPages));
                         if (pages[n - 1]) pages[n - 1].scrollIntoView({ behavior: 'smooth' });
                     },
+
+                    async reloadPdf() {
+                        const wrap = this.$refs.canvasWrap;
+                        if (wrap) for (const c of [...wrap.querySelectorAll('canvas')]) c.remove();
+                        pages = [];
+                        pdfDoc = null;
+                        this.totalPages = 0;
+                        this.currentPage = 0;
+                        this.url = this.url.split('?')[0] + '?t=' + Date.now();
+                        await this.loadPdf();
+                    },
                 };
             }
 
