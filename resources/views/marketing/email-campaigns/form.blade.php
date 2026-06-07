@@ -278,7 +278,7 @@
                         <div x-show="activeTab === 'fields' && htmlSource" x-cloak
                              class="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
                             <div class="flex items-start justify-between gap-3">
-                                <span><strong>Custom HTML is active.</strong> Your custom HTML is the email — field edits are saved but won't change the email content or preview.</span>
+                                <span><strong>Custom HTML is active.</strong> The saved custom HTML is what gets sent — field edits (including coupon code, paragraphs, image) are saved but won't appear in the email unless you regenerate the editable copy.</span>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <button type="button" @click="switchTab('html')"
                                             class="text-xs text-amber-700 underline hover:text-amber-900 whitespace-nowrap">Edit HTML</button>
