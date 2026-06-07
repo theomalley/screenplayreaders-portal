@@ -128,6 +128,9 @@
                         const form = document.getElementById('campaign-form');
                         const data = new FormData(form);
                         data.delete('_method');
+                        // Always set image_url from Alpine state directly — the hidden input's x-model
+                        // binding may not have flushed yet (e.g. on initial page load via $nextTick).
+                        if (this.imageUrl) data.set('image_url', this.imageUrl);
                         // Fields tab always previews from field values — strip custom HTML so the
                         // server renders the base template, regardless of what's saved in the editor.
                         if (this.activeTab === 'fields') {
@@ -238,7 +241,7 @@
                         }
                     }
                   }"
-                  x-init="refreshPreview(); setupWatches()">
+                  x-init="$nextTick(() => { refreshPreview(); setupWatches(); })">
                 @csrf
                 @if($isEdit) @method('PATCH') @endif
 
