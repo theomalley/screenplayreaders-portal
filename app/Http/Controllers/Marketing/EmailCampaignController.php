@@ -249,8 +249,13 @@ class EmailCampaignController extends Controller
             return back()->with('error', 'MailerLite API key is not configured.');
         }
 
-        // Accept group passed from the unsaved form; persist it so ML campaign creation can use it
-        if ($request->filled('mailerlite_group_id')) {
+        // Save all campaign fields from the form before scheduling — the schedule button now
+        // submits the full main form, so unsaved edits (e.g. coupon fields) are always persisted.
+        if ($request->filled('campaign_name')) {
+            $emailCampaign->update($this->validated($request));
+            $emailCampaign->refresh();
+        } elseif ($request->filled('mailerlite_group_id')) {
+            // Legacy path: only group was submitted
             $emailCampaign->update(['mailerlite_group_id' => $request->input('mailerlite_group_id')]);
             $emailCampaign->refresh();
         }

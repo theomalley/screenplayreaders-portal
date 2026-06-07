@@ -35,14 +35,12 @@
                     {{-- Schedule in MailerLite --}}
                     @if($campaign->status !== 'sent')
                         @php $canSchedule = $campaign->scheduled_at && $campaign->scheduled_at->isFuture(); @endphp
-                        <form action="{{ route('marketing.email-campaigns.send-live', $campaign) }}" method="POST">
+                        <form id="schedule-live-form" action="{{ route('marketing.email-campaigns.send-live', $campaign) }}" method="POST">
                             @csrf
-                            <input type="hidden" name="mailerlite_group_id" id="send-live-group-id"
-                                   value="{{ $campaign->mailerlite_group_id }}">
                             @if($canSchedule)
-                                <button type="submit"
+                                <button type="button"
                                         class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                                        onclick="document.getElementById('send-live-group-id').value = (document.getElementById('mailerlite_group_id')?.value ?? ''); return confirm('Schedule in MailerLite for {{ $campaign->scheduled_at->format('M j, Y g:i A') }}?')">
+                                        onclick="submitScheduleForm('{{ $campaign->scheduled_at->format('M j, Y g:i A') }}')">
                                     Schedule in MailerLite
                                 </button>
                             @else
@@ -810,4 +808,30 @@
 
         </div>
     </div>
+
+    <script>
+    function submitScheduleForm(scheduledLabel) {
+        if (!confirm('Schedule in MailerLite for ' + scheduledLabel + '?')) return;
+
+        const mainForm  = document.getElementById('campaign-form');
+        const schedForm = document.getElementById('schedule-live-form');
+
+        // Copy every current field value from the main form into the schedule form
+        // so sendLive saves them before scheduling — even if the user forgot to hit Save.
+        const seen = new Set();
+        Array.from(new FormData(mainForm).entries()).forEach(([key, value]) => {
+            if (key === '_token' || key === '_method') return;
+            if (seen.has(key)) return; // take first occurrence only
+            seen.add(key);
+            const input = document.createElement('input');
+            input.type  = 'hidden';
+            input.name  = key;
+            input.value = value;
+            schedForm.appendChild(input);
+        });
+
+        schedForm.submit();
+    }
+    </script>
+
 </x-app-layout>
