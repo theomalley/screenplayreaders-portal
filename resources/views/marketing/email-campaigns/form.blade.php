@@ -42,6 +42,7 @@
                             <input type="hidden" name="coupon_amount"        value="{{ $campaign->coupon_amount }}">
                             <input type="hidden" name="coupon_type"          value="{{ $campaign->coupon_type }}">
                             <input type="hidden" name="coupon_duration_days" value="{{ $campaign->coupon_duration_days }}">
+                            <input type="hidden" name="coupon_combinable"    value="{{ $campaign->coupon_combinable ? '1' : '0' }}">
                             @if($canSchedule)
                                 <button type="submit"
                                         class="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
@@ -495,6 +496,13 @@
                                            min="1" placeholder="e.g. 7"
                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <p class="mt-1 text-xs text-indigo-600" x-show="expiryPreview" x-text="'Expires: ' + expiryPreview"></p>
+                                </div>
+                                <div class="col-span-2 flex items-center gap-2 pt-1">
+                                    <input type="hidden" name="coupon_combinable" value="0">
+                                    <input type="checkbox" id="coupon_combinable" name="coupon_combinable" value="1"
+                                           {{ old('coupon_combinable', $campaign->coupon_combinable) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    <label for="coupon_combinable" class="text-sm text-gray-700">Combinable with other coupons</label>
                                 </div>
                                 <div class="col-span-2"
                                      x-data="{

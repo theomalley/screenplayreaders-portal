@@ -172,13 +172,14 @@ class WooCommerceService
         float   $amount,
         array   $productIds = [],
         ?string $expiryDate = null,
-        string  $description = ''
+        string  $description = '',
+        bool    $individualUse = true
     ): array {
         $payload = [
             'code'               => strtoupper($code),
             'discount_type'      => $type,
             'amount'             => number_format($amount, 2, '.', ''),
-            'individual_use'     => true,
+            'individual_use'     => $individualUse,
             'free_shipping'      => false,
             'description'        => $description,
         ];

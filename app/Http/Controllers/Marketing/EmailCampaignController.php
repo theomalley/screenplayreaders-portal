@@ -257,6 +257,7 @@ if (!$this->mailerlite->isConfigured()) {
             'coupon_amount'        => $request->input('coupon_amount') !== null ? (float) $request->input('coupon_amount') : null,
             'coupon_type'          => in_array($request->input('coupon_type'), ['percent', 'fixed_cart']) ? $request->input('coupon_type') : null,
             'coupon_duration_days' => $request->input('coupon_duration_days') ? (int) $request->input('coupon_duration_days') : null,
+            'coupon_combinable'    => $request->has('coupon_combinable') ? (bool) $request->input('coupon_combinable') : null,
         ], fn($v) => $v !== null && $v !== '');
         if ($patch) {
             $emailCampaign->update($patch);
@@ -311,12 +312,13 @@ if (!$this->mailerlite->isConfigured()) {
                     }
 
                     $coupon = $this->woocommerce->createCoupon(
-                        code:        $emailCampaign->coupon_code,
-                        type:        $emailCampaign->coupon_type ?? 'percent',
-                        amount:      (float) ($emailCampaign->coupon_amount ?? 0),
-                        productIds:  $emailCampaign->coupon_product_ids ?? [],
-                        expiryDate:  $expiryDate,
-                        description: $emailCampaign->campaign_name,
+                        code:          $emailCampaign->coupon_code,
+                        type:          $emailCampaign->coupon_type ?? 'percent',
+                        amount:        (float) ($emailCampaign->coupon_amount ?? 0),
+                        productIds:    $emailCampaign->coupon_product_ids ?? [],
+                        expiryDate:    $expiryDate,
+                        description:   $emailCampaign->campaign_name,
+                        individualUse: !$emailCampaign->coupon_combinable,
                     );
 
                     $emailCampaign->update(['woo_coupon_id' => $coupon['id']]);
@@ -379,6 +381,7 @@ if (!$this->mailerlite->isConfigured()) {
             'coupon_amount'       => 'nullable|numeric|min:0',
             'coupon_duration_days'=> 'nullable|integer|min:1',
             'coupon_type'         => 'nullable|in:percent,fixed_cart',
+            'coupon_combinable'   => 'nullable|boolean',
             'coupon_product_ids'  => 'nullable|string',  // comma-separated IDs → parsed below
             'mailerlite_group_id' => 'nullable|string|max:100',
             'custom_html'         => 'nullable|string',

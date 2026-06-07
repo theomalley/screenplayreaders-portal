@@ -15,7 +15,7 @@ class EmailCampaign extends Model
         'preheader', 'headline_top', 'paragraph_top1', 'paragraph_top2',
         'url1', 'headline_bottom', 'paragraph_bottom', 'custom_html',
         'image_path', 'image_url',
-        'coupon_code', 'coupon_amount', 'coupon_duration_days', 'coupon_type', 'coupon_product_ids',
+        'coupon_code', 'coupon_amount', 'coupon_duration_days', 'coupon_type', 'coupon_product_ids', 'coupon_combinable',
         'mailerlite_group_id', 'mailerlite_campaign_id', 'woo_coupon_id',
         'test_sent_at', 'live_sent_at',
     ];
@@ -25,6 +25,7 @@ class EmailCampaign extends Model
         'test_sent_at'       => 'datetime',
         'live_sent_at'       => 'datetime',
         'coupon_product_ids' => 'array',
+        'coupon_combinable'  => 'boolean',
         'coupon_amount'      => 'decimal:2',
     ];
 
