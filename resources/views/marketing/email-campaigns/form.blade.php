@@ -128,6 +128,11 @@
                         const form = document.getElementById('campaign-form');
                         const data = new FormData(form);
                         data.delete('_method');
+                        // Fields tab always previews from field values — strip custom HTML so the
+                        // server renders the base template, regardless of what's saved in the editor.
+                        if (this.activeTab === 'fields') {
+                            data.delete('custom_html');
+                        }
                         const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
                             method: 'POST',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
@@ -202,16 +207,18 @@
 
                     _debounceTimer: null,
                     debouncedRefresh() {
-                        if (this.htmlSource) return; // custom HTML active — fields don't drive preview
+                        // Only auto-refresh when on the Fields tab (HTML tab updates via $watch)
+                        if (this.activeTab !== 'fields') return;
                         clearTimeout(this._debounceTimer);
                         this._debounceTimer = setTimeout(() => this.refreshPreview(), 700);
                     },
                     setupWatches() {
-                        // Auto-refresh when image URL changes (only in base template mode)
-                        this.$watch('imageUrl', () => { if (!this.htmlSource) this.debouncedRefresh(); });
-                        // Live-update preview when editing custom HTML (no server round-trip needed)
-                        // Also refresh from fields when custom HTML is cleared
+                        // Auto-refresh preview when image URL changes (Fields tab only)
+                        this.$watch('imageUrl', () => { if (this.activeTab === 'fields') this.debouncedRefresh(); });
+                        // On the HTML tab, live-update preview directly from the textarea (no server round-trip).
+                        // On the Fields tab, ignore htmlSource changes — fields drive the preview there.
                         this.$watch('htmlSource', (val) => {
+                            if (this.activeTab !== 'html') return;
                             clearTimeout(this._debounceTimer);
                             if (val) {
                                 this._debounceTimer = setTimeout(() => { this.previewHtml = val; }, 400);
@@ -219,9 +226,19 @@
                                 this._debounceTimer = setTimeout(() => this.refreshPreview(), 400);
                             }
                         });
+                    },
+                    switchTab(tab) {
+                        this.activeTab = tab;
+                        if (tab === 'fields') {
+                            // Immediately preview from field values when switching to Fields tab
+                            this.refreshPreview();
+                        } else if (tab === 'html') {
+                            // Immediately preview from custom HTML when switching to HTML tab
+                            if (this.htmlSource) this.previewHtml = this.htmlSource;
+                        }
                     }
                   }"
-                  x-init="if (!previewHtml) refreshPreview(); setupWatches()">
+                  x-init="refreshPreview(); setupWatches()">
                 @csrf
                 @if($isEdit) @method('PATCH') @endif
 
@@ -232,12 +249,12 @@
 
                         {{-- Tab bar: Fields / HTML Source --}}
                         <div class="flex items-center gap-1 border-b border-gray-200 mb-5">
-                            <button type="button" @click="activeTab='fields'"
+                            <button type="button" @click="switchTab('fields')"
                                     :class="activeTab==='fields' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                                     class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors">
                                 Fields
                             </button>
-                            <button type="button" @click="activeTab='html'"
+                            <button type="button" @click="switchTab('html')"
                                     :class="activeTab==='html' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                                     class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-2">
                                 Custom HTML
@@ -252,7 +269,7 @@
                             <div class="flex items-start justify-between gap-3">
                                 <span><strong>Custom HTML is active.</strong> Your custom HTML is the email — field edits are saved but won't change the email content or preview.</span>
                                 <div class="flex items-center gap-2 shrink-0">
-                                    <button type="button" @click="activeTab='html'"
+                                    <button type="button" @click="switchTab('html')"
                                             class="text-xs text-amber-700 underline hover:text-amber-900 whitespace-nowrap">Edit HTML</button>
                                     <span class="text-amber-300">|</span>
                                     <button type="button" @click="htmlSource = ''"
