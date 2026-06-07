@@ -245,7 +245,7 @@ class EmailCampaignController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        \Log::info('sendLive entered', [
+        \Log::error('sendLive entered', [
             'campaign_id'            => $emailCampaign->id,
             'request_had_campaign_name' => $request->filled('campaign_name'),
             'request_coupon_code'    => $request->input('coupon_code'),
