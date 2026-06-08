@@ -77,7 +77,7 @@ class PartnerSiteController extends Controller
         $site = PartnerSite::create($data);
 
         if (!empty($site->coupon_code)) {
-            self::ensureWcCouponExists($site->coupon_code);
+            self::syncWcCouponSettings($site);
         }
 
         return redirect()->route('marketing.partner-sites.index')
@@ -102,7 +102,7 @@ class PartnerSiteController extends Controller
         $partnerSite->update($data);
 
         if (!empty($partnerSite->coupon_code)) {
-            self::ensureWcCouponExists($partnerSite->coupon_code);
+            self::syncWcCouponSettings($partnerSite);
         }
 
         return redirect()->route('marketing.partner-sites.index')
@@ -287,32 +287,51 @@ class PartnerSiteController extends Controller
     }
 
     /**
-     * Create the coupon in WooCommerce if it doesn't already exist.
-     * Creates with 0% percent discount — admin sets the actual amount in WC admin.
+     * Create or update the partner's WooCommerce coupon with the portal-managed settings:
+     * discount type, amount, and individual_use: false (always combinable).
+     *
+     * - If the coupon doesn't exist: creates it as 'publish'.
+     * - If it already exists: updates discount fields only — does NOT touch 'status'
+     *   so monitoring-driven enable/disable (syncCouponStatus) is preserved.
      */
-    private static function ensureWcCouponExists(string $code): void
+    private static function syncWcCouponSettings(PartnerSite $site): void
     {
-        $code = trim($code);
+        $code = trim((string) ($site->coupon_code ?? ''));
         if ($code === '') return;
 
         [$storeUrl, $ck, $cs] = self::wcConfig();
         if ($storeUrl === '') return;
 
-        try {
-            if (self::wcFindCouponId($code, $storeUrl, $ck, $cs)) return; // already exists
+        $discountType = $site->coupon_discount_type ?: 'percent';
+        $amount       = $site->coupon_amount !== null ? (string) $site->coupon_amount : '0';
 
-            Http::withBasicAuth($ck, $cs)
-                ->timeout(10)
-                ->post("{$storeUrl}/wp-json/wc/v3/coupons", [
-                    'code'          => $code,
-                    'discount_type' => 'percent',
-                    'amount'        => '0',
-                    'status'        => 'publish',
-                    'description'   => 'Partner referral coupon — managed by Partner Link Monitor.',
-                ]);
+        $payload = [
+            'discount_type'  => $discountType,
+            'amount'         => $amount,
+            'individual_use' => false,
+        ];
+
+        try {
+            $couponId = self::wcFindCouponId($code, $storeUrl, $ck, $cs);
+
+            if (!$couponId) {
+                // Create new — publish immediately; monitoring will manage status from first check.
+                Http::withBasicAuth($ck, $cs)
+                    ->timeout(10)
+                    ->post("{$storeUrl}/wp-json/wc/v3/coupons", array_merge($payload, [
+                        'code'        => $code,
+                        'status'      => 'publish',
+                        'description' => 'Partner referral coupon — managed by Partner Link Monitor.',
+                    ]));
+            } else {
+                // Update discount settings only; leave status untouched.
+                Http::withBasicAuth($ck, $cs)
+                    ->timeout(10)
+                    ->put("{$storeUrl}/wp-json/wc/v3/coupons/{$couponId}", $payload);
+            }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning(
-                "Partner coupon creation failed (coupon: {$code}): " . $e->getMessage()
+                "Partner coupon sync failed (coupon: {$code}): " . $e->getMessage()
             );
         }
     }
@@ -393,6 +412,8 @@ class PartnerSiteController extends Controller
             'active'                  => 'nullable|boolean',
             'notes'                   => 'nullable|string|max:1000',
             'coupon_code'             => 'nullable|string|max:255',
+            'coupon_discount_type'    => 'nullable|in:percent,fixed_cart',
+            'coupon_amount'           => 'nullable|numeric|min:0',
             'coupon_uptime_threshold' => 'nullable|numeric|min:0|max:100',
         ]) + ['active' => $request->has('active') ? (bool) $request->input('active') : true];
     }

@@ -30,17 +30,32 @@
     <input type="text" name="coupon_code" x-model="form.coupon_code" maxlength="255"
            placeholder="e.g. PARTNER20"
            class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-    <p class="mt-1 text-xs text-gray-400">If the coupon doesn't exist in WooCommerce yet it will be created automatically (0% discount — set the amount in WC admin).</p>
+    <p class="mt-1 text-xs text-gray-400">Created automatically in WooCommerce if it doesn't exist yet. Always set as combinable with other coupons.</p>
 </div>
-<div x-show="form.coupon_code">
-    <label class="block text-xs font-medium text-gray-700 mb-1">Uptime Threshold <span class="text-gray-400">(optional, %)</span></label>
-    <div class="flex gap-2 items-center">
-        <input type="number" name="coupon_uptime_threshold" x-model.number="form.coupon_uptime_threshold"
-               min="0" max="100" step="1" placeholder="e.g. 75"
-               class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-        <span class="text-xs text-gray-400">%</span>
+<div x-show="form.coupon_code" class="space-y-4">
+    <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Discount</label>
+        <div class="flex gap-2 items-center">
+            <input type="number" name="coupon_amount" x-model.number="form.coupon_amount"
+                   min="0" max="100" step="0.01" placeholder="0"
+                   class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <select name="coupon_discount_type" x-model="form.coupon_discount_type"
+                    class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="percent">% off</option>
+                <option value="fixed_cart">$ off (fixed)</option>
+            </select>
+        </div>
     </div>
-    <p class="mt-1 text-xs text-gray-400">Coupon stays active while rolling uptime is at or above this value; auto-disabled if it drops below. Leave empty to toggle on every individual check.</p>
+    <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Uptime Threshold <span class="text-gray-400">(optional, %)</span></label>
+        <div class="flex gap-2 items-center">
+            <input type="number" name="coupon_uptime_threshold" x-model.number="form.coupon_uptime_threshold"
+                   min="0" max="100" step="1" placeholder="e.g. 75"
+                   class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <span class="text-xs text-gray-400">%</span>
+        </div>
+        <p class="mt-1 text-xs text-gray-400">Coupon stays active while rolling uptime is at or above this value. Leave empty to toggle on every individual check.</p>
+    </div>
 </div>
 <div>
     <label class="block text-xs font-medium text-gray-700 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
