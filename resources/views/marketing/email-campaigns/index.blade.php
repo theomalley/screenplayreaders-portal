@@ -205,6 +205,11 @@
                                                 @csrf
                                                 <button type="submit" class="text-xs text-gray-500 hover:underline">Duplicate</button>
                                             </form>
+                                            <form action="{{ route('marketing.email-campaigns.destroy', $campaign) }}" method="POST" class="inline"
+                                                  onsubmit="return confirm('Delete sent campaign &quot;{{ addslashes($campaign->campaign_name) }}&quot;? This cannot be undone.')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-xs text-red-400 hover:underline">Delete</button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
