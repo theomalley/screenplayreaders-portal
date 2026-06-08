@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-06-08 | Exclude $0-total customers from by-customer listing
 // v1.1 — 2026-06-04 | By-customer / by-client revenue breakdown
 // v1.0 — 2026-05-25 | Admin-only revenue dashboard — time-period aggregates and Chart.js data
 
@@ -82,6 +83,7 @@ class RevenueController extends Controller
             ->whereNotNull('customer_email')
             ->where('customer_email', '!=', '')
             ->groupBy('customer_email')
+            ->havingRaw('SUM(order_total) > 0')
             ->orderByDesc('net')
             ->get();
 
