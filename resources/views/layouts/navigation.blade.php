@@ -152,6 +152,10 @@
                                        class="block px-4 py-2 text-sm {{ request()->routeIs('marketing.email-templates.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Email Templates
                                     </a>
+                                    <a href="{{ route('marketing.base-email-template.edit') }}"
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('marketing.base-email-template.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Base Email Template
+                                    </a>
                                 </div>
                             </div>
                         @endif
@@ -327,6 +331,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('marketing.email-templates.index')" :active="request()->routeIs('marketing.email-templates.*')">
                         {{ __('Email Templates') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('marketing.base-email-template.edit')" :active="request()->routeIs('marketing.base-email-template.*')">
+                        {{ __('Base Email Template') }}
                     </x-responsive-nav-link>
                 @endif
 

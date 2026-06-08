@@ -210,8 +210,10 @@ class EmailCampaignController extends Controller
             return response($request->input('custom_html'))->header('Content-Type', 'text/html');
         }
 
+        // live=1 → render with real MailerLite merge tags (used by "Generate editable copy")
+        $preview  = !$request->boolean('live');
         $campaign = new EmailCampaign($this->previewData($request));
-        $html     = $this->renderHtml($campaign, preview: true);
+        $html     = $this->renderHtml($campaign, preview: $preview);
 
         return response($html)->header('Content-Type', 'text/html');
     }
@@ -460,6 +462,8 @@ if (!$this->mailerlite->isConfigured()) {
      * Render the email HTML template with campaign data.
      * $preview = true replaces MailerLite merge tags with readable placeholders.
      * If the campaign has custom_html saved, that takes precedence over the template.
+     * If a base template is stored in settings (email_base_template), it's used via Blade::render();
+     * otherwise falls back to the blade partial file.
      */
     private function renderHtml(EmailCampaign $campaign, bool $preview = false): string
     {
@@ -475,7 +479,7 @@ if (!$this->mailerlite->isConfigured()) {
             $expiryDate = $base->copy()->addDays((int) $campaign->coupon_duration_days)->format('F j, Y');
         }
 
-        $html = view('marketing.email-campaigns.partials.email-html', [
+        $data = [
             'subjectLine'     => $campaign->subject_line ?? '',
             'preheader'       => $campaign->preheader ?? '',
             'headlineTop'     => $campaign->headline_top ?? '',
@@ -489,7 +493,13 @@ if (!$this->mailerlite->isConfigured()) {
             'paragraphBottom' => $campaign->paragraph_bottom ?? '',
             'imageUrl'        => $campaign->image_url ?? '',
             'preview'         => $preview,
-        ])->render();
+        ];
+
+        $storedTemplate = \App\Models\Setting::getValue('email_base_template');
+
+        $html = $storedTemplate
+            ? \Blade::render($storedTemplate, $data)
+            : view('marketing.email-campaigns.partials.email-html', $data)->render();
 
         // Bold every occurrence of the coupon code in the HTML body
         if ($couponCode) {

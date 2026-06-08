@@ -158,6 +158,8 @@
                         const data = new FormData(form);
                         data.delete('_method');
                         data.delete('custom_html');
+                        // live=1 → MailerLite merge tags ({$unsubscribe}, {$url}) instead of preview placeholders (#)
+                        data.set('live', '1');
                         const r = await fetch('{{ route('marketing.email-campaigns.preview') }}', {
                             method: 'POST',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },

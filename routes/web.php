@@ -34,6 +34,7 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\WooOrderController;
+use App\Http\Controllers\Marketing\BaseEmailTemplateController;
 use App\Http\Controllers\Marketing\EmailCampaignController;
 use App\Http\Controllers\Marketing\EmailTemplateController;
 use Illuminate\Support\Facades\Route;
@@ -292,6 +293,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- Marketing (admin only) ---
     Route::prefix('marketing')->name('marketing.')->group(function () {
+        // Base email template (structural layout editor)
+        Route::get('/base-email-template',         [BaseEmailTemplateController::class, 'edit'])->name('base-email-template.edit');
+        Route::post('/base-email-template',        [BaseEmailTemplateController::class, 'update'])->name('base-email-template.update');
+        Route::post('/base-email-template/preview',[BaseEmailTemplateController::class, 'preview'])->name('base-email-template.preview');
+        Route::post('/base-email-template/reset',  [BaseEmailTemplateController::class, 'reset'])->name('base-email-template.reset');
+
         // Email Templates
         Route::get('/email-templates',                          [EmailTemplateController::class, 'index'])->name('email-templates.index');
         Route::post('/email-templates',                         [EmailTemplateController::class, 'store'])->name('email-templates.store');
