@@ -96,7 +96,7 @@
                                           const fee = parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
                                           if (fee) parts.push('Rush $' + fee.toFixed(2));
                                       }
-                                      if (hasReq && reqRate) parts.push('Reader Request $' + reqRate.toFixed(2));
+                                      if (hasReq && reqRate && this.assignmentType !== 'deep_dive') parts.push('Reader Request $' + reqRate.toFixed(2));
                                       if (parts.length > 1) breakdown.textContent = parts.join(' + ');
                                   }
                               }
@@ -136,7 +136,7 @@
                                   if (hidden) hidden.value = '';
                                   return;
                               }
-                              const total = parseFloat(base) + sharedMod + (hasReq ? reqRate : 0);
+                              const total = parseFloat(base) + sharedMod + (hasReq && this.assignmentType !== 'deep_dive' ? reqRate : 0);
                               el.textContent = '$' + total.toFixed(2);
                               el.className = 'text-sm font-semibold text-gray-900';
                               if (hidden) hidden.value = total.toFixed(2);
