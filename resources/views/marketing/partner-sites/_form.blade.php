@@ -26,6 +26,13 @@
     <label for="add_active" class="text-sm text-gray-700">Active (monitoring enabled)</label>
 </div>
 <div>
+    <label class="block text-xs font-medium text-gray-700 mb-1">WooCommerce Coupon Code <span class="text-gray-400">(optional)</span></label>
+    <input type="text" name="coupon_code" x-model="form.coupon_code" maxlength="255"
+           placeholder="e.g. PARTNER20"
+           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+    <p class="mt-1 text-xs text-gray-400">When set, the coupon is auto-enabled when a backlink is found and auto-disabled when the link goes missing.</p>
+</div>
+<div>
     <label class="block text-xs font-medium text-gray-700 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
     <textarea name="notes" x-model="form.notes" rows="2" maxlength="1000"
               placeholder="e.g. Listed on their resources page since Jan 2025"

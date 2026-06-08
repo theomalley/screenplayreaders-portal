@@ -27,11 +27,11 @@
             // ---- modal state ----
             showModal: false,
             editing: null,
-            form: { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '' },
+            form: { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '', coupon_code: '' },
 
             openAdd() {
                 this.editing = null;
-                this.form = { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '' };
+                this.form = { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '', coupon_code: '' };
                 this.showModal = true;
             },
             openEdit(site) {
@@ -125,6 +125,7 @@
                             <th class="px-4 py-3 font-medium">Uptime</th>
                             <th class="px-4 py-3 font-medium">Interval</th>
                             <th class="px-4 py-3 font-medium">Last Checked</th>
+                            <th class="px-4 py-3 font-medium">Coupon</th>
                             <th class="px-4 py-3 font-medium"></th>
                         </tr>
                     </thead>
@@ -255,6 +256,25 @@
                                 @endif
                             </td>
 
+                            {{-- Coupon --}}
+                            <td class="px-4 py-3 text-xs">
+                                @if($site->coupon_code)
+                                    <code class="font-mono text-gray-700">{{ $site->coupon_code }}</code>
+                                    @if($siteStat['total'] > 0)
+                                        @php $couponUp = $siteStat['uptime'] !== null && $siteStat['uptime'] > 0; @endphp
+                                        @if($latest && $latest->is_up)
+                                            <span class="block mt-0.5 text-green-600 font-medium">active</span>
+                                        @else
+                                            <span class="block mt-0.5 text-red-400 font-medium">paused</span>
+                                        @endif
+                                    @else
+                                        <span class="block mt-0.5 text-gray-400">not checked yet</span>
+                                    @endif
+                                @else
+                                    <span class="text-gray-300">—</span>
+                                @endif
+                            </td>
+
                             {{-- Actions --}}
                             <td class="px-4 py-3">
                                 <div class="flex items-center justify-end gap-2 flex-wrap">
@@ -271,7 +291,7 @@
                                         <span x-text="expanded[{{ $site->id }}] ? 'Hide History' : 'History'"></span>
                                     </button>
                                     <button type="button"
-                                            @click="openEdit(@js(['id' => $site->id, 'name' => $site->name, 'url' => $site->url, 'check_interval_minutes' => $site->check_interval_minutes, 'active' => $site->active, 'notes' => $site->notes ?? '']))"
+                                            @click="openEdit(@js(['id' => $site->id, 'name' => $site->name, 'url' => $site->url, 'check_interval_minutes' => $site->check_interval_minutes, 'active' => $site->active, 'notes' => $site->notes ?? '', 'coupon_code' => $site->coupon_code ?? '']))"
                                             class="text-xs text-indigo-600 hover:underline">Edit</button>
                                     <form action="{{ route('marketing.partner-sites.destroy', $site) }}" method="POST" class="inline"
                                           onsubmit="return confirm('Delete {{ addslashes($site->name) }} and all its check history?')">
@@ -284,7 +304,7 @@
 
                         {{-- Expanded history row --}}
                         <tr x-show="expanded[{{ $site->id }}]" x-cloak>
-                            <td colspan="7" class="px-4 pb-4 pt-0 bg-gray-50">
+                            <td colspan="8" class="px-4 pb-4 pt-0 bg-gray-50">
                                 <div class="border border-gray-200 rounded-lg overflow-hidden">
                                     <div class="px-4 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
                                         <span class="text-xs font-medium text-gray-600">Last 50 checks — {{ $site->name }}</span>
@@ -413,6 +433,13 @@
                             <label for="edit_active" class="text-sm text-gray-700">Active (monitoring enabled)</label>
                         </div>
                         <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">WooCommerce Coupon Code <span class="text-gray-400">(optional)</span></label>
+                            <input type="text" x-model="form.coupon_code" maxlength="255"
+                                   placeholder="e.g. PARTNER20"
+                                   class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <p class="mt-1 text-xs text-gray-400">Auto-enabled when backlink is found; auto-disabled when link goes missing.</p>
+                        </div>
+                        <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
                             <textarea x-model="form.notes" rows="2" maxlength="1000"
                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
@@ -430,6 +457,7 @@
                                         fd.append('check_interval_minutes', form.check_interval_minutes);
                                         fd.append('active', form.active ? '1' : '0');
                                         fd.append('notes', form.notes || '');
+                                        fd.append('coupon_code', form.coupon_code || '');
                                         fetch('/marketing/partner-sites/' + editing.id, { method: 'POST', body: fd })
                                             .then(() => window.location.reload());
                                     "

@@ -220,6 +220,8 @@ class PartnerSiteController extends Controller
 
         $site->update(['next_check_at' => now()->addMinutes($site->check_interval_minutes)]);
 
+        self::syncCouponStatus($site, $isUp);
+
         return [
             'is_up'            => $isUp,
             'http_status'      => $httpStatus,
@@ -227,6 +229,50 @@ class PartnerSiteController extends Controller
             'links_found'      => $links,
             'error_message'    => $errorMessage,
         ];
+    }
+
+    // -------------------------------------------------------------------------
+    // WooCommerce coupon sync
+    // -------------------------------------------------------------------------
+
+    /**
+     * Enable or disable the partner's WooCommerce coupon based on whether their backlink is up.
+     * Looks up the coupon by code via the WC REST API, then PATCHes its status.
+     * Failures are logged but never bubble up — a WC API hiccup shouldn't break monitoring.
+     */
+    private static function syncCouponStatus(PartnerSite $site, bool $isUp): void
+    {
+        $code = trim((string) ($site->coupon_code ?? ''));
+        if ($code === '') return;
+
+        $storeUrl = rtrim((string) config('services.woocommerce.store_url', ''), '/');
+        $ck       = (string) config('services.woocommerce.consumer_key', '');
+        $cs       = (string) config('services.woocommerce.consumer_secret', '');
+
+        if ($storeUrl === '' || $ck === '' || $cs === '') return;
+
+        try {
+            $search = Http::withBasicAuth($ck, $cs)
+                ->timeout(10)
+                ->get("{$storeUrl}/wp-json/wc/v3/coupons", ['code' => $code, 'per_page' => 1]);
+
+            if (!$search->successful()) return;
+
+            $coupons  = $search->json();
+            $couponId = $coupons[0]['id'] ?? null;
+            if (!$couponId) return;
+
+            $status = $isUp ? 'publish' : 'draft';
+
+            Http::withBasicAuth($ck, $cs)
+                ->timeout(10)
+                ->put("{$storeUrl}/wp-json/wc/v3/coupons/{$couponId}", ['status' => $status]);
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning(
+                "Partner coupon sync failed for site {$site->id} (coupon: {$code}): " . $e->getMessage()
+            );
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -281,6 +327,7 @@ class PartnerSiteController extends Controller
             'check_interval_minutes' => 'required|integer|min:5|max:43200',
             'active'                 => 'nullable|boolean',
             'notes'                  => 'nullable|string|max:1000',
+            'coupon_code'            => 'nullable|string|max:255',
         ]) + ['active' => $request->has('active') ? (bool) $request->input('active') : true];
     }
 

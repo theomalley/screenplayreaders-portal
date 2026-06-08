@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class PartnerSite extends Model
 {
     protected $fillable = [
-        'name', 'url', 'check_interval_minutes', 'active', 'notes', 'next_check_at',
+        'name', 'url', 'check_interval_minutes', 'active', 'notes', 'coupon_code', 'next_check_at',
     ];
 
     protected $casts = [
