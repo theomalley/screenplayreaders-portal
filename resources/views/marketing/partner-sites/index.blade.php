@@ -131,7 +131,7 @@
                     <tbody class="divide-y divide-gray-100">
                         @foreach($sites as $site)
                         @php
-                            $latest  = $site->latestCheck->first();
+                            $latest  = $site->latestCheck;
                             $siteStat = $stats[$site->id] ?? ['total' => 0, 'up' => 0, 'uptime' => null];
                         @endphp
 

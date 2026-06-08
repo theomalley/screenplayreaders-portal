@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PartnerSite extends Model
 {
@@ -23,9 +24,9 @@ class PartnerSite extends Model
         return $this->hasMany(PartnerLinkCheck::class);
     }
 
-    public function latestCheck(): HasMany
+    public function latestCheck(): HasOne
     {
-        return $this->hasMany(PartnerLinkCheck::class)->latestOfMany('checked_at');
+        return $this->hasOne(PartnerLinkCheck::class)->latestOfMany('checked_at');
     }
 
     /** Uptime % over the given Carbon date range (null = all time). */
