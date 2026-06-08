@@ -74,7 +74,11 @@ class PartnerSiteController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
 
         $data = $this->validated($request);
-        PartnerSite::create($data);
+        $site = PartnerSite::create($data);
+
+        if (!empty($site->coupon_code)) {
+            self::ensureWcCouponExists($site->coupon_code);
+        }
 
         return redirect()->route('marketing.partner-sites.index')
             ->with('success', 'Partner site added.');
@@ -96,6 +100,10 @@ class PartnerSiteController extends Controller
         }
 
         $partnerSite->update($data);
+
+        if (!empty($partnerSite->coupon_code)) {
+            self::ensureWcCouponExists($partnerSite->coupon_code);
+        }
 
         return redirect()->route('marketing.partner-sites.index')
             ->with('success', 'Partner site updated.');
@@ -236,34 +244,37 @@ class PartnerSiteController extends Controller
     // -------------------------------------------------------------------------
 
     /**
-     * Enable or disable the partner's WooCommerce coupon based on whether their backlink is up.
-     * Looks up the coupon by code via the WC REST API, then PATCHes its status.
-     * Failures are logged but never bubble up — a WC API hiccup shouldn't break monitoring.
+     * Enable or disable the partner's WooCommerce coupon after each check.
+     *
+     * If coupon_uptime_threshold is set, the decision uses rolling uptime over the
+     * last 20 checks: enabled when uptime% >= threshold, disabled when below.
+     * If null, the decision is per-check: enabled only when this check found a backlink.
      */
     private static function syncCouponStatus(PartnerSite $site, bool $isUp): void
     {
         $code = trim((string) ($site->coupon_code ?? ''));
         if ($code === '') return;
 
-        $storeUrl = rtrim((string) config('services.woocommerce.store_url', ''), '/');
-        $ck       = (string) config('services.woocommerce.consumer_key', '');
-        $cs       = (string) config('services.woocommerce.consumer_secret', '');
+        $threshold = $site->coupon_uptime_threshold; // float|null
 
-        if ($storeUrl === '' || $ck === '' || $cs === '') return;
+        if ($threshold !== null) {
+            // Rolling uptime over the last 20 checks (includes the one just recorded).
+            $recent  = $site->checks()->orderByDesc('checked_at')->limit(20)->pluck('is_up');
+            $total   = $recent->count();
+            $uptime  = $total > 0 ? ($recent->filter()->count() / $total) * 100 : 0.0;
+            $enable  = $uptime >= $threshold;
+        } else {
+            $enable = $isUp;
+        }
+
+        [$storeUrl, $ck, $cs] = self::wcConfig();
+        if ($storeUrl === '') return;
 
         try {
-            $search = Http::withBasicAuth($ck, $cs)
-                ->timeout(10)
-                ->get("{$storeUrl}/wp-json/wc/v3/coupons", ['code' => $code, 'per_page' => 1]);
-
-            if (!$search->successful()) return;
-
-            $coupons  = $search->json();
-            $couponId = $coupons[0]['id'] ?? null;
+            $couponId = self::wcFindCouponId($code, $storeUrl, $ck, $cs);
             if (!$couponId) return;
 
-            $status = $isUp ? 'publish' : 'draft';
-
+            $status = $enable ? 'publish' : 'draft';
             Http::withBasicAuth($ck, $cs)
                 ->timeout(10)
                 ->put("{$storeUrl}/wp-json/wc/v3/coupons/{$couponId}", ['status' => $status]);
@@ -273,6 +284,60 @@ class PartnerSiteController extends Controller
                 "Partner coupon sync failed for site {$site->id} (coupon: {$code}): " . $e->getMessage()
             );
         }
+    }
+
+    /**
+     * Create the coupon in WooCommerce if it doesn't already exist.
+     * Creates with 0% percent discount — admin sets the actual amount in WC admin.
+     */
+    private static function ensureWcCouponExists(string $code): void
+    {
+        $code = trim($code);
+        if ($code === '') return;
+
+        [$storeUrl, $ck, $cs] = self::wcConfig();
+        if ($storeUrl === '') return;
+
+        try {
+            if (self::wcFindCouponId($code, $storeUrl, $ck, $cs)) return; // already exists
+
+            Http::withBasicAuth($ck, $cs)
+                ->timeout(10)
+                ->post("{$storeUrl}/wp-json/wc/v3/coupons", [
+                    'code'          => $code,
+                    'discount_type' => 'percent',
+                    'amount'        => '0',
+                    'status'        => 'publish',
+                    'description'   => 'Partner referral coupon — managed by Partner Link Monitor.',
+                ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning(
+                "Partner coupon creation failed (coupon: {$code}): " . $e->getMessage()
+            );
+        }
+    }
+
+    /** Returns the WC numeric coupon ID for the given code, or null if not found. */
+    private static function wcFindCouponId(string $code, string $storeUrl, string $ck, string $cs): ?int
+    {
+        $response = Http::withBasicAuth($ck, $cs)
+            ->timeout(10)
+            ->get("{$storeUrl}/wp-json/wc/v3/coupons", ['code' => $code, 'per_page' => 1]);
+
+        if (!$response->successful()) return null;
+
+        $id = $response->json()[0]['id'] ?? null;
+        return $id ? (int) $id : null;
+    }
+
+    /** Returns [storeUrl, consumerKey, consumerSecret], or ['', '', ''] if unconfigured. */
+    private static function wcConfig(): array
+    {
+        $url = rtrim((string) config('services.woocommerce.store_url', ''), '/');
+        $ck  = (string) config('services.woocommerce.consumer_key', '');
+        $cs  = (string) config('services.woocommerce.consumer_secret', '');
+        if ($url === '' || $ck === '' || $cs === '') return ['', '', ''];
+        return [$url, $ck, $cs];
     }
 
     // -------------------------------------------------------------------------
@@ -322,12 +387,13 @@ class PartnerSiteController extends Controller
     private function validated(Request $request): array
     {
         return $request->validate([
-            'name'                   => 'required|string|max:255',
-            'url'                    => 'required|url|max:500',
-            'check_interval_minutes' => 'required|integer|min:5|max:43200',
-            'active'                 => 'nullable|boolean',
-            'notes'                  => 'nullable|string|max:1000',
-            'coupon_code'            => 'nullable|string|max:255',
+            'name'                    => 'required|string|max:255',
+            'url'                     => 'required|url|max:500',
+            'check_interval_minutes'  => 'required|integer|min:5|max:43200',
+            'active'                  => 'nullable|boolean',
+            'notes'                   => 'nullable|string|max:1000',
+            'coupon_code'             => 'nullable|string|max:255',
+            'coupon_uptime_threshold' => 'nullable|numeric|min:0|max:100',
         ]) + ['active' => $request->has('active') ? (bool) $request->input('active') : true];
     }
 

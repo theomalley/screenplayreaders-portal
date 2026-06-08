@@ -27,11 +27,11 @@
             // ---- modal state ----
             showModal: false,
             editing: null,
-            form: { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '', coupon_code: '' },
+            form: { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '', coupon_code: '', coupon_uptime_threshold: '' },
 
             openAdd() {
                 this.editing = null;
-                this.form = { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '', coupon_code: '' };
+                this.form = { name: '', url: '', check_interval_minutes: 1440, active: true, notes: '', coupon_code: '', coupon_uptime_threshold: '' };
                 this.showModal = true;
             },
             openEdit(site) {
@@ -260,15 +260,27 @@
                             <td class="px-4 py-3 text-xs">
                                 @if($site->coupon_code)
                                     <code class="font-mono text-gray-700">{{ $site->coupon_code }}</code>
-                                    @if($siteStat['total'] > 0)
-                                        @php $couponUp = $siteStat['uptime'] !== null && $siteStat['uptime'] > 0; @endphp
+                                    @if($siteStat['total'] === 0)
+                                        <span class="block mt-0.5 text-gray-400">not checked yet</span>
+                                    @elseif($site->coupon_uptime_threshold !== null)
+                                        @php
+                                            $uptime   = $siteStat['uptime'] ?? 0;
+                                            $thresh   = $site->coupon_uptime_threshold;
+                                            $isActive = $uptime >= $thresh;
+                                        @endphp
+                                        @if($isActive)
+                                            <span class="block mt-0.5 text-green-600 font-medium">active</span>
+                                        @else
+                                            <span class="block mt-0.5 text-red-400 font-medium">paused</span>
+                                        @endif
+                                        <span class="text-gray-400">{{ $uptime }}% / {{ $thresh }}% threshold</span>
+                                    @else
                                         @if($latest && $latest->is_up)
                                             <span class="block mt-0.5 text-green-600 font-medium">active</span>
                                         @else
                                             <span class="block mt-0.5 text-red-400 font-medium">paused</span>
                                         @endif
-                                    @else
-                                        <span class="block mt-0.5 text-gray-400">not checked yet</span>
+                                        <span class="text-gray-400">per-check</span>
                                     @endif
                                 @else
                                     <span class="text-gray-300">—</span>
@@ -291,7 +303,7 @@
                                         <span x-text="expanded[{{ $site->id }}] ? 'Hide History' : 'History'"></span>
                                     </button>
                                     <button type="button"
-                                            @click="openEdit(@js(['id' => $site->id, 'name' => $site->name, 'url' => $site->url, 'check_interval_minutes' => $site->check_interval_minutes, 'active' => $site->active, 'notes' => $site->notes ?? '', 'coupon_code' => $site->coupon_code ?? '']))"
+                                            @click="openEdit(@js(['id' => $site->id, 'name' => $site->name, 'url' => $site->url, 'check_interval_minutes' => $site->check_interval_minutes, 'active' => $site->active, 'notes' => $site->notes ?? '', 'coupon_code' => $site->coupon_code ?? '', 'coupon_uptime_threshold' => $site->coupon_uptime_threshold]))"
                                             class="text-xs text-indigo-600 hover:underline">Edit</button>
                                     <form action="{{ route('marketing.partner-sites.destroy', $site) }}" method="POST" class="inline"
                                           onsubmit="return confirm('Delete {{ addslashes($site->name) }} and all its check history?')">
@@ -437,7 +449,17 @@
                             <input type="text" x-model="form.coupon_code" maxlength="255"
                                    placeholder="e.g. PARTNER20"
                                    class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <p class="mt-1 text-xs text-gray-400">Auto-enabled when backlink is found; auto-disabled when link goes missing.</p>
+                            <p class="mt-1 text-xs text-gray-400">If the coupon doesn't exist in WooCommerce yet it will be created automatically (0% discount — set the amount in WC admin).</p>
+                        </div>
+                        <div x-show="form.coupon_code">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Uptime Threshold <span class="text-gray-400">(optional, %)</span></label>
+                            <div class="flex gap-2 items-center">
+                                <input type="number" x-model.number="form.coupon_uptime_threshold"
+                                       min="0" max="100" step="1" placeholder="e.g. 75"
+                                       class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <span class="text-xs text-gray-400">%</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-400">Coupon stays active while rolling uptime is at or above this value; auto-disabled if it drops below. Leave empty to toggle on every individual check.</p>
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-700 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
@@ -458,6 +480,7 @@
                                         fd.append('active', form.active ? '1' : '0');
                                         fd.append('notes', form.notes || '');
                                         fd.append('coupon_code', form.coupon_code || '');
+                                        fd.append('coupon_uptime_threshold', form.coupon_uptime_threshold !== null && form.coupon_uptime_threshold !== '' ? form.coupon_uptime_threshold : '');
                                         fetch('/marketing/partner-sites/' + editing.id, { method: 'POST', body: fd })
                                             .then(() => window.location.reload());
                                     "

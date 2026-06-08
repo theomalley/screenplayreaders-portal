@@ -11,12 +11,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class PartnerSite extends Model
 {
     protected $fillable = [
-        'name', 'url', 'check_interval_minutes', 'active', 'notes', 'coupon_code', 'next_check_at',
+        'name', 'url', 'check_interval_minutes', 'active', 'notes',
+        'coupon_code', 'coupon_uptime_threshold', 'next_check_at',
     ];
 
     protected $casts = [
-        'active'       => 'boolean',
-        'next_check_at'=> 'datetime',
+        'active'                  => 'boolean',
+        'coupon_uptime_threshold' => 'float',
+        'next_check_at'           => 'datetime',
     ];
 
     public function checks(): HasMany
