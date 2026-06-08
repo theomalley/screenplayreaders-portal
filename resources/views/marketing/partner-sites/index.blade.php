@@ -13,7 +13,7 @@
                     </select>
                 </form>
                 <button type="button"
-                        @click="openAdd()"
+                        onclick="window.dispatchEvent(new CustomEvent('open-partner-add'))"
                         class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
                     + Add Partner
                 </button>
@@ -22,6 +22,7 @@
     </x-slot>
 
     <div class="py-6"
+         @open-partner-add.window="openAdd()"
          x-data="{
             // ---- modal state ----
             showModal: false,
