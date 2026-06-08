@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-06-08 | Exclude $0-total orders from index view (totals, chart, listing)
 // v1.2 — 2026-06-08 | Exclude $0-total customers from by-customer listing
 // v1.1 — 2026-06-04 | By-customer / by-client revenue breakdown
 // v1.0 — 2026-05-25 | Admin-only revenue dashboard — time-period aggregates and Chart.js data
@@ -39,7 +40,8 @@ class RevenueController extends Controller
 
         [$start, $end] = $this->dateRange($period);
 
-        $query = OrderRevenue::when($start, fn($q) => $q->where('ordered_at', '>=', $start))
+        $query = OrderRevenue::where('order_total', '>', 0)
+                             ->when($start, fn($q) => $q->where('ordered_at', '>=', $start))
                              ->when($end,   fn($q) => $q->where('ordered_at', '<=', $end));
 
         $orders = $query->orderByDesc('ordered_at')->get();
