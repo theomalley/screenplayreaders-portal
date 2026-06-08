@@ -144,6 +144,10 @@
                                 </button>
                                 <div x-show="marketingOpen" x-cloak
                                      class="absolute top-full left-0 mt-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                                    <a href="{{ route('marketing.partner-sites.index') }}"
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('marketing.partner-sites.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Partner Links
+                                    </a>
                                     <a href="{{ route('marketing.email-campaigns.index') }}"
                                        class="block px-4 py-2 text-sm {{ request()->routeIs('marketing.email-campaigns.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Email Campaigns
@@ -325,6 +329,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('statistics.index')" :active="request()->routeIs('statistics.*')">
                         {{ __('Statistics') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('marketing.partner-sites.index')" :active="request()->routeIs('marketing.partner-sites.*')">
+                        {{ __('Partner Links') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('marketing.email-campaigns.index')" :active="request()->routeIs('marketing.email-campaigns.*')">
                         {{ __('Email Campaigns') }}

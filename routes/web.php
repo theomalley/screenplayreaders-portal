@@ -37,6 +37,7 @@ use App\Http\Controllers\WooOrderController;
 use App\Http\Controllers\Marketing\BaseEmailTemplateController;
 use App\Http\Controllers\Marketing\EmailCampaignController;
 use App\Http\Controllers\Marketing\EmailTemplateController;
+use App\Http\Controllers\Marketing\PartnerSiteController;
 use Illuminate\Support\Facades\Route;
 
 // Public followup form — no auth required
@@ -293,6 +294,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- Marketing (admin only) ---
     Route::prefix('marketing')->name('marketing.')->group(function () {
+        // Partner link monitor
+        Route::get('/partner-sites',                               [PartnerSiteController::class, 'index'])->name('partner-sites.index');
+        Route::post('/partner-sites',                              [PartnerSiteController::class, 'store'])->name('partner-sites.store');
+        Route::patch('/partner-sites/{partnerSite}',               [PartnerSiteController::class, 'update'])->name('partner-sites.update');
+        Route::delete('/partner-sites/{partnerSite}',              [PartnerSiteController::class, 'destroy'])->name('partner-sites.destroy');
+        Route::post('/partner-sites/{partnerSite}/check-now',      [PartnerSiteController::class, 'checkNow'])->name('partner-sites.check-now');
+        Route::post('/partner-sites/{partnerSite}/toggle-active',  [PartnerSiteController::class, 'toggleActive'])->name('partner-sites.toggle-active');
+        Route::get('/partner-sites/{partnerSite}/history',         [PartnerSiteController::class, 'history'])->name('partner-sites.history');
+
         // Base email template (structural layout editor)
         Route::get('/base-email-template',         [BaseEmailTemplateController::class, 'edit'])->name('base-email-template.edit');
         Route::post('/base-email-template',        [BaseEmailTemplateController::class, 'update'])->name('base-email-template.update');
