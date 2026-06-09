@@ -17,6 +17,8 @@
         </div>
     </x-slot>
 
+    @include('partials.pdf-text-layer-styles')
+
     @php
         $batchLineItem = null;
         if (auth()->user()?->isAdminOrEditor()) {
@@ -201,7 +203,8 @@
     @endphp
     <div class="py-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
          x-data="singleAssignmentView(@js($notesForJs), @js(route('reading-notes.store', $assignment)), @js(csrf_token()))"
-         @pdf-page-changed.window="currentPdfPage = $event.detail.page">
+         @pdf-page-changed.window="currentPdfPage = $event.detail.page"
+         @add-to-note.window="noteBody = (noteBody ? noteBody.trim() + '\n\n' : '') + '&quot;' + $event.detail.text + '&quot; (p. ' + $event.detail.page + ')\n'; notesOpen = true">
 
         @if (session('success'))
             <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
@@ -308,7 +311,7 @@
 
             @if ($viewLink && $assignment->assigned_reader_id === auth()->id() || auth()->user()->isAdminOrEditor())
                 @if ($viewLink)
-                    <div x-data="pdfViewer(@js($viewLink))"
+                    <div x-data="pdfViewer(@js($viewLink), { assignmentId: {{ $assignment->id }}, csrfToken: @js(csrf_token()) })"
                          x-init="loadPdf()"
                          @keydown.arrow-right.window="nextPage()"
                          @keydown.arrow-left.window="prevPage()">
@@ -321,9 +324,25 @@
                                     class="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40">Next ›</button>
                         </div>
 
-                        <div x-ref="canvasWrap" class="flex flex-col items-center bg-gray-100 py-6 px-4" style="min-height:60vh" @wheel="handleWheel($event)">
+                        <div x-ref="canvasWrap" class="flex flex-col items-center bg-gray-100 py-6 px-4 relative" style="min-height:60vh" @wheel="handleWheel($event)" @mouseup="handleSelection($event)">
                             <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-10">Loading…</div>
-                            <canvas x-ref="canvas" class="shadow-lg"></canvas>
+                            <div x-ref="pageWrap" class="relative shadow-lg">
+                                <canvas x-ref="canvas" class="block"></canvas>
+                                <div x-ref="highlightLayer" class="highlight-layer"></div>
+                                <div x-ref="textLayer" class="textLayer"></div>
+                            </div>
+                            <div x-show="selectionToolbar.show" x-cloak
+                                 :style="`left: ${selectionToolbar.x}px; top: ${selectionToolbar.y}px`"
+                                 class="fixed z-50 flex gap-1 bg-gray-900 text-white rounded-md shadow-lg overflow-hidden text-xs">
+                                <button type="button" @click="saveHighlight()"
+                                        class="px-2 py-1.5 hover:bg-gray-700 flex items-center gap-1.5 whitespace-nowrap">
+                                    <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block"></span> Highlight
+                                </button>
+                                <button type="button" @click="addSelectionToNote()"
+                                        class="px-2 py-1.5 hover:bg-gray-700 border-l border-gray-700 whitespace-nowrap">
+                                    Add to Note
+                                </button>
+                            </div>
                         </div>
                     </div>
                 @else
@@ -512,9 +531,11 @@
             },
         }));
 
-        Alpine.data('pdfViewer', (url) => {
+        Alpine.data('pdfViewer', (url, opts = {}) => {
             let pdfDoc = null;
             let wheelTimer = null;
+            let highlights = [];
+            const highlightsEnabled = !!opts.assignmentId;
 
             return {
                 open: false,
@@ -522,6 +543,7 @@
                 currentPage: 1,
                 totalPages: 0,
                 loading: false,
+                selectionToolbar: { show: false, x: 0, y: 0, text: '', rects: [] },
 
                 async openViewer() {
                     this.open = true;
@@ -539,11 +561,23 @@
                             withCredentials: true,
                         }).promise;
                         this.totalPages = pdfDoc.numPages;
+                        if (highlightsEnabled) await this.loadHighlights();
                         await this.renderPage(1);
                     } catch (e) {
                         console.error('PDF load error:', e);
                     } finally {
                         this.loading = false;
+                    }
+                },
+
+                async loadHighlights() {
+                    try {
+                        const r = await fetch(`/assignments/${opts.assignmentId}/highlights`, {
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': opts.csrfToken },
+                        });
+                        if (r.ok) highlights = await r.json();
+                    } catch (e) {
+                        console.error(e);
                     }
                 },
 
@@ -567,8 +601,139 @@
                         this.currentPage = num;
                         this.$dispatch('pdf-page-changed', { page: num });
                         if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;
+                        this.clearSelectionToolbar();
+                        if (highlightsEnabled) await this.renderTextAndHighlights(page, scale, num);
                     } finally {
                         this.loading = false;
+                    }
+                },
+
+                async renderTextAndHighlights(page, scale, num) {
+                    const textLayerEl = this.$refs.textLayer;
+                    const highlightLayerEl = this.$refs.highlightLayer;
+                    if (!textLayerEl || !highlightLayerEl) return;
+
+                    const cssVp = page.getViewport({ scale });
+                    textLayerEl.innerHTML = '';
+                    textLayerEl.style.width  = cssVp.width + 'px';
+                    textLayerEl.style.height = cssVp.height + 'px';
+                    textLayerEl.style.setProperty('--scale-factor', scale);
+                    highlightLayerEl.style.width  = cssVp.width + 'px';
+                    highlightLayerEl.style.height = cssVp.height + 'px';
+
+                    const textContent = await page.getTextContent();
+                    await pdfjsLib.renderTextLayer({
+                        textContentSource: textContent,
+                        container: textLayerEl,
+                        viewport: cssVp,
+                    }).promise;
+
+                    this.renderHighlightMarks(num);
+                },
+
+                renderHighlightMarks(num) {
+                    const layer = this.$refs.highlightLayer;
+                    if (!layer) return;
+                    layer.innerHTML = '';
+                    for (const h of highlights.filter(h => h.page_number === num)) {
+                        for (const r of h.rects) {
+                            const mark = document.createElement('div');
+                            mark.className = 'highlight-mark';
+                            mark.style.left   = (r.x * 100) + '%';
+                            mark.style.top    = (r.y * 100) + '%';
+                            mark.style.width  = (r.width * 100) + '%';
+                            mark.style.height = (r.height * 100) + '%';
+                            mark.title = 'Click to remove highlight';
+                            mark.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                this.deleteHighlight(h.id);
+                            });
+                            layer.appendChild(mark);
+                        }
+                    }
+                },
+
+                handleSelection(e) {
+                    if (!highlightsEnabled) return;
+                    const sel = window.getSelection();
+                    if (!sel || sel.isCollapsed || sel.rangeCount === 0) { this.clearSelectionToolbar(); return; }
+                    const range = sel.getRangeAt(0);
+                    const pageWrap = this.$refs.pageWrap;
+                    if (!pageWrap || !pageWrap.contains(range.commonAncestorContainer)) return;
+                    const text = sel.toString().trim();
+                    if (!text) return;
+                    const clientRects = Array.from(range.getClientRects()).filter(r => r.width > 0 && r.height > 0);
+                    if (!clientRects.length) return;
+
+                    const containerRect = pageWrap.getBoundingClientRect();
+                    const last = clientRects[clientRects.length - 1];
+                    this.selectionToolbar = {
+                        show: true,
+                        x: last.right,
+                        y: last.bottom,
+                        text,
+                        rects: clientRects.map(r => ({
+                            x: (r.left - containerRect.left) / containerRect.width,
+                            y: (r.top - containerRect.top) / containerRect.height,
+                            width: r.width / containerRect.width,
+                            height: r.height / containerRect.height,
+                        })),
+                    };
+                },
+
+                clearSelectionToolbar() {
+                    this.selectionToolbar = { show: false, x: 0, y: 0, text: '', rects: [] };
+                },
+
+                async saveHighlight() {
+                    const t = this.selectionToolbar;
+                    if (!t.show) return;
+                    try {
+                        const r = await fetch(`/assignments/${opts.assignmentId}/highlights`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': opts.csrfToken,
+                            },
+                            body: JSON.stringify({
+                                page_number: this.currentPage,
+                                text: t.text,
+                                rects: t.rects,
+                                color: 'yellow',
+                            }),
+                        });
+                        if (r.ok) {
+                            highlights.push(await r.json());
+                            this.renderHighlightMarks(this.currentPage);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        window.getSelection()?.removeAllRanges();
+                        this.clearSelectionToolbar();
+                    }
+                },
+
+                addSelectionToNote() {
+                    const t = this.selectionToolbar;
+                    if (!t.show) return;
+                    this.$dispatch('add-to-note', { text: t.text, page: this.currentPage });
+                    window.getSelection()?.removeAllRanges();
+                    this.clearSelectionToolbar();
+                },
+
+                async deleteHighlight(id) {
+                    if (!confirm('Remove this highlight?')) return;
+                    try {
+                        await fetch(`/highlights/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': opts.csrfToken },
+                        });
+                        highlights = highlights.filter(h => h.id !== id);
+                        this.renderHighlightMarks(this.currentPage);
+                    } catch (e) {
+                        console.error(e);
                     }
                 },
 

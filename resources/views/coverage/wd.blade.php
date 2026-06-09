@@ -1,15 +1,23 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('assignments.index') }}" class="text-gray-400 hover:text-gray-600">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            </a>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                WD Coverage — #{{ $assignment->order_number }}
-                @if($assignment->rush)
-                    <span class="ml-2 text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
-                @endif
-            </h2>
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <a href="{{ route('assignments.index') }}" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </a>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    WD Coverage — #{{ $assignment->order_number }}
+                    @if($assignment->rush)
+                        <span class="ml-2 text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
+                    @endif
+                </h2>
+            </div>
+            @can('submitCoverage', $assignment)
+                <a href="{{ route('assignments.show', $assignment) }}"
+                   class="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap">
+                    &larr; View Script
+                </a>
+            @endcan
         </div>
     </x-slot>
 

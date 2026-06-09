@@ -153,6 +153,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/assignments/{assignment}/reading-notes',  [\App\Http\Controllers\ReaderScriptNoteController::class, 'store'])->name('reading-notes.store');
     Route::delete('/reading-notes/{note}',                  [\App\Http\Controllers\ReaderScriptNoteController::class, 'destroy'])->name('reading-notes.destroy');
 
+    // Personal PDF text highlights (private per-user — for highlighting while reading a script)
+    Route::get('/assignments/{assignment}/highlights',   [\App\Http\Controllers\ScriptHighlightController::class, 'index'])->name('script-highlights.index');
+    Route::post('/assignments/{assignment}/highlights',  [\App\Http\Controllers\ScriptHighlightController::class, 'store'])->name('script-highlights.store');
+    Route::delete('/highlights/{highlight}',             [\App\Http\Controllers\ScriptHighlightController::class, 'destroy'])->name('script-highlights.destroy');
+
     // Followup question management (admin/editor)
     Route::get('/followup-history/{orderNumber}',       [FollowupQuestionController::class, 'history'])->name('followups.history');
     Route::delete('/followup-tokens/{followupToken}',   [FollowupQuestionController::class, 'destroyToken'])->name('followupTokens.destroy');

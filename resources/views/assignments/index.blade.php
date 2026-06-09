@@ -31,6 +31,7 @@
         .rush-countdown { color: rgb(234, 88, 12); }
         .rush-overdue { color: rgb(220, 38, 38); font-weight: 600; }
     </style>
+    @include('partials.pdf-text-layer-styles')
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('tableSort', (defaultField = 'date', defaultDir = 'desc') => ({
@@ -1987,6 +1988,16 @@
                                                                         Notes
                                                                         <span x-show="notes.length > 0" x-text="'(' + notes.length + ')'" class="text-[10px] opacity-75"></span>
                                                                     </button>
+                                                                    @can('submitCoverage', $assignment)
+                                                                        <a href="{{ route('coverage.show', $assignment) }}"
+                                                                           class="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-500 transition-colors">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 shrink-0">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM12 2.25l1.5 1.5M21.75 12h-2.25M12 21.75v-2.25M2.25 12h2.25" />
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l1.5 1.5L15 9" />
+                                                                            </svg>
+                                                                            Write Coverage
+                                                                        </a>
+                                                                    @endcan
                                                                     <button @click="open = false" type="button"
                                                                             class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                                 </div>
@@ -2023,6 +2034,19 @@
                                                             <div class="flex-1 flex min-h-0">
                                                                 <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
                                                                     <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
+                                                                </div>
+                                                                {{-- Floating selection toolbar (highlight / add to note) --}}
+                                                                <div x-show="selectionToolbar.show" x-cloak
+                                                                     :style="`left: ${selectionToolbar.x}px; top: ${selectionToolbar.y}px`"
+                                                                     class="fixed z-[60] flex gap-1 bg-gray-900 text-white rounded-md shadow-lg overflow-hidden text-xs border border-gray-700">
+                                                                    <button type="button" @click="saveHighlight()"
+                                                                            class="px-2 py-1.5 hover:bg-gray-700 flex items-center gap-1.5 whitespace-nowrap">
+                                                                        <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block"></span> Highlight
+                                                                    </button>
+                                                                    <button type="button" @click="addSelectionToNote()"
+                                                                            class="px-2 py-1.5 hover:bg-gray-700 border-l border-gray-700 whitespace-nowrap">
+                                                                        Add to Note
+                                                                    </button>
                                                                 </div>
                                                                 {{-- Reading notes side panel --}}
                                                                 <div x-show="notesOpen" x-cloak
@@ -2587,12 +2611,17 @@
 
                     async onPdfLoaded(pdfDoc) {},
 
+                    async renderPageOverlay(pageWrap, canvas, page, scale, pageNum) {},
+
+                    clearOverlays() {},
+
                     async renderAllPages() {
                         const wrap = this.$refs.canvasWrap;
                         const dpr  = window.devicePixelRatio || 1;
                         pages = [];
                         if (pageObserver) pageObserver.disconnect();
                         pageRatios.clear();
+                        this.clearOverlays();
                         const maxW = Math.max(wrap.clientWidth - 48, 200);
                         for (let i = 1; i <= this.totalPages; i++) {
                             this.currentPage = i;
@@ -2600,16 +2629,20 @@
                             const base  = page.getViewport({ scale: 1 });
                             const scale = Math.min(maxW / base.width, 2.0);
                             const vp    = page.getViewport({ scale: scale * dpr });
+                            const pageWrap = document.createElement('div');
+                            pageWrap.className = 'relative shrink-0 pdf-page';
+                            pageWrap.dataset.page = i;
                             const canvas = document.createElement('canvas');
                             canvas.width  = vp.width;
                             canvas.height = vp.height;
                             canvas.style.width  = (vp.width  / dpr) + 'px';
                             canvas.style.height = (vp.height / dpr) + 'px';
-                            canvas.className = 'shadow-2xl shrink-0';
-                            canvas.dataset.page = i;
-                            wrap.appendChild(canvas);
-                            pages.push(canvas);
+                            canvas.className = 'shadow-2xl block';
+                            pageWrap.appendChild(canvas);
+                            wrap.appendChild(pageWrap);
+                            pages.push(pageWrap);
                             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                            await this.renderPageOverlay(pageWrap, canvas, page, scale, i);
                         }
 
                         // Track which page is currently in view as the user scrolls,
@@ -2636,7 +2669,8 @@
                         const wrap = this.$refs.canvasWrap;
                         if (pageObserver) { pageObserver.disconnect(); pageObserver = null; }
                         pageRatios.clear();
-                        if (wrap) for (const c of [...wrap.querySelectorAll('canvas')]) c.remove();
+                        this.clearOverlays();
+                        if (wrap) for (const el of [...wrap.querySelectorAll('.pdf-page')]) el.remove();
                         pages = [];
                         pdfDoc = null;
                         this.totalPages = 0;
@@ -2686,7 +2720,11 @@
                 },
             }));
 
-            Alpine.data('readerPdfViewer', (url, assignmentId, csrfToken) => ({
+            Alpine.data('readerPdfViewer', (url, assignmentId, csrfToken) => {
+                let pageOverlays = new Map();
+                let pageTextContents = new Map();
+
+                return {
                 ...makePdfViewerData(url),
                 notesOpen: false,
                 notes: [],
@@ -2697,16 +2735,161 @@
                 searchQuery: '',
                 searchResults: [],
                 pageTexts: [],
+                highlights: [],
+                selectionToolbar: { show: false, x: 0, y: 0, text: '', pageNum: null, rects: [] },
 
                 async onPdfLoaded(pdfDoc) {
                     const texts = [];
                     for (let i = 1; i <= pdfDoc.numPages; i++) {
-                        const page = await pdfDoc.getPage(i);
-                        const content = await page.getTextContent();
-                        texts.push(content.items.map(item => item.str).join(' '));
+                        texts.push(pageTextContents.get(i) || '');
                     }
                     this.pageTexts = texts;
                     if (this.searchQuery.trim()) this.doSearch();
+                    await this.loadHighlights();
+                },
+
+                async renderPageOverlay(pageWrap, canvas, page, scale, pageNum) {
+                    const cssVp = page.getViewport({ scale });
+
+                    const highlightLayerEl = document.createElement('div');
+                    highlightLayerEl.className = 'highlight-layer';
+                    highlightLayerEl.style.width  = cssVp.width + 'px';
+                    highlightLayerEl.style.height = cssVp.height + 'px';
+                    pageWrap.appendChild(highlightLayerEl);
+
+                    const textLayerEl = document.createElement('div');
+                    textLayerEl.className = 'textLayer';
+                    textLayerEl.style.width  = cssVp.width + 'px';
+                    textLayerEl.style.height = cssVp.height + 'px';
+                    textLayerEl.style.setProperty('--scale-factor', scale);
+                    pageWrap.appendChild(textLayerEl);
+
+                    const textContent = await page.getTextContent();
+                    pageTextContents.set(pageNum, textContent.items.map(item => item.str).join(' '));
+
+                    await pdfjsLib.renderTextLayer({
+                        textContentSource: textContent,
+                        container: textLayerEl,
+                        viewport: cssVp,
+                    }).promise;
+
+                    pageOverlays.set(pageNum, { pageWrap, textLayerEl, highlightLayerEl });
+                    this.renderHighlightMarks(pageNum);
+
+                    pageWrap.addEventListener('mouseup', () => this.handleSelection(pageNum, pageWrap));
+                },
+
+                clearOverlays() {
+                    pageOverlays.clear();
+                    pageTextContents.clear();
+                },
+
+                renderHighlightMarks(pageNum) {
+                    const overlay = pageOverlays.get(pageNum);
+                    if (!overlay) return;
+                    overlay.highlightLayerEl.innerHTML = '';
+                    for (const h of this.highlights.filter(h => h.page_number === pageNum)) {
+                        for (const r of h.rects) {
+                            const mark = document.createElement('div');
+                            mark.className = 'highlight-mark';
+                            mark.style.left   = (r.x * 100) + '%';
+                            mark.style.top    = (r.y * 100) + '%';
+                            mark.style.width  = (r.width * 100) + '%';
+                            mark.style.height = (r.height * 100) + '%';
+                            mark.title = 'Click to remove highlight';
+                            mark.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                this.deleteHighlight(h.id);
+                            });
+                            overlay.highlightLayerEl.appendChild(mark);
+                        }
+                    }
+                },
+
+                async loadHighlights() {
+                    try {
+                        const r = await fetch(`/assignments/${assignmentId}/highlights`, {
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        });
+                        if (r.ok) {
+                            this.highlights = await r.json();
+                            for (const pg of pageOverlays.keys()) this.renderHighlightMarks(pg);
+                        }
+                    } catch (e) { console.error(e); }
+                },
+
+                handleSelection(pageNum, pageWrap) {
+                    const sel = window.getSelection();
+                    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+                    const range = sel.getRangeAt(0);
+                    if (!pageWrap.contains(range.commonAncestorContainer)) return;
+                    const text = sel.toString().trim();
+                    if (!text) return;
+                    const clientRects = Array.from(range.getClientRects()).filter(r => r.width > 0 && r.height > 0);
+                    if (!clientRects.length) return;
+
+                    const containerRect = pageWrap.getBoundingClientRect();
+                    const last = clientRects[clientRects.length - 1];
+                    this.selectionToolbar = {
+                        show: true,
+                        x: last.right,
+                        y: last.bottom,
+                        text,
+                        pageNum,
+                        rects: clientRects.map(r => ({
+                            x: (r.left - containerRect.left) / containerRect.width,
+                            y: (r.top - containerRect.top) / containerRect.height,
+                            width: r.width / containerRect.width,
+                            height: r.height / containerRect.height,
+                        })),
+                    };
+                },
+
+                clearSelectionToolbar() {
+                    this.selectionToolbar = { show: false, x: 0, y: 0, text: '', pageNum: null, rects: [] };
+                },
+
+                async saveHighlight() {
+                    const t = this.selectionToolbar;
+                    if (!t.show) return;
+                    try {
+                        const r = await fetch(`/assignments/${assignmentId}/highlights`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                            body: JSON.stringify({ page_number: t.pageNum, text: t.text, rects: t.rects, color: 'yellow' }),
+                        });
+                        if (r.ok) {
+                            const h = await r.json();
+                            this.highlights.push(h);
+                            this.renderHighlightMarks(h.page_number);
+                        }
+                    } catch (e) { console.error(e); } finally {
+                        window.getSelection()?.removeAllRanges();
+                        this.clearSelectionToolbar();
+                    }
+                },
+
+                addSelectionToNote() {
+                    const t = this.selectionToolbar;
+                    if (!t.show) return;
+                    this.noteBody = (this.noteBody ? this.noteBody.trim() + '\n\n' : '') + `"${t.text}" (p. ${t.pageNum})\n`;
+                    this.notesOpen = true;
+                    if (!this.notesLoaded) this.loadNotes();
+                    window.getSelection()?.removeAllRanges();
+                    this.clearSelectionToolbar();
+                },
+
+                async deleteHighlight(id) {
+                    if (!confirm('Remove this highlight?')) return;
+                    try {
+                        await fetch(`/highlights/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        });
+                        const h = this.highlights.find(h => h.id === id);
+                        this.highlights = this.highlights.filter(h => h.id !== id);
+                        if (h) this.renderHighlightMarks(h.page_number);
+                    } catch (e) { console.error(e); }
                 },
 
                 doSearch() {
@@ -2756,7 +2939,8 @@
                         this.notes = this.notes.filter(n => n.id !== id);
                     } catch (e) { console.error(e); }
                 },
-            }));
+                };
+            });
 
         });
         </script>
