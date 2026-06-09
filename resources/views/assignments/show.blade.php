@@ -193,13 +193,15 @@
     {{-- ===== SINGLE / READER LAYOUT ===== --}}
     @php
         $notesForJs = $readingNotes->map(fn($n) => [
-            'id'         => $n->id,
-            'body'       => $n->body,
-            'created_at' => $n->created_at->format('M j, g:ia'),
+            'id'          => $n->id,
+            'body'        => $n->body,
+            'page_number' => $n->page_number,
+            'created_at'  => $n->created_at->format('M j, g:ia'),
         ])->values()->all();
     @endphp
     <div class="py-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
-         x-data="singleAssignmentView(@js($notesForJs), @js(route('reading-notes.store', $assignment)), @js(csrf_token()))">
+         x-data="singleAssignmentView(@js($notesForJs), @js(route('reading-notes.store', $assignment)), @js(csrf_token()))"
+         @pdf-page-changed.window="currentPdfPage = $event.detail.page">
 
         @if (session('success'))
             <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
@@ -395,7 +397,7 @@
                 <button type="button" @click="addNote()"
                         :disabled="!noteBody.trim() || noteSaving"
                         class="mt-2 w-full px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                    <span x-text="noteSaving ? 'Saving…' : 'Add Note'"></span>
+                    <span x-text="noteSaving ? 'Saving…' : (currentPdfPage ? 'Add Note (p. ' + currentPdfPage + ')' : 'Add Note')"></span>
                 </button>
             </div>
 
@@ -407,7 +409,9 @@
                     <div class="bg-gray-50 border border-gray-100 rounded-md px-3 py-2 group">
                         <p class="text-sm text-gray-800 whitespace-pre-wrap leading-snug" x-text="note.body"></p>
                         <div class="flex items-center justify-between mt-1.5">
-                            <span class="text-[10px] text-gray-400" x-text="note.created_at"></span>
+                            <span class="text-[10px] text-gray-400">
+                                <span x-show="note.page_number" class="font-medium text-gray-500" x-text="'p. ' + note.page_number + ' · '"></span><span x-text="note.created_at"></span>
+                            </span>
                             <button type="button" @click="deleteNote(note.id)"
                                     class="text-[10px] text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                 Delete
@@ -470,6 +474,7 @@
             notes: initialNotes,
             noteBody: '',
             noteSaving: false,
+            currentPdfPage: null,
 
             async addNote() {
                 const body = this.noteBody.trim();
@@ -483,7 +488,7 @@
                             'X-CSRF-TOKEN': csrfToken,
                             'Accept': 'application/json',
                         },
-                        body: JSON.stringify({ body }),
+                        body: JSON.stringify({ body, page_number: this.currentPdfPage }),
                     });
                     if (r.ok) {
                         const note = await r.json();
@@ -560,6 +565,7 @@
                         canvas.style.height = (vp.height / dpr) + 'px';
                         await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
                         this.currentPage = num;
+                        this.$dispatch('pdf-page-changed', { page: num });
                         if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;
                     } finally {
                         this.loading = false;
