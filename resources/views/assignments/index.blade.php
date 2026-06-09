@@ -2036,7 +2036,9 @@
                                                                             <div class="group bg-gray-800 border border-gray-700 rounded px-2.5 py-2">
                                                                                 <p class="text-xs text-gray-200 whitespace-pre-wrap leading-snug" x-text="n.body"></p>
                                                                                 <div class="flex items-center justify-between mt-1">
-                                                                                    <p class="text-[10px] text-gray-500" x-text="n.created_at"></p>
+                                                                                    <p class="text-[10px] text-gray-500">
+                                                                                        <span x-show="n.page_number" class="font-medium text-gray-400" x-text="'p. ' + n.page_number + ' · '"></span><span x-text="n.created_at"></span>
+                                                                                    </p>
                                                                                     <button @click="deleteNote(n.id)" type="button"
                                                                                             class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-[10px] transition-opacity leading-none">Delete</button>
                                                                                 </div>
@@ -2052,7 +2054,7 @@
                                                                             <span class="text-[10px] text-gray-500">Ctrl+Enter to save</span>
                                                                             <button type="button" @click="addNote()" :disabled="noteSaving || !noteBody.trim()"
                                                                                     class="px-2 py-1 text-[10px] bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-                                                                                    x-text="noteSaving ? 'Saving…' : 'Add Note'"></button>
+                                                                                    x-text="noteSaving ? 'Saving…' : (currentPage ? 'Add Note (p. ' + currentPage + ')' : 'Add Note')"></button>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -2549,6 +2551,8 @@
             function makePdfViewerData(url) {
                 let pdfDoc = null;
                 let pages  = [];
+                let pageRatios  = new Map();
+                let pageObserver = null;
                 return {
                     open: false,
                     url: url,
@@ -2587,6 +2591,8 @@
                         const wrap = this.$refs.canvasWrap;
                         const dpr  = window.devicePixelRatio || 1;
                         pages = [];
+                        if (pageObserver) pageObserver.disconnect();
+                        pageRatios.clear();
                         const maxW = Math.max(wrap.clientWidth - 48, 200);
                         for (let i = 1; i <= this.totalPages; i++) {
                             this.currentPage = i;
@@ -2600,10 +2606,25 @@
                             canvas.style.width  = (vp.width  / dpr) + 'px';
                             canvas.style.height = (vp.height / dpr) + 'px';
                             canvas.className = 'shadow-2xl shrink-0';
+                            canvas.dataset.page = i;
                             wrap.appendChild(canvas);
                             pages.push(canvas);
                             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
                         }
+
+                        // Track which page is currently in view as the user scrolls,
+                        // so notes can be auto-tagged with the page being read.
+                        pageObserver = new IntersectionObserver((entries) => {
+                            for (const entry of entries) {
+                                pageRatios.set(parseInt(entry.target.dataset.page, 10), entry.intersectionRatio);
+                            }
+                            let best = null, bestRatio = 0;
+                            for (const [pg, ratio] of pageRatios) {
+                                if (ratio > bestRatio) { bestRatio = ratio; best = pg; }
+                            }
+                            if (best) this.currentPage = best;
+                        }, { root: wrap, threshold: [0, 0.25, 0.5, 0.75, 1] });
+                        pages.forEach(c => pageObserver.observe(c));
                     },
 
                     scrollToPage(num) {
@@ -2613,6 +2634,8 @@
 
                     async reloadPdf() {
                         const wrap = this.$refs.canvasWrap;
+                        if (pageObserver) { pageObserver.disconnect(); pageObserver = null; }
+                        pageRatios.clear();
                         if (wrap) for (const c of [...wrap.querySelectorAll('canvas')]) c.remove();
                         pages = [];
                         pdfDoc = null;
@@ -2714,7 +2737,7 @@
                         const r = await fetch(`/assignments/${assignmentId}/reading-notes`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                            body: JSON.stringify({ body: this.noteBody.trim() }),
+                            body: JSON.stringify({ body: this.noteBody.trim(), page_number: this.currentPage || null }),
                         });
                         if (r.ok) {
                             this.notes.push(await r.json());
