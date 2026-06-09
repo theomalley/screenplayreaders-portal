@@ -342,6 +342,10 @@
                                         class="px-2 py-1.5 hover:bg-gray-700 border-l border-gray-700 whitespace-nowrap">
                                     Add to Note
                                 </button>
+                                <button type="button" @click="highlightAndAddToNote()"
+                                        class="px-2 py-1.5 hover:bg-gray-700 border-l border-gray-700 flex items-center gap-1.5 whitespace-nowrap">
+                                    <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block"></span> Both
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -487,6 +491,21 @@
             });
         }
 
+        // PDF text content items aren't always in visual reading order, which makes
+        // click-and-drag selection jump around. Re-order top-to-bottom, left-to-right
+        // before handing off to the text layer so drag-selection follows the page visually.
+        function sortTextItemsForSelection(textContent) {
+            const items = [...textContent.items].sort((a, b) => {
+                const ay = a.transform ? a.transform[5] : 0;
+                const by = b.transform ? b.transform[5] : 0;
+                if (Math.abs(ay - by) > 1) return by - ay;
+                const ax = a.transform ? a.transform[4] : 0;
+                const bx = b.transform ? b.transform[4] : 0;
+                return ax - bx;
+            });
+            return { ...textContent, items };
+        }
+
         Alpine.data('singleAssignmentView', (initialNotes, storeUrl, csrfToken) => ({
             editOpen: false,
             notesOpen: false,
@@ -623,7 +642,7 @@
 
                     const textContent = await page.getTextContent();
                     await pdfjsLib.renderTextLayer({
-                        textContentSource: textContent,
+                        textContentSource: sortTextItemsForSelection(textContent),
                         container: textLayerEl,
                         viewport: cssVp,
                     }).promise;
@@ -685,7 +704,7 @@
                     this.selectionToolbar = { show: false, x: 0, y: 0, text: '', rects: [] };
                 },
 
-                async saveHighlight() {
+                async saveHighlight(clear = true) {
                     const t = this.selectionToolbar;
                     if (!t.show) return;
                     try {
@@ -710,15 +729,26 @@
                     } catch (e) {
                         console.error(e);
                     } finally {
+                        if (clear) {
+                            window.getSelection()?.removeAllRanges();
+                            this.clearSelectionToolbar();
+                        }
+                    }
+                },
+
+                addSelectionToNote(clear = true) {
+                    const t = this.selectionToolbar;
+                    if (!t.show) return;
+                    this.$dispatch('add-to-note', { text: t.text, page: this.currentPage });
+                    if (clear) {
                         window.getSelection()?.removeAllRanges();
                         this.clearSelectionToolbar();
                     }
                 },
 
-                addSelectionToNote() {
-                    const t = this.selectionToolbar;
-                    if (!t.show) return;
-                    this.$dispatch('add-to-note', { text: t.text, page: this.currentPage });
+                async highlightAndAddToNote() {
+                    await this.saveHighlight(false);
+                    this.addSelectionToNote(false);
                     window.getSelection()?.removeAllRanges();
                     this.clearSelectionToolbar();
                 },
