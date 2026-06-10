@@ -316,10 +316,14 @@ class GoogleDriveService
                 $pdf->SetFont('Helvetica', '', 16);
                 $pdf->SetTextColor(190, 190, 190);
 
+                // FPDF's core fonts expect CP1252, but $watermarkText is UTF-8 (e.g. the
+                // "·" separator) — convert or it renders as "Â·".
+                $wmText = iconv('UTF-8', 'CP1252//TRANSLIT', $watermarkText);
+
                 $w = $size['width'];
                 $h = $size['height'];
                 foreach ([0.2, 0.5, 0.8] as $fraction) {
-                    $pdf->rotatedText($w * 0.1, $h * $fraction, $watermarkText, 45);
+                    $pdf->rotatedText($w * 0.1, $h * $fraction, $wmText, 45);
                 }
             }
 
