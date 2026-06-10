@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-06-10 | Admin can permanently delete a payment-history batch or wipe all history
 // v1.2 — 2026-06-10 | Admin can edit/zero-out an order's commission directly from the editor pay view
 // v1.1 — 2026-05-28 | Source weekly flat from editor profile; remove global Setting dependency
 
@@ -129,6 +130,40 @@ class EditorPayController extends Controller
 
         return redirect()->route('editor-pay.index')
             ->with('success', "Commission for order {$order->order_number} removed.");
+    }
+
+    public function deleteHistoryBatch(string $date)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            abort(404);
+        }
+
+        OrderRevenue::whereNotNull('editor_paid_at')
+            ->whereDate('editor_paid_at', $date)
+            ->update(['cog_commission' => 0, 'editor_paid_at' => null]);
+
+        EditorPayAdjustment::whereNotNull('editor_paid_at')
+            ->whereDate('editor_paid_at', $date)
+            ->delete();
+
+        return redirect()->route('editor-pay.index')
+            ->with('success', "Payment history for {$date} permanently deleted.");
+    }
+
+    public function deleteAllHistory()
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        OrderRevenue::whereNotNull('editor_paid_at')
+            ->where('cog_commission', '>', 0)
+            ->update(['cog_commission' => 0, 'editor_paid_at' => null]);
+
+        EditorPayAdjustment::whereNotNull('editor_paid_at')->delete();
+
+        return redirect()->route('editor-pay.index')
+            ->with('success', 'All editor payment history permanently deleted.');
     }
 
     public function deleteAdjustment(EditorPayAdjustment $adjustment)

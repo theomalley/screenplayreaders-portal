@@ -179,9 +179,18 @@
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Payment History</h3>
-                    @if($totalPages > 1)
-                        <span class="text-xs text-gray-400">Page {{ $page }} of {{ $totalPages }}</span>
-                    @endif
+                    <div class="flex items-center gap-3">
+                        @if($totalPages > 1)
+                            <span class="text-xs text-gray-400">Page {{ $page }} of {{ $totalPages }}</span>
+                        @endif
+                        @if(auth()->user()->isAdmin() && !empty($history))
+                        <form method="POST" action="{{ route('editor-pay.delete-all-history') }}"
+                            onsubmit="return confirm('Permanently delete ALL editor payment history? This cannot be undone.')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="text-xs text-red-400 hover:text-red-600">Delete All History</button>
+                        </form>
+                        @endif
+                    </div>
                 </div>
 
                 @if(empty($history))
@@ -189,6 +198,10 @@
                 @else
                     <div class="divide-y divide-gray-100">
                         @foreach($history as $batch)
+                        @php
+                            $batchDate = $batch['paid_at']->toDateString();
+                            $batchDateLabel = $batch['paid_at']->format('M j, Y');
+                        @endphp
                         <details class="group">
                             <summary class="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 list-none">
                                 <div class="flex items-center gap-4">
@@ -204,6 +217,14 @@
                                     <span class="font-semibold {{ $batch['total'] >= 0 ? 'text-green-700' : 'text-red-600' }}">
                                         ${{ number_format($batch['total'], 2) }}
                                     </span>
+                                    @if(auth()->user()->isAdmin())
+                                    <form method="POST" action="{{ route('editor-pay.delete-history-batch', $batchDate) }}"
+                                        onsubmit="event.stopPropagation(); return confirm('Permanently delete this payment batch ({{ $batchDateLabel }})? This cannot be undone.')"
+                                        onclick="event.stopPropagation()">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="text-xs text-red-400 hover:text-red-600">Delete</button>
+                                    </form>
+                                    @endif
                                     <svg class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                     </svg>
