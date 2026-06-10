@@ -158,6 +158,7 @@ document.addEventListener('alpine:init', () => {
             resetZoom() { this.setZoom(1); },
 
             onWheelZoom(e) {
+                if (!e.ctrlKey) return;
                 e.preventDefault();
                 if (this._zoomTarget === null) this._zoomTarget = this.zoomLevel;
                 this._zoomTarget += (e.deltaY < 0 ? 0.1 : -0.1);

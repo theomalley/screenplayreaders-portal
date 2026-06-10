@@ -115,7 +115,7 @@
          class="mt-1.5 text-[10px] text-gray-500 italic">No matches found</div>
 </div>
 <div class="flex-1 flex min-h-0">
-    <div x-ref="canvasWrap" @wheel.ctrl="onWheelZoom($event)"
+    <div x-ref="canvasWrap" @wheel="onWheelZoom($event)"
          class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
         <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
     </div>
