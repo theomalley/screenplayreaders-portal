@@ -154,6 +154,7 @@ document.addEventListener('alpine:init', () => {
         return {
         ...makePdfViewerData(url),
         notesOpen: false,
+        notesPanelWidth: 288,
         notes: [],
         noteBody: '',
         noteSaving: false,
@@ -337,6 +338,22 @@ document.addEventListener('alpine:init', () => {
             this.searchResults = this.pageTexts
                 .map((text, i) => text.toLowerCase().includes(q) ? i + 1 : null)
                 .filter(Boolean);
+        },
+
+        startNotesResize(e) {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startWidth = this.notesPanelWidth;
+            const onMove = (ev) => {
+                const newWidth = startWidth + (startX - ev.clientX);
+                this.notesPanelWidth = Math.max(240, Math.min(newWidth, window.innerWidth - 320));
+            };
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+            };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
         },
 
         async loadNotes() {

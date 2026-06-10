@@ -127,9 +127,14 @@
             <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block"></span> Both
         </button>
     </div>
+    {{-- Drag handle to resize the notes panel --}}
+    <div x-show="notesOpen" x-cloak
+         @mousedown="startNotesResize($event)"
+         class="w-1.5 cursor-col-resize bg-gray-700 hover:bg-indigo-500 active:bg-indigo-500 shrink-0"></div>
     {{-- Reading notes side panel --}}
     <div x-show="notesOpen" x-cloak
-         class="w-72 flex flex-col bg-gray-900 border-l border-gray-700 shrink-0">
+         :style="`width: ${notesPanelWidth}px`"
+         class="flex flex-col bg-gray-900 border-l border-gray-700 shrink-0">
         <div class="px-3 py-2 border-b border-gray-700 flex items-center justify-between shrink-0">
             <span class="text-sm font-medium text-gray-200">Reading Notes</span>
             <button @click="notesOpen = false" type="button" class="text-gray-400 hover:text-white text-xl leading-none">×</button>
@@ -152,7 +157,7 @@
         <div class="px-3 py-3 border-t border-gray-700 shrink-0">
             <textarea x-model="noteBody" rows="3" placeholder="Jot a note…"
                       @keydown.ctrl.enter.prevent="addNote()"
-                      class="w-full text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-gray-200 placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"></textarea>
+                      class="w-full text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-gray-200 placeholder-gray-500 resize-y min-h-[4.5rem] max-h-64 focus:outline-none focus:ring-1 focus:ring-indigo-500"></textarea>
             <div class="flex items-center justify-between mt-1.5">
                 <span class="text-[10px] text-gray-500">Ctrl+Enter to save</span>
                 <button type="button" @click="addNote()" :disabled="noteSaving || !noteBody.trim()"
