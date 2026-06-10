@@ -829,7 +829,7 @@
                                                             <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H6l-4 4V5z" clip-rule="evenodd"/>
                                                         </svg>
                                                     </a>
-                                                    @if ($assignment->status === 'incoming')
+                                                    @if ($assignment->status === 'incoming' && $assignment->page_count > 120)
                                                         <span x-data="{ busy: false, sent: false, err: '' }">
                                                             <button type="button"
                                                                     :disabled="busy || sent"
