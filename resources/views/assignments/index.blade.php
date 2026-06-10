@@ -951,6 +951,7 @@
                 <div x-show="search" x-cloak class="mt-6">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Archive</h3>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -1329,6 +1330,7 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
                 </div>
             @endif
 
