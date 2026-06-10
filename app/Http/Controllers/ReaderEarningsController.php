@@ -1,10 +1,12 @@
 <?php
 
+// v2.0 — 2026-06-10 | Restructure around pay periods — current period summary + paginated collapsible history
 // v1.0 — 2026-05-29 | Reader earnings dashboard — time-period aggregates and Chart.js data
 
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Support\PayPeriod;
 use Carbon\Carbon;
 
 class ReaderEarningsController extends Controller
@@ -14,84 +16,110 @@ class ReaderEarningsController extends Controller
         $user = auth()->user();
         abort_unless($user->isReader(), 403);
 
-        $period = request()->input('period', 'this_month');
-        if (! array_key_exists($period, RevenueController::$PERIODS)) {
-            $period = 'this_month';
+        $assignments = Assignment::where('assigned_reader_id', $user->id)
+            ->where('status', Assignment::STATUS_COMPLETED)
+            ->whereNotNull('completed_at')
+            ->orderByDesc('completed_at')
+            ->get();
+
+        $periods = $this->groupByPayPeriod($assignments);
+
+        [$curStart, $curEnd] = PayPeriod::current();
+        $curKey = $curStart->toDateString();
+
+        $current = $periods[$curKey] ?? $this->emptyPeriod($curStart, $curEnd);
+        unset($periods[$curKey]);
+
+        $current['label']        = PayPeriod::label($curStart);
+        $current['payout_date']  = PayPeriod::nextPayoutDate();
+        $current['type_counts']  = $this->typeCounts($current['assignments']);
+
+        $historyAll = collect($periods)
+            ->map(function ($p) {
+                $p['label'] = PayPeriod::label($p['start']);
+                return $p;
+            })
+            ->sortByDesc(fn($p) => $p['start'])
+            ->values()
+            ->all();
+
+        $page       = max(1, (int) request()->input('page', 1));
+        $perPage    = 25;
+        $totalPages = max(1, (int) ceil(count($historyAll) / $perPage));
+        $page       = min($page, $totalPages);
+        $history    = array_slice($historyAll, ($page - 1) * $perPage, $perPage);
+
+        $chartData = $this->buildChartData($current, $historyAll);
+
+        return view('reader-earnings.index', compact('current', 'history', 'page', 'totalPages', 'chartData'));
+    }
+
+    private function groupByPayPeriod($assignments): array
+    {
+        $periods = [];
+
+        foreach ($assignments as $a) {
+            [$start, $end] = PayPeriod::bounds($a->completed_at);
+            $key = $start->toDateString();
+
+            $periods[$key]['start']        ??= $start;
+            $periods[$key]['end']          ??= $end;
+            $periods[$key]['assignments'][] = $a;
+            $periods[$key]['count']         = ($periods[$key]['count']         ?? 0) + 1;
+            $periods[$key]['total']         = ($periods[$key]['total']         ?? 0) + (float) $a->pay_rate;
+            $periods[$key]['paid_total']    = ($periods[$key]['paid_total']    ?? 0) + ($a->reader_paid_at ? (float) $a->pay_rate : 0);
+            $periods[$key]['pending_total'] = ($periods[$key]['pending_total'] ?? 0) + ($a->reader_paid_at ? 0 : (float) $a->pay_rate);
         }
 
-        [$start, $end] = $this->dateRange($period);
+        return $periods;
+    }
 
-        $query = Assignment::where('assigned_reader_id', $user->id)
-            ->where('status', Assignment::STATUS_COMPLETED)
-            ->whereNotNull('completed_at');
+    private function emptyPeriod(Carbon $start, Carbon $end): array
+    {
+        return [
+            'start' => $start, 'end' => $end, 'assignments' => [],
+            'count' => 0, 'total' => 0, 'paid_total' => 0, 'pending_total' => 0,
+        ];
+    }
 
-        if ($start) $query->where('completed_at', '>=', $start);
-        if ($end)   $query->where('completed_at', '<=', $end);
-
-        $assignments = $query->orderByDesc('completed_at')->get();
-
-        $totals = [
-            'earned'  => (float) $assignments->sum('pay_rate'),
-            'paid'    => (float) $assignments->whereNotNull('reader_paid_at')->sum('pay_rate'),
-            'pending' => (float) $assignments->whereNull('reader_paid_at')->sum('pay_rate'),
-            'count'   => $assignments->count(),
+    /** Count completed assignments in a period by type, for the "this period" breakdown. */
+    private function typeCounts($assignments): array
+    {
+        $labels = [
+            'script_coverage'   => 'Script Coverage',
+            'notes_only'        => 'Notes-Only',
+            'deep_dive'         => 'Deep-Dive',
+            'short'             => 'Short',
+            'budget'            => 'Budget Coverage',
+            'book'              => 'Book',
+            'coverage'          => 'Coverage',
+            'development_notes' => 'Dev Notes',
         ];
 
-        $chartData = $this->buildChartData($assignments, $period);
-
-        return view('reader-earnings.index', compact('assignments', 'totals', 'period', 'chartData'));
-    }
-
-    private function dateRange(string $period): array
-    {
-        $tz  = config('app.timezone', 'America/Los_Angeles');
-        $now = Carbon::now($tz);
-
-        return match ($period) {
-            'today'      => [$now->copy()->startOfDay(),                      $now->copy()->endOfDay()],
-            'yesterday'  => [$now->copy()->subDay()->startOfDay(),             $now->copy()->subDay()->endOfDay()],
-            'this_week'  => [$now->copy()->startOfWeek(),                      $now->copy()->endOfWeek()],
-            'last_week'  => [$now->copy()->subWeek()->startOfWeek(),           $now->copy()->subWeek()->endOfWeek()],
-            'this_month' => [$now->copy()->startOfMonth(),                     $now->copy()->endOfMonth()],
-            'last_month' => [$now->copy()->subMonth()->startOfMonth(),         $now->copy()->subMonth()->endOfMonth()],
-            'last_30'    => [$now->copy()->subDays(29)->startOfDay(),          $now->copy()->endOfDay()],
-            'last_60'    => [$now->copy()->subDays(59)->startOfDay(),          $now->copy()->endOfDay()],
-            'last_90'    => [$now->copy()->subDays(89)->startOfDay(),          $now->copy()->endOfDay()],
-            'this_year'  => [$now->copy()->startOfYear(),                      $now->copy()->endOfYear()],
-            'last_year'  => [$now->copy()->subYear()->startOfYear(),           $now->copy()->subYear()->endOfYear()],
-            'all_time'   => [null, null],
-        };
-    }
-
-    private function buildChartData($assignments, string $period): array
-    {
-        if ($assignments->isEmpty()) {
-            return ['labels' => [], 'earned' => [], 'paid' => []];
-        }
-
-        $bucketByMonth = in_array($period, ['this_year', 'last_year', 'all_time', 'last_90', 'last_60']);
-
-        $buckets = [];
+        $counts = [];
         foreach ($assignments as $a) {
-            $key = $bucketByMonth
-                ? $a->completed_at->format('Y-m')
-                : $a->completed_at->format('Y-m-d');
-            $buckets[$key]['earned'] = ($buckets[$key]['earned'] ?? 0) + (float) $a->pay_rate;
-            $buckets[$key]['paid']   = ($buckets[$key]['paid']   ?? 0) + ($a->reader_paid_at ? (float) $a->pay_rate : 0);
+            $label = $labels[$a->assignment_type] ?? ucfirst(str_replace('_', ' ', $a->assignment_type ?? '—'));
+            if ($a->vendor === 'wd') $label = 'WD ' . $label;
+            $counts[$label] = ($counts[$label] ?? 0) + 1;
         }
 
-        ksort($buckets);
+        arsort($counts);
 
-        $labels = [];
-        $earned = [];
-        $paid   = [];
+        return $counts;
+    }
 
-        foreach ($buckets as $key => $vals) {
-            $labels[] = $bucketByMonth
-                ? Carbon::createFromFormat('Y-m', $key)->format('M Y')
-                : Carbon::createFromFormat('Y-m-d', $key)->format('M j');
-            $earned[] = round($vals['earned'], 2);
-            $paid[]   = round($vals['paid'],   2);
+    /** Build Chart.js series across the most recent pay periods (current + up to 11 prior). */
+    private function buildChartData(array $current, array $historyAll): array
+    {
+        $all = array_merge($historyAll, [$current]);
+        usort($all, fn($a, $b) => $a['start'] <=> $b['start']);
+        $recent = array_slice($all, -12);
+
+        $labels = $earned = $paid = [];
+        foreach ($recent as $p) {
+            $labels[] = $p['label'] ?? PayPeriod::label($p['start']);
+            $earned[] = round($p['total'], 2);
+            $paid[]   = round($p['paid_total'], 2);
         }
 
         return compact('labels', 'earned', 'paid');

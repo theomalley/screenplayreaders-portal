@@ -1,11 +1,13 @@
 <?php
 
+// v2.0 — 2026-06-10 | Restructure around pay periods — current period summary + paginated collapsible history
 // v1.0 — 2026-06-02 | Editor earnings dashboard — commission and adjustment history with Chart.js
 
 namespace App\Http\Controllers;
 
 use App\Models\EditorPayAdjustment;
 use App\Models\OrderRevenue;
+use App\Support\PayPeriod;
 use Carbon\Carbon;
 
 class EditorEarningsController extends Controller
@@ -15,90 +17,102 @@ class EditorEarningsController extends Controller
         $user = auth()->user();
         abort_unless($user->isAdminOrEditor(), 403);
 
-        $period = request()->input('period', 'this_month');
-        if (! array_key_exists($period, RevenueController::$PERIODS)) {
-            $period = 'this_month';
-        }
+        $orders = OrderRevenue::where('cog_commission', '>', 0)
+            ->whereNotNull('ordered_at')
+            ->orderByDesc('ordered_at')
+            ->get();
 
-        [$start, $end] = $this->dateRange($period);
+        $adjustments = EditorPayAdjustment::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get();
 
-        $ordersQuery = OrderRevenue::where('cog_commission', '>', 0);
-        if ($start) $ordersQuery->where('ordered_at', '>=', $start);
-        if ($end)   $ordersQuery->where('ordered_at', '<=', $end);
-        $orders = $ordersQuery->orderByDesc('ordered_at')->get();
+        $periods = $this->groupByPayPeriod($orders, $adjustments);
 
-        $adjustmentsQuery = EditorPayAdjustment::with('addedBy')
-            ->where('user_id', $user->id);
-        if ($start) $adjustmentsQuery->where('created_at', '>=', $start);
-        if ($end)   $adjustmentsQuery->where('created_at', '<=', $end);
-        $adjustments = $adjustmentsQuery->orderByDesc('created_at')->get();
+        [$curStart, $curEnd] = PayPeriod::current();
+        $curKey = $curStart->toDateString();
 
-        $commissionEarned  = (float) $orders->sum('cog_commission');
-        $commissionPaid    = (float) $orders->whereNotNull('editor_paid_at')->sum('cog_commission');
-        $commissionPending = $commissionEarned - $commissionPaid;
-        $adjustmentTotal   = (float) $adjustments->sum('amount');
+        $current = $periods[$curKey] ?? $this->emptyPeriod($curStart, $curEnd);
+        unset($periods[$curKey]);
 
-        $totals = [
-            'commission_earned'  => $commissionEarned,
-            'commission_paid'    => $commissionPaid,
-            'commission_pending' => $commissionPending,
-            'adjustment_total'   => $adjustmentTotal,
-            'total_pending'      => $commissionPending + $adjustmentTotal,
-            'order_count'        => $orders->count(),
-        ];
+        $current['label']       = PayPeriod::label($curStart);
+        $current['payout_date'] = PayPeriod::nextPayoutDate();
 
-        $chartData = $this->buildChartData($orders, $period);
+        $historyAll = collect($periods)
+            ->map(function ($p) {
+                $p['label'] = PayPeriod::label($p['start']);
+                return $p;
+            })
+            ->sortByDesc(fn($p) => $p['start'])
+            ->values()
+            ->all();
 
-        return view('editor-earnings.index', compact('orders', 'adjustments', 'totals', 'period', 'chartData'));
+        $page       = max(1, (int) request()->input('page', 1));
+        $perPage    = 25;
+        $totalPages = max(1, (int) ceil(count($historyAll) / $perPage));
+        $page       = min($page, $totalPages);
+        $history    = array_slice($historyAll, ($page - 1) * $perPage, $perPage);
+
+        $chartData = $this->buildChartData($current, $historyAll);
+
+        return view('editor-earnings.index', compact('current', 'history', 'page', 'totalPages', 'chartData'));
     }
 
-    private function dateRange(string $period): array
+    private function groupByPayPeriod($orders, $adjustments): array
     {
-        $tz  = config('app.timezone', 'America/Los_Angeles');
-        $now = Carbon::now($tz);
+        $periods = [];
 
-        return match ($period) {
-            'today'      => [$now->copy()->startOfDay(),                    $now->copy()->endOfDay()],
-            'yesterday'  => [$now->copy()->subDay()->startOfDay(),           $now->copy()->subDay()->endOfDay()],
-            'this_week'  => [$now->copy()->startOfWeek(),                    $now->copy()->endOfWeek()],
-            'last_week'  => [$now->copy()->subWeek()->startOfWeek(),         $now->copy()->subWeek()->endOfWeek()],
-            'this_month' => [$now->copy()->startOfMonth(),                   $now->copy()->endOfMonth()],
-            'last_month' => [$now->copy()->subMonth()->startOfMonth(),       $now->copy()->subMonth()->endOfMonth()],
-            'last_30'    => [$now->copy()->subDays(29)->startOfDay(),        $now->copy()->endOfDay()],
-            'last_60'    => [$now->copy()->subDays(59)->startOfDay(),        $now->copy()->endOfDay()],
-            'last_90'    => [$now->copy()->subDays(89)->startOfDay(),        $now->copy()->endOfDay()],
-            'this_year'  => [$now->copy()->startOfYear(),                    $now->copy()->endOfYear()],
-            'last_year'  => [$now->copy()->subYear()->startOfYear(),         $now->copy()->subYear()->endOfYear()],
-            'all_time'   => [null, null],
-        };
-    }
-
-    private function buildChartData($orders, string $period): array
-    {
-        if ($orders->isEmpty()) {
-            return ['labels' => [], 'earned' => [], 'paid' => []];
-        }
-
-        $bucketByMonth = in_array($period, ['this_year', 'last_year', 'all_time', 'last_90', 'last_60']);
-
-        $buckets = [];
         foreach ($orders as $o) {
-            $key = $bucketByMonth
-                ? $o->ordered_at->format('Y-m')
-                : $o->ordered_at->format('Y-m-d');
-            $buckets[$key]['earned'] = ($buckets[$key]['earned'] ?? 0) + (float) $o->cog_commission;
-            $buckets[$key]['paid']   = ($buckets[$key]['paid']   ?? 0) + ($o->editor_paid_at ? (float) $o->cog_commission : 0);
+            [$start, $end] = PayPeriod::bounds($o->ordered_at);
+            $key = $start->toDateString();
+
+            $periods[$key]['start']        ??= $start;
+            $periods[$key]['end']          ??= $end;
+            $periods[$key]['orders'][]      = $o;
+            $periods[$key]['adjustments']  ??= [];
+            $periods[$key]['count']         = ($periods[$key]['count']         ?? 0) + 1;
+            $periods[$key]['total']         = ($periods[$key]['total']         ?? 0) + (float) $o->cog_commission;
+            $periods[$key]['paid_total']    = ($periods[$key]['paid_total']    ?? 0) + ($o->editor_paid_at ? (float) $o->cog_commission : 0);
+            $periods[$key]['pending_total'] = ($periods[$key]['pending_total'] ?? 0) + ($o->editor_paid_at ? 0 : (float) $o->cog_commission);
         }
 
-        ksort($buckets);
+        foreach ($adjustments as $adj) {
+            [$start, $end] = PayPeriod::bounds($adj->created_at);
+            $key = $start->toDateString();
+            $amount = (float) $adj->amount;
+
+            $periods[$key]['start']        ??= $start;
+            $periods[$key]['end']          ??= $end;
+            $periods[$key]['orders']       ??= [];
+            $periods[$key]['adjustments'][] = $adj;
+            $periods[$key]['count']        ??= 0;
+            $periods[$key]['total']         = ($periods[$key]['total']         ?? 0) + $amount;
+            $periods[$key]['paid_total']    = ($periods[$key]['paid_total']    ?? 0) + ($adj->editor_paid_at ? $amount : 0);
+            $periods[$key]['pending_total'] = ($periods[$key]['pending_total'] ?? 0) + ($adj->editor_paid_at ? 0 : $amount);
+        }
+
+        return $periods;
+    }
+
+    private function emptyPeriod(Carbon $start, Carbon $end): array
+    {
+        return [
+            'start' => $start, 'end' => $end, 'orders' => [], 'adjustments' => [],
+            'count' => 0, 'total' => 0, 'paid_total' => 0, 'pending_total' => 0,
+        ];
+    }
+
+    /** Build Chart.js series across the most recent pay periods (current + up to 11 prior). */
+    private function buildChartData(array $current, array $historyAll): array
+    {
+        $all = array_merge($historyAll, [$current]);
+        usort($all, fn($a, $b) => $a['start'] <=> $b['start']);
+        $recent = array_slice($all, -12);
 
         $labels = $earned = $paid = [];
-        foreach ($buckets as $key => $vals) {
-            $labels[] = $bucketByMonth
-                ? Carbon::createFromFormat('Y-m', $key)->format('M Y')
-                : Carbon::createFromFormat('Y-m-d', $key)->format('M j');
-            $earned[] = round($vals['earned'], 2);
-            $paid[]   = round($vals['paid'],   2);
+        foreach ($recent as $p) {
+            $labels[] = $p['label'] ?? PayPeriod::label($p['start']);
+            $earned[] = round($p['total'], 2);
+            $paid[]   = round($p['paid_total'], 2);
         }
 
         return compact('labels', 'earned', 'paid');
