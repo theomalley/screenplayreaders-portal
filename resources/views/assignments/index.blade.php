@@ -1945,7 +1945,8 @@
                                                         @endif
                                                     </div>
                                                 </td>
-                                                <td class="px-3 py-3" x-data="readerPdfViewer(@js($viewUrl), @js($assignment->id), @js(csrf_token()))">
+                                                <td class="px-3 py-3" x-data="readerPdfViewer(@js($viewUrl), @js($assignment->id), @js(csrf_token()))"
+                                                    x-init="if (new URLSearchParams(location.search).get('open_script') == {{ $assignment->id }}) openViewer()">
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"

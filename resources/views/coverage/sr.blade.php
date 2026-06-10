@@ -13,7 +13,7 @@
                 </h2>
             </div>
             @can('submitCoverage', $assignment)
-                <a href="{{ route('assignments.show', $assignment) }}"
+                <a href="{{ route('assignments.index', ['open_script' => $assignment->id]) }}"
                    class="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap">
                     &larr; View Script
                 </a>
