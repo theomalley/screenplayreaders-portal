@@ -212,7 +212,7 @@
             @endif
             @if($viewUrl)
                 <button @click="viewerOpen = true; window.dispatchEvent(new CustomEvent('sr-load-pdf-{{ $assignment->id }}'))" type="button"
-                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
+                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">📄 {{ $assignment->script_title }}</button>
             @else
                 <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
             @endif

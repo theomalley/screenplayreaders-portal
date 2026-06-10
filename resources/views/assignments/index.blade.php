@@ -1251,7 +1251,7 @@
                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($viewUrl)
                                                 <button @click="openViewer()" type="button"
-                                                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
+                                                        class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">📄 {{ $assignment->script_title }}</button>
                                                 <div x-show="open" x-cloak x-ref="modal"
                                                      @keydown.escape.window="open = false"
                                                      tabindex="-1"
@@ -1637,7 +1637,7 @@
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
-                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
+                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">📄 {{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
                                                              x-ref="modal"
@@ -1949,7 +1949,7 @@
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
-                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $assignment->script_title }}</button>
+                                                                class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">📄 {{ $assignment->script_title }}</button>
                                                         <div x-show="open" x-cloak
                                                              @keydown.escape.window="open = false"
                                                              x-ref="modal"

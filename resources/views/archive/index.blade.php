@@ -106,7 +106,7 @@
                                     <td class="px-4 py-3" x-data="pdfViewer(@js($viewUrl ?? ''))">
                                         @if($viewUrl)
                                             <button @click="openViewer()" type="button"
-                                                    class="font-medium text-gray-800 hover:text-indigo-600 text-left leading-snug max-w-xs block">{{ $first->script_title }}</button>
+                                                    class="font-medium text-gray-800 hover:text-indigo-600 text-left leading-snug max-w-xs block">📄 {{ $first->script_title }}</button>
                                             <div x-show="open" x-cloak x-ref="modal"
                                                  @keydown.escape.window="open = false"
                                                  tabindex="-1"

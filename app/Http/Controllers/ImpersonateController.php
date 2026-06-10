@@ -20,13 +20,7 @@ class ImpersonateController extends Controller
 
         Auth::loginUsingId($user->id, false);
 
-        // Redirect to a page that is always accessible for the role,
-        // bypassing configurable permission gates that may block the user.
-        $landing = $user->role === 'reader'
-            ? route('reader-earnings.index')   // always accessible, no permission gate
-            : route('assignments.index');       // editors always have assignments permission
-
-        return redirect($landing);
+        return redirect()->route('assignments.index');
     }
 
     public function stop()
