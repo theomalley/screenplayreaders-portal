@@ -47,6 +47,9 @@ document.addEventListener('alpine:init', () => {
             currentPage: 0,
             totalPages: 0,
             loading: false,
+            zoomLevel: 1,
+            _zoomTimer: null,
+            _zoomTarget: null,
 
             async openViewer() {
                 this.open = true;
@@ -82,16 +85,18 @@ document.addEventListener('alpine:init', () => {
             async renderAllPages() {
                 const wrap = this.$refs.canvasWrap;
                 const dpr  = window.devicePixelRatio || 1;
-                pages = [];
                 if (pageObserver) pageObserver.disconnect();
                 pageRatios.clear();
                 this.clearOverlays();
+                for (const el of [...wrap.querySelectorAll('.pdf-page')]) el.remove();
+                pages = [];
                 const maxW = Math.max(wrap.clientWidth - 48, 200);
                 for (let i = 1; i <= this.totalPages; i++) {
                     this.currentPage = i;
                     const page = await pdfDoc.getPage(i);
                     const base  = page.getViewport({ scale: 1 });
-                    const scale = Math.min(maxW / base.width, 2.0);
+                    const fitScale = Math.min(maxW / base.width, 2.0);
+                    const scale = fitScale * this.zoomLevel;
                     const vp    = page.getViewport({ scale: scale * dpr });
                     const pageWrap = document.createElement('div');
                     pageWrap.className = 'relative shrink-0 pdf-page';
@@ -127,6 +132,39 @@ document.addEventListener('alpine:init', () => {
             scrollToPage(num) {
                 const n = Math.max(1, Math.min(parseInt(num) || 1, this.totalPages));
                 if (pages[n - 1]) pages[n - 1].scrollIntoView({ behavior: 'smooth' });
+            },
+
+            async applyZoom() {
+                if (!pdfDoc) return;
+                const wrap = this.$refs.canvasWrap;
+                const scrollableHeight = wrap.scrollHeight - wrap.clientHeight;
+                const scrollRatio = scrollableHeight > 0 ? wrap.scrollTop / scrollableHeight : 0;
+                await this.renderAllPages();
+                await this.$nextTick();
+                const newScrollable = wrap.scrollHeight - wrap.clientHeight;
+                if (newScrollable > 0) wrap.scrollTop = scrollRatio * newScrollable;
+            },
+
+            setZoom(level) {
+                const clamped = Math.max(0.5, Math.min(2.5, Math.round(level * 20) / 20));
+                if (clamped === this.zoomLevel) return;
+                this.zoomLevel = clamped;
+                this.applyZoom();
+            },
+
+            zoomIn() { this.setZoom(this.zoomLevel + 0.1); },
+            zoomOut() { this.setZoom(this.zoomLevel - 0.1); },
+            resetZoom() { this.setZoom(1); },
+
+            onWheelZoom(e) {
+                e.preventDefault();
+                if (this._zoomTarget === null) this._zoomTarget = this.zoomLevel;
+                this._zoomTarget += (e.deltaY < 0 ? 0.1 : -0.1);
+                clearTimeout(this._zoomTimer);
+                this._zoomTimer = setTimeout(() => {
+                    this.setZoom(this._zoomTarget);
+                    this._zoomTarget = null;
+                }, 150);
             },
 
             async reloadPdf() {

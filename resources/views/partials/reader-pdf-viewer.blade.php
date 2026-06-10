@@ -16,6 +16,14 @@
                 / <span x-text="totalPages"></span>
             </span>
         </div>
+        <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400">
+            <button type="button" @click="zoomOut()"
+                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom out">−</button>
+            <button type="button" @click="resetZoom()" x-text="Math.round(zoomLevel * 100) + '%'"
+                    class="w-12 text-center hover:text-white" title="Reset zoom"></button>
+            <button type="button" @click="zoomIn()"
+                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom in">+</button>
+        </div>
         <button type="button"
                 @click="searchOpen = !searchOpen; if (searchOpen) $nextTick(() => $refs.searchInput?.focus())"
                 :class="searchOpen ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
@@ -107,7 +115,8 @@
          class="mt-1.5 text-[10px] text-gray-500 italic">No matches found</div>
 </div>
 <div class="flex-1 flex min-h-0">
-    <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+    <div x-ref="canvasWrap" @wheel.ctrl="onWheelZoom($event)"
+         class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
         <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
     </div>
     {{-- Floating selection toolbar (highlight / add to note) --}}
