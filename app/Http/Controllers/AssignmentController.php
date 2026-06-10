@@ -1,5 +1,7 @@
 <?php
 
+// v2.12 — 2026-06-10 | downloadScriptForReader: build watermark text from admin-configurable
+//                      Setting::getWatermarkSettings() field toggles + custom text.
 // v2.11 — 2026-06-10 | downloadScript: readers can download a watermarked, restricted copy via
 //                      signed/expiring/single-use links (ScriptDownload audit log).
 // v2.10 — 2026-06-07 | removePages/unlockScript return JSON for AJAX requests (PDF in-place refresh)
@@ -699,13 +701,26 @@ class AssignmentController extends Controller
             $tmpSource = $drive->downloadToTemp($assignment->drive_script_file_id);
         }
 
-        $watermarkText = sprintf(
-            '%s · Order #%s · %s · Ref DL-%d',
-            auth()->user()->name,
-            $assignment->order_number,
-            now()->setTimezone(Setting::getAppTimezone())->format('M j, Y g:ia'),
-            $scriptDownload->id
-        );
+        $wm = Setting::getWatermarkSettings();
+
+        $parts = [];
+        if ($wm['watermark_custom_text'] !== '') {
+            $parts[] = $wm['watermark_custom_text'];
+        }
+        if ($wm['watermark_show_name']) {
+            $parts[] = auth()->user()->name;
+        }
+        if ($wm['watermark_show_order']) {
+            $parts[] = 'Order #' . $assignment->order_number;
+        }
+        if ($wm['watermark_show_datetime']) {
+            $parts[] = now()->setTimezone(Setting::getAppTimezone())->format('M j, Y g:ia');
+        }
+        if ($wm['watermark_show_ref']) {
+            $parts[] = 'Ref DL-' . $scriptDownload->id;
+        }
+
+        $watermarkText = $parts !== [] ? implode(' · ', $parts) : 'Screenplay Readers';
 
         $output = $drive->watermarkPdf($tmpSource, $watermarkText);
 

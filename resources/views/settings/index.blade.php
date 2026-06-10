@@ -413,6 +413,75 @@
                     </form>
                 </div>
 
+                {{-- Reader Download Watermark --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                     x-data="{
+                         showName: {{ $watermarkSettings['watermark_show_name'] ? 'true' : 'false' }},
+                         showOrder: {{ $watermarkSettings['watermark_show_order'] ? 'true' : 'false' }},
+                         showDatetime: {{ $watermarkSettings['watermark_show_datetime'] ? 'true' : 'false' }},
+                         showRef: {{ $watermarkSettings['watermark_show_ref'] ? 'true' : 'false' }},
+                         customText: @js($watermarkSettings['watermark_custom_text']),
+                         get preview() {
+                             const parts = [];
+                             if (this.customText.trim()) parts.push(this.customText.trim());
+                             if (this.showName) parts.push('Jane Reader');
+                             if (this.showOrder) parts.push('Order #SR-12345');
+                             if (this.showDatetime) parts.push('Jun 10, 2026 3:45pm');
+                             if (this.showRef) parts.push('Ref DL-42');
+                             return parts.length ? parts.join(' · ') : 'Screenplay Readers';
+                         }
+                     }">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Reader Download Watermark</h3>
+                    <p class="text-xs text-gray-500 mb-4">Choose which fields appear in the diagonal watermark tiled across scripts readers download.</p>
+
+                    <form method="POST" action="{{ route('settings.watermark') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" name="watermark_show_name" value="1" x-model="showName"
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">Reader name</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" name="watermark_show_order" value="1" x-model="showOrder"
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">Order number</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" name="watermark_show_datetime" value="1" x-model="showDatetime"
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">Download date &amp; time</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" name="watermark_show_ref" value="1" x-model="showRef"
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">Download reference ID</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <x-input-label for="watermark_custom_text" value="Custom text (optional)" />
+                            <input type="text" id="watermark_custom_text" name="watermark_custom_text" maxlength="200"
+                                   x-model="customText"
+                                   placeholder="e.g. Confidential — Property of Screenplay Readers"
+                                   class="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                            <p class="mt-1 text-xs text-gray-400">Prepended to the watermark, e.g. a confidentiality notice or company name.</p>
+                            <x-input-error class="mt-1" :messages="$errors->get('watermark_custom_text')" />
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">Preview:</p>
+                            <p class="text-sm font-mono bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-600" x-text="preview"></p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Watermark Settings</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+
                 {{-- Permissions --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-sm font-semibold text-gray-800 mb-1">Permissions</h3>

@@ -126,6 +126,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/age-thresholds', [SettingController::class, 'updateAgeThresholds'])->name('settings.age-thresholds');
     Route::patch('/settings/timezone', [SettingController::class, 'updateTimezone'])->name('settings.timezone');
     Route::patch('/settings/dev-autofill', [SettingController::class, 'updateDevAutofill'])->name('settings.dev-autofill');
+    Route::patch('/settings/watermark', [SettingController::class, 'updateWatermark'])->name('settings.watermark');
     Route::patch('/settings/qc-saved-replies', [SettingController::class, 'updateQcSavedReplies'])->name('settings.qc-saved-replies');
     Route::patch('/settings/email-notifications', [SettingController::class, 'updateEmailNotificationTexts'])->name('settings.email-notifications');
     Route::patch('/settings/followup-html', [SettingController::class, 'updateFollowupHtml'])->name('settings.followup-html');

@@ -1,5 +1,6 @@
 <?php
 
+// v2.11 — 2026-06-10 | Reader download watermark — admin-configurable field toggles + custom text.
 // v2.10 — 2026-06-07 | Pay period start/end day+time — admin-configurable via settings.
 // v2.9 — 2026-06-03 | Word count minimums — per-field admin settings + global enable/disable.
 // v2.8 — 2026-05-31 | Followup form HTML — before/after injection via settings.
@@ -68,6 +69,7 @@ class SettingController extends Controller
             'editor' => (bool) Setting::getValue('dev_autofill_editor', false),
             'reader' => (bool) Setting::getValue('dev_autofill_reader', false),
         ];
+        $watermarkSettings    = $isAdmin ? Setting::getWatermarkSettings() : null;
         $qcSavedReplies       = Setting::getSavedReplies();
         $emailNotifTexts      = Setting::getEmailNotificationTexts();
         $followupBeforeHtml   = Setting::getValue('followup_before_html', '');
@@ -86,7 +88,7 @@ class SettingController extends Controller
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
-            'devAutofill', 'qcSavedReplies', 'emailNotifTexts',
+            'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading',
             'wordCounts', 'payPeriod', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
@@ -262,6 +264,26 @@ class SettingController extends Controller
         Setting::setValue('dev_autofill_reader', $request->boolean('dev_autofill_reader') ? '1' : '0');
 
         return back()->with('success', 'Autofill settings saved.');
+    }
+
+    public function updateWatermark(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate([
+            'watermark_show_name'     => 'nullable|boolean',
+            'watermark_show_order'    => 'nullable|boolean',
+            'watermark_show_datetime' => 'nullable|boolean',
+            'watermark_show_ref'      => 'nullable|boolean',
+            'watermark_custom_text'   => 'nullable|string|max:200',
+        ]);
+
+        foreach (['watermark_show_name', 'watermark_show_order', 'watermark_show_datetime', 'watermark_show_ref'] as $key) {
+            Setting::setValue($key, $request->boolean($key) ? '1' : '0');
+        }
+        Setting::setValue('watermark_custom_text', trim($request->input('watermark_custom_text', '')));
+
+        return back()->with('success', 'Watermark settings saved.');
     }
 
     public function updateQcSavedReplies(Request $request): RedirectResponse

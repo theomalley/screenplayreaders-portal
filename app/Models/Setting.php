@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-06-10 | Add WATERMARK_DEFAULTS and getWatermarkSettings() for admin-configurable reader download watermark
 // v1.6 — 2026-06-07 | Add PAY_PERIOD_DEFAULTS and getPayPeriod() for explicit period start/end configuration
 // v1.5 — 2026-06-03 | Add WORD_COUNT_DEFAULTS and getWordCounts() for admin-configurable coverage word count minimums
 // v1.4 — 2026-06-02 | Add PAYOUT_SCHEDULE_DEFAULTS and getPayoutSchedule() for admin-configurable payout schedule
@@ -249,6 +250,34 @@ class Setting extends Model
         $result = [];
         foreach (self::WORD_COUNT_DEFAULTS as $key => $default) {
             $result[$key] = isset($stored[$key]) ? (int) $stored[$key] : (int) $default;
+        }
+
+        return $result;
+    }
+
+    /** Reader-download watermark: which fields appear, plus an optional custom text. */
+    public const WATERMARK_DEFAULTS = [
+        'watermark_show_name'     => 1,
+        'watermark_show_order'    => 1,
+        'watermark_show_datetime' => 1,
+        'watermark_show_ref'      => 1,
+        'watermark_custom_text'   => '',
+    ];
+
+    /**
+     * Returns watermark field toggles (booleans) plus the custom text string.
+     * Falls back to WATERMARK_DEFAULTS for any missing row.
+     */
+    public static function getWatermarkSettings(): array
+    {
+        $keys   = array_keys(self::WATERMARK_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        $result = [];
+        foreach (self::WATERMARK_DEFAULTS as $key => $default) {
+            $result[$key] = $key === 'watermark_custom_text'
+                ? ($stored[$key] ?? $default)
+                : (bool) ($stored[$key] ?? $default);
         }
 
         return $result;
