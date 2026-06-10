@@ -1267,6 +1267,32 @@
                                                                 <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
                                                                    class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
                                                             @endif
+                                                            @if ($assignment->hasCloudScript() && $meUser->isReader() && $assignment->assigned_reader_id === $meUser->id())
+                                                                <span x-data="{ busy: false, err: '' }">
+                                                                    <button type="button" :disabled="busy"
+                                                                            @click="
+                                                                                busy = true; err = '';
+                                                                                fetch(@js(route('script-downloads.store', $assignment)), {
+                                                                                    method: 'POST',
+                                                                                    headers: {
+                                                                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                                                        'Accept': 'application/json',
+                                                                                    }
+                                                                                })
+                                                                                .then(r => r.json())
+                                                                                .then(d => {
+                                                                                    busy = false;
+                                                                                    if (d.url) { window.location = d.url; }
+                                                                                    else { err = d.message || 'Failed'; }
+                                                                                })
+                                                                                .catch(() => { busy = false; err = 'Failed'; })
+                                                                            "
+                                                                            class="px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded text-xs text-white whitespace-nowrap">
+                                                                        <span x-text="busy ? 'Preparing…' : 'Download'"></span>
+                                                                    </button>
+                                                                    <span x-show="err" x-text="err" class="text-[10px] text-red-400 ml-1"></span>
+                                                                </span>
+                                                            @endif
                                                             <button @click="open = false" type="button"
                                                                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                                                         </div>
