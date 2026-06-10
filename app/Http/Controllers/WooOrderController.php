@@ -136,6 +136,6 @@ class WooOrderController extends Controller
         }
 
         $dest = $testEmail ? "test address ({$testEmail})" : 'customer';
-        return back()->with('success', "Receipt email sent to {$dest}.");
+        return back()->with('success', "Order email resent to {$dest}.");
     }
 }

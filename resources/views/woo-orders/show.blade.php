@@ -220,7 +220,7 @@
                     {{-- Resend email --}}
                     <div class="bg-white shadow-sm sm:rounded-lg">
                         <div class="px-4 py-3 border-b border-gray-100">
-                            <h3 class="text-sm font-semibold text-gray-700">Email</h3>
+                            <h3 class="text-sm font-semibold text-gray-700">Order Email</h3>
                         </div>
                         <div class="px-4 py-4">
                             <p class="text-xs text-gray-500 mb-3">Customer address: <strong>{{ $billingEmail }}</strong>.</p>
@@ -241,7 +241,7 @@
                                         <p class="mt-1 text-[11px] text-gray-400">Leave blank to send to the customer.</p>
                                     </div>
                                     <x-secondary-button type="submit" class="w-full justify-center text-sm">
-                                        Send Receipt Email
+                                        Resend Order Email to Customer
                                     </x-secondary-button>
                                 </div>
                             </form>

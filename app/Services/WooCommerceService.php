@@ -97,8 +97,11 @@ class WooCommerceService
     }
 
     /**
-     * Trigger the Customer Invoice email for an order via the custom sr/v1 REST endpoint
+     * Resend the order receipt (Completed Order) email via the custom sr/v1 REST endpoint
      * registered in woo_tweaks.php. Authenticated with WC_PORTAL_SECRET shared secret.
+     *
+     * The endpoint returns a 502 with a `message` describing the MailerSend error when
+     * the send itself fails (e.g. bad template ID, unverified domain).
      */
     public function resendEmail(int $orderId, ?string $testEmail = null): void
     {
@@ -108,7 +111,8 @@ class WooCommerceService
             ->post($this->baseUrl . "/wp-json/sr/v1/orders/{$orderId}/resend-email", $payload);
 
         if ($response->failed()) {
-            throw new RuntimeException('Failed to resend email (' . $response->status() . ').');
+            $message = $response->json('message') ?: ('Failed to resend email (' . $response->status() . ').');
+            throw new RuntimeException($message);
         }
     }
 
