@@ -1,5 +1,7 @@
 <?php
 
+// v1.7 — 2026-06-10 | Add watermarkPdf() — tiles a forensic watermark across every page and
+//                     applies qpdf print/copy/edit restrictions for reader downloads.
 // v1.6 — 2026-06-07 | Add unlockScript() — strips PDF encryption via qpdf (falls back to Ghostscript).
 // v1.5 — 2026-05-28 | Preprocess PDFs with Ghostscript before FPDI to support compressed cross-reference streams.
 // v1.4 — 2026-05-24 | Add deleteFile for assignment cleanup on destroy.
@@ -10,6 +12,7 @@
 
 namespace App\Services;
 
+use App\Support\Pdf\WatermarkPdf;
 use Google\Client;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
@@ -289,6 +292,64 @@ class GoogleDriveService
         } finally {
             @unlink($source);
         }
+    }
+
+    /**
+     * Flatten a local PDF, tile a rotated forensic watermark across every page, then apply
+     * qpdf permission restrictions (no print/copy/modify/annotate). Consumes (unlinks)
+     * $localPath. Returns the path to the watermarked+restricted output; caller must unlink it.
+     */
+    public function watermarkPdf(string $localPath, string $watermarkText): string
+    {
+        $source = $this->flattenForFpdi($localPath);
+
+        try {
+            $pdf       = new WatermarkPdf();
+            $pageCount = $pdf->setSourceFile($source);
+
+            for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
+                $tpl  = $pdf->importPage($pageNum);
+                $size = $pdf->getTemplateSize($tpl);
+                $pdf->AddPage($size['width'] > $size['height'] ? 'L' : 'P', [$size['width'], $size['height']]);
+                $pdf->useTemplate($tpl);
+
+                $pdf->SetFont('Helvetica', '', 16);
+                $pdf->SetTextColor(190, 190, 190);
+
+                $w = $size['width'];
+                $h = $size['height'];
+                foreach ([0.2, 0.5, 0.8] as $fraction) {
+                    $pdf->rotatedText($w * 0.1, $h * $fraction, $watermarkText, 45);
+                }
+            }
+
+            $watermarked = tempnam(sys_get_temp_dir(), 'sr_wm_') . '.pdf';
+            $pdf->Output('F', $watermarked);
+        } finally {
+            @unlink($source);
+        }
+
+        $restricted   = tempnam(sys_get_temp_dir(), 'sr_wm_restricted_') . '.pdf';
+        $ownerPassword = bin2hex(random_bytes(16));
+
+        exec(
+            'qpdf --encrypt "" ' . escapeshellarg($ownerPassword) . ' 256'
+            . ' --print=none --modify=none --extract=n --annotate=n -- '
+            . escapeshellarg($watermarked) . ' ' . escapeshellarg($restricted)
+            . ' 2>/dev/null',
+            $ignored,
+            $exitCode
+        );
+
+        if ($exitCode !== 0 || !file_exists($restricted) || filesize($restricted) === 0) {
+            @unlink($restricted);
+            // qpdf unavailable/failed — fall back to the unrestricted watermarked copy.
+            return $watermarked;
+        }
+
+        @unlink($watermarked);
+
+        return $restricted;
     }
 
     /**

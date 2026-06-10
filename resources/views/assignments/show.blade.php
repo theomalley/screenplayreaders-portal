@@ -282,6 +282,32 @@
                         <a href="{{ $dlUrl }}"
                            class="text-xs text-indigo-600 hover:text-indigo-800">{{ $dlLabel }}</a>
                     @endif
+                    @if ($canDownloadScript)
+                        <span x-data="{ busy: false, err: '' }">
+                            <button type="button" :disabled="busy"
+                                    @click="
+                                        busy = true; err = '';
+                                        fetch(@js(route('script-downloads.store', $assignment)), {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                'Accept': 'application/json',
+                                            }
+                                        })
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            busy = false;
+                                            if (d.url) { window.location = d.url; }
+                                            else { err = d.message || 'Failed'; }
+                                        })
+                                        .catch(() => { busy = false; err = 'Failed'; })
+                                    "
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 disabled:opacity-50">
+                                <span x-text="busy ? 'Preparing…' : 'Download Script'"></span>
+                            </button>
+                            <span x-show="err" x-text="err" class="text-[10px] text-red-500 ml-1"></span>
+                        </span>
+                    @endif
                     @if (!auth()->user()->isReader() && \App\Support\Permission::check('script.print') && $viewLink)
                         <a href="{{ $viewLink }}" target="_blank" rel="noopener"
                            class="text-xs text-indigo-600 hover:text-indigo-800">Print</a>

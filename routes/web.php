@@ -77,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
     Route::get('assignments/{assignment}/script', [AssignmentController::class, 'streamScript'])->name('assignments.streamScript');
     Route::get('assignments/{assignment}/script/download', [AssignmentController::class, 'downloadScript'])->name('assignments.downloadScript');
+    Route::post('assignments/{assignment}/script/download-link', [\App\Http\Controllers\ScriptDownloadController::class, 'store'])->name('script-downloads.store');
+    Route::post('script-downloads/{scriptDownload}/reset', [\App\Http\Controllers\ScriptDownloadController::class, 'reset'])->name('script-downloads.reset');
     Route::get('assignments/{assignment}/coverage-pdf', [AssignmentController::class, 'streamCoverage'])->name('assignments.streamCoverage');
     Route::post('assignments/{assignment}/script', [AssignmentController::class, 'uploadScript'])->name('assignments.uploadScript');
     Route::post('assignments/{assignment}/remove-pages', [AssignmentController::class, 'removePages'])->name('assignments.removePages');

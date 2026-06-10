@@ -664,6 +664,66 @@
                     </form>
                 </div>
 
+                {{-- Script Download Log (admin/editor only) --}}
+                <div class="px-6 pb-6 border-t border-gray-100 pt-5">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                        Script Download Log
+                        <span class="ml-1 text-[10px] font-normal text-gray-400 normal-case tracking-normal">(admin &amp; editors only)</span>
+                    </h3>
+
+                    @if (session('download_link'))
+                        <div class="mb-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                            <p class="text-xs text-green-700 mb-1.5">New link generated — share with the reader (expires in 15 minutes):</p>
+                            <input type="text" readonly value="{{ session('download_link') }}"
+                                   onclick="this.select()"
+                                   class="w-full text-xs font-mono bg-white border-green-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" />
+                        </div>
+                    @endif
+
+                    @if ($scriptDownloads->isEmpty())
+                        <p class="text-sm text-gray-400">No downloads yet.</p>
+                    @else
+                        <div class="space-y-2">
+                            @foreach ($scriptDownloads as $dl)
+                                <div class="flex items-center justify-between gap-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-medium text-gray-700">{{ $dl->user?->name ?? 'Unknown user' }}</span>
+                                            <span class="text-[10px] text-gray-400 uppercase">{{ $dl->user?->role }}</span>
+                                        </div>
+                                        <div class="text-[10px] text-gray-400">
+                                            Requested {{ $dl->created_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}
+                                            @if ($dl->ip_address)
+                                                · {{ $dl->ip_address }}
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        @switch($dl->status)
+                                            @case('used')
+                                                <span class="text-xs text-green-600">Downloaded {{ $dl->used_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}</span>
+                                                @break
+                                            @case('direct')
+                                                <span class="text-xs text-gray-500">Direct download</span>
+                                                @break
+                                            @case('active')
+                                                <span class="text-xs text-indigo-600">Active — expires {{ $dl->expires_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}</span>
+                                                @break
+                                            @case('expired')
+                                                <span class="text-xs text-red-500">Expired</span>
+                                                <form method="POST" action="{{ route('script-downloads.reset', $dl) }}">
+                                                    @csrf
+                                                    <button type="submit" class="text-xs text-indigo-600 hover:text-indigo-800 underline">Reset</button>
+                                                </form>
+                                                @break
+                                        @endswitch
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
                 {{-- Actions — outside the edit form so the delete form is never nested --}}
                 <div class="flex flex-wrap items-center justify-between gap-y-3 px-6 pb-6 pt-4 border-t border-gray-100">
                     <div class="flex items-center gap-2">

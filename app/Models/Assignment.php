@@ -157,6 +157,11 @@ class Assignment extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function scriptDownloads(): HasMany
+    {
+        return $this->hasMany(ScriptDownload::class);
+    }
+
     // --- Scopes ---
 
     /** Assignments visible to a specific reader in the available list, filtered to their tiers */

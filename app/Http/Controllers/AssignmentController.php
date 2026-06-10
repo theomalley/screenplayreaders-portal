@@ -1,5 +1,7 @@
 <?php
 
+// v2.11 — 2026-06-10 | downloadScript: readers can download a watermarked, restricted copy via
+//                      signed/expiring/single-use links (ScriptDownload audit log).
 // v2.10 — 2026-06-07 | removePages/unlockScript return JSON for AJAX requests (PDF in-place refresh)
 // v2.9 — 2026-06-07 | Add unlockScript() — strips PDF encryption so page-removal can proceed on locked scripts
 // v2.8 — 2026-06-05 | Admin: split assignments by tier; Reader: filter available by reader's tiers
@@ -28,6 +30,7 @@ use App\Models\Client;
 use App\Models\AssignmentNote;
 use App\Models\FollowupQuestion;
 use App\Models\FollowupToken;
+use App\Models\ScriptDownload;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\HelpScoutService;
@@ -602,9 +605,11 @@ class AssignmentController extends Controller
             $dlLabel     = 'Download Script';
         }
 
+        $canDownloadScript = $fileId && $user->isReader() && $assignment->assigned_reader_id === $user->id();
+
         return view('assignments.show', compact(
             'assignment', 'viewLink', 'viewerLabel', 'dlUrl', 'dlLabel',
-            'isMultiReader', 'siblings'
+            'isMultiReader', 'siblings', 'canDownloadScript'
         ));
     }
 
@@ -632,14 +637,28 @@ class AssignmentController extends Controller
         ]);
     }
 
-    public function downloadScript(Assignment $assignment, GoogleDriveService $drive)
+    public function downloadScript(Request $request, Assignment $assignment, GoogleDriveService $drive)
     {
         $this->authorize('view', $assignment);
-        abort_if(auth()->user()->isReader(), 403);
-        abort_unless(Permission::check('script.download'), 403);
         abort_unless($assignment->hasCloudScript(), 404);
 
         $filename = $assignment->drive_script_filename ?? 'script.pdf';
+
+        if ($request->has('token')) {
+            return $this->downloadScriptForReader($request, $assignment, $drive, $filename);
+        }
+
+        abort_if(auth()->user()->isReader(), 403);
+        abort_unless(Permission::check('script.download'), 403);
+
+        ScriptDownload::create([
+            'assignment_id' => $assignment->id,
+            'user_id'       => auth()->id(),
+            'expires_at'    => null,
+            'used_at'       => now(),
+            'ip_address'    => $request->ip(),
+            'user_agent'    => $request->userAgent(),
+        ]);
 
         if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
             $localPath = storage_path('app/test-script.pdf');
@@ -654,6 +673,48 @@ class AssignmentController extends Controller
             'Content-Disposition' => 'attachment; filename="' . addslashes($filename) . '"',
             'Cache-Control'       => 'private, no-store',
         ]);
+    }
+
+    /**
+     * Serve a watermarked, permission-restricted copy via a signed, expiring, single-use link.
+     */
+    private function downloadScriptForReader(Request $request, Assignment $assignment, GoogleDriveService $drive, string $filename)
+    {
+        abort_unless($request->hasValidSignature(), 403, 'This download link is invalid or has expired.');
+
+        $scriptDownload = ScriptDownload::where('token', $request->query('token'))
+            ->where('assignment_id', $assignment->id)
+            ->firstOrFail();
+
+        abort_if($scriptDownload->user_id !== auth()->id(), 403);
+        abort_if($scriptDownload->used_at !== null, 410, 'This download link has already been used.');
+        abort_if($scriptDownload->expires_at->isPast(), 410, 'This download link has expired.');
+
+        if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
+            $source = storage_path('app/test-script.pdf');
+            abort_unless(file_exists($source), 404);
+            $tmpSource = tempnam(sys_get_temp_dir(), 'sr_dl_') . '.pdf';
+            copy($source, $tmpSource);
+        } else {
+            $tmpSource = $drive->downloadToTemp($assignment->drive_script_file_id);
+        }
+
+        $watermarkText = sprintf(
+            '%s · Order #%s · %s · Ref DL-%d',
+            auth()->user()->name,
+            $assignment->order_number,
+            now()->setTimezone(Setting::getAppTimezone())->format('M j, Y g:ia'),
+            $scriptDownload->id
+        );
+
+        $output = $drive->watermarkPdf($tmpSource, $watermarkText);
+
+        $scriptDownload->update(['used_at' => now()]);
+
+        return response()->download($output, $filename, [
+            'Content-Type'  => 'application/pdf',
+            'Cache-Control' => 'private, no-store',
+        ])->deleteFileAfterSend(true);
     }
 
     public function streamCoverage(Assignment $assignment, GoogleDriveService $drive)
@@ -692,7 +753,9 @@ class AssignmentController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers', 'appTimezone', 'notes', 'editorNotes'));
+        $scriptDownloads = $assignment->scriptDownloads()->with('user')->latest()->get();
+
+        return view('assignments.edit', compact('assignment', 'rates', 'readers', 'assignableUsers', 'appTimezone', 'notes', 'editorNotes', 'scriptDownloads'));
     }
 
     public function update(UpdateAssignmentRequest $request, Assignment $assignment)
