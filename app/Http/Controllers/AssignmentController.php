@@ -605,7 +605,7 @@ class AssignmentController extends Controller
             $dlLabel     = 'Download Script';
         }
 
-        $canDownloadScript = $fileId && $user->isReader() && $assignment->assigned_reader_id === $user->id();
+        $canDownloadScript = $fileId && $user->isReader() && $assignment->assigned_reader_id === $user->id;
 
         return view('assignments.show', compact(
             'assignment', 'viewLink', 'viewerLabel', 'dlUrl', 'dlLabel',

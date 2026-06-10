@@ -20,14 +20,14 @@ class ScriptDownloadController extends Controller
     public function store(Request $request, Assignment $assignment)
     {
         abort_unless(
-            $request->user()->isReader() && $assignment->assigned_reader_id === $request->user()->id(),
+            $request->user()->isReader() && $assignment->assigned_reader_id === $request->user()->id,
             403
         );
         abort_unless($assignment->hasCloudScript(), 404);
 
         $scriptDownload = ScriptDownload::create([
             'assignment_id' => $assignment->id,
-            'user_id'       => $request->user()->id(),
+            'user_id'       => $request->user()->id,
             'token'         => Str::random(40),
             'expires_at'    => now()->addMinutes(self::LINK_LIFETIME_MINUTES),
             'ip_address'    => $request->ip(),
