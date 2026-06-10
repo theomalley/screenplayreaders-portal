@@ -16,7 +16,7 @@
                 / <span x-text="totalPages"></span>
             </span>
         </div>
-        <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400">
+        <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400" title="Tip: Ctrl + scroll to zoom">
             <button type="button" @click="zoomOut()"
                     class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom out">−</button>
             <button type="button" @click="resetZoom()" x-text="Math.round(zoomLevel * 100) + '%'"
