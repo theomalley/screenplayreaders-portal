@@ -134,7 +134,7 @@
 
                     {{-- PDF viewer --}}
                     @if ($sibViewLink)
-                        <div x-data="pdfViewer(@js($sibViewLink))" x-init="loadPdf()" class="flex flex-col flex-1">
+                        <div x-data="siblingPdfViewer(@js($sibViewLink))" x-init="loadPdf()" class="flex flex-col flex-1">
                             <div x-show="totalPages > 0"
                                  class="flex items-center justify-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-100 shrink-0">
                                 <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
@@ -193,18 +193,8 @@
 
     @else
     {{-- ===== SINGLE / READER LAYOUT ===== --}}
-    @php
-        $notesForJs = $readingNotes->map(fn($n) => [
-            'id'          => $n->id,
-            'body'        => $n->body,
-            'page_number' => $n->page_number,
-            'created_at'  => $n->created_at->format('M j, g:ia'),
-        ])->values()->all();
-    @endphp
     <div class="py-6 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"
-         x-data="singleAssignmentView(@js($notesForJs), @js(route('reading-notes.store', $assignment)), @js(csrf_token()))"
-         @pdf-page-changed.window="currentPdfPage = $event.detail.page"
-         @add-to-note.window="noteBody = (noteBody ? noteBody.trim() + '\n\n' : '') + '&quot;' + $event.detail.text + '&quot; (p. ' + $event.detail.page + ')\n'; notesOpen = true">
+         x-data="{ editOpen: false }">
 
         @if (session('success'))
             <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
@@ -296,58 +286,15 @@
                         <a href="{{ $viewLink }}" target="_blank" rel="noopener"
                            class="text-xs text-indigo-600 hover:text-indigo-800">Print</a>
                     @endif
-                    <button type="button" @click="notesOpen = !notesOpen"
-                            :class="notesOpen ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:text-gray-700'"
-                            class="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                        Notes
-                        <span x-show="notes.length > 0" x-text="notes.length"
-                              class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-indigo-600 text-white rounded-full leading-none"></span>
-                    </button>
                 </div>
             </div>
 
             @if ($viewLink && $assignment->assigned_reader_id === auth()->id() || auth()->user()->isAdminOrEditor())
                 @if ($viewLink)
-                    <div x-data="pdfViewer(@js($viewLink), { assignmentId: {{ $assignment->id }}, csrfToken: @js(csrf_token()) })"
+                    <div x-data="readerPdfViewer(@js($viewLink), @js($assignment->id), @js(csrf_token()))"
                          x-init="loadPdf()"
-                         @keydown.arrow-right.window="nextPage()"
-                         @keydown.arrow-left.window="prevPage()">
-
-                        <div x-show="totalPages > 0" class="flex items-center justify-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-100">
-                            <button @click="prevPage()" :disabled="currentPage <= 1 || loading"
-                                    class="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
-                            <span class="text-sm text-gray-500 tabular-nums" x-text="currentPage + ' / ' + totalPages"></span>
-                            <button @click="nextPage()" :disabled="currentPage >= totalPages || loading"
-                                    class="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40">Next ›</button>
-                        </div>
-
-                        <div x-ref="canvasWrap" class="flex flex-col items-center bg-gray-100 py-6 px-4 relative" style="min-height:60vh" @wheel="handleWheel($event)" @mouseup="handleSelection($event)">
-                            <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-10">Loading…</div>
-                            <div x-ref="pageWrap" class="relative shadow-lg">
-                                <canvas x-ref="canvas" class="block"></canvas>
-                                <div x-ref="highlightLayer" class="highlight-layer"></div>
-                                <div x-ref="textLayer" class="textLayer"></div>
-                            </div>
-                            <div x-show="selectionToolbar.show" x-cloak
-                                 :style="`left: ${selectionToolbar.x}px; top: ${selectionToolbar.y}px`"
-                                 class="fixed z-50 flex gap-1 bg-gray-900 text-white rounded-md shadow-lg overflow-hidden text-xs">
-                                <button type="button" @click="saveHighlight()"
-                                        class="px-2 py-1.5 hover:bg-gray-700 flex items-center gap-1.5 whitespace-nowrap">
-                                    <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block"></span> Highlight
-                                </button>
-                                <button type="button" @click="addSelectionToNote()"
-                                        class="px-2 py-1.5 hover:bg-gray-700 border-l border-gray-700 whitespace-nowrap">
-                                    Add to Note
-                                </button>
-                                <button type="button" @click="highlightAndAddToNote()"
-                                        class="px-2 py-1.5 hover:bg-gray-700 border-l border-gray-700 flex items-center gap-1.5 whitespace-nowrap">
-                                    <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block"></span> Both
-                                </button>
-                            </div>
-                        </div>
+                         class="flex flex-col bg-black/80" style="height: 80vh">
+                        @include('partials.reader-pdf-viewer', ['assignment' => $assignment, 'standalone' => true])
                     </div>
                 @else
                     <div class="px-5 py-10 text-center text-sm text-gray-400">
@@ -392,58 +339,6 @@
                 @endcan
             </div>
         @endif
-
-        {{-- Reading notes drawer --}}
-        <div x-show="notesOpen" x-cloak
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 translate-x-4"
-             x-transition:enter-end="opacity-100 translate-x-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 translate-x-0"
-             x-transition:leave-end="opacity-0 translate-x-4"
-             class="fixed top-16 right-0 z-40 h-[calc(100vh-4rem)] w-80 bg-white shadow-xl border-l border-gray-200 flex flex-col">
-
-            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-indigo-50 shrink-0">
-                <span class="text-sm font-semibold text-indigo-800">Reading Notes</span>
-                <button type="button" @click="notesOpen = false" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-
-            <div class="px-4 py-3 border-b border-gray-100 shrink-0">
-                <textarea x-model="noteBody"
-                          @keydown.ctrl.enter.prevent="addNote()"
-                          @keydown.meta.enter.prevent="addNote()"
-                          rows="3"
-                          class="w-full text-sm border border-gray-200 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                          placeholder="Type a note… Ctrl+Enter to save"></textarea>
-                <button type="button" @click="addNote()"
-                        :disabled="!noteBody.trim() || noteSaving"
-                        class="mt-2 w-full px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                    <span x-text="noteSaving ? 'Saving…' : (currentPdfPage ? 'Add Note (p. ' + currentPdfPage + ')' : 'Add Note')"></span>
-                </button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-                <template x-if="notes.length === 0">
-                    <p class="text-xs text-gray-400 text-center mt-6">No notes yet.</p>
-                </template>
-                <template x-for="note in [...notes].reverse()" :key="note.id">
-                    <div class="bg-gray-50 border border-gray-100 rounded-md px-3 py-2 group">
-                        <p class="text-sm text-gray-800 whitespace-pre-wrap leading-snug" x-text="note.body"></p>
-                        <div class="flex items-center justify-between mt-1.5">
-                            <span class="text-[10px] text-gray-400">
-                                <span x-show="note.page_number" class="font-medium text-gray-500" x-text="'p. ' + note.page_number + ' · '"></span><span x-text="note.created_at"></span>
-                            </span>
-                            <button type="button" @click="deleteNote(note.id)"
-                                    class="text-[10px] text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </template>
-            </div>
-        </div>
 
     </div>
 
@@ -491,85 +386,17 @@
             });
         }
 
-        // PDF text content items aren't always in visual reading order, which makes
-        // click-and-drag selection jump around. Re-order top-to-bottom, left-to-right
-        // before handing off to the text layer so drag-selection follows the page visually.
-        function sortTextItemsForSelection(textContent) {
-            const items = [...textContent.items].sort((a, b) => {
-                const ay = a.transform ? a.transform[5] : 0;
-                const by = b.transform ? b.transform[5] : 0;
-                if (Math.abs(ay - by) > 1) return by - ay;
-                const ax = a.transform ? a.transform[4] : 0;
-                const bx = b.transform ? b.transform[4] : 0;
-                return ax - bx;
-            });
-            return { ...textContent, items };
-        }
-
-        Alpine.data('singleAssignmentView', (initialNotes, storeUrl, csrfToken) => ({
-            editOpen: false,
-            notesOpen: false,
-            notes: initialNotes,
-            noteBody: '',
-            noteSaving: false,
-            currentPdfPage: null,
-
-            async addNote() {
-                const body = this.noteBody.trim();
-                if (!body || this.noteSaving) return;
-                this.noteSaving = true;
-                try {
-                    const r = await fetch(storeUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({ body, page_number: this.currentPdfPage }),
-                    });
-                    if (r.ok) {
-                        const note = await r.json();
-                        this.notes.push(note);
-                        this.noteBody = '';
-                    }
-                } finally {
-                    this.noteSaving = false;
-                }
-            },
-
-            async deleteNote(id) {
-                if (!confirm('Delete this note?')) return;
-                const r = await fetch(`/reading-notes/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-                });
-                if (r.ok) {
-                    this.notes = this.notes.filter(n => n.id !== id);
-                }
-            },
-        }));
-
-        Alpine.data('pdfViewer', (url, opts = {}) => {
+        // Single-page Prev/Next viewer for the N-up admin layout's sibling
+        // coverage PDFs — no text layer, highlights, or notes.
+        Alpine.data('siblingPdfViewer', (url) => {
             let pdfDoc = null;
             let wheelTimer = null;
-            let highlights = [];
-            const highlightsEnabled = !!opts.assignmentId;
 
             return {
-                open: false,
                 url: url,
                 currentPage: 1,
                 totalPages: 0,
                 loading: false,
-                selectionToolbar: { show: false, x: 0, y: 0, text: '', rects: [] },
-
-                async openViewer() {
-                    this.open = true;
-                    await this.$nextTick();
-                    this.$refs.modal.focus();
-                    if (!pdfDoc) await this.loadPdf();
-                },
 
                 async loadPdf() {
                     this.loading = true;
@@ -580,23 +407,11 @@
                             withCredentials: true,
                         }).promise;
                         this.totalPages = pdfDoc.numPages;
-                        if (highlightsEnabled) await this.loadHighlights();
                         await this.renderPage(1);
                     } catch (e) {
                         console.error('PDF load error:', e);
                     } finally {
                         this.loading = false;
-                    }
-                },
-
-                async loadHighlights() {
-                    try {
-                        const r = await fetch(`/assignments/${opts.assignmentId}/highlights`, {
-                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': opts.csrfToken },
-                        });
-                        if (r.ok) highlights = await r.json();
-                    } catch (e) {
-                        console.error(e);
                     }
                 },
 
@@ -618,152 +433,9 @@
                         canvas.style.height = (vp.height / dpr) + 'px';
                         await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
                         this.currentPage = num;
-                        this.$dispatch('pdf-page-changed', { page: num });
                         if (this.$refs.canvasWrap) this.$refs.canvasWrap.scrollTop = 0;
-                        this.clearSelectionToolbar();
-                        if (highlightsEnabled) await this.renderTextAndHighlights(page, scale, num);
                     } finally {
                         this.loading = false;
-                    }
-                },
-
-                async renderTextAndHighlights(page, scale, num) {
-                    const textLayerEl = this.$refs.textLayer;
-                    const highlightLayerEl = this.$refs.highlightLayer;
-                    if (!textLayerEl || !highlightLayerEl) return;
-
-                    const cssVp = page.getViewport({ scale });
-                    textLayerEl.innerHTML = '';
-                    textLayerEl.style.width  = cssVp.width + 'px';
-                    textLayerEl.style.height = cssVp.height + 'px';
-                    textLayerEl.style.setProperty('--scale-factor', scale);
-                    highlightLayerEl.style.width  = cssVp.width + 'px';
-                    highlightLayerEl.style.height = cssVp.height + 'px';
-
-                    const textContent = await page.getTextContent();
-                    await pdfjsLib.renderTextLayer({
-                        textContentSource: sortTextItemsForSelection(textContent),
-                        container: textLayerEl,
-                        viewport: cssVp,
-                    }).promise;
-
-                    this.renderHighlightMarks(num);
-                },
-
-                renderHighlightMarks(num) {
-                    const layer = this.$refs.highlightLayer;
-                    if (!layer) return;
-                    layer.innerHTML = '';
-                    for (const h of highlights.filter(h => h.page_number === num)) {
-                        for (const r of h.rects) {
-                            const mark = document.createElement('div');
-                            mark.className = 'highlight-mark';
-                            mark.style.left   = (r.x * 100) + '%';
-                            mark.style.top    = (r.y * 100) + '%';
-                            mark.style.width  = (r.width * 100) + '%';
-                            mark.style.height = (r.height * 100) + '%';
-                            mark.title = 'Click to remove highlight';
-                            mark.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                this.deleteHighlight(h.id);
-                            });
-                            layer.appendChild(mark);
-                        }
-                    }
-                },
-
-                handleSelection(e) {
-                    if (!highlightsEnabled) return;
-                    const sel = window.getSelection();
-                    if (!sel || sel.isCollapsed || sel.rangeCount === 0) { this.clearSelectionToolbar(); return; }
-                    const range = sel.getRangeAt(0);
-                    const pageWrap = this.$refs.pageWrap;
-                    if (!pageWrap || !pageWrap.contains(range.commonAncestorContainer)) return;
-                    const text = sel.toString().trim();
-                    if (!text) return;
-                    const clientRects = Array.from(range.getClientRects()).filter(r => r.width > 0 && r.height > 0);
-                    if (!clientRects.length) return;
-
-                    const containerRect = pageWrap.getBoundingClientRect();
-                    const last = clientRects[clientRects.length - 1];
-                    this.selectionToolbar = {
-                        show: true,
-                        x: last.right,
-                        y: last.bottom,
-                        text,
-                        rects: clientRects.map(r => ({
-                            x: (r.left - containerRect.left) / containerRect.width,
-                            y: (r.top - containerRect.top) / containerRect.height,
-                            width: r.width / containerRect.width,
-                            height: r.height / containerRect.height,
-                        })),
-                    };
-                },
-
-                clearSelectionToolbar() {
-                    this.selectionToolbar = { show: false, x: 0, y: 0, text: '', rects: [] };
-                },
-
-                async saveHighlight(clear = true) {
-                    const t = this.selectionToolbar;
-                    if (!t.show) return;
-                    try {
-                        const r = await fetch(`/assignments/${opts.assignmentId}/highlights`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': opts.csrfToken,
-                            },
-                            body: JSON.stringify({
-                                page_number: this.currentPage,
-                                text: t.text,
-                                rects: t.rects,
-                                color: 'yellow',
-                            }),
-                        });
-                        if (r.ok) {
-                            highlights.push(await r.json());
-                            this.renderHighlightMarks(this.currentPage);
-                        }
-                    } catch (e) {
-                        console.error(e);
-                    } finally {
-                        if (clear) {
-                            window.getSelection()?.removeAllRanges();
-                            this.clearSelectionToolbar();
-                        }
-                    }
-                },
-
-                addSelectionToNote(clear = true) {
-                    const t = this.selectionToolbar;
-                    if (!t.show) return;
-                    this.$dispatch('add-to-note', { text: t.text, page: this.currentPage });
-                    if (clear) {
-                        window.getSelection()?.removeAllRanges();
-                        this.clearSelectionToolbar();
-                    }
-                },
-
-                async highlightAndAddToNote() {
-                    await this.saveHighlight(false);
-                    this.addSelectionToNote(false);
-                    window.getSelection()?.removeAllRanges();
-                    this.clearSelectionToolbar();
-                },
-
-                async deleteHighlight(id) {
-                    if (!confirm('Remove this highlight?')) return;
-                    try {
-                        await fetch(`/highlights/${id}`, {
-                            method: 'DELETE',
-                            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': opts.csrfToken },
-                        });
-                        highlights = highlights.filter(h => h.id !== id);
-                        this.renderHighlightMarks(this.currentPage);
-                    } catch (e) {
-                        console.error(e);
                     }
                 },
 
@@ -801,4 +473,6 @@
     });
     </script>
     @endpush
+
+    @include('partials.reader-pdf-viewer-script')
 </x-app-layout>

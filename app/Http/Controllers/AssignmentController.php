@@ -26,7 +26,6 @@ use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
 use App\Models\Client;
 use App\Models\AssignmentNote;
-use App\Models\ReaderScriptNote;
 use App\Models\FollowupQuestion;
 use App\Models\FollowupToken;
 use App\Models\Setting;
@@ -603,14 +602,9 @@ class AssignmentController extends Controller
             $dlLabel     = 'Download Script';
         }
 
-        $readingNotes = ReaderScriptNote::where('assignment_id', $assignment->id)
-            ->where('user_id', $user->id)
-            ->orderBy('created_at')
-            ->get();
-
         return view('assignments.show', compact(
             'assignment', 'viewLink', 'viewerLabel', 'dlUrl', 'dlLabel',
-            'isMultiReader', 'siblings', 'readingNotes'
+            'isMultiReader', 'siblings'
         ));
     }
 
