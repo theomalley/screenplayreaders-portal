@@ -45,6 +45,32 @@
                 Write Coverage
             </a>
         @endcan
+        @if (auth()->user()->isReader() && $assignment->assigned_reader_id === auth()->id())
+            <span x-data="{ dlBusy: false, dlErr: '' }">
+                <button type="button" :disabled="dlBusy"
+                        @click="
+                            dlBusy = true; dlErr = '';
+                            fetch(@js(route('script-downloads.store', $assignment)), {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                    'Accept': 'application/json',
+                                }
+                            })
+                            .then(r => r.json())
+                            .then(d => {
+                                dlBusy = false;
+                                if (d.url) { window.location = d.url; }
+                                else { dlErr = d.message || 'Failed'; }
+                            })
+                            .catch(() => { dlBusy = false; dlErr = 'Failed'; })
+                        "
+                        class="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-50 transition-colors whitespace-nowrap">
+                    <span x-text="dlBusy ? 'Preparing…' : 'Download'"></span>
+                </button>
+                <span x-show="dlErr" x-text="dlErr" class="text-[10px] text-red-400 ml-1"></span>
+            </span>
+        @endif
         @unless($standalone ?? false)
             <button @click="open = false" type="button"
                     class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
