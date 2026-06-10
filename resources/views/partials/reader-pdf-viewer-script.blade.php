@@ -47,7 +47,7 @@ document.addEventListener('alpine:init', () => {
             currentPage: 0,
             totalPages: 0,
             loading: false,
-            zoomLevel: 1,
+            zoomLevel: Math.max(0.5, Math.min(2.5, parseFloat(localStorage.getItem('sr_pdf_zoom')) || 1)),
             _zoomTimer: null,
             _zoomTarget: null,
 
@@ -149,6 +149,7 @@ document.addEventListener('alpine:init', () => {
                 const clamped = Math.max(0.5, Math.min(2.5, Math.round(level * 20) / 20));
                 if (clamped === this.zoomLevel) return;
                 this.zoomLevel = clamped;
+                localStorage.setItem('sr_pdf_zoom', clamped);
                 this.applyZoom();
             },
 
@@ -191,8 +192,8 @@ document.addEventListener('alpine:init', () => {
 
         return {
         ...makePdfViewerData(url),
-        notesOpen: false,
-        notesPanelWidth: 288,
+        notesOpen: localStorage.getItem('sr_notes_open') === '1',
+        notesPanelWidth: Math.max(240, Math.min(parseInt(localStorage.getItem('sr_notes_width'), 10) || 288, window.innerWidth - 320)),
         notes: [],
         noteBody: '',
         noteSaving: false,
@@ -203,6 +204,14 @@ document.addEventListener('alpine:init', () => {
         pageTexts: [],
         highlights: [],
         selectionToolbar: { show: false, x: 0, y: 0, text: '', pageNum: null, rects: [] },
+
+        init() {
+            if (this.notesOpen && !this.notesLoaded) this.loadNotes();
+            this.$watch('notesOpen', (val) => {
+                localStorage.setItem('sr_notes_open', val ? '1' : '0');
+                if (val && !this.notesLoaded) this.loadNotes();
+            });
+        },
 
         async onPdfLoaded(pdfDoc) {
             const texts = [];
@@ -387,6 +396,7 @@ document.addEventListener('alpine:init', () => {
                 this.notesPanelWidth = Math.max(240, Math.min(newWidth, window.innerWidth - 320));
             };
             const onUp = () => {
+                localStorage.setItem('sr_notes_width', this.notesPanelWidth);
                 window.removeEventListener('mousemove', onMove);
                 window.removeEventListener('mouseup', onUp);
             };
