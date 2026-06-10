@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-06-10 | Admin can edit/zero-out an order's commission directly from the editor pay view
 // v1.1 — 2026-05-28 | Source weekly flat from editor profile; remove global Setting dependency
 
 namespace App\Http\Controllers;
@@ -102,6 +103,32 @@ class EditorPayController extends Controller
 
         return redirect()->route('editor-pay.index')
             ->with('success', "Adjustment {$sign}{$validated['amount']} added.");
+    }
+
+    public function updateCommission(Request $request, OrderRevenue $order)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(is_null($order->editor_paid_at), 422);
+
+        $validated = $request->validate([
+            'cog_commission' => 'required|numeric|min:0',
+        ]);
+
+        $order->update(['cog_commission' => $validated['cog_commission']]);
+
+        return redirect()->route('editor-pay.index')
+            ->with('success', "Commission for order {$order->order_number} updated to $" . number_format((float) $validated['cog_commission'], 2) . '.');
+    }
+
+    public function deleteCommission(OrderRevenue $order)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(is_null($order->editor_paid_at), 422);
+
+        $order->update(['cog_commission' => 0]);
+
+        return redirect()->route('editor-pay.index')
+            ->with('success', "Commission for order {$order->order_number} removed.");
     }
 
     public function deleteAdjustment(EditorPayAdjustment $adjustment)

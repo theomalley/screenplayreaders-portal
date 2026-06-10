@@ -276,6 +276,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/editor-pay/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');
     Route::post('/editor-pay/adjustment', [EditorPayController::class, 'addAdjustment'])->name('editor-pay.add-adjustment');
     Route::delete('/editor-pay/adjustment/{adjustment}', [EditorPayController::class, 'deleteAdjustment'])->name('editor-pay.delete-adjustment');
+    Route::patch('/editor-pay/order/{order}/commission', [EditorPayController::class, 'updateCommission'])->name('editor-pay.update-commission');
+    Route::delete('/editor-pay/order/{order}/commission', [EditorPayController::class, 'deleteCommission'])->name('editor-pay.delete-commission');
 
     Route::get('/editor-payments', [EditorPaymentsController::class, 'index'])->name('editor-payments.index');
 

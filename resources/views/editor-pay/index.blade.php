@@ -98,7 +98,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-50">
                             @foreach($unpaidOrders as $order)
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-gray-50" x-data="{ editingCommission: false }">
                                 <td class="px-4 py-2 text-gray-500 text-xs uppercase">Commission</td>
                                 <td class="px-4 py-2">
                                     <div class="text-gray-800 font-mono text-xs">{{ $order->order_number }}</div>
@@ -106,8 +106,36 @@
                                 </td>
                                 <td class="px-4 py-2 text-gray-500 text-xs">{{ $order->ordered_at->format('M j, Y') }}</td>
                                 <td class="px-4 py-2 text-right text-gray-500 text-xs">${{ number_format($order->order_total, 2) }}</td>
-                                <td class="px-4 py-2 text-right font-medium text-gray-700">${{ number_format($order->cog_commission, 2) }}</td>
-                                <td class="px-4 py-2"></td>
+                                <td class="px-4 py-2 text-right font-medium text-gray-700">
+                                    @if(auth()->user()->isAdmin())
+                                        <span x-show="!editingCommission" @click="editingCommission = true"
+                                              class="cursor-pointer hover:underline" title="Click to edit">
+                                            ${{ number_format($order->cog_commission, 2) }}
+                                        </span>
+                                        <form x-show="editingCommission" x-cloak method="POST"
+                                              action="{{ route('editor-pay.update-commission', $order->id) }}"
+                                              class="flex items-center justify-end gap-1">
+                                            @csrf @method('PATCH')
+                                            <span class="text-gray-400">$</span>
+                                            <input type="number" name="cog_commission" step="0.01" min="0"
+                                                   value="{{ number_format((float) $order->cog_commission, 2, '.', '') }}"
+                                                   class="w-20 text-right text-xs border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                                            <button type="submit" class="text-xs text-indigo-600 hover:text-indigo-800">Save</button>
+                                            <button type="button" @click="editingCommission = false" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                                        </form>
+                                    @else
+                                        ${{ number_format($order->cog_commission, 2) }}
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2 text-right">
+                                    @if(auth()->user()->isAdmin())
+                                    <form method="POST" action="{{ route('editor-pay.delete-commission', $order->id) }}"
+                                        onsubmit="return confirm('Remove the commission for order {{ $order->order_number }}? This sets it to $0 and removes it from this list.')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="text-xs text-red-400 hover:text-red-600">Remove</button>
+                                    </form>
+                                    @endif
+                                </td>
                             </tr>
                             @endforeach
                             @foreach($unpaidAdjustments as $adj)
