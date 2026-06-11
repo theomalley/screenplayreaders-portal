@@ -445,7 +445,7 @@
                                         @endif
                                         @if ($rActive > 0)
                                             <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
-                                                {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
+                                                {{ $rFull ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white' }}">
                                                 {{ $rActive }}
                                             </span>
                                         @endif
@@ -1397,7 +1397,7 @@
                                 @endif
                                 @if ($rActive > 0 && $rIsSelf)
                                     <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
-                                        {{ $rFull ? 'bg-amber-500 text-white' : 'bg-green-500 text-white' }}">
+                                        {{ $rFull ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white' }}">
                                         {{ $rActive }}
                                     </span>
                                 @endif

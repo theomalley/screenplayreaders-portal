@@ -46,7 +46,7 @@
         <span class="absolute -top-0.5 -left-0.5 w-3.5 h-3.5 rounded-full text-[8px] leading-none flex items-center justify-center font-bold z-10 bg-violet-600 text-white">2</span>
     @endif
     @if ($showCount && $active > 0)
-        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-green-500 text-white">
+        <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-gray-500 text-white">
             {{ $active }}
         </span>
     @endif
