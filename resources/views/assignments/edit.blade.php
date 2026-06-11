@@ -50,7 +50,7 @@
                           rush: {{ $rushActive ? 'true' : 'false' }},
                           numReaders: '{{ $v('num_readers', (string) min($siblingCount, 3)) }}',
                           requestedReaders: ['{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}', '', ''],
-                          overrideRate: true,
+                          overrideRate: false,
                           tier: '{{ $v('tier', (string)($assignment->tier ?? 1)) }}',
                           init() {
                               this.$watch('assignmentType', val => { if (val === 'budget') this.tier = '2'; });
