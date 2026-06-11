@@ -1,5 +1,7 @@
 <?php
 
+// v2.13 — 2026-06-11 | streamCoverage: filename matches Drive coverage PDF naming convention
+//                      (FilenameGenerator::coveragePdf) instead of hardcoded "coverage.pdf".
 // v2.12 — 2026-06-10 | downloadScriptForReader: build watermark text from admin-configurable
 //                      Setting::getWatermarkSettings() field toggles + custom text.
 // v2.11 — 2026-06-10 | downloadScript: readers can download a watermarked, restricted copy via
@@ -739,9 +741,13 @@ class AssignmentController extends Controller
 
         $contents = $drive->downloadContents($assignment->drive_coverage_pdf_id);
 
+        $assignment->loadMissing('assignedReader.readerProfile');
+        $initials = $assignment->assignedReader?->readerProfile?->initials;
+        $filename = FilenameGenerator::coveragePdf($assignment, $initials);
+
         return response($contents, 200, [
             'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="coverage.pdf"',
+            'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
             'Cache-Control'       => 'private, no-store',
             'X-Frame-Options'     => 'SAMEORIGIN',
         ]);
