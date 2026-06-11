@@ -39,6 +39,20 @@
                     $siblingCount = $assignment->order_number
                         ? \App\Models\Assignment::where('order_number', $assignment->order_number)->count()
                         : 1;
+
+                    $availableAtLocal = $assignment->available_at
+                        ? $assignment->available_at->copy()->setTimezone($appTimezone)->format('Y-m-d\TH:i')
+                        : '';
+                    $availableAtCombined = old('available_at', $availableAtLocal);
+                    $availableAtDateInit = '';
+                    $availableAtTimeInit = '';
+                    if ($availableAtCombined) {
+                        [$availableAtDateInit, $rawTime] = explode('T', $availableAtCombined);
+                        [$rawHour, $rawMinute] = array_map('intval', explode(':', $rawTime));
+                        $rawMinute = (int) (round($rawMinute / 5) * 5);
+                        if ($rawMinute === 60) { $rawMinute = 0; $rawHour = ($rawHour + 1) % 24; }
+                        $availableAtTimeInit = sprintf('%02d:%02d', $rawHour, $rawMinute);
+                    }
                 @endphp
 
                 <form id="update-form" method="POST" action="{{ route('assignments.update', $assignment) }}" class="p-6 space-y-5"
@@ -51,6 +65,13 @@
                           numReaders: '{{ $v('num_readers', (string) min($siblingCount, 3)) }}',
                           requestedReaders: ['{{ $v('requested_reader_id', $assignment->requested_reader_id ?? '') }}', '', ''],
                           overrideRate: false,
+                          availableAtDate: '{{ $availableAtDateInit }}',
+                          availableAtTime: '{{ $availableAtTimeInit }}',
+                          get availableAtCombined() {
+                              return (this.availableAtDate && this.availableAtTime)
+                                  ? this.availableAtDate + 'T' + this.availableAtTime
+                                  : '';
+                          },
                           tier: '{{ $v('tier', (string)($assignment->tier ?? 1)) }}',
                           init() {
                               this.$watch('assignmentType', val => { if (val === 'budget') this.tier = '2'; });
@@ -547,14 +568,15 @@
                         @if ($assignment->status !== \App\Models\Assignment::STATUS_UNASSIGNED)
                         <div>
                             <x-input-label for="available_at" value="Auto-release to Available" />
-                            @php
-                                $availableAtLocal = $assignment->available_at
-                                    ? $assignment->available_at->copy()->setTimezone($appTimezone)->format('Y-m-d\TH:i')
-                                    : '';
-                            @endphp
-                            <input type="datetime-local" id="available_at" name="available_at" step="300"
-                                value="{{ old('available_at', $availableAtLocal) }}"
-                                class="mt-1 block w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <div class="mt-1 flex gap-2">
+                                <input type="date" id="available_at_date" x-model="availableAtDate"
+                                    class="block w-36 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                                <select id="available_at_time" x-model="availableAtTime"
+                                    class="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    <x-time-select-options />
+                                </select>
+                            </div>
+                            <input type="hidden" name="available_at" :value="availableAtCombined" />
                             <p class="mt-1 text-xs text-gray-400">
                                 Status will be set to Available automatically at this date/time ({{ $appTimezone }}).
                                 Clear the field to cancel.

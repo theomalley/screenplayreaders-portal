@@ -76,6 +76,17 @@
         $selectedProductIds = old('coupon_product_ids')
             ? array_filter(array_map('trim', explode(',', old('coupon_product_ids'))))
             : (array) ($campaign->coupon_product_ids ?? []);
+
+        $scheduledAtCombined = old('scheduled_at', $campaign->scheduled_at?->format('Y-m-d\TH:i') ?? '');
+        $scheduledAtDateInit = '';
+        $scheduledAtTimeInit = '';
+        if ($scheduledAtCombined) {
+            [$scheduledAtDateInit, $rawTime] = explode('T', $scheduledAtCombined);
+            [$rawHour, $rawMinute] = array_map('intval', explode(':', $rawTime));
+            $rawMinute = (int) (round($rawMinute / 5) * 5);
+            if ($rawMinute === 60) { $rawMinute = 0; $rawHour = ($rawHour + 1) % 24; }
+            $scheduledAtTimeInit = sprintf('%02d:%02d', $rawHour, $rawMinute);
+        }
     @endphp
 
     <div class="py-6">
@@ -99,7 +110,13 @@
                   enctype="multipart/form-data"
                   x-data="{
                     couponCode: '{{ old('coupon_code', $campaign->coupon_code ?? '') }}',
-                    scheduledAt: '{{ old('scheduled_at', $campaign->scheduled_at?->format('Y-m-d\TH:i') ?? '') }}',
+                    scheduledAtDate: '{{ $scheduledAtDateInit }}',
+                    scheduledAtTime: '{{ $scheduledAtTimeInit }}',
+                    get scheduledAt() {
+                        return (this.scheduledAtDate && this.scheduledAtTime)
+                            ? this.scheduledAtDate + 'T' + this.scheduledAtTime
+                            : '';
+                    },
                     couponDays: {{ old('coupon_duration_days', $campaign->coupon_duration_days ?? 0) }},
                     imageUrl: '{{ old('image_url', $campaign->image_url ?? '') }}',
                     imagePath: '{{ old('image_path', $campaign->image_path ?? '') }}',
@@ -321,9 +338,15 @@
                                 </div>
                                 <div>
                                     <x-input-label for="scheduled_at" value="Scheduled Send" />
-                                    <input type="datetime-local" id="scheduled_at" name="scheduled_at" step="300"
-                                           x-model="scheduledAt"
-                                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <div class="mt-1 flex gap-2">
+                                        <input type="date" id="scheduled_at_date" x-model="scheduledAtDate"
+                                               class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        <select id="scheduled_at_time" x-model="scheduledAtTime"
+                                                class="block w-36 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            <x-time-select-options />
+                                        </select>
+                                    </div>
+                                    <input type="hidden" name="scheduled_at" :value="scheduledAt">
                                 </div>
                             </div>
                         </div>
