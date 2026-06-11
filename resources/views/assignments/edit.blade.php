@@ -1,4 +1,15 @@
 <x-app-layout>
+    {{-- Global "please wait" overlay for async PDF page operations --}}
+    <div x-data x-show="$store.pdfBusy.show" x-cloak
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
+        <div class="bg-white rounded-lg shadow-xl px-6 py-5 w-72">
+            <p class="text-sm font-medium text-gray-700 mb-3 text-center" x-text="$store.pdfBusy.message"></p>
+            <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full w-1/3 bg-indigo-600 rounded-full sr-progress-indeterminate"></div>
+            </div>
+        </div>
+    </div>
+
     <x-slot name="header">
         <div class="flex items-center gap-4">
             <a href="{{ route('assignments.index') }}" class="text-gray-400 hover:text-gray-600">
@@ -827,17 +838,17 @@
                                     @endif
                                     <span x-show="pgStatus" x-cloak x-text="pgStatus" :class="pgError ? 'text-red-400' : 'text-green-400'" class="text-xs"></span>
                                     <button type="button"
-                                            @click="pdfAction('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.')"
+                                            @click="pdfAction('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.', 'Unlocking PDF — please wait…')"
                                             class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
                                         Unlock PDF
                                     </button>
                                     <button type="button"
-                                            @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?')"
+                                            @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?', 'Removing title page — please wait…')"
                                             class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
                                         Remove title page
                                     </button>
                                     <button type="button"
-                                            @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?')"
+                                            @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?', 'Removing last page — please wait…')"
                                             class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
                                         Remove last page
                                     </button>
@@ -845,7 +856,7 @@
                                         <input type="text" x-model="pg" placeholder="pg #"
                                                class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
                                         <button type="button"
-                                                @click="if (pg.trim()) pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page ' + pg + '?')"
+                                                @click="if (pg.trim()) pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page ' + pg + '?', 'Removing page ' + pg + ' — please wait…')"
                                                 class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
                                             Remove
                                         </button>
@@ -880,10 +891,12 @@
                              pgStatus: '',
                              pgError: false,
                              pg: '',
-                             async act(url, body, confirmMsg) {
+                             async act(url, body, confirmMsg, busyMsg) {
                                  if (!confirm(confirmMsg)) return;
                                  this.pgStatus = 'Working…';
                                  this.pgError = false;
+                                 Alpine.store('pdfBusy').message = busyMsg || 'Working — please wait…';
+                                 Alpine.store('pdfBusy').show = true;
                                  try {
                                      const r = await fetch(url, {
                                          method: 'POST',
@@ -906,21 +919,23 @@
                                  } catch(e) {
                                      this.pgStatus = 'Request failed.';
                                      this.pgError = true;
+                                 } finally {
+                                     Alpine.store('pdfBusy').show = false;
                                  }
                              },
                          }">
                         <button type="button"
-                                @click="act('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.')"
+                                @click="act('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.', 'Unlocking PDF — please wait…')"
                                 class="px-3 py-1.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded hover:bg-yellow-100 border border-yellow-200 transition">
                             Unlock PDF
                         </button>
                         <button type="button"
-                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?')"
+                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?', 'Removing title page — please wait…')"
                                 class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
                             Remove title page
                         </button>
                         <button type="button"
-                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?')"
+                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?', 'Removing last page — please wait…')"
                                 class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
                             Remove last page
                         </button>
@@ -928,7 +943,7 @@
                             <input type="text" x-model="pg" placeholder="e.g. 1, 5, 103"
                                    class="w-36 text-xs border border-gray-300 rounded px-2 py-1.5 focus:ring-indigo-500 focus:border-indigo-500">
                             <button type="button"
-                                    @click="if (pg.trim()) act('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page(s) ' + pg + '?')"
+                                    @click="if (pg.trim()) act('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page(s) ' + pg + '?', 'Removing page(s) ' + pg + ' — please wait…')"
                                     class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
                                 Remove
                             </button>
@@ -975,6 +990,10 @@
     @push('scripts')
     <script>
     document.addEventListener('alpine:init', () => {
+        if (!Alpine.store('pdfBusy')) {
+            Alpine.store('pdfBusy', { show: false, message: 'Working — please wait…' });
+        }
+
         if (Alpine._data?.pdfViewer) return;
 
         async function ensurePdfJs() {
@@ -1069,10 +1088,12 @@
                     await this.loadPdf();
                 },
 
-                async pdfAction(url, body, confirmMsg) {
+                async pdfAction(url, body, confirmMsg, busyMsg) {
                     if (!confirm(confirmMsg)) return;
                     this.pgStatus = 'Working…';
                     this.pgError = false;
+                    Alpine.store('pdfBusy').message = busyMsg || 'Working — please wait…';
+                    Alpine.store('pdfBusy').show = true;
                     try {
                         const r = await fetch(url, {
                             method: 'POST',
@@ -1095,6 +1116,8 @@
                     } catch(e) {
                         this.pgStatus = 'Request failed.';
                         this.pgError = true;
+                    } finally {
+                        Alpine.store('pdfBusy').show = false;
                     }
                 },
             };

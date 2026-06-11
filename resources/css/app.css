@@ -12,3 +12,11 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@keyframes sr-progress-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+}
+.sr-progress-indeterminate {
+    animation: sr-progress-slide 1.1s ease-in-out infinite;
+}
