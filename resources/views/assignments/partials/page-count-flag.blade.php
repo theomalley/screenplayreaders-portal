@@ -7,7 +7,7 @@
         $flagRoute = $pageFlag === \App\Models\Assignment::PAGE_FLAG_OVER_160
             ? route('assignments.over-160', $assignment)
             : route('assignments.over-120', $assignment);
-        $flagLabel = $pageFlag === \App\Models\Assignment::PAGE_FLAG_OVER_160 ? 'Over 160' : 'Over 120';
+        $flagLabel = $pageFlag === \App\Models\Assignment::PAGE_FLAG_OVER_160 ? 'Over 160' : 'No Oversized Fee';
     @endphp
     <span x-data="{ busy: false, sent: false, err: '' }">
         <button type="button"

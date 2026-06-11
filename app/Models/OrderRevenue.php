@@ -54,6 +54,7 @@ class OrderRevenue extends Model
             'net_revenue'       => 'decimal:2',
             'skip_commission'   => 'boolean',
             'editor_paid_at'    => 'datetime',
+            'line_items_json'   => 'array',
         ];
     }
 }

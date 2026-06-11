@@ -1,5 +1,6 @@
 <?php
 
+// v1.17 — 2026-06-11 | pageCountFlag() also suppresses over_120 when the linked order has an Oversized Fee line item
 // v1.16 — 2026-06-10 | Add oversized_fee_included/manual_page_flag; pageCountFlag() for Over 120/160 badges
 // v1.15 — 2026-06-05 | Add tier to fillable/casts; scopeAvailable() filters by reader tiers
 // v1.14 — 2026-06-05 | Add hasCloudScript() helper — true when drive_script_file_id is a real Drive ID
@@ -97,6 +98,9 @@ class Assignment extends Model
     public const PAGE_FLAG_OVER_120 = 'over_120';
     public const PAGE_FLAG_OVER_160 = 'over_160';
 
+    // WooCommerce variation IDs for the "Oversized Fee" product (parent 54914)
+    public const OVERSIZED_FEE_PRODUCT_IDS = [54923, 54926, 54930];
+
     /**
      * Returns 'over_160', 'over_120', or null — the page-count flag that should
      * be shown for this assignment. Page counts over 160 always flag, "no matter
@@ -112,10 +116,34 @@ class Assignment extends Model
 
         if ($this->manual_page_flag === self::PAGE_FLAG_OVER_120
             || ((int) $this->page_count > 120 && (int) $this->page_count <= 160)) {
-            return $this->oversized_fee_included ? null : self::PAGE_FLAG_OVER_120;
+            if ($this->oversized_fee_included || $this->orderHasOversizedFee()) {
+                return null;
+            }
+            return self::PAGE_FLAG_OVER_120;
         }
 
         return null;
+    }
+
+    /**
+     * True if the assignment's WooCommerce order already includes an
+     * Oversized Fee line item (acts as an automatic alternative to the
+     * manual oversized_fee_included checkbox).
+     */
+    public function orderHasOversizedFee(): bool
+    {
+        $lineItems = $this->orderRevenue?->line_items_json;
+        if (! is_array($lineItems)) {
+            return false;
+        }
+
+        foreach ($lineItems as $item) {
+            if (in_array((int) ($item['product_id'] ?? 0), self::OVERSIZED_FEE_PRODUCT_IDS, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected static function booted(): void
@@ -175,6 +203,11 @@ class Assignment extends Model
     public function helpscoutConversation(): HasOne
     {
         return $this->hasOne(HelpScoutConversation::class, 'order_number', 'order_number');
+    }
+
+    public function orderRevenue(): HasOne
+    {
+        return $this->hasOne(OrderRevenue::class, 'order_number', 'order_number');
     }
 
     public function client(): BelongsTo
