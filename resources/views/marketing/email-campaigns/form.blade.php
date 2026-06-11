@@ -321,7 +321,7 @@
                                 </div>
                                 <div>
                                     <x-input-label for="scheduled_at" value="Scheduled Send" />
-                                    <input type="datetime-local" id="scheduled_at" name="scheduled_at"
+                                    <input type="datetime-local" id="scheduled_at" name="scheduled_at" step="300"
                                            x-model="scheduledAt"
                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 </div>

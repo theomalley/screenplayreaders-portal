@@ -552,7 +552,7 @@
                                     ? $assignment->available_at->copy()->setTimezone($appTimezone)->format('Y-m-d\TH:i')
                                     : '';
                             @endphp
-                            <input type="datetime-local" id="available_at" name="available_at"
+                            <input type="datetime-local" id="available_at" name="available_at" step="300"
                                 value="{{ old('available_at', $availableAtLocal) }}"
                                 class="mt-1 block w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                             <p class="mt-1 text-xs text-gray-400">
