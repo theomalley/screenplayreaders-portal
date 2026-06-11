@@ -182,6 +182,107 @@
                     @csrf
                     @method('PATCH')
 
+                    <div>
+                        <x-input-label for="order_number" value="Order/Invoice #" />
+                        <input type="text" id="order_number" name="order_number"
+                            value="{{ $v('order_number', $assignment->order_number) }}"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="status" value="Status" />
+                        <select id="status" name="status"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="incoming"   {{ $v('status', $assignment->status) === 'incoming'   ? 'selected' : '' }}>Pending</option>
+                            <option value="unassigned" {{ $v('status', $assignment->status) === 'unassigned' ? 'selected' : '' }}>Available</option>
+                            <option value="assigned"   {{ $v('status', $assignment->status) === 'assigned'   ? 'selected' : '' }}>Assigned</option>
+                            <option value="qc"         {{ $v('status', $assignment->status) === 'qc'         ? 'selected' : '' }}>QC</option>
+                            <option value="completed"  {{ $v('status', $assignment->status) === 'completed'  ? 'selected' : '' }}>Completed</option>
+                            <option value="on_hold_customer" {{ $v('status', $assignment->status) === 'on_hold_customer' ? 'selected' : '' }}>On Hold – Customer</option>
+                            <option value="on_hold_sr"       {{ $v('status', $assignment->status) === 'on_hold_sr'       ? 'selected' : '' }}>On Hold – SR</option>
+                            <option value="cancelled"  {{ $v('status', $assignment->status) === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('status')" class="mt-1" />
+                    </div>
+
+                    {{-- Auto-release to Available --}}
+                    @if ($assignment->status !== \App\Models\Assignment::STATUS_UNASSIGNED)
+                    <div>
+                        <x-input-label for="available_at" value="Auto-release to Available" />
+                        <div class="mt-1 flex gap-2">
+                            <input type="date" id="available_at_date" x-model="availableAtDate"
+                                class="block w-36 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <select id="available_at_time" x-model="availableAtTime"
+                                class="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <x-time-select-options />
+                            </select>
+                        </div>
+                        <input type="hidden" name="available_at" :value="availableAtCombined" />
+                        <p class="mt-1 text-xs text-gray-400">
+                            Status will be set to Available automatically at this date/time ({{ $appTimezone }}).
+                            Clear the field to cancel.
+                            @if ($assignment->available_at)
+                                <span class="text-amber-600 font-medium">
+                                    Scheduled: {{ $assignment->available_at->copy()->setTimezone($appTimezone)->format('D M j, Y g:i A') }}
+                                </span>
+                            @endif
+                        </p>
+                        <x-input-error :messages="$errors->get('available_at')" class="mt-1" />
+                    </div>
+                    @endif
+
+                    <div>
+                        <x-input-label for="assigned_reader_id" value="Assigned Reader" />
+                        <select id="assigned_reader_id" name="assigned_reader_id"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="">None</option>
+                            @foreach ($assignableUsers as $aUser)
+                                @php
+                                    $aInitials = $aUser->readerProfile?->initials
+                                        ?? $aUser->editorProfile?->initials
+                                        ?? strtoupper(substr($aUser->name, 0, 2));
+                                    $aName = $aUser->readerProfile?->displayName()
+                                        ?? $aUser->editorProfile?->displayName()
+                                        ?? $aUser->name;
+                                @endphp
+                                <option value="{{ $aUser->id }}"
+                                    {{ $v('assigned_reader_id', $assignment->assigned_reader_id) == $aUser->id ? 'selected' : '' }}>
+                                    {{ $aInitials }} — {{ $aName }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('assigned_reader_id')" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="helpscout_ticket_number" value="HelpScout Ticket #" />
+                        <input type="text" id="helpscout_ticket_number" name="helpscout_ticket_number"
+                            value="{{ $v('helpscout_ticket_number', $assignment->helpscout_ticket_number) }}"
+                            placeholder="e.g. 9731"
+                            class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <p class="mt-1 text-xs text-gray-400">For manually created orders — the # shown at the top of the HelpScout ticket.</p>
+                        <x-input-error :messages="$errors->get('helpscout_ticket_number')" class="mt-1" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        @php $localCreatedAt = $assignment->created_at->copy()->setTimezone($appTimezone); @endphp
+                        <div>
+                            <x-input-label for="date" value="Upload Date" />
+                            <input type="date" id="date" name="date"
+                                value="{{ $v('date', $localCreatedAt->toDateString()) }}"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('date')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="time" value="Upload Time ({{ $appTimezone }})" />
+                            <input type="time" id="time" name="time"
+                                value="{{ $v('time', $localCreatedAt->format('H:i')) }}"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('time')" class="mt-1" />
+                        </div>
+                    </div>
+
                     {{-- Invoice (only show if no invoice already exists for this assignment) --}}
                     @if(\App\Models\Client::count() > 0 && $assignment->invoices->isEmpty())
                     <div class="pb-4 border-b border-gray-100">
@@ -233,23 +334,18 @@
 
                     {{-- Vendor --}}
                     <div>
-                        <x-input-label value="Vendor" />
-                        <div class="mt-2 flex gap-6">
-                            <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                                <input type="radio" name="vendor" value="sr"
-                                    {{ $v('vendor', $assignment->vendor) === 'sr' ? 'checked' : '' }}
-                                    @change="vendor = 'sr'; requestedReaders = ['', '', '']; updatePayDisplay()"
-                                    class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-                                SR
-                            </label>
-                            <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-                                <input type="radio" name="vendor" value="wd"
-                                    {{ $v('vendor', $assignment->vendor) === 'wd' ? 'checked' : '' }}
-                                    @change="vendor = 'wd'; numReaders = '1'; requestedReaders = ['', '', '']; updatePayDisplay()"
-                                    class="text-indigo-600 border-gray-300 focus:ring-indigo-500" />
-                                WD
-                            </label>
-                        </div>
+                        <x-input-label for="vendor" value="Vendor" />
+                        <select id="vendor" name="vendor"
+                            @change="
+                                vendor = $event.target.value;
+                                if (vendor === 'wd') { numReaders = '1'; }
+                                requestedReaders = ['', '', ''];
+                                updatePayDisplay();
+                            "
+                            class="mt-1 block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="sr" {{ $v('vendor', $assignment->vendor) === 'sr' ? 'selected' : '' }}>SR</option>
+                            <option value="wd" {{ $v('vendor', $assignment->vendor) === 'wd' ? 'selected' : '' }}>WD</option>
+                        </select>
                         <x-input-error :messages="$errors->get('vendor')" class="mt-1" />
                     </div>
 
@@ -310,6 +406,49 @@
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                     </div>
 
+                    {{-- Pay Rate --}}
+                    <div class="pt-4 border-t border-gray-100">
+                        <x-input-label value="Pay Rate" />
+
+                        <input type="hidden" id="pay_rate_hidden" name="pay_rate"
+                            value="{{ $v('pay_rate', $assignment->pay_rate) }}" />
+
+                        <div x-show="overrideRate" class="mt-1">
+                            <div class="flex items-center gap-1">
+                                <span class="text-gray-400 text-sm">$</span>
+                                <input type="number" id="pay_rate_override"
+                                    min="0" step="0.01" placeholder="0.00"
+                                    value="{{ $v('pay_rate', $assignment->pay_rate) }}"
+                                    @input="document.getElementById('pay_rate_hidden').value = $event.target.value"
+                                    class="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
+                        </div>
+
+                        <div x-show="!overrideRate" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
+                            <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
+                        </div>
+
+                        <div x-show="parseInt(pageCount) >= 161 && !overrideRate" class="mt-3">
+                            <x-input-label for="custom_oversized_fee" value="Oversized Fee (161+ pages)" />
+                            <div class="mt-1 flex items-center gap-1">
+                                <span class="text-gray-400 text-sm">+$</span>
+                                <input type="number" id="custom_oversized_fee" name="custom_oversized_fee"
+                                    min="0" step="0.01" placeholder="0.00"
+                                    x-model="customOversizedFee"
+                                    @input="updatePayDisplay()"
+                                    class="block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
+                        </div>
+
+                        <div class="mt-2 flex items-center gap-2">
+                            <input type="checkbox" id="override_rate" x-model="overrideRate"
+                                @change="if (!overrideRate) updatePayDisplay()"
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+                            <label for="override_rate" class="text-xs text-gray-500 cursor-pointer select-none">Override pay rate</label>
+                        </div>
+                        <p id="pay_rate_breakdown" class="mt-1.5 text-xs text-gray-400 leading-snug"></p>
+                    </div>
+
                     {{-- Tier --}}
                     <div>
                         <x-input-label for="tier" value="Tier" />
@@ -319,61 +458,6 @@
                             <option value="2">Tier 2 (Budget Coverage)</option>
                         </select>
                         <p class="mt-1 text-xs text-gray-400">Budget Coverage auto-sets to Tier 2.</p>
-                    </div>
-
-                    {{-- Page Count --}}
-                    <div>
-                        <x-input-label for="page_count" value="Page Count" />
-                        <input type="number" id="page_count" name="page_count"
-                            min="1" step="1"
-                            value="{{ $v('page_count', $assignment->page_count) }}"
-                            x-model="pageCount"
-                            @input="updatePayDisplay()"
-                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                        <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
-                    </div>
-
-                    {{-- Page Count Flags (Over 120 / Over 160 HelpScout draft) --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <x-input-label for="manual_page_flag" value="Manual Page Flag" />
-                            <select id="manual_page_flag" name="manual_page_flag"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="" {{ $v('manual_page_flag', $assignment->manual_page_flag) === null ? 'selected' : '' }}>None (use page count)</option>
-                                <option value="over_120" {{ $v('manual_page_flag', $assignment->manual_page_flag) === 'over_120' ? 'selected' : '' }}>Over 120</option>
-                                <option value="over_160" {{ $v('manual_page_flag', $assignment->manual_page_flag) === 'over_160' ? 'selected' : '' }}>Over 160</option>
-                            </select>
-                            <p class="mt-1 text-xs text-gray-400">Set when a visual inspection shows the script is over a threshold even if the page count above doesn't reflect it.</p>
-                            <x-input-error :messages="$errors->get('manual_page_flag')" class="mt-1" />
-                        </div>
-                        <div class="flex items-start pt-7">
-                            <label class="flex items-start gap-2 cursor-pointer">
-                                <input type="hidden" name="oversized_fee_included" value="0" />
-                                <input type="checkbox" id="oversized_fee_included" name="oversized_fee_included" value="1"
-                                    {{ $v('oversized_fee_included', $assignment->oversized_fee_included ?? false) ? 'checked' : '' }}
-                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                <span class="text-sm text-gray-700">
-                                    <span class="font-medium">Order includes oversized fee</span>
-                                    <span class="text-gray-400 ml-1">— suppresses the "Over 120" flag (121–160pp only)</span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {{-- Turnaround --}}
-                    <div>
-                        <x-input-label value="Turnaround" />
-                        <div class="mt-2 flex items-center gap-3">
-                            <label class="flex items-center gap-2 cursor-pointer select-none">
-                                <input type="checkbox" name="rush" value="1"
-                                    {{ $rushActive ? 'checked' : '' }}
-                                    @change="rush = $event.target.checked; updatePayDisplay()"
-                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
-                                <span class="text-sm text-gray-700">Rush</span>
-                            </label>
-                            <span x-show="!rush" class="text-sm text-gray-400">Standard</span>
-                            <span x-show="rush" class="text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
-                        </div>
                     </div>
 
                     {{-- Reader Request(s) --}}
@@ -437,190 +521,129 @@
 
                     </div>
 
-                    {{-- Pay Rate --}}
-                    <div class="pt-4 border-t border-gray-100">
-                        <x-input-label value="Pay Rate" />
-
-                        <input type="hidden" id="pay_rate_hidden" name="pay_rate"
-                            value="{{ $v('pay_rate', $assignment->pay_rate) }}" />
-
-                        <div x-show="overrideRate" class="mt-1">
-                            <div class="flex items-center gap-1">
-                                <span class="text-gray-400 text-sm">$</span>
-                                <input type="number" id="pay_rate_override"
-                                    min="0" step="0.01" placeholder="0.00"
-                                    value="{{ $v('pay_rate', $assignment->pay_rate) }}"
-                                    @input="document.getElementById('pay_rate_hidden').value = $event.target.value"
-                                    class="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            </div>
+                    {{-- Turnaround --}}
+                    <div>
+                        <x-input-label value="Turnaround" />
+                        <div class="mt-2 flex items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" name="rush" value="1"
+                                    {{ $rushActive ? 'checked' : '' }}
+                                    @change="rush = $event.target.checked; updatePayDisplay()"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+                                <span class="text-sm text-gray-700">Rush</span>
+                            </label>
+                            <span x-show="!rush" class="text-sm text-gray-400">Standard</span>
+                            <span x-show="rush" class="text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
                         </div>
-
-                        <div x-show="!overrideRate" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
-                            <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
-                        </div>
-
-                        <div x-show="parseInt(pageCount) >= 161 && !overrideRate" class="mt-3">
-                            <x-input-label for="custom_oversized_fee" value="Oversized Fee (161+ pages)" />
-                            <div class="mt-1 flex items-center gap-1">
-                                <span class="text-gray-400 text-sm">+$</span>
-                                <input type="number" id="custom_oversized_fee" name="custom_oversized_fee"
-                                    min="0" step="0.01" placeholder="0.00"
-                                    x-model="customOversizedFee"
-                                    @input="updatePayDisplay()"
-                                    class="block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            </div>
-                        </div>
-
-                        <div class="mt-2 flex items-center gap-2">
-                            <input type="checkbox" id="override_rate" x-model="overrideRate"
-                                @change="if (!overrideRate) updatePayDisplay()"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
-                            <label for="override_rate" class="text-xs text-gray-500 cursor-pointer select-none">Override pay rate</label>
-                        </div>
-                        <p id="pay_rate_breakdown" class="mt-1.5 text-xs text-gray-400 leading-snug"></p>
                     </div>
 
-                    {{-- Assignment Details --}}
-                    <div class="pt-4 border-t border-gray-100 space-y-5">
+                    <div class="pt-4 border-t border-gray-100">
+                        <x-input-label for="script_title" value="Title" />
+                        <input type="text" id="script_title" name="script_title"
+                            value="{{ $v('script_title', $assignment->script_title) }}"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
+                    </div>
 
+                    <div>
+                        <x-input-label for="writer_name" value="Writer Name" />
+                        <input type="text" id="writer_name" name="writer_name"
+                            value="{{ $v('writer_name', $assignment->writer_name) }}"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
+                    </div>
+
+                    {{-- Page Count --}}
+                    <div>
+                        <x-input-label for="page_count" value="Page Count" />
+                        <input type="number" id="page_count" name="page_count"
+                            min="1" step="1"
+                            value="{{ $v('page_count', $assignment->page_count) }}"
+                            x-model="pageCount"
+                            @input="updatePayDisplay()"
+                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
+                    </div>
+
+                    {{-- Page Count Flags (Over 120 / Over 160 HelpScout draft) --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <x-input-label for="order_number" value="Order #" />
-                            <input type="text" id="order_number" name="order_number"
-                                value="{{ $v('order_number', $assignment->order_number) }}"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="script_title" value="Title" />
-                            <input type="text" id="script_title" name="script_title"
-                                value="{{ $v('script_title', $assignment->script_title) }}"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="writer_name" value="Writer Name" />
-                            <input type="text" id="writer_name" name="writer_name"
-                                value="{{ $v('writer_name', $assignment->writer_name) }}"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            @php $localCreatedAt = $assignment->created_at->copy()->setTimezone($appTimezone); @endphp
-                            <div>
-                                <x-input-label for="date" value="Date" />
-                                <input type="date" id="date" name="date"
-                                    value="{{ $v('date', $localCreatedAt->toDateString()) }}"
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                                <x-input-error :messages="$errors->get('date')" class="mt-1" />
-                            </div>
-                            <div>
-                                <x-input-label for="time" value="Time ({{ $appTimezone }})" />
-                                <input type="time" id="time" name="time"
-                                    value="{{ $v('time', $localCreatedAt->format('H:i')) }}"
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                                <x-input-error :messages="$errors->get('time')" class="mt-1" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <x-input-label for="assigned_reader_id" value="Assigned Reader" />
-                            <select id="assigned_reader_id" name="assigned_reader_id"
+                            <x-input-label for="manual_page_flag" value="Manual Page Flag" />
+                            <select id="manual_page_flag" name="manual_page_flag"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="">None</option>
-                                @foreach ($assignableUsers as $aUser)
-                                    @php
-                                        $aInitials = $aUser->readerProfile?->initials
-                                            ?? $aUser->editorProfile?->initials
-                                            ?? strtoupper(substr($aUser->name, 0, 2));
-                                        $aName = $aUser->readerProfile?->displayName()
-                                            ?? $aUser->editorProfile?->displayName()
-                                            ?? $aUser->name;
-                                    @endphp
-                                    <option value="{{ $aUser->id }}"
-                                        {{ $v('assigned_reader_id', $assignment->assigned_reader_id) == $aUser->id ? 'selected' : '' }}>
-                                        {{ $aInitials }} — {{ $aName }}
-                                    </option>
-                                @endforeach
+                                <option value="" {{ $v('manual_page_flag', $assignment->manual_page_flag) === null ? 'selected' : '' }}>None (use page count)</option>
+                                <option value="over_120" {{ $v('manual_page_flag', $assignment->manual_page_flag) === 'over_120' ? 'selected' : '' }}>Over 120</option>
+                                <option value="over_160" {{ $v('manual_page_flag', $assignment->manual_page_flag) === 'over_160' ? 'selected' : '' }}>Over 160</option>
                             </select>
-                            <x-input-error :messages="$errors->get('assigned_reader_id')" class="mt-1" />
+                            <p class="mt-1 text-xs text-gray-400">Set when a visual inspection shows the script is over a threshold even if the page count above doesn't reflect it.</p>
+                            <x-input-error :messages="$errors->get('manual_page_flag')" class="mt-1" />
                         </div>
-
-                        <div>
-                            <x-input-label for="status" value="Status" />
-                            <select id="status" name="status"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="incoming"   {{ $v('status', $assignment->status) === 'incoming'   ? 'selected' : '' }}>Pending</option>
-                                <option value="unassigned" {{ $v('status', $assignment->status) === 'unassigned' ? 'selected' : '' }}>Available</option>
-                                <option value="assigned"   {{ $v('status', $assignment->status) === 'assigned'   ? 'selected' : '' }}>Assigned</option>
-                                <option value="qc"         {{ $v('status', $assignment->status) === 'qc'         ? 'selected' : '' }}>QC</option>
-                                <option value="completed"  {{ $v('status', $assignment->status) === 'completed'  ? 'selected' : '' }}>Completed</option>
-                                <option value="on_hold_customer" {{ $v('status', $assignment->status) === 'on_hold_customer' ? 'selected' : '' }}>On Hold – Customer</option>
-                                <option value="on_hold_sr"       {{ $v('status', $assignment->status) === 'on_hold_sr'       ? 'selected' : '' }}>On Hold – SR</option>
-                                <option value="cancelled"  {{ $v('status', $assignment->status) === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                            <x-input-error :messages="$errors->get('status')" class="mt-1" />
-                        </div>
-
-                        {{-- Auto-release to Available --}}
-                        @if ($assignment->status !== \App\Models\Assignment::STATUS_UNASSIGNED)
-                        <div>
-                            <x-input-label for="available_at" value="Auto-release to Available" />
-                            <div class="mt-1 flex gap-2">
-                                <input type="date" id="available_at_date" x-model="availableAtDate"
-                                    class="block w-36 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                                <select id="available_at_time" x-model="availableAtTime"
-                                    class="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                    <x-time-select-options />
-                                </select>
-                            </div>
-                            <input type="hidden" name="available_at" :value="availableAtCombined" />
-                            <p class="mt-1 text-xs text-gray-400">
-                                Status will be set to Available automatically at this date/time ({{ $appTimezone }}).
-                                Clear the field to cancel.
-                                @if ($assignment->available_at)
-                                    <span class="text-amber-600 font-medium">
-                                        Scheduled: {{ $assignment->available_at->copy()->setTimezone($appTimezone)->format('D M j, Y g:i A') }}
-                                    </span>
-                                @endif
-                            </p>
-                            <x-input-error :messages="$errors->get('available_at')" class="mt-1" />
-                        </div>
-                        @endif
-
-                        <div>
-                            <x-input-label for="notes" value="Notes" />
-                            <textarea id="notes" name="notes" rows="3"
-                                placeholder="Notes (visible to readers)"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">{{ $v('notes', $assignment->notes) }}</textarea>
-                            <x-input-error :messages="$errors->get('notes')" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <label class="flex items-start gap-3 cursor-pointer">
-                                <input type="hidden" name="exempt_from_word_counts" value="0" />
-                                <input type="checkbox" id="exempt_from_word_counts" name="exempt_from_word_counts" value="1"
-                                    {{ old('exempt_from_word_counts', $assignment->exempt_from_word_counts ?? false) ? 'checked' : '' }}
+                        <div class="flex items-start pt-7">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="hidden" name="oversized_fee_included" value="0" />
+                                <input type="checkbox" id="oversized_fee_included" name="oversized_fee_included" value="1"
+                                    {{ $v('oversized_fee_included', $assignment->oversized_fee_included ?? false) ? 'checked' : '' }}
                                     class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                 <span class="text-sm text-gray-700">
-                                    <span class="font-medium">Exempt from word counts</span>
-                                    <span class="text-gray-400 ml-1">— reader may submit coverage even if word count minimums are not met</span>
+                                    <span class="font-medium">Order includes oversized fee</span>
+                                    <span class="text-gray-400 ml-1">— suppresses the "Over 120" flag (121–160pp only)</span>
                                 </span>
                             </label>
                         </div>
+                    </div>
 
-                        <div>
-                            <x-input-label for="helpscout_ticket_number" value="HelpScout Ticket #" />
-                            <input type="text" id="helpscout_ticket_number" name="helpscout_ticket_number"
-                                value="{{ $v('helpscout_ticket_number', $assignment->helpscout_ticket_number) }}"
-                                placeholder="e.g. 9731"
-                                class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <p class="mt-1 text-xs text-gray-400">For manually created orders — the # shown at the top of the HelpScout ticket.</p>
-                            <x-input-error :messages="$errors->get('helpscout_ticket_number')" class="mt-1" />
+                    <div>
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="hidden" name="exempt_from_word_counts" value="0" />
+                            <input type="checkbox" id="exempt_from_word_counts" name="exempt_from_word_counts" value="1"
+                                {{ old('exempt_from_word_counts', $assignment->exempt_from_word_counts ?? false) ? 'checked' : '' }}
+                                class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            <span class="text-sm text-gray-700">
+                                <span class="font-medium">Exempt from word counts</span>
+                                <span class="text-gray-400 ml-1">— reader may submit coverage even if word count minimums are not met</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    {{-- Notes (visible to readers) --}}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3"
+                         x-data="{
+                             noteSaving: false,
+                             noteSaved: false,
+                             async saveNote() {
+                                 this.noteSaving = true; this.noteSaved = false;
+                                 try {
+                                     const r = await fetch('{{ route('assignments.updateNotes', $assignment) }}', {
+                                         method: 'PATCH',
+                                         headers: {
+                                             'Content-Type': 'application/json',
+                                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                             'Accept': 'application/json',
+                                         },
+                                         body: JSON.stringify({ notes: document.getElementById('notes').value }),
+                                     });
+                                     if (r.ok) {
+                                         this.noteSaved = true;
+                                         setTimeout(() => { this.noteSaved = false; }, 3000);
+                                     }
+                                 } finally {
+                                     this.noteSaving = false;
+                                 }
+                             },
+                         }">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            Notes
+                            <span class="ml-1 text-[10px] font-normal text-gray-400 normal-case tracking-normal">(visible to the reader)</span>
+                        </h3>
+                        <textarea id="notes" name="notes" rows="3"
+                            class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">{{ $v('notes', $assignment->notes) }}</textarea>
+                        <div class="flex items-center justify-end gap-2 mt-2">
+                            <span x-show="noteSaved" x-cloak class="text-[10px] text-green-600">Saved</span>
+                            <button type="button" @click="saveNote()" :disabled="noteSaving"
+                                class="px-3 py-1.5 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-md shadow-sm disabled:opacity-50"
+                                x-text="noteSaving ? 'Saving…' : 'Save Note'"></button>
                         </div>
-
+                        <x-input-error :messages="$errors->get('notes')" class="mt-1" />
                     </div>
 
                 </form>
@@ -668,7 +691,7 @@
                 @endif
 
                 {{-- Editor Notes (admin/editor only — not visible to readers) --}}
-                <div class="px-6 pb-6 border-t border-gray-100 pt-5">
+                <div id="internal-notes" class="px-6 pb-6 border-t border-gray-100 pt-5">
                     <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
                         Internal Notes
                         <span class="ml-1 text-[10px] font-normal text-gray-400 normal-case tracking-normal">(admin &amp; editors only)</span>
@@ -825,7 +848,8 @@
 
     {{-- Script upload — separate form so enctype doesn't affect the PATCH form --}}
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-5">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-5"
+             x-data="{ showUpload: {{ $assignment->hasCloudScript() ? 'false' : 'true' }} }">
             @if ($assignment->hasCloudScript())
                 @php
                     $viewUrl = route('assignments.streamScript', $assignment);
@@ -905,62 +929,18 @@
                     </div>
                 </div>
 
-                {{-- PDF unlock --}}
-                <div class="mb-4 pb-4 border-b border-gray-100">
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Unlock PDF</p>
-                    <div class="flex flex-wrap gap-2 items-center"
-                         x-data="{
-                             pgStatus: '',
-                             pgError: false,
-                             async act(url, body, confirmMsg, busyMsg) {
-                                 if (!confirm(confirmMsg)) return;
-                                 this.pgStatus = 'Working…';
-                                 this.pgError = false;
-                                 Alpine.store('pdfBusy').message = busyMsg || 'Working — please wait…';
-                                 Alpine.store('pdfBusy').show = true;
-                                 try {
-                                     const r = await fetch(url, {
-                                         method: 'POST',
-                                         headers: {
-                                             'Content-Type': 'application/x-www-form-urlencoded',
-                                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                             'X-Requested-With': 'XMLHttpRequest',
-                                         },
-                                         body,
-                                     });
-                                     const d = await r.json();
-                                     if (d.success) {
-                                         this.pgStatus = d.message || 'Done.';
-                                         window.dispatchEvent(new CustomEvent('sr-reload-pdf-edit'));
-                                         setTimeout(() => { this.pgStatus = ''; }, 4000);
-                                     } else {
-                                         this.pgStatus = d.message || 'Error.';
-                                         this.pgError = true;
-                                     }
-                                 } catch(e) {
-                                     this.pgStatus = 'Request failed.';
-                                     this.pgError = true;
-                                 } finally {
-                                     Alpine.store('pdfBusy').show = false;
-                                 }
-                             },
-                         }">
-                        <button type="button"
-                                @click="act('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.', 'Unlocking PDF — please wait…')"
-                                class="px-3 py-1.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded hover:bg-yellow-100 border border-yellow-200 transition">
-                            Unlock PDF
-                        </button>
-                        <span x-show="pgStatus" x-cloak x-text="pgStatus" :class="pgError ? 'text-red-600' : 'text-green-600'" class="text-xs font-medium"></span>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-2">To remove pages, open the PDF preview (View) — page removal is only available there.</p>
-                </div>
-
-                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{{ $assignment->drive_script_file_id ? 'Replace script file' : 'Upload script' }}</p>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                    <button type="button" @click="showUpload = !showUpload"
+                            class="text-indigo-600 hover:text-indigo-800 underline">
+                        Replace script file
+                    </button>
+                </p>
             @endif
             <form method="POST"
                   action="{{ route('assignments.uploadScript', $assignment) }}"
                   enctype="multipart/form-data"
-                  x-data="{ fileName: '' }">
+                  x-data="{ fileName: '' }"
+                  x-show="showUpload">
                 @csrf
                 <input type="file" id="script_upload" name="script" accept="application/pdf" required
                        class="sr-only"

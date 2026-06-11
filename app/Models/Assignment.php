@@ -1,5 +1,6 @@
 <?php
 
+// v1.18 — 2026-06-11 | Add editorNotes() relation for internal-notes indicator on assignment listings
 // v1.17 — 2026-06-11 | pageCountFlag() also suppresses over_120 when the linked order has an Oversized Fee line item
 // v1.16 — 2026-06-10 | Add oversized_fee_included/manual_page_flag; pageCountFlag() for Over 120/160 badges
 // v1.15 — 2026-06-05 | Add tier to fillable/casts; scopeAvailable() filters by reader tiers
@@ -208,6 +209,11 @@ class Assignment extends Model
     public function orderRevenue(): HasOne
     {
         return $this->hasOne(OrderRevenue::class, 'order_number', 'order_number');
+    }
+
+    public function editorNotes(): HasMany
+    {
+        return $this->hasMany(AssignmentEditorNote::class);
     }
 
     public function client(): BelongsTo
