@@ -254,7 +254,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reader-earnings', [ReaderEarningsController::class, 'index'])->name('reader-earnings.index');
     Route::get('/editor-earnings', [EditorEarningsController::class, 'index'])->name('editor-earnings.index');
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
-    Route::get('/reader-pay', [ReaderPayController::class, 'index'])->name('reader-pay.index');
     Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
     Route::post('/reader-pay/{reader}/clear-unpaid', [ReaderPayController::class, 'clearUnpaidBatch'])->name('reader-pay.clear-unpaid');
     Route::post('/reader-pay/{reader}/remove-batch', [ReaderPayController::class, 'removeHistoryBatch'])->name('reader-pay.remove-batch');
@@ -273,8 +272,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/admin/editors/{user}/commissions', [EditorProfileController::class, 'saveCommissions'])->name('admin.editors.commissions');
     Route::delete('/admin/editors/{user}', [EditorProfileController::class, 'destroy'])->name('admin.editors.destroy');
 
-    Route::get('/editor-pay', [EditorPayController::class, 'index'])->name('editor-pay.index');
     Route::post('/editor-pay/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');
+    Route::post('/editor-pay/mark-unpaid', [EditorPayController::class, 'markUnpaid'])->name('editor-pay.mark-unpaid');
     Route::post('/editor-pay/adjustment', [EditorPayController::class, 'addAdjustment'])->name('editor-pay.add-adjustment');
     Route::delete('/editor-pay/adjustment/{adjustment}', [EditorPayController::class, 'deleteAdjustment'])->name('editor-pay.delete-adjustment');
     Route::patch('/editor-pay/order/{order}/commission', [EditorPayController::class, 'updateCommission'])->name('editor-pay.update-commission');

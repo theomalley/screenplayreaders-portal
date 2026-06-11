@@ -29,6 +29,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\HelpScoutService;
 use App\Support\FilenameGenerator;
+use App\Support\PayPeriod;
 use App\Support\Permission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -77,6 +78,8 @@ class SettingController extends Controller
         $followupHeading      = Setting::getValue('followup_heading', '');
         $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
         $payPeriod            = $isAdmin ? Setting::getPayPeriod()  : null;
+        $payoutSchedule       = $isAdmin ? Setting::getPayoutSchedule() : null;
+        $nextPayout           = $isAdmin ? PayPeriod::nextPayoutDate()  : null;
 
         $adminProfile       = auth()->user()->editorProfile;
         $adminPortalPhotoUrl = $adminProfile?->photo      ? asset('storage/' . $adminProfile->photo)       : null;
@@ -90,7 +93,7 @@ class SettingController extends Controller
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading',
-            'wordCounts', 'payPeriod', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
+            'wordCounts', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
     }
 

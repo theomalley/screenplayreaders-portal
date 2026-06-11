@@ -23,7 +23,6 @@ class QuickLoginController extends Controller
         'archive.index'     => 'Archive',
         'revenue.index'     => 'Revenue',
         'payroll.index'     => 'Payroll',
-        'reader-pay.index'  => 'Reader Pay',
         'team.index'        => 'Team',
     ];
 
