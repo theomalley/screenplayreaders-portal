@@ -780,6 +780,7 @@ class AssignmentController extends Controller
         $data         = $request->validated();
         $data['rush']                   = $request->boolean('rush');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
+        $data['oversized_fee_included'] = $request->boolean('oversized_fee_included');
         $data['tier']                   = (int) ($data['tier'] ?? 1) ?: 1;
 
         $newCreatedAt = null;
@@ -1207,8 +1208,19 @@ class AssignmentController extends Controller
 
     public function over120(Assignment $assignment, \App\Services\HelpScoutService $helpScout)
     {
+        return $this->pageCountFlagDraft($assignment, $helpScout, Assignment::PAGE_FLAG_OVER_120);
+    }
+
+    public function over160(Assignment $assignment, \App\Services\HelpScoutService $helpScout)
+    {
+        return $this->pageCountFlagDraft($assignment, $helpScout, Assignment::PAGE_FLAG_OVER_160);
+    }
+
+    private function pageCountFlagDraft(Assignment $assignment, \App\Services\HelpScoutService $helpScout, string $flag)
+    {
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
         abort_unless($assignment->status === Assignment::STATUS_INCOMING, 422);
+        abort_unless($assignment->pageCountFlag() === $flag, 422);
 
         $conversationId = $assignment->helpscoutConversation?->helpscout_conversation_id;
         if (! $conversationId && $assignment->helpscout_ticket_number) {

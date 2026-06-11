@@ -126,34 +126,7 @@
                         <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H6l-4 4V5z" clip-rule="evenodd"/>
                     </svg>
                 </a>
-                @if ($assignment->status === 'incoming' && $assignment->page_count > 120)
-                    <span x-data="{ busy: false, sent: false, err: '' }">
-                        <button type="button"
-                                :disabled="busy || sent"
-                                @click.stop="
-                                    busy = true; err = '';
-                                    fetch(@js(route('assignments.over-120', $assignment)), {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                            'Accept': 'application/json',
-                                        }
-                                    })
-                                    .then(r => r.json())
-                                    .then(d => {
-                                        busy = false;
-                                        if (d.error) { err = d.error; }
-                                        else { sent = true; window.open(d.url, '_blank'); }
-                                    })
-                                    .catch(() => { busy = false; err = 'Failed'; })
-                                "
-                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-50 whitespace-nowrap"
-                                :class="sent ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 hover:bg-red-200'"
-                                x-text="busy ? '…' : (sent ? '✓ Drafted' : 'Over 120')">
-                        </button>
-                        <span x-show="err" x-text="err" class="text-[10px] text-red-500 ml-0.5"></span>
-                    </span>
-                @endif
+                @include('assignments.partials.page-count-flag', ['assignment' => $assignment])
             </div>
         @endif
     </td>

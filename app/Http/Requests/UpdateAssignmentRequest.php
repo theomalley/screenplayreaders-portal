@@ -44,6 +44,8 @@ class UpdateAssignmentRequest extends FormRequest
             'available_at'              => ['nullable', 'date_format:Y-m-d\TH:i'],
             'exempt_from_word_counts'   => ['nullable', 'boolean'],
             'tier'                      => ['nullable', 'integer', 'in:1,2'],
+            'oversized_fee_included'    => ['nullable', 'boolean'],
+            'manual_page_flag'          => ['nullable', 'in:over_120,over_160'],
         ];
     }
 }

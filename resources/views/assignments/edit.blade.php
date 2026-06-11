@@ -301,6 +301,33 @@
                         <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
                     </div>
 
+                    {{-- Page Count Flags (Over 120 / Over 160 HelpScout draft) --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <x-input-label for="manual_page_flag" value="Manual Page Flag" />
+                            <select id="manual_page_flag" name="manual_page_flag"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                <option value="" {{ $v('manual_page_flag', $assignment->manual_page_flag) === null ? 'selected' : '' }}>None (use page count)</option>
+                                <option value="over_120" {{ $v('manual_page_flag', $assignment->manual_page_flag) === 'over_120' ? 'selected' : '' }}>Over 120</option>
+                                <option value="over_160" {{ $v('manual_page_flag', $assignment->manual_page_flag) === 'over_160' ? 'selected' : '' }}>Over 160</option>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-400">Set when a visual inspection shows the script is over a threshold even if the page count above doesn't reflect it.</p>
+                            <x-input-error :messages="$errors->get('manual_page_flag')" class="mt-1" />
+                        </div>
+                        <div class="flex items-start pt-7">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="hidden" name="oversized_fee_included" value="0" />
+                                <input type="checkbox" id="oversized_fee_included" name="oversized_fee_included" value="1"
+                                    {{ $v('oversized_fee_included', $assignment->oversized_fee_included ?? false) ? 'checked' : '' }}
+                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">
+                                    <span class="font-medium">Order includes oversized fee</span>
+                                    <span class="text-gray-400 ml-1">— suppresses the "Over 120" flag (121–160pp only)</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
                     {{-- Turnaround --}}
                     <div>
                         <x-input-label value="Turnaround" />

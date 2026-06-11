@@ -1,5 +1,6 @@
 <?php
 
+// v1.16 — 2026-06-10 | Add oversized_fee_included/manual_page_flag; pageCountFlag() for Over 120/160 badges
 // v1.15 — 2026-06-05 | Add tier to fillable/casts; scopeAvailable() filters by reader tiers
 // v1.14 — 2026-06-05 | Add hasCloudScript() helper — true when drive_script_file_id is a real Drive ID
 // v1.13 — 2026-06-04 | Add is_test flag; auto-reset completed test assignments after 4 h
@@ -66,6 +67,8 @@ class Assignment extends Model
         'exempt_from_word_counts',
         'is_test',
         'tier',
+        'oversized_fee_included',
+        'manual_page_flag',
     ];
 
     protected function casts(): array
@@ -85,7 +88,34 @@ class Assignment extends Model
             'exempt_from_word_counts'   => 'boolean',
             'is_test'                   => 'boolean',
             'tier'                      => 'integer',
+            'oversized_fee_included'    => 'boolean',
         ];
+    }
+
+    // --- Page count flags ---
+
+    public const PAGE_FLAG_OVER_120 = 'over_120';
+    public const PAGE_FLAG_OVER_160 = 'over_160';
+
+    /**
+     * Returns 'over_160', 'over_120', or null — the page-count flag that should
+     * be shown for this assignment. Page counts over 160 always flag, "no matter
+     * what". Page counts in 121-160 only flag if the order doesn't already
+     * include an oversized fee. A manual override (set when an editor visually
+     * inspects the script) takes precedence over the recorded page count.
+     */
+    public function pageCountFlag(): ?string
+    {
+        if ($this->manual_page_flag === self::PAGE_FLAG_OVER_160 || (int) $this->page_count > 160) {
+            return self::PAGE_FLAG_OVER_160;
+        }
+
+        if ($this->manual_page_flag === self::PAGE_FLAG_OVER_120
+            || ((int) $this->page_count > 120 && (int) $this->page_count <= 160)) {
+            return $this->oversized_fee_included ? null : self::PAGE_FLAG_OVER_120;
+        }
+
+        return null;
     }
 
     protected static function booted(): void
