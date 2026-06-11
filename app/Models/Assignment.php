@@ -1,5 +1,6 @@
 <?php
 
+// v1.19 — 2026-06-11 | Add helpscout_draft_dismissed_by + isHelpscoutDraftDismissedBy/dismissHelpscoutDraft for goback-ready notification
 // v1.18 — 2026-06-11 | Add editorNotes() relation for internal-notes indicator on assignment listings
 // v1.17 — 2026-06-11 | pageCountFlag() also suppresses over_120 when the linked order has an Oversized Fee line item
 // v1.16 — 2026-06-10 | Add oversized_fee_included/manual_page_flag; pageCountFlag() for Over 120/160 badges
@@ -63,6 +64,7 @@ class Assignment extends Model
         'completed_at',
         'reader_paid_at',
         'helpscout_draft_sent_at',
+        'helpscout_draft_dismissed_by',
         'client_id',
         'reader_declined',
         'available_at',
@@ -85,6 +87,7 @@ class Assignment extends Model
             'completed_at'              => 'datetime',
             'reader_paid_at'            => 'datetime',
             'helpscout_draft_sent_at'   => 'datetime',
+            'helpscout_draft_dismissed_by' => 'array',
             'reader_declined'           => 'boolean',
             'available_at'              => 'datetime',
             'exempt_from_word_counts'   => 'boolean',
@@ -182,6 +185,27 @@ class Assignment extends Model
     public function hasCloudScript(): bool
     {
         return !empty($this->drive_script_file_id);
+    }
+
+    /** Whether the given user has dismissed the "goback ready at HelpScout" notice for this order. */
+    public function isHelpscoutDraftDismissedBy(int $userId): bool
+    {
+        return \in_array($userId, $this->helpscout_draft_dismissed_by ?: []);
+    }
+
+    /** Dismiss the "goback ready at HelpScout" notice for the given user, across all assignments in this order. */
+    public function dismissHelpscoutDraft(int $userId): void
+    {
+        static::where('order_number', $this->order_number)
+            ->whereNotNull('helpscout_draft_sent_at')
+            ->get(['id', 'helpscout_draft_dismissed_by'])
+            ->each(function (self $a) use ($userId) {
+                $ids = $a->helpscout_draft_dismissed_by ?: [];
+                if (! \in_array($userId, $ids)) {
+                    $ids[] = $userId;
+                    $a->update(['helpscout_draft_dismissed_by' => $ids]);
+                }
+            });
     }
 
     // --- Relationships ---

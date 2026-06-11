@@ -1,5 +1,7 @@
 <?php
 
+// v2.14 — 2026-06-11 | index(): pass helpscoutDraftsReady (completed orders w/ undismissed HelpScout
+//                      draft) for top-of-page notification; add dismissHelpscoutDraft().
 // v2.13 — 2026-06-11 | streamCoverage: filename matches Drive coverage PDF naming convention
 //                      (FilenameGenerator::coveragePdf) instead of hardcoded "coverage.pdf".
 // v2.12 — 2026-06-10 | downloadScriptForReader: build watermark text from admin-configurable
@@ -159,6 +161,18 @@ class AssignmentController extends Controller
                 ->filter(fn($n) => ! $n->isDismissedBy($user->id) && $n->replies->isEmpty())
                 ->values();
 
+            $helpscoutDraftsReady = Assignment::where('status', Assignment::STATUS_COMPLETED)
+                ->whereNotNull('helpscout_draft_sent_at')
+                ->where(function ($q) use ($user) {
+                    $q->whereNull('helpscout_draft_dismissed_by')
+                      ->orWhereJsonDoesntContain('helpscout_draft_dismissed_by', $user->id);
+                })
+                ->with('helpscoutConversation')
+                ->orderBy('helpscout_draft_sent_at', 'desc')
+                ->get()
+                ->unique('order_number')
+                ->values();
+
             return view('assignments.index', [
                 'canManage'        => true,
                 'tier1Assignments' => $tier1Assignments,
@@ -176,6 +190,7 @@ class AssignmentController extends Controller
                 'followups'        => $followups,
                 'assignmentNotes'  => $assignmentNotes,
                 'pendingApprovals' => $pendingApprovals,
+                'helpscoutDraftsReady' => $helpscoutDraftsReady,
             ]);
         }
 
@@ -751,6 +766,16 @@ class AssignmentController extends Controller
             'Cache-Control'       => 'private, no-store',
             'X-Frame-Options'     => 'SAMEORIGIN',
         ]);
+    }
+
+    /** Dismiss the "goback ready at HelpScout" notification for the current user. */
+    public function dismissHelpscoutDraft(Assignment $assignment)
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $assignment->dismissHelpscoutDraft(auth()->id());
+
+        return response()->json(['status' => 'ok']);
     }
 
     public function edit(Assignment $assignment)

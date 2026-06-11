@@ -143,6 +143,39 @@
             {{-- ===== ADMIN / EDITOR VIEW ===== --}}
             @if ($canManage)
 
+                {{-- ---- HelpScout Goback Ready panel ---- --}}
+                @if (($helpscoutDraftsReady ?? collect())->isNotEmpty())
+                <div class="mb-5 space-y-2">
+                    @foreach ($helpscoutDraftsReady as $hsAssignment)
+                        @php
+                            $hsId = $hsAssignment->helpscout_ticket_number
+                                ?: $hsAssignment->helpscoutConversation?->helpscout_conversation_id;
+                            $hsUrl = $hsId ? "https://secure.helpscout.net/conversation/{$hsId}/" : null;
+                        @endphp
+                        <div id="hs-draft-{{ $hsAssignment->id }}" class="flex items-center gap-3 px-4 py-3 border border-teal-200 bg-teal-50 rounded-lg">
+                            <svg class="w-5 h-5 text-teal-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <div class="flex-1 min-w-0 text-sm text-teal-900">
+                                @if ($hsUrl)
+                                    <a href="{{ $hsUrl }}" target="_blank" class="font-medium underline hover:text-teal-700">
+                                        Order {{ $hsAssignment->order_number }} {{ $hsAssignment->script_title }} goback email ready to go at HelpScout.
+                                    </a>
+                                @else
+                                    <span class="font-medium">Order {{ $hsAssignment->order_number }} {{ $hsAssignment->script_title }} goback email ready to go at HelpScout.</span>
+                                @endif
+                            </div>
+                            <button type="button"
+                                    x-data
+                                    @click="fetch('{{ route('assignments.dismissHelpscoutDraft', $hsAssignment) }}', {
+                                        method: 'POST',
+                                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                    }).then(() => document.getElementById('hs-draft-{{ $hsAssignment->id }}').remove())"
+                                    class="text-teal-400 hover:text-teal-700 text-lg leading-none shrink-0"
+                                    title="Dismiss">&times;</button>
+                        </div>
+                    @endforeach
+                </div>
+                @endif
+
                 {{-- ---- Assignment Notes panel ---- --}}
                 @if (($assignmentNotes ?? collect())->isNotEmpty())
                 <div class="mb-5">
