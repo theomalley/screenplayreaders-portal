@@ -2,21 +2,51 @@
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="{ adjOpen: false }">
 
     {{-- Header --}}
-    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-amber-200 bg-amber-50">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-blue-200 bg-blue-50">
         <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-            <span class="font-semibold text-gray-800">
-                {{ $editor?->editorProfile?->displayName() ?? $editor?->name ?? 'Editor' }}
-            </span>
+            <div class="flex items-center gap-2">
+                @php $editorInitials = $editor?->editorProfile?->initials ?? '??'; @endphp
+                @if($editor)
+                <a href="{{ route('admin.editors.edit', $editor) }}" title="Edit {{ $editor?->editorProfile?->displayName() ?? $editor->name }}">
+                    @if($editor->editorProfile?->photo)
+                        <img src="{{ asset('storage/' . $editor->editorProfile->photo) }}" alt="{{ $editorInitials }}"
+                             class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">
+                    @else
+                        <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-semibold ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">{{ $editorInitials }}</div>
+                    @endif
+                </a>
+                @endif
+                <span class="font-semibold text-gray-800">
+                    {{ $editor?->editorProfile?->displayName() ?? $editor?->name ?? 'Editor' }}
+                </span>
+                @php $paymentId = strtoupper($editorInitials) . now()->format('Ymd'); @endphp
+                <span x-data="{ copied: false }"
+                      class="inline-flex items-center gap-1 cursor-pointer select-all"
+                      @click="navigator.clipboard.writeText('{{ $paymentId }}'); copied = true; setTimeout(() => copied = false, 1500)"
+                      title="Copy payment ID for PayPal note">
+                    <span class="font-mono text-xs px-1.5 py-0.5 rounded bg-gray-100 border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-700 transition-colors">{{ $paymentId }}</span>
+                    <span x-show="!copied" class="text-[10px] text-gray-400">copy</span>
+                    <span x-show="copied" x-cloak class="text-[10px] text-green-600 font-medium">✓ copied</span>
+                </span>
+            </div>
             @if($editor?->editorProfile?->paypal_email)
                 <span class="text-sm text-gray-500">· PayPal: <span class="font-mono text-xs">{{ $editor->editorProfile->paypal_email }}</span></span>
             @endif
-            <span class="text-sm font-semibold {{ $totalOwed >= 0 ? 'text-amber-700' : 'text-red-600' }}">
+            <span class="text-sm font-semibold {{ $totalOwed >= 0 ? 'text-blue-700' : 'text-red-600' }}">
                 · {{ $unpaidOrders->count() }} commission(s) + {{ $unpaidAdjustments->count() }} adjustment(s)
                 &nbsp;·&nbsp; ${{ number_format($totalOwed, 2) }} owed
             </span>
         </div>
         @if(auth()->user()->isAdmin())
         <div class="flex items-center gap-2">
+            <form method="POST" action="{{ route('editor-pay.clear-unpaid') }}"
+                onsubmit="return confirm('Clear all pending editor commissions and adjustments? This sets commissions to $0 and removes pending adjustments.')">
+                @csrf
+                <button type="submit"
+                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-300 hover:bg-red-50 rounded-md transition-colors">
+                    Remove
+                </button>
+            </form>
             <button type="button" @click="adjOpen = !adjOpen"
                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 hover:bg-indigo-50 rounded-md transition-colors">
                 + Adjustment
@@ -71,15 +101,15 @@
     @if($unpaidOrders->isEmpty() && $unpaidAdjustments->isEmpty())
         <div class="px-6 py-10 text-center text-gray-400 text-sm">No pending editor pay.</div>
     @else
-        <table class="min-w-full divide-y divide-gray-100 text-sm">
+        <table class="min-w-full table-fixed divide-y divide-gray-100 text-sm">
             <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
                 <tr>
-                    <th class="px-4 py-2 text-left">Type</th>
+                    <th class="px-4 py-2 text-left w-28">Type</th>
                     <th class="px-4 py-2 text-left">Detail</th>
-                    <th class="px-4 py-2 text-left">Date</th>
-                    <th class="px-4 py-2 text-right">Gross</th>
-                    <th class="px-4 py-2 text-right">Commission</th>
-                    <th class="px-4 py-2"></th>
+                    <th class="px-4 py-2 text-left w-24">Date</th>
+                    <th class="px-4 py-2 text-right w-24">Gross</th>
+                    <th class="px-4 py-2 text-right w-24">Commission</th>
+                    <th class="px-4 py-2 w-16"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
@@ -150,10 +180,10 @@
                 </tr>
                 @endforeach
             </tbody>
-            <tfoot class="bg-amber-50 border-t-2 border-amber-200 text-sm font-semibold">
+            <tfoot class="bg-blue-50 border-t-2 border-blue-200 text-sm font-semibold">
                 <tr>
-                    <td colspan="4" class="px-4 py-3 text-amber-700">Total owed</td>
-                    <td class="px-4 py-3 text-right {{ $totalOwed >= 0 ? 'text-amber-700' : 'text-red-600' }}">${{ number_format($totalOwed, 2) }}</td>
+                    <td colspan="4" class="px-4 py-3 text-blue-700">Total owed</td>
+                    <td class="px-4 py-3 text-right {{ $totalOwed >= 0 ? 'text-blue-700' : 'text-red-600' }}">${{ number_format($totalOwed, 2) }}</td>
                     <td></td>
                 </tr>
             </tfoot>

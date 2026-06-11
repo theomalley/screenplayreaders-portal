@@ -88,14 +88,14 @@
 
     {{-- Line items table --}}
     <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-100 text-sm">
+    <table class="min-w-full table-fixed divide-y divide-gray-100 text-sm">
         <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
             <tr>
-                <th class="px-4 py-2 text-left">Type</th>
+                <th class="px-4 py-2 text-left w-28">Type</th>
                 <th class="px-4 py-2 text-left">Detail</th>
-                <th class="px-4 py-2 text-left">Date</th>
-                <th class="px-4 py-2 text-right">Amount</th>
-                <th class="px-4 py-2"></th>
+                <th class="px-4 py-2 text-left w-24">Date</th>
+                <th class="px-4 py-2 text-right w-24">Amount</th>
+                <th class="px-4 py-2 w-16"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
@@ -108,7 +108,15 @@
                 </td>
                 <td class="px-4 py-2 text-gray-500 text-xs">{{ $a->completed_at?->format('M j, Y') }}</td>
                 <td class="px-4 py-2 text-right font-medium text-gray-700">${{ number_format($a->pay_rate, 2) }}</td>
-                <td class="px-4 py-2"></td>
+                <td class="px-4 py-2 text-right">
+                    @if(auth()->user()->isAdmin())
+                    <form method="POST" action="{{ route('reader-pay.delete-assignment-pay', $a->id) }}"
+                        onsubmit="return confirm('Remove pay for order {{ $a->order_number }}? This sets it to $0 and removes it from this list.')">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="text-xs text-red-400 hover:text-red-600">Remove</button>
+                    </form>
+                    @endif
+                </td>
             </tr>
             @endforeach
             @foreach($rd['adjustments'] as $adj)

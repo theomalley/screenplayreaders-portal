@@ -261,6 +261,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/reader-pay/{reader}/mark-unpaid', [ReaderPayController::class, 'markUnpaid'])->name('reader-pay.mark-unpaid');
     Route::post('/reader-pay/{reader}/adjustment', [ReaderPayController::class, 'addAdjustment'])->name('reader-pay.add-adjustment');
     Route::delete('/reader-pay/adjustment/{adjustment}', [ReaderPayController::class, 'deleteAdjustment'])->name('reader-pay.delete-adjustment');
+    Route::delete('/reader-pay/assignment/{assignment}', [ReaderPayController::class, 'deleteAssignmentPay'])->name('reader-pay.delete-assignment-pay');
 
     Route::get('/payments', [PaymentsController::class, 'index'])->name('payments.index');
 
@@ -274,6 +275,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/admin/editors/{user}', [EditorProfileController::class, 'destroy'])->name('admin.editors.destroy');
 
     Route::post('/editor-pay/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');
+    Route::post('/editor-pay/clear-unpaid', [EditorPayController::class, 'clearUnpaidBatch'])->name('editor-pay.clear-unpaid');
     Route::post('/editor-pay/mark-unpaid', [EditorPayController::class, 'markUnpaid'])->name('editor-pay.mark-unpaid');
     Route::post('/editor-pay/adjustment', [EditorPayController::class, 'addAdjustment'])->name('editor-pay.add-adjustment');
     Route::delete('/editor-pay/adjustment/{adjustment}', [EditorPayController::class, 'deleteAdjustment'])->name('editor-pay.delete-adjustment');

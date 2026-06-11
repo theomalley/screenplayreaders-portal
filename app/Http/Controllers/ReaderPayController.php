@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-06-11 | Add deleteAssignmentPay() — zero an individual unpaid assignment's pay_rate
 // v1.3 — 2026-06-11 | Move dashboard into Payroll — remove index(), redirect actions to payroll.index
 // v1.2 — 2026-05-28 | Add markUnpaid — revert a paid batch back to unpaid
 // v1.1 — 2026-05-25 | Add manual adjustments, paginated history, PayPeriod grouping
@@ -80,6 +81,17 @@ class ReaderPayController extends Controller
 
         return redirect()->route('payroll.index')
             ->with('success', "Adjustment {$sign}{$validated['amount']} added for {$name}.");
+    }
+
+    public function deleteAssignmentPay(Assignment $assignment)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(is_null($assignment->reader_paid_at), 422);
+
+        $assignment->update(['pay_rate' => 0]);
+
+        return redirect()->route('payroll.index')
+            ->with('success', "Pay for order {$assignment->order_number} removed.");
     }
 
     public function clearUnpaidBatch(User $reader)

@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-06-11 | Add clearUnpaidBatch() — zero pending commissions + delete pending adjustments
 // v1.4 — 2026-06-11 | Move dashboard into Payroll — remove index(), add markUnpaid(), redirect actions to payroll.index
 // v1.3 — 2026-06-10 | Admin can permanently delete a payment-history batch or wipe all history
 // v1.2 — 2026-06-10 | Admin can edit/zero-out an order's commission directly from the editor pay view
@@ -31,6 +32,21 @@ class EditorPayController extends Controller
 
         return redirect()->route('payroll.index')
             ->with('success', 'All pending editor pay marked as paid.');
+    }
+
+    public function clearUnpaidBatch()
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        OrderRevenue::whereNull('editor_paid_at')
+            ->where('skip_commission', false)
+            ->where('cog_commission', '>', 0)
+            ->update(['cog_commission' => 0]);
+
+        EditorPayAdjustment::whereNull('editor_paid_at')->delete();
+
+        return redirect()->route('payroll.index')
+            ->with('success', 'Cleared all pending editor commissions and adjustments.');
     }
 
     public function markUnpaid(Request $request)
