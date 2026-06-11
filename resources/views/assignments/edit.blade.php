@@ -883,14 +883,13 @@
                     </div>
                 </div>
 
-                {{-- Page removal --}}
+                {{-- PDF unlock --}}
                 <div class="mb-4 pb-4 border-b border-gray-100">
-                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Remove pages</p>
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Unlock PDF</p>
                     <div class="flex flex-wrap gap-2 items-center"
                          x-data="{
                              pgStatus: '',
                              pgError: false,
-                             pg: '',
                              async act(url, body, confirmMsg, busyMsg) {
                                  if (!confirm(confirmMsg)) return;
                                  this.pgStatus = 'Working…';
@@ -929,27 +928,9 @@
                                 class="px-3 py-1.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded hover:bg-yellow-100 border border-yellow-200 transition">
                             Unlock PDF
                         </button>
-                        <button type="button"
-                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?', 'Removing title page — please wait…')"
-                                class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
-                            Remove title page
-                        </button>
-                        <button type="button"
-                                @click="act('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?', 'Removing last page — please wait…')"
-                                class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
-                            Remove last page
-                        </button>
-                        <span class="flex items-center gap-2">
-                            <input type="text" x-model="pg" placeholder="e.g. 1, 5, 103"
-                                   class="w-36 text-xs border border-gray-300 rounded px-2 py-1.5 focus:ring-indigo-500 focus:border-indigo-500">
-                            <button type="button"
-                                    @click="if (pg.trim()) act('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page(s) ' + pg + '?', 'Removing page(s) ' + pg + ' — please wait…')"
-                                    class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded hover:bg-red-50 hover:text-red-700 border border-gray-200 hover:border-red-200 transition">
-                                Remove
-                            </button>
-                        </span>
                         <span x-show="pgStatus" x-cloak x-text="pgStatus" :class="pgError ? 'text-red-600' : 'text-green-600'" class="text-xs font-medium"></span>
                     </div>
+                    <p class="text-xs text-gray-400 mt-2">To remove pages, open the PDF preview (View) — page removal is only available there.</p>
                 </div>
 
                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{{ $assignment->drive_script_file_id ? 'Replace script file' : 'Upload script' }}</p>
