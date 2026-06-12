@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-06-12 | Add COMPLETION_DRAFT_DEFAULT and getCompletionDraftBody() for admin-editable QC completion email
 // v1.7 — 2026-06-10 | Add WATERMARK_DEFAULTS and getWatermarkSettings() for admin-configurable reader download watermark
 // v1.6 — 2026-06-07 | Add PAY_PERIOD_DEFAULTS and getPayPeriod() for explicit period start/end configuration
 // v1.5 — 2026-06-03 | Add WORD_COUNT_DEFAULTS and getWordCounts() for admin-configurable coverage word count minimums
@@ -298,5 +299,28 @@ class Setting extends Model
     public static function setSavedReplies(array $replies): void
     {
         static::updateOrCreate(['key' => 'qc_saved_replies'], ['value' => json_encode(array_values($replies))]);
+    }
+
+    /** HelpScout conversation ID used for "send test draft" — a sandbox ticket, never a real customer. */
+    public const TEST_HELPSCOUT_CONVERSATION_ID = '3332476826';
+
+    /** Default body for the completion draft sent to customers when coverage is approved. */
+    public const COMPLETION_DRAFT_DEFAULT = <<<'HTML'
+<p>Hi {%customer.firstName,fallback= %} —</p>
+<p>Attached, please find your script coverage.</p>
+<p>Thanks sincerely for the opportunity to read and provide feedback on your work. To ask followup questions of your reader, <a href="{{followup_url}}">click here</a>. We're here to help!</p>
+<p>Thanks again, {%customer.firstName,fallback= %}.</p>
+<p>P.S. If you feel we did a good job, could you take 30 seconds and give us a quick Google Review? We would super appreciate it!</p>
+<p>P.P.S. Here's a discount code good for $10.00 off your next order. It's only good for 30 days from your order date but it can be stacked with most other discount codes we send if you're on our mailing list: (INSERT WOO COUPON CODE HERE)</p>
+HTML;
+
+    public static function getCompletionDraftBody(): string
+    {
+        return static::where('key', 'completion_draft_body')->value('value') ?: self::COMPLETION_DRAFT_DEFAULT;
+    }
+
+    public static function setCompletionDraftBody(string $body): void
+    {
+        static::updateOrCreate(['key' => 'completion_draft_body'], ['value' => $body]);
     }
 }

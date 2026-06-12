@@ -800,6 +800,63 @@
                 </div>
                 @endif
 
+                {{-- Completion Draft Email --}}
+                @if($isAdmin)
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Completion Draft Email</h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        HTML body for the HelpScout draft created when all readers on an order are approved. Accepts raw HTML.
+                        Use <code class="text-xs bg-gray-100 px-1 rounded">{%customer.firstName,fallback=...%}</code> for HelpScout
+                        merge fields and <code class="text-xs bg-gray-100 px-1 rounded">{{ '{{followup_url}}' }}</code> for the
+                        customer's followup-questions link.
+                    </p>
+
+                    <form method="POST" action="{{ route('settings.completion-draft') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <textarea name="completion_draft_body" rows="14"
+                                  class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">{{ old('completion_draft_body', $completionDraftBody) }}</textarea>
+                        <x-input-error :messages="$errors->get('completion_draft_body')" class="mt-1" />
+
+                        <details class="mt-2">
+                            <summary class="text-xs text-gray-400 cursor-pointer select-none hover:text-gray-600">Preview</summary>
+                            <div class="mt-2 p-4 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 prose prose-sm max-w-none">
+                                {!! $completionDraftBody !!}
+                            </div>
+                        </details>
+
+                        <div class="flex items-center justify-end gap-3">
+                            <div x-data="{ loading: false, error: '' }" class="relative">
+                                <button type="button"
+                                        @click="
+                                            loading = true; error = '';
+                                            fetch('{{ route('settings.completion-draft.test') }}', {
+                                                method: 'POST',
+                                                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                            })
+                                            .then(r => r.json())
+                                            .then(d => { loading = false; if (d.url) window.open(d.url, '_blank'); else error = d.error ?? 'Unknown error'; })
+                                            .catch(e => { loading = false; error = e.message; })
+                                        "
+                                        :disabled="loading"
+                                        :class="loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300'"
+                                        class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-800 uppercase tracking-widest transition ease-in-out duration-150">
+                                    <span x-text="loading ? 'Sending…' : 'Send Test Draft'"></span>
+                                </button>
+                                <p x-show="error" x-cloak x-text="error"
+                                   class="absolute right-0 top-full mt-1 text-xs text-red-600 bg-white border border-red-200 rounded px-2 py-1 whitespace-nowrap shadow-sm z-10"></p>
+                            </div>
+                            <x-primary-button>Save</x-primary-button>
+                        </div>
+                        <p class="text-xs text-gray-400 -mt-2">
+                            "Send Test Draft" creates a draft using the saved template (no attachment) on a HelpScout sandbox conversation —
+                            it does not contact a real customer.
+                        </p>
+                    </form>
+                </div>
+                @endif
+
                 {{-- Dev Autofill --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-sm font-semibold text-gray-800 mb-1">Coverage Form — Dev Autofill</h3>

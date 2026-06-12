@@ -132,6 +132,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/qc-saved-replies', [SettingController::class, 'updateQcSavedReplies'])->name('settings.qc-saved-replies');
     Route::patch('/settings/email-notifications', [SettingController::class, 'updateEmailNotificationTexts'])->name('settings.email-notifications');
     Route::patch('/settings/followup-html', [SettingController::class, 'updateFollowupHtml'])->name('settings.followup-html');
+    Route::patch('/settings/completion-draft', [SettingController::class, 'updateCompletionDraft'])->name('settings.completion-draft');
+    Route::post('/settings/completion-draft/test', [SettingController::class, 'testCompletionDraft'])->name('settings.completion-draft.test');
     Route::patch('/settings/word-counts', [SettingController::class, 'updateWordCounts'])->name('settings.word-counts');
     Route::patch('/settings/pay-period',  [SettingController::class, 'updatePayPeriod'])->name('settings.pay-period');
     Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');

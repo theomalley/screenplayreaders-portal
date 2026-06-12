@@ -1,5 +1,7 @@
 <?php
 
+// v1.8 — 2026-06-12 | Completion draft body now sourced from Setting::getCompletionDraftBody(),
+//                     with {{followup_url}} replaced by a per-order FollowupToken URL.
 // v1.7 — 2026-06-05 | sendBack() emails reader if email_notify_qc_fail is enabled.
 // v1.6 — 2026-05-29 | Pass qcSavedReplies to show() for Send Back modal quick-insert checkboxes.
 // v1.5 — 2026-05-25 | Add sendBack() — returns assignment to reader as needs_attention with optional notes
@@ -15,6 +17,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\FollowupToken;
 use App\Models\HelpScoutConversation;
 use App\Models\Setting;
 use App\Services\GoogleDocsService;
@@ -338,8 +341,11 @@ class QcController extends Controller
 
         $conversationId = $record->helpscout_conversation_id;
         $helpScout      = new HelpScoutService();
-        $body           = $helpScout->getSavedReplyBody('1441336');
-        $body           = $helpScout->resolveBodyVariables($body, $conversationId);
+
+        $followupUrl = FollowupToken::urlForOrder($orderNumber, collect($assignments)->pluck('id')->values()->all());
+        $body        = Setting::getCompletionDraftBody();
+        $body        = str_replace('{{followup_url}}', $followupUrl, $body);
+        $body        = $helpScout->resolveBodyVariables($body, $conversationId);
 
         $helpScout->createDraftReply($conversationId, $body, $attachments);
 

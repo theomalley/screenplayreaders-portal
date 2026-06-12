@@ -1,5 +1,6 @@
 <?php
 
+// v2.12 — 2026-06-12 | Completion draft email template — admin-editable body + send-test-draft action.
 // v2.11 — 2026-06-10 | Reader download watermark — admin-configurable field toggles + custom text.
 // v2.10 — 2026-06-07 | Pay period start/end day+time — admin-configurable via settings.
 // v2.9 — 2026-06-03 | Word count minimums — per-field admin settings + global enable/disable.
@@ -25,6 +26,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FollowupToken;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\HelpScoutService;
@@ -76,6 +78,7 @@ class SettingController extends Controller
         $followupBeforeHtml   = Setting::getValue('followup_before_html', '');
         $followupAfterHtml    = Setting::getValue('followup_after_html', '');
         $followupHeading      = Setting::getValue('followup_heading', '');
+        $completionDraftBody  = $isAdmin ? Setting::getCompletionDraftBody() : null;
         $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
         $payPeriod            = $isAdmin ? Setting::getPayPeriod()  : null;
         $payoutSchedule       = $isAdmin ? Setting::getPayoutSchedule() : null;
@@ -92,7 +95,7 @@ class SettingController extends Controller
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
-            'followupBeforeHtml', 'followupAfterHtml', 'followupHeading',
+            'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody',
             'wordCounts', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
     }
@@ -374,6 +377,42 @@ class SettingController extends Controller
         Setting::setValue('followup_after_html',  trim($request->input('followup_after_html', '')));
 
         return back()->with('success', 'Followup form HTML saved.');
+    }
+
+    public function updateCompletionDraft(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate(['completion_draft_body' => 'required|string']);
+
+        Setting::setCompletionDraftBody(trim($request->input('completion_draft_body')));
+
+        return back()->with('success', 'Completion draft email template saved.');
+    }
+
+    /**
+     * Send the completion draft template to a HelpScout sandbox conversation so it can be
+     * previewed without running a real order through writing/QC.
+     */
+    public function testCompletionDraft(): JsonResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        try {
+            $conversationId = Setting::TEST_HELPSCOUT_CONVERSATION_ID;
+            $followupUrl    = FollowupToken::urlForOrder('TEST-DRAFT-PREVIEW');
+
+            $helpScout = new HelpScoutService();
+            $body      = Setting::getCompletionDraftBody();
+            $body      = str_replace('{{followup_url}}', $followupUrl, $body);
+            $body      = $helpScout->resolveBodyVariables($body, $conversationId);
+
+            $helpScout->createDraftReply($conversationId, $body);
+
+            return response()->json(['url' => 'https://secure.helpscout.net/conversation/' . $conversationId . '/']);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function updateWordCounts(Request $request): RedirectResponse
