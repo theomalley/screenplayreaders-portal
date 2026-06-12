@@ -43,6 +43,8 @@
                     $availableAtLocal = $assignment->available_at
                         ? $assignment->available_at->copy()->setTimezone($appTimezone)->format('Y-m-d\TH:i')
                         : '';
+                    $hsId = $assignment->helpscout_ticket_number ?: $assignment->helpscoutConversation?->helpscout_conversation_id;
+
                     $availableAtCombined = old('available_at', $availableAtLocal);
                     $availableAtDateInit = '';
                     $availableAtTimeInit = '';
@@ -262,6 +264,17 @@
                             placeholder="e.g. 9731"
                             class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                         <p class="mt-1 text-xs text-gray-400">For manually created orders — the # shown at the top of the HelpScout ticket.</p>
+                        @if ($hsId)
+                            <p class="mt-1 text-xs">
+                                <a href="https://secure.helpscout.net/conversation/{{ $hsId }}/" target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center gap-1 text-indigo-600 hover:underline">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                                        <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H6l-4 4V5z" clip-rule="evenodd"/>
+                                    </svg>
+                                    View HelpScout conversation ({{ $hsId }})
+                                </a>
+                            </p>
+                        @endif
                         <x-input-error :messages="$errors->get('helpscout_ticket_number')" class="mt-1" />
                     </div>
 

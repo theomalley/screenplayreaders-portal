@@ -1,5 +1,8 @@
 <?php
 
+// v2.16 — 2026-06-12 | Fix: update() coerces empty-string requested_reader_id/assigned_reader_id
+//                      to null before save — MySQL strict mode rejected '' for these FK columns,
+//                      causing the whole assignment update to fail.
 // v2.15 — 2026-06-12 | Add regenerateDiscountCode() — admin/editor can regenerate the order's
 //                      WooCommerce discount coupon from the edit view.
 // v2.14 — 2026-06-11 | index(): pass helpscoutDraftsReady (completed orders w/ undismissed HelpScout
@@ -833,6 +836,14 @@ class AssignmentController extends Controller
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['oversized_fee_included'] = $request->boolean('oversized_fee_included');
         $data['tier']                   = (int) ($data['tier'] ?? 1) ?: 1;
+
+        // Empty selects submit '' for these nullable FK columns, which MySQL's
+        // strict mode rejects as an invalid integer — coerce to null.
+        foreach (['requested_reader_id', 'assigned_reader_id'] as $fkField) {
+            if (($data[$fkField] ?? null) === '') {
+                $data[$fkField] = null;
+            }
+        }
 
         $newCreatedAt = null;
         if (!empty($data['date']) && !empty($data['time'])) {
