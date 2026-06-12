@@ -55,6 +55,53 @@
                                 </span>
                             @endif
                         </div>
+
+                        <div class="overflow-x-auto -mx-5 border-t border-gray-100">
+                            <table class="min-w-full text-sm">
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach($current['orders'] as $o)
+                                    <tr>
+                                        <td class="px-6 py-2 text-gray-500 text-xs w-24">Commission</td>
+                                        <td class="px-4 py-2 font-mono text-xs text-gray-600">{{ $o->order_number }}</td>
+                                        <td class="px-4 py-2 text-gray-500 text-xs">{{ $o->ordered_at->format('M j') }}</td>
+                                        <td class="px-4 py-2 text-gray-400 text-xs truncate max-w-xs">{{ $o->services_purchased }}</td>
+                                        <td class="px-4 py-2 text-right text-gray-700">${{ number_format($o->cog_commission, 2) }}</td>
+                                        <td class="px-5 py-2 whitespace-nowrap">
+                                            @if($o->editor_paid_at)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                    Paid {{ $o->editor_paid_at->format('M j') }}
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                                    Pending
+                                                </span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                    @foreach($current['adjustments'] as $adj)
+                                    <tr>
+                                        <td class="px-6 py-2 text-indigo-500 text-xs w-24">Adjustment</td>
+                                        <td class="px-4 py-2 text-gray-700" colspan="3">{{ $adj->description }}</td>
+                                        <td class="px-4 py-2 text-right {{ (float)$adj->amount >= 0 ? 'text-green-700' : 'text-red-600' }}">
+                                            {{ (float)$adj->amount >= 0 ? '+' : '' }}${{ number_format($adj->amount, 2) }}
+                                        </td>
+                                        <td class="px-5 py-2 whitespace-nowrap">
+                                            @if($adj->editor_paid_at)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                    Paid {{ $adj->editor_paid_at->format('M j') }}
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                                    Pending
+                                                </span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @else
                         <div class="text-sm text-gray-400">No commissions or adjustments yet this period.</div>
                     @endif

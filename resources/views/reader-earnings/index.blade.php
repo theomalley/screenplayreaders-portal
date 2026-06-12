@@ -52,6 +52,57 @@
                                 </span>
                             @endforeach
                         </div>
+
+                        <div class="overflow-x-auto -mx-5 border-t border-gray-100">
+                            <table class="min-w-full text-sm">
+                                <thead class="text-xs font-medium text-gray-500 uppercase tracking-wide bg-gray-50">
+                                    <tr>
+                                        <th class="px-5 py-2 text-left">Completed</th>
+                                        <th class="px-4 py-2 text-left">Order #</th>
+                                        <th class="px-4 py-2 text-left">Script</th>
+                                        <th class="px-4 py-2 text-left">Type</th>
+                                        <th class="px-4 py-2 text-right">Pay</th>
+                                        <th class="px-5 py-2 text-left">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach($current['assignments'] as $a)
+                                        @php
+                                            $typeLabel = match($a->assignment_type) {
+                                                'script_coverage'   => 'Script Coverage',
+                                                'notes_only'        => 'Notes-Only',
+                                                'deep_dive'         => 'Deep-Dive',
+                                                'short'             => 'Short',
+                                                'budget'            => 'Budget Coverage',
+                                                'book'              => 'Book',
+                                                'coverage'          => 'Coverage',
+                                                'development_notes' => 'Dev Notes',
+                                                default             => ucfirst(str_replace('_', ' ', $a->assignment_type ?? '—')),
+                                            };
+                                            if ($a->vendor === 'wd') $typeLabel = 'WD ' . $typeLabel;
+                                        @endphp
+                                        <tr>
+                                            <td class="px-5 py-2 text-gray-500 whitespace-nowrap">{{ $a->completed_at->format('M j, Y') }}</td>
+                                            <td class="px-4 py-2 font-mono text-xs text-gray-700">{{ $a->order_number }}</td>
+                                            <td class="px-4 py-2 text-gray-700 max-w-xs truncate" title="{{ $a->script_title }}">{{ $a->script_title }}</td>
+                                            <td class="px-4 py-2 text-gray-500 text-xs whitespace-nowrap">{{ $typeLabel }}</td>
+                                            <td class="px-4 py-2 text-right font-medium text-gray-700">${{ number_format($a->pay_rate, 2) }}</td>
+                                            <td class="px-5 py-2 whitespace-nowrap">
+                                                @if($a->reader_paid_at)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                        Paid {{ $a->reader_paid_at->format('M j') }}
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                                        Pending
+                                                    </span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @else
                         <div class="text-sm text-gray-400">No completed assignments yet this period.</div>
                     @endif
