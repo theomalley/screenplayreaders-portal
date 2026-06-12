@@ -15,3 +15,7 @@ Schedule::command('assignments:release-scheduled')->everyMinute()->withoutOverla
 // Check partner sites for backlinks (runs every 5 min; command skips sites that aren't due yet).
 Schedule::command('marketing:check-partner-links')->everyFiveMinutes()->withoutOverlapping();
 // 2026-06-08
+
+// Auto-add the editor's weekly flat-rate pay as a pending adjustment, once per pay period.
+Schedule::command('editor-pay:add-weekly-flat')->hourly()->withoutOverlapping();
+// 2026-06-11
