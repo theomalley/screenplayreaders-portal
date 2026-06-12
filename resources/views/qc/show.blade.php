@@ -18,6 +18,7 @@
     <div class="py-6" x-data="{
         editOpen: false,
         sendBackOpen: false,
+        approving: false,
         notes: '',
         checked: {},
         toggleReply(idx, body) {
@@ -43,6 +44,19 @@
             }
         }
     }">
+
+        {{-- "Please wait" overlay shown while the assignment is approved (PDF generation +
+             HelpScout draft creation can take several seconds for the last reader on an order) --}}
+        <div x-show="approving" x-cloak
+             class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
+            <div class="bg-white rounded-lg shadow-xl px-6 py-5 w-72">
+                <p class="text-sm font-medium text-gray-700 mb-3 text-center">Approving — generating PDFs and HelpScout draft if needed…</p>
+                <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full w-1/3 bg-indigo-600 rounded-full sr-progress-indeterminate"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
             {{-- Flash messages --}}
@@ -131,7 +145,7 @@
 
                 {{-- Approve --}}
                 <form method="POST" action="{{ route('qc.approve', $assignment) }}"
-                    onsubmit="return confirm('Approve #{{ $assignment->order_number }} and mark as complete?')">
+                    @submit="if (!confirm('Approve #{{ $assignment->order_number }} and mark as complete?')) { $event.preventDefault(); return; } approving = true">
                     @csrf
                     <button type="submit"
                         class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
