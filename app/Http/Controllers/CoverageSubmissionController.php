@@ -1,5 +1,7 @@
 <?php
 
+// v1.6 — 2026-06-12 | store(): delete the previous coverage Doc/PDF from Drive on resubmission
+//                     (e.g. after QC send-back) so re-submitting no longer leaves orphaned files.
 // v1.4 — 2026-05-28 | saveDraft(): persist coverage fields without advancing status; "Continue Coverage" UX.
 // v1.3 — 2026-05-25 | Add coverage preview endpoint (text-only HTML view for admins/editors and reader's own)
 // v1.2 — 2026-05-24 | Submit button spinner; redirect to dedicated submitted page with custom HTML
@@ -15,6 +17,7 @@ use App\Models\AssignmentNote;
 use App\Models\ReaderScriptNote;
 use App\Models\Setting;
 use App\Services\GoogleDocsService;
+use App\Services\GoogleDriveService;
 use App\Support\FilenameGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -80,6 +83,9 @@ class CoverageSubmissionController extends Controller
         // Create the coverage Google Doc and draft PDF outside the transaction
         // so a Drive API failure doesn't roll back the submitted coverage.
         try {
+            $oldDocId = $assignment->drive_coverage_doc_id;
+            $oldPdfId = $assignment->drive_coverage_pdf_id;
+
             $docs     = new GoogleDocsService();
             $docId    = $docs->createFromSubmission($assignment, $submission);
             $assignment->loadMissing('assignedReader.readerProfile');
@@ -90,6 +96,23 @@ class CoverageSubmissionController extends Controller
                 'drive_coverage_doc_id' => $docId,
                 'drive_coverage_pdf_id' => $pdfId,
             ]);
+
+            // Resubmission (e.g. after QC send-back) — remove the doc/PDF from the
+            // previous attempt now that fresh ones have been saved successfully.
+            if ($oldDocId || $oldPdfId) {
+                try {
+                    $drive = new GoogleDriveService();
+                    $drive->deleteFile($oldDocId);
+                    $drive->deleteFile($oldPdfId);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to delete previous coverage doc/PDF on resubmission', [
+                        'assignment_id' => $assignment->id,
+                        'old_doc_id'    => $oldDocId,
+                        'old_pdf_id'    => $oldPdfId,
+                        'error'         => $e->getMessage(),
+                    ]);
+                }
+            }
         } catch (\Throwable $e) {
             Log::error('Coverage doc creation failed', [
                 'assignment_id' => $assignment->id,

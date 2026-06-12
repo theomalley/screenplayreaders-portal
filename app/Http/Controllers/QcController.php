@@ -1,5 +1,7 @@
 <?php
 
+// v1.10 — 2026-06-12 | regeneratePdf(): delete the previous Drive PDF after a replacement is
+//                      generated successfully, so repeated regeneration doesn't leave orphans.
 // v1.9 — 2026-06-12 | {{woodiscountcode}} replaced by a per-order WooCommerce coupon
 //                     (generated via Assignment::generateWooDiscountCode if not already set).
 // v1.8 — 2026-06-12 | Completion draft body now sourced from Setting::getCompletionDraftBody(),
@@ -66,8 +68,22 @@ class QcController extends Controller
 
         try {
             $assignment->loadMissing('assignedReader.readerProfile');
-            $pdfId = $this->generatePdfForAssignment($assignment);
+            $oldPdfId = $assignment->drive_coverage_pdf_id;
+            $pdfId    = $this->generatePdfForAssignment($assignment);
             $assignment->update(['drive_coverage_pdf_id' => $pdfId]);
+
+            if ($oldPdfId && $oldPdfId !== $pdfId) {
+                try {
+                    (new GoogleDriveService())->deleteFile($oldPdfId);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to delete previous PDF after regeneration', [
+                        'assignment_id' => $assignment->id,
+                        'old_pdf_id'    => $oldPdfId,
+                        'error'         => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return back()->with('success', 'PDF regenerated.');
         } catch (\Throwable $e) {
             Log::error('QC PDF regeneration failed', [
