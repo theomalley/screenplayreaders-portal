@@ -1,5 +1,6 @@
 <?php
 
+// v2.2 — 2026-06-11 | Pass periodEnd so the PayPal payment ID reflects the pay period's last day
 // v2.1 — 2026-06-11 | Pass profile header data (photo, initials, PayPal) for "My Earnings" card
 // v2.0 — 2026-06-10 | Restructure around pay periods — current period summary + paginated collapsible history
 // v1.0 — 2026-06-02 | Editor earnings dashboard — commission and adjustment history with Chart.js
@@ -60,10 +61,11 @@ class EditorEarningsController extends Controller
         $profileInitials    = $profile?->initials ?? '?';
         $profilePhotoUrl    = $profile?->photo ? asset('storage/' . $profile->photo) : null;
         $profilePaypalEmail = $profile?->paypal_email;
+        $periodEnd          = $curEnd;
 
         return view('editor-earnings.index', compact(
             'current', 'history', 'page', 'totalPages', 'chartData',
-            'profileName', 'profileInitials', 'profilePhotoUrl', 'profilePaypalEmail'
+            'profileName', 'profileInitials', 'profilePhotoUrl', 'profilePaypalEmail', 'periodEnd'
         ));
     }
 

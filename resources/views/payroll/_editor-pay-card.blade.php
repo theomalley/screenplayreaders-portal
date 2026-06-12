@@ -19,7 +19,7 @@
                 <span class="font-semibold text-gray-800">
                     {{ $editor?->editorProfile?->displayName() ?? $editor?->name ?? 'Editor' }}
                 </span>
-                @php $paymentId = strtoupper($editorInitials) . now()->format('Ymd'); @endphp
+                @php $paymentId = strtoupper($editorInitials) . $periodEnd->format('Ymd'); @endphp
                 <span x-data="{ copied: false }"
                       class="inline-flex items-center gap-1 cursor-pointer select-all"
                       @click="navigator.clipboard.writeText('{{ $paymentId }}'); copied = true; setTimeout(() => copied = false, 1500)"

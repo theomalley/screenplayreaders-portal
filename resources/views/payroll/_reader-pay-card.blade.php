@@ -15,7 +15,7 @@
                     @endif
                 </a>
                 <span class="font-semibold text-gray-800">{{ $rd['reader_name'] }}</span>
-                @php $paymentId = strtoupper($rd['initials']) . now()->format('Ymd'); @endphp
+                @php $paymentId = strtoupper($rd['initials']) . $periodEnd->format('Ymd'); @endphp
                 <span x-data="{ copied: false }"
                       class="inline-flex items-center gap-1 cursor-pointer select-all"
                       @click="navigator.clipboard.writeText('{{ $paymentId }}'); copied = true; setTimeout(() => copied = false, 1500)"

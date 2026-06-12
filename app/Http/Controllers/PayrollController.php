@@ -1,5 +1,6 @@
 <?php
 
+// v2.1 — 2026-06-11 | Pass periodEnd (last day of current pay period) for PayPal payment ID
 // v2.0 — 2026-06-11 | Consolidate Reader Pay + Editor Pay into Payroll: owed-so-far summary, unified searchable/sortable payment history
 // v1.2 — 2026-06-04 | Current-period card, 1099 CSV export
 // v1.1 — 2026-06-02 | Pass payout schedule config to view for admin schedule panel
@@ -43,6 +44,7 @@ class PayrollController extends Controller
 
         $schedule   = Setting::getPayoutSchedule();
         $nextPayout = PayPeriod::nextPayoutDate();
+        $periodEnd  = PayPeriod::current()[1];
 
         [$byReader, $readerPay1099, $readerPayNon1099] = $this->unpaidReaderSummary();
         [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $totalOwed] = $this->unpaidEditorSummary();
@@ -59,7 +61,7 @@ class PayrollController extends Controller
         $history = $this->buildHistory($items);
 
         return view('payroll.index', array_merge(compact(
-            'period', 'schedule', 'nextPayout', 'currentPeriod',
+            'period', 'schedule', 'nextPayout', 'periodEnd', 'currentPeriod',
             'byReader', 'unpaidOrders', 'unpaidAdjustments', 'editor', 'weeklyFlat', 'totalOwed'
         ), $history));
     }

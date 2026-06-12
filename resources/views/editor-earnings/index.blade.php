@@ -11,6 +11,7 @@
                 'initials'    => $profileInitials,
                 'photoUrl'    => $profilePhotoUrl,
                 'paypalEmail' => $profilePaypalEmail,
+                'periodEnd'   => $periodEnd,
                 'color'       => 'blue',
             ])
 

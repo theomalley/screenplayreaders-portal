@@ -1,7 +1,8 @@
+{{-- v1.1 — 2026-06-11 | Payment ID date reflects the last day of the pay period, not today --}}
 {{-- v1.0 — 2026-06-11 | Read-only profile header for "My Earnings" — photo, name, PayPal payment ID --}}
 @php
     $borderClass = ($color ?? 'amber') === 'blue' ? 'border-blue-200 bg-blue-50' : 'border-amber-200 bg-amber-50';
-    $paymentId = strtoupper($initials) . now()->format('Ymd');
+    $paymentId = strtoupper($initials) . $periodEnd->format('Ymd');
 @endphp
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
     <div class="flex flex-wrap items-center gap-3 px-5 py-4 border-b {{ $borderClass }}">
