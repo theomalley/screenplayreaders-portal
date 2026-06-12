@@ -1,5 +1,8 @@
 <?php
 
+// v2.17 — 2026-06-12 | Fix: update() auto-promotes status unassigned->assigned when admin picks
+//                      an Assigned Reader without changing the Status dropdown — previously the
+//                      unassigned branch silently nulled the reader selection on save.
 // v2.16 — 2026-06-12 | Fix: update() coerces empty-string requested_reader_id/assigned_reader_id
 //                      to null before save — MySQL strict mode rejected '' for these FK columns,
 //                      causing the whole assignment update to fail.
@@ -843,6 +846,15 @@ class AssignmentController extends Controller
             if (($data[$fkField] ?? null) === '') {
                 $data[$fkField] = null;
             }
+        }
+
+        // Admin picked a reader but left Status as "Available" (unassigned) — promote
+        // to "Assigned" so the unassigned branch below doesn't immediately null out
+        // the selection. Mirrors updateStatus()'s status=assigned + assigned_reader_id pairing.
+        if ($data['status'] === Assignment::STATUS_UNASSIGNED && !empty($data['assigned_reader_id'])) {
+            $data['status']          = Assignment::STATUS_ASSIGNED;
+            $data['accepted_at']     = now();
+            $data['reader_declined'] = false;
         }
 
         $newCreatedAt = null;
