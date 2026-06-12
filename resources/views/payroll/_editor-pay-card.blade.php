@@ -114,14 +114,33 @@
             </thead>
             <tbody class="divide-y divide-gray-50">
                 @foreach($unpaidOrders as $order)
-                <tr class="hover:bg-gray-50" x-data="{ editingCommission: false }">
+                @php
+                    $commissionRate = $order->cog_precommission != 0
+                        ? ($order->cog_commission / $order->cog_precommission) * 100
+                        : 0;
+                @endphp
+                <tr class="hover:bg-gray-50" x-data="{ editingCommission: false, grossHover: false, tipX: 0, tipY: 0 }">
                     <td class="px-4 py-2 text-gray-500 text-xs uppercase">Commission</td>
                     <td class="px-4 py-2">
                         <div class="text-gray-800 font-mono text-xs">{{ $order->order_number }}</div>
                         <div class="text-xs text-gray-400 truncate max-w-xs">{{ $order->services_purchased }}</div>
                     </td>
                     <td class="px-4 py-2 text-gray-500 text-xs">{{ $order->ordered_at->format('M j, Y') }}</td>
-                    <td class="px-4 py-2 text-right text-gray-500 text-xs">${{ number_format($order->order_total, 2) }}</td>
+                    <td class="px-4 py-2 text-right text-gray-500 text-xs">
+                        <span class="cursor-help border-b border-dotted border-gray-300"
+                              @mouseenter="grossHover = true; const r = $el.getBoundingClientRect(); tipX = r.left + r.width / 2; tipY = r.top"
+                              @mouseleave="grossHover = false">${{ number_format($order->order_total, 2) }}</span>
+                        <div x-show="grossHover" x-cloak
+                             :style="`position:fixed;left:${tipX}px;top:${tipY}px;transform:translate(-50%,calc(-100% - 8px))`"
+                             class="z-50 w-60 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg text-left font-mono whitespace-pre pointer-events-none">
+                            <div class="flex justify-between"><span>Gross</span><span>${{ number_format($order->order_total, 2) }}</span></div>
+                            <div class="flex justify-between"><span>− Reader COGS</span><span>${{ number_format($order->cog_reader, 2) }}</span></div>
+                            <div class="flex justify-between"><span>− Processing</span><span>${{ number_format($order->cog_processing, 2) }}</span></div>
+                            <div class="flex justify-between border-t border-gray-600 mt-1 pt-1"><span>= Commission base</span><span>${{ number_format($order->cog_precommission, 2) }}</span></div>
+                            <div class="flex justify-between"><span>&times; {{ number_format($commissionRate, 1) }}%</span><span>${{ number_format($order->cog_commission, 2) }}</span></div>
+                            <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
+                        </div>
+                    </td>
                     <td class="px-4 py-2 text-right font-medium text-gray-700">
                         @if(auth()->user()->isAdmin())
                             <span x-show="!editingCommission" @click="editingCommission = true"
