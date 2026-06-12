@@ -1,16 +1,21 @@
 <?php
 
+// v1.1 — 2026-06-12 | Only stamp helpscout_sent_at if the order already has at least one
+//                     submitted assignment — convo.agent.reply.created also fires for the
+//                     order-creation ticket message and other non-delivery agent replies,
+//                     which would otherwise stamp a timestamp before submitted_at.
 // v1.0 — 2026-06-12 | HelpScout webhook receiver for convo.agent.reply.created.
 //                     Logs every delivery (signed or not) to helpscout_webhook_logs for
 //                     inspection via /admin/helpscout-webhook-logs, then — if the signature
 //                     is valid and a conversation id can be extracted — stamps
 //                     helpscout_sent_at on the matching helpscout_order_conversations row.
-//                     NOTE: conversation-id extraction is best-effort until the real V3
-//                     payload shape is confirmed against logged deliveries (see plan).
+//                     Conversation-id extraction confirmed against a real payload: top-level
+//                     `id` is the conversation id.
 
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Assignment;
 use App\Models\HelpScoutConversation;
 use App\Models\HelpScoutWebhookLog;
 use Illuminate\Http\JsonResponse;
@@ -42,14 +47,29 @@ class HelpScoutWebhookController extends Controller
         }
 
         if ($conversationId) {
-            $updated = HelpScoutConversation::where('helpscout_conversation_id', $conversationId)
+            $conversation = HelpScoutConversation::where('helpscout_conversation_id', $conversationId)
                 ->whereNull('helpscout_sent_at')
-                ->update(['helpscout_sent_at' => now()]);
+                ->first();
 
-            Log::info('HelpScout webhook: processed', [
-                'conversation_id' => $conversationId,
-                'rows_updated'    => $updated,
-            ]);
+            if (! $conversation) {
+                Log::info('HelpScout webhook: no eligible conversation row (unknown id or already stamped)', [
+                    'conversation_id' => $conversationId,
+                ]);
+            } elseif (! Assignment::where('order_number', $conversation->order_number)->whereNotNull('submitted_at')->exists()) {
+                // This reply was created before any reader submitted coverage for the order —
+                // it's the order-creation ticket message (or similar), not the coverage delivery.
+                Log::info('HelpScout webhook: skipped — no submitted coverage yet for order', [
+                    'conversation_id' => $conversationId,
+                    'order_number'    => $conversation->order_number,
+                ]);
+            } else {
+                $conversation->update(['helpscout_sent_at' => now()]);
+
+                Log::info('HelpScout webhook: processed', [
+                    'conversation_id' => $conversationId,
+                    'order_number'    => $conversation->order_number,
+                ]);
+            }
         } else {
             Log::warning('HelpScout webhook: could not extract conversation id from payload');
         }
