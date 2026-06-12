@@ -1,5 +1,6 @@
 <?php
 
+// v1.10 — 2026-06-12 | Sanitize bio on save: HTML allowlist for admins, plain text for everyone else
 // v1.9 — 2026-06-03 | Add custom_message to update validation/save
 // v1.8 — 2026-05-28 | Separate updateRates() to prevent profile/rates forms from nulling each other's fields
 // v1.7 — 2026-05-28 | Rate fields on create; remove global rate fallback concept
@@ -17,6 +18,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\EditorProductCommission;
 use App\Models\User;
+use App\Support\Html;
 use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -145,6 +147,10 @@ class EditorProfileController extends Controller
         } else {
             unset($data['photo']);
         }
+
+        $data['bio'] = auth()->user()->isAdmin()
+            ? Html::sanitizeBioHtml($data['bio'] ?? null)
+            : Html::sanitizeBioPlainText($data['bio'] ?? null);
 
         $userUpdate = [
             'name'  => $data['first_name'] . ' ' . $data['last_name'],

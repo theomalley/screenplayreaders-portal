@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-06-12 | Sanitize bio on save: HTML allowlist for admins, plain text for everyone else
 // v1.7 — 2026-06-03 | Add custom_message to update validation/save
 // v1.6 — 2026-05-27 | Enforce Password::defaults() (min 12, mixed case, numbers, symbols) on create/update
 // v1.5 — 2026-05-27 | Gate edit/delete on readers.edit / readers.delete permissions; redirect to team.index
@@ -12,6 +13,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\User;
+use App\Support\Html;
 use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -151,6 +153,10 @@ class ReaderProfileController extends Controller
         } else {
             unset($data['about_photo']);
         }
+
+        $data['bio'] = auth()->user()->isAdmin()
+            ? Html::sanitizeBioHtml($data['bio'] ?? null)
+            : Html::sanitizeBioPlainText($data['bio'] ?? null);
 
         $userUpdate = [
             'name'  => $data['first_name'] . ' ' . $data['last_name'],

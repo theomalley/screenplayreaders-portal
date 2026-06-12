@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-06-12 | Sanitize bio HTML when approving bio_pending -> bio
 // v1.2 — 2026-06-05 | Add approveAboutPhoto / rejectAboutPhoto
 // v1.1 — 2026-05-30 | Return JSON for XHR; accept rejection note; store bio/photo rejection notes
 // v1.0 — 2026-05-30 | Admin approval/rejection of pending bio and photo changes
@@ -7,6 +8,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Html;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -21,7 +23,7 @@ class AdminApprovalController extends Controller
 
         if ($profile && $profile->bio_pending !== null) {
             $profile->update([
-                'bio'              => $profile->bio_pending,
+                'bio'              => Html::sanitizeBioHtml($profile->bio_pending),
                 'bio_pending'      => null,
                 'bio_rejection_note' => null,
             ]);

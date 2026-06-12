@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\Html;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -103,7 +104,9 @@ class ProfileController extends Controller
         abort_unless($user->isAdminOrEditor() || $user->isReader(), 403);
 
         $data  = $request->validate(['bio' => 'nullable|string|max:5000']);
-        $bio   = $data['bio'] ?? null;
+        $bio   = $user->isAdmin()
+            ? Html::sanitizeBioHtml($data['bio'] ?? null)
+            : Html::sanitizeBioPlainText($data['bio'] ?? null);
         $field = $user->isAdmin() ? 'bio' : 'bio_pending';
 
         $extra = $user->isAdmin() ? [] : ['bio_rejection_note' => null];
