@@ -6,6 +6,14 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
+            @include('partials._pay-profile-header', [
+                'name'        => $profileName,
+                'initials'    => $profileInitials,
+                'photoUrl'    => $profilePhotoUrl,
+                'paypalEmail' => $profilePaypalEmail,
+                'color'       => 'blue',
+            ])
+
             {{-- ── CURRENT PAY PERIOD ── --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-5 py-4 border-b border-indigo-100 bg-indigo-50 flex flex-wrap items-center justify-between gap-2">

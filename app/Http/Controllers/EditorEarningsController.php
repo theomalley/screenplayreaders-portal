@@ -1,5 +1,6 @@
 <?php
 
+// v2.1 — 2026-06-11 | Pass profile header data (photo, initials, PayPal) for "My Earnings" card
 // v2.0 — 2026-06-10 | Restructure around pay periods — current period summary + paginated collapsible history
 // v1.0 — 2026-06-02 | Editor earnings dashboard — commission and adjustment history with Chart.js
 
@@ -54,7 +55,16 @@ class EditorEarningsController extends Controller
 
         $chartData = $this->buildChartData($current, $historyAll);
 
-        return view('editor-earnings.index', compact('current', 'history', 'page', 'totalPages', 'chartData'));
+        $profile            = $user->editorProfile;
+        $profileName        = $profile?->displayName() ?? $user->name;
+        $profileInitials    = $profile?->initials ?? '?';
+        $profilePhotoUrl    = $profile?->photo ? asset('storage/' . $profile->photo) : null;
+        $profilePaypalEmail = $profile?->paypal_email;
+
+        return view('editor-earnings.index', compact(
+            'current', 'history', 'page', 'totalPages', 'chartData',
+            'profileName', 'profileInitials', 'profilePhotoUrl', 'profilePaypalEmail'
+        ));
     }
 
     private function groupByPayPeriod($orders, $adjustments): array
