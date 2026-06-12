@@ -826,6 +826,17 @@
                             </div>
                         </details>
 
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Test HelpScout conversation ID</label>
+                            <input type="text" name="test_helpscout_conversation_id"
+                                   value="{{ old('test_helpscout_conversation_id', $testHelpscoutConvId) }}"
+                                   class="block w-full max-w-xs border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">
+                            <x-input-error :messages="$errors->get('test_helpscout_conversation_id')" class="mt-1" />
+                            <p class="mt-1 text-xs text-gray-400">
+                                Sandbox conversation used by "Send Test Draft" below — never a real customer ticket.
+                            </p>
+                        </div>
+
                         <div class="flex items-center justify-end gap-3">
                             <div x-data="{ loading: false, error: '' }" class="relative">
                                 <button type="button"

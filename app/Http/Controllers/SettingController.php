@@ -80,6 +80,7 @@ class SettingController extends Controller
         $followupAfterHtml    = Setting::getValue('followup_after_html', '');
         $followupHeading      = Setting::getValue('followup_heading', '');
         $completionDraftBody  = $isAdmin ? Setting::getCompletionDraftBody() : null;
+        $testHelpscoutConvId  = $isAdmin ? Setting::getTestHelpscoutConversationId() : null;
         $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
         $payPeriod            = $isAdmin ? Setting::getPayPeriod()  : null;
         $payoutSchedule       = $isAdmin ? Setting::getPayoutSchedule() : null;
@@ -96,7 +97,7 @@ class SettingController extends Controller
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
-            'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody',
+            'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody', 'testHelpscoutConvId',
             'wordCounts', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
     }
@@ -384,9 +385,13 @@ class SettingController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $request->validate(['completion_draft_body' => 'required|string']);
+        $request->validate([
+            'completion_draft_body'           => 'required|string',
+            'test_helpscout_conversation_id'  => 'required|string|max:50',
+        ]);
 
         Setting::setCompletionDraftBody(trim($request->input('completion_draft_body')));
+        Setting::setTestHelpscoutConversationId(trim($request->input('test_helpscout_conversation_id')));
 
         return back()->with('success', 'Completion draft email template saved.');
     }
@@ -401,7 +406,7 @@ class SettingController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
 
         try {
-            $conversationId = Setting::TEST_HELPSCOUT_CONVERSATION_ID;
+            $conversationId = Setting::getTestHelpscoutConversationId();
 
             $testAssignment = Assignment::where('is_test', true)
                 ->whereNotNull('assigned_reader_id')

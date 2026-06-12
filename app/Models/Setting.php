@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-06-12 | Add getTestHelpscoutConversationId()/setTestHelpscoutConversationId() — admin-configurable sandbox ticket for draft testing
 // v1.8 — 2026-06-12 | Add COMPLETION_DRAFT_DEFAULT and getCompletionDraftBody() for admin-editable QC completion email
 // v1.7 — 2026-06-10 | Add WATERMARK_DEFAULTS and getWatermarkSettings() for admin-configurable reader download watermark
 // v1.6 — 2026-06-07 | Add PAY_PERIOD_DEFAULTS and getPayPeriod() for explicit period start/end configuration
@@ -301,8 +302,18 @@ class Setting extends Model
         static::updateOrCreate(['key' => 'qc_saved_replies'], ['value' => json_encode(array_values($replies))]);
     }
 
-    /** HelpScout conversation ID used for "send test draft" — a sandbox ticket, never a real customer. */
-    public const TEST_HELPSCOUT_CONVERSATION_ID = '3332476826';
+    /** Default HelpScout conversation ID used for "send test draft" — a sandbox ticket, never a real customer. */
+    public const TEST_HELPSCOUT_CONVERSATION_ID_DEFAULT = '3332476826';
+
+    public static function getTestHelpscoutConversationId(): string
+    {
+        return static::where('key', 'test_helpscout_conversation_id')->value('value') ?: self::TEST_HELPSCOUT_CONVERSATION_ID_DEFAULT;
+    }
+
+    public static function setTestHelpscoutConversationId(string $conversationId): void
+    {
+        static::updateOrCreate(['key' => 'test_helpscout_conversation_id'], ['value' => $conversationId]);
+    }
 
     /** Default body for the completion draft sent to customers when coverage is approved. */
     public const COMPLETION_DRAFT_DEFAULT = <<<'HTML'
