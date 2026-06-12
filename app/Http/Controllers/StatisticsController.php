@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-12 | Add "Upload → Delivery" turnaround (submitted_at → helpscout_sent_at)
 // v1.0 — 2026-05-25 | Admin-only statistics dashboard — per-reader and combined stats
 
 namespace App\Http\Controllers;
@@ -39,7 +40,7 @@ class StatisticsController extends Controller
         [$start, $end] = $this->dateRange($period);
 
         // Load completed SR assignments with coverage submissions and reader info
-        $assignments = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
+        $assignments = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission', 'helpscoutConversation'])
             ->where('status', Assignment::STATUS_COMPLETED)
             ->where('vendor', 'sr')
             ->when($start, fn($q) => $q->where('completed_at', '>=', $start))
@@ -72,6 +73,7 @@ class StatisticsController extends Controller
                 'reader_name' => 'Unknown',
                 'count'       => 0,
                 'avg_turnaround_days' => null,
+                'avg_delivery_days'   => null,
                 'avg_score'   => null,
                 'pass'        => 0, 'consider' => 0, 'recommend' => 0,
                 'pass_pct'    => 0, 'consider_pct' => 0, 'recommend_pct' => 0,
@@ -90,6 +92,16 @@ class StatisticsController extends Controller
 
         $avgTurnaround = $turnarounds->isNotEmpty()
             ? round($turnarounds->average(), 1)
+            : null;
+
+        // Delivery turnaround = submitted_at (reader uploads coverage) → helpscout_sent_at
+        // (HelpScout delivers the draft reply to the customer), in days, decimal.
+        $deliveryTimes = $assignments
+            ->filter(fn($a) => $a->submitted_at && $a->helpscoutConversation?->helpscout_sent_at)
+            ->map(fn($a) => $a->submitted_at->diffInHours($a->helpscoutConversation->helpscout_sent_at) / 24.0);
+
+        $avgDelivery = $deliveryTimes->isNotEmpty()
+            ? round($deliveryTimes->average(), 1)
             : null;
 
         // SR scores — average across all 22 score fields per submission
@@ -131,6 +143,7 @@ class StatisticsController extends Controller
             'reader_user'          => $first->assignedReader,
             'count'                => $count,
             'avg_turnaround_days'  => $avgTurnaround,
+            'avg_delivery_days'    => $avgDelivery,
             'avg_score'            => $avgScore,
             'pass'                 => $pass,
             'consider'             => $consider,

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\HelpScoutConversationController;
+use App\Http\Controllers\Api\HelpScoutWebhookController;
 use App\Http\Controllers\Api\IncomingAssignmentController;
 use App\Http\Controllers\Api\OrderRevenueController;
 use App\Http\Controllers\Api\ReadersController;
@@ -15,6 +16,10 @@ Route::get('/readers', [ReadersController::class, 'index']);
 
 // ZAPIER INTEGRATION: called by sr-orders zap after HelpScout ticket is created — stores order → conversation ID
 Route::post('/helpscout-conversation', [HelpScoutConversationController::class, 'store']);
+
+// HELPSCOUT INTEGRATION: webhook fired by HelpScout when an agent reply is created/sent —
+// used to stamp helpscout_sent_at for the upload→delivery turnaround stat
+Route::post('/helpscout-webhook', [HelpScoutWebhookController::class, 'store']);
 
 // WOOCOMMERCE INTEGRATION: called by woo_order-financials.php (priority 15) on order completion — stores financials
 Route::post('/order-revenue', [OrderRevenueController::class, 'store']);

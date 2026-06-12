@@ -42,6 +42,7 @@
                                 <th class="px-4 py-3 text-left">Reader</th>
                                 <th class="px-4 py-3 text-center">Completed</th>
                                 <th class="px-4 py-3 text-center">Avg Turnaround</th>
+                                <th class="px-4 py-3 text-center">Upload &rarr; Delivery</th>
                                 <th class="px-4 py-3 text-center">Avg Score</th>
                                 <th class="px-4 py-3 text-center">Pass</th>
                                 <th class="px-4 py-3 text-center">Consider</th>
@@ -62,6 +63,9 @@
                                 <td class="px-4 py-3 text-center text-gray-700">{{ $stats['count'] }}</td>
                                 <td class="px-4 py-3 text-center text-gray-600">
                                     {{ $stats['avg_turnaround_days'] !== null ? $stats['avg_turnaround_days'] . ' days' : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-center text-gray-600">
+                                    {{ $stats['avg_delivery_days'] !== null ? $stats['avg_delivery_days'] . ' days' : '—' }}
                                 </td>
                                 <td class="px-4 py-3 text-center text-gray-600">
                                     {{ $stats['avg_score'] !== null ? $stats['avg_score'] : '—' }}
@@ -88,6 +92,9 @@
                                 <td class="px-4 py-3 text-center text-indigo-700">{{ $combined['count'] }}</td>
                                 <td class="px-4 py-3 text-center text-indigo-600">
                                     {{ $combined['avg_turnaround_days'] !== null ? $combined['avg_turnaround_days'] . ' days' : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-center text-indigo-600">
+                                    {{ $combined['avg_delivery_days'] !== null ? $combined['avg_delivery_days'] . ' days' : '—' }}
                                 </td>
                                 <td class="px-4 py-3 text-center text-indigo-600">
                                     {{ $combined['avg_score'] !== null ? $combined['avg_score'] : '—' }}

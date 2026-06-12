@@ -11,5 +11,10 @@ class HelpScoutConversation extends Model
     protected $fillable = [
         'order_number',
         'helpscout_conversation_id',
+        'helpscout_sent_at',
+    ];
+
+    protected $casts = [
+        'helpscout_sent_at' => 'datetime',
     ];
 }

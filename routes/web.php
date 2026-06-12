@@ -15,6 +15,7 @@ use App\Http\Controllers\EditorPayController;
 use App\Http\Controllers\EditorPaymentsController;
 use App\Http\Controllers\EditorProfileController;
 use App\Http\Controllers\FilenamesController;
+use App\Http\Controllers\HelpScoutWebhookLogController;
 use App\Http\Controllers\OrderLogController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PaymentsController;
@@ -294,6 +295,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/admin/filenames', [FilenamesController::class, 'index'])->name('admin.filenames');
     Route::patch('/admin/filenames', [FilenamesController::class, 'update'])->name('admin.filenames.update');
+
+    Route::get('/admin/helpscout-webhook-logs', [HelpScoutWebhookLogController::class, 'index'])->name('admin.helpscout-webhook-logs');
 
     // --- Admin Drive connection test (dev utility — admin/editor only) ---
     Route::get('/admin/drive-test', function () {

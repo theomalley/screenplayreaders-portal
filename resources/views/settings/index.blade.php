@@ -712,6 +712,18 @@
                     </form>
                 </div>
 
+                {{-- HelpScout Webhook Logs --}}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-800 mb-1">HelpScout Webhook Logs</h3>
+                        <p class="text-xs text-gray-500">Inspect incoming HelpScout webhook deliveries (signature status + raw payloads).</p>
+                    </div>
+                    <a href="{{ route('admin.helpscout-webhook-logs') }}"
+                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors whitespace-nowrap">
+                        View Logs
+                    </a>
+                </div>
+
                 {{-- Coverage Submission Page --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-sm font-semibold text-gray-800 mb-1">Coverage Submission Page</h3>

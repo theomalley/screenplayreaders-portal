@@ -50,8 +50,9 @@ return [
     ],
 
     'helpscout' => [
-        'client_id'     => env('HELPSCOUT_CLIENT_ID'),
-        'client_secret' => env('HELPSCOUT_CLIENT_SECRET'),
+        'client_id'      => env('HELPSCOUT_CLIENT_ID'),
+        'client_secret'  => env('HELPSCOUT_CLIENT_SECRET'),
+        'webhook_secret' => env('HELPSCOUT_WEBHOOK_SECRET'),
     ],
 
     'woocommerce' => [
