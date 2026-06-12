@@ -306,12 +306,12 @@ class Setting extends Model
 
     /** Default body for the completion draft sent to customers when coverage is approved. */
     public const COMPLETION_DRAFT_DEFAULT = <<<'HTML'
-<p>Hi {%customer.firstName,fallback= %} —</p>
-<p>Attached, please find your script coverage.</p>
-<p>Thanks sincerely for the opportunity to read and provide feedback on your work. To ask followup questions of your reader, <a href="{{followup_url}}">click here</a>. We're here to help!</p>
-<p>Thanks again, {%customer.firstName,fallback= %}.</p>
-<p>P.S. If you feel we did a good job, could you take 30 seconds and give us a quick Google Review? We would super appreciate it!</p>
-<p>P.P.S. Here's a discount code good for $10.00 off your next order. It's only good for 30 days from your order date but it can be stacked with most other discount codes we send if you're on our mailing list: (INSERT WOO COUPON CODE HERE)</p>
+<p style="margin: 0 0 1em 0;">Hi {%customer.firstName,fallback= %} —</p>
+<p style="margin: 0 0 1em 0;">Attached, please find your script coverage.</p>
+<p style="margin: 0 0 1em 0;">Thanks sincerely for the opportunity to read and provide feedback on your work. To ask followup questions of your reader, <a href="{{followup_url}}">click here</a>. We're here to help!</p>
+<p style="margin: 0 0 1em 0;">Thanks again, {%customer.firstName,fallback= %}.</p>
+<p style="margin: 0 0 1em 0;">P.S. If you feel we did a good job, could you take 30 seconds and give us a quick Google Review? We would super appreciate it!</p>
+<p style="margin: 0;">P.P.S. Here's a discount code good for $10.00 off your next order. It's only good for 30 days from your order date but it can be stacked with most other discount codes we send if you're on our mailing list: (INSERT WOO COUPON CODE HERE)</p>
 HTML;
 
     public static function getCompletionDraftBody(): string
