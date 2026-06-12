@@ -807,7 +807,7 @@
                     <p class="text-xs text-gray-500 mb-4">
                         HTML body for the HelpScout draft created when all readers on an order are approved. Accepts raw HTML.
                         Use <code class="text-xs bg-gray-100 px-1 rounded">{%customer.firstName,fallback=...%}</code> for HelpScout
-                        merge fields and <code class="text-xs bg-gray-100 px-1 rounded">{{ '{{followup_url}}' }}</code> for the
+                        merge fields and <code class="text-xs bg-gray-100 px-1 rounded">@{{followup_url}}</code> for the
                         customer's followup-questions link.
                     </p>
 
