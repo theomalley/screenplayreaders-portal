@@ -85,6 +85,7 @@
                                             <td class="px-4 py-2">
                                                 <div class="text-gray-800">{{ $a->script_title }}</div>
                                                 <div class="text-xs text-gray-400 font-mono">{{ $a->order_number }}</div>
+                                                @include('reader-earnings._assignment-extras', ['assignment' => $a])
                                             </td>
                                             <td class="px-4 py-2 text-gray-500 text-xs">{{ $a->completed_at->format('M j, Y') }}</td>
                                             <td class="px-5 py-2 text-right font-medium text-gray-700">${{ number_format($a->pay_rate, 2) }}</td>
@@ -172,7 +173,10 @@
                                             <tr>
                                                 <td class="px-4 py-2 text-gray-500 whitespace-nowrap">{{ $a->completed_at->format('M j, Y') }}</td>
                                                 <td class="px-4 py-2 font-mono text-xs text-gray-700">{{ $a->order_number }}</td>
-                                                <td class="px-4 py-2 text-gray-700 max-w-xs truncate" title="{{ $a->script_title }}">{{ $a->script_title }}</td>
+                                                <td class="px-4 py-2 text-gray-700 max-w-xs">
+                                                    <div class="truncate" title="{{ $a->script_title }}">{{ $a->script_title }}</div>
+                                                    @include('reader-earnings._assignment-extras', ['assignment' => $a])
+                                                </td>
                                                 <td class="px-4 py-2 text-gray-500 text-xs whitespace-nowrap">{{ $typeLabel }}</td>
                                                 <td class="px-4 py-2 text-right font-medium text-gray-700">${{ number_format($a->pay_rate, 2) }}</td>
                                                 <td class="px-4 py-2 whitespace-nowrap">

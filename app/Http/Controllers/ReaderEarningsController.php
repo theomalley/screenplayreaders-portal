@@ -1,5 +1,6 @@
 <?php
 
+// v2.3 — 2026-06-12 | Eager-load coverageSubmission so line items can show turnaround/page count/view-coverage details
 // v2.2 — 2026-06-11 | Pass periodEnd so the PayPal payment ID reflects the pay period's last day
 // v2.1 — 2026-06-11 | Pass profile header data (photo, initials, PayPal) for "My Earnings" card
 // v2.0 — 2026-06-10 | Restructure around pay periods — current period summary + paginated collapsible history
@@ -21,6 +22,7 @@ class ReaderEarningsController extends Controller
         $assignments = Assignment::where('assigned_reader_id', $user->id)
             ->where('status', Assignment::STATUS_COMPLETED)
             ->whereNotNull('completed_at')
+            ->with('coverageSubmission')
             ->orderByDesc('completed_at')
             ->get();
 
