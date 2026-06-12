@@ -1,5 +1,7 @@
 <?php
 
+// v2.13 — 2026-06-12 | testCompletionDraft(): substitute a placeholder for {{woodiscountcode}}
+//                      (no real coupon created for the test draft).
 // v2.12 — 2026-06-12 | Completion draft email template — admin-editable body + send-test-draft action.
 // v2.11 — 2026-06-10 | Reader download watermark — admin-configurable field toggles + custom text.
 // v2.10 — 2026-06-07 | Pay period start/end day+time — admin-configurable via settings.
@@ -427,6 +429,8 @@ class SettingController extends Controller
             $helpScout = new HelpScoutService();
             $body      = Setting::getCompletionDraftBody();
             $body      = str_replace('{{followup_url}}', $followupUrl, $body);
+            // No real coupon is created for the test draft — placeholder only.
+            $body      = str_replace('{{woodiscountcode}}', 'SRZ-TEST-CODE', $body);
             $body      = $helpScout->resolveBodyVariables($body, $conversationId);
 
             $helpScout->createDraftReply($conversationId, $body, [$this->placeholderPdfAttachment()]);

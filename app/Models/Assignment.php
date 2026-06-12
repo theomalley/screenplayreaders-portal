@@ -1,5 +1,7 @@
 <?php
 
+// v1.20 — 2026-06-12 | Add woo_discount_code + generateWooDiscountCode() — portal-generated
+//                      $10 single-use coupon, replacing the sr-orders Zap's coupon step.
 // v1.19 — 2026-06-11 | Add helpscout_draft_dismissed_by + isHelpscoutDraftDismissedBy/dismissHelpscoutDraft for goback-ready notification
 // v1.18 — 2026-06-11 | Add editorNotes() relation for internal-notes indicator on assignment listings
 // v1.17 — 2026-06-11 | pageCountFlag() also suppresses over_120 when the linked order has an Oversized Fee line item
@@ -20,6 +22,7 @@
 
 namespace App\Models;
 
+use App\Services\WooCommerceService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -65,6 +68,7 @@ class Assignment extends Model
         'reader_paid_at',
         'helpscout_draft_sent_at',
         'helpscout_draft_dismissed_by',
+        'woo_discount_code',
         'client_id',
         'reader_declined',
         'available_at',
@@ -206,6 +210,27 @@ class Assignment extends Model
                     $a->update(['helpscout_draft_dismissed_by' => $ids]);
                 }
             });
+    }
+
+    /**
+     * Generate a new $10 single-use WooCommerce discount coupon for this order,
+     * store the code on all sibling assignments, and return it. Replaces the
+     * coupon-generation step previously done by the sr-orders Zap.
+     */
+    public static function generateWooDiscountCode(string $orderNumber): string
+    {
+        $chars  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $suffix = '';
+        for ($i = 0; $i < 8; $i++) {
+            $suffix .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+        $code = 'SRZ' . $suffix;
+
+        app(WooCommerceService::class)->createOrderDiscountCoupon($code);
+
+        static::where('order_number', $orderNumber)->update(['woo_discount_code' => $code]);
+
+        return $code;
     }
 
     // --- Relationships ---

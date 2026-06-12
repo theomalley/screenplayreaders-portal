@@ -807,8 +807,9 @@
                     <p class="text-xs text-gray-500 mb-4">
                         HTML body for the HelpScout draft created when all readers on an order are approved. Accepts raw HTML.
                         Use <code class="text-xs bg-gray-100 px-1 rounded">{%customer.firstName,fallback=...%}</code> for HelpScout
-                        merge fields and <code class="text-xs bg-gray-100 px-1 rounded">@{{followup_url}}</code> for the
-                        customer's followup-questions link.
+                        merge fields, <code class="text-xs bg-gray-100 px-1 rounded">@{{followup_url}}</code> for the
+                        customer's followup-questions link, and <code class="text-xs bg-gray-100 px-1 rounded">@{{woodiscountcode}}</code>
+                        for the auto-generated $10 discount code.
                     </p>
 
                     <form method="POST" action="{{ route('settings.completion-draft') }}" class="space-y-4">
@@ -861,8 +862,9 @@
                             <x-primary-button>Save</x-primary-button>
                         </div>
                         <p class="text-xs text-gray-400 -mt-2">
-                            "Send Test Draft" creates a draft using the saved template (no attachment) on a HelpScout sandbox conversation —
-                            it does not contact a real customer.
+                            "Send Test Draft" creates a draft using the saved template (with a placeholder PDF attachment) on a HelpScout
+                            sandbox conversation — it does not contact a real customer and does not create a real discount coupon
+                            (@{{woodiscountcode}} is replaced with a placeholder).
                         </p>
                     </form>
                 </div>

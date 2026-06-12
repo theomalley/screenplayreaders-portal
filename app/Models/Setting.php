@@ -1,5 +1,7 @@
 <?php
 
+// v1.10 — 2026-06-12 | COMPLETION_DRAFT_DEFAULT: replace manual coupon placeholder with
+//                      {{woodiscountcode}} — auto-filled by the portal-generated coupon.
 // v1.9 — 2026-06-12 | Add getTestHelpscoutConversationId()/setTestHelpscoutConversationId() — admin-configurable sandbox ticket for draft testing
 // v1.8 — 2026-06-12 | Add COMPLETION_DRAFT_DEFAULT and getCompletionDraftBody() for admin-editable QC completion email
 // v1.7 — 2026-06-10 | Add WATERMARK_DEFAULTS and getWatermarkSettings() for admin-configurable reader download watermark
@@ -322,7 +324,7 @@ class Setting extends Model
 <p style="margin: 0 0 1em 0;">Thanks sincerely for the opportunity to read and provide feedback on your work. To ask followup questions of your reader, <a href="{{followup_url}}">click here</a>. We're here to help!</p>
 <p style="margin: 0 0 1em 0;">Thanks again, {%customer.firstName,fallback= %}.</p>
 <p style="margin: 0 0 1em 0;">P.S. If you feel we did a good job, could you take 30 seconds and give us a quick Google Review? We would super appreciate it!</p>
-<p style="margin: 0;">P.P.S. Here's a discount code good for $10.00 off your next order. It's only good for 30 days from your order date but it can be stacked with most other discount codes we send if you're on our mailing list: (INSERT WOO COUPON CODE HERE)</p>
+<p style="margin: 0;">P.P.S. Here's a discount code good for $10.00 off your next order: {{woodiscountcode}}. It's only good for 30 days from your order date but it can be stacked with most other discount codes we send if you're on our mailing list.</p>
 HTML;
 
     public static function getCompletionDraftBody(): string

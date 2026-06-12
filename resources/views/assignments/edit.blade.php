@@ -747,6 +747,33 @@
                     </form>
                 </div>
 
+                {{-- Order Discount Code (admin/editor only) --}}
+                <div class="px-6 pb-6 border-t border-gray-100 pt-5">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                        Order Discount Code
+                        <span class="ml-1 text-[10px] font-normal text-gray-400 normal-case tracking-normal">(admin &amp; editors only)</span>
+                    </h3>
+
+                    <div class="flex items-center gap-2">
+                        <input type="text" readonly
+                               value="{{ $assignment->woo_discount_code ?? 'Not yet generated' }}"
+                               onclick="this.select()"
+                               class="block w-48 text-sm font-mono bg-gray-50 border-gray-300 rounded-md shadow-sm" />
+                        <form method="POST" action="{{ route('assignments.regenerateDiscountCode', $assignment) }}"
+                              onsubmit="return confirm('Generate a new $10 discount coupon for this order? The previous code (if any) will no longer be sent to the customer, though its WooCommerce coupon remains active until used or expired.')">
+                            @csrf
+                            <button type="submit"
+                                    class="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition">
+                                Regenerate
+                            </button>
+                        </form>
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-400">
+                        $10 single-use WooCommerce coupon (expires 30 days from creation), sent to the customer via
+                        @{{woodiscountcode}} in the completion email. Auto-generated on QC approval if not already set.
+                    </p>
+                </div>
+
                 {{-- Script Download Log (admin/editor only) --}}
                 <div class="px-6 pb-6 border-t border-gray-100 pt-5">
                     <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">

@@ -1,5 +1,7 @@
 <?php
 
+// v1.9 — 2026-06-12 | {{woodiscountcode}} replaced by a per-order WooCommerce coupon
+//                     (generated via Assignment::generateWooDiscountCode if not already set).
 // v1.8 — 2026-06-12 | Completion draft body now sourced from Setting::getCompletionDraftBody(),
 //                     with {{followup_url}} replaced by a per-order FollowupToken URL.
 // v1.7 — 2026-06-05 | sendBack() emails reader if email_notify_qc_fail is enabled.
@@ -342,9 +344,21 @@ class QcController extends Controller
         $conversationId = $record->helpscout_conversation_id;
         $helpScout      = new HelpScoutService();
 
+        try {
+            $discountCode = $assignments[0]->woo_discount_code
+                ?: Assignment::generateWooDiscountCode($orderNumber);
+        } catch (\Throwable $e) {
+            Log::error('WooCommerce discount coupon creation failed', [
+                'order_number' => $orderNumber,
+                'error'        => $e->getMessage(),
+            ]);
+            $discountCode = '(coupon unavailable — contact support)';
+        }
+
         $followupUrl = FollowupToken::urlForOrder($orderNumber, collect($assignments)->pluck('id')->values()->all());
         $body        = Setting::getCompletionDraftBody();
         $body        = str_replace('{{followup_url}}', $followupUrl, $body);
+        $body        = str_replace('{{woodiscountcode}}', $discountCode, $body);
         $body        = $helpScout->resolveBodyVariables($body, $conversationId);
 
         $helpScout->createDraftReply($conversationId, $body, $attachments);

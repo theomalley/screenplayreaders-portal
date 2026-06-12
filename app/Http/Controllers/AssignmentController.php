@@ -1,5 +1,7 @@
 <?php
 
+// v2.15 — 2026-06-12 | Add regenerateDiscountCode() — admin/editor can regenerate the order's
+//                      WooCommerce discount coupon from the edit view.
 // v2.14 — 2026-06-11 | index(): pass helpscoutDraftsReady (completed orders w/ undismissed HelpScout
 //                      draft) for top-of-page notification; add dismissHelpscoutDraft().
 // v2.13 — 2026-06-11 | streamCoverage: filename matches Drive coverage PDF naming convention
@@ -776,6 +778,24 @@ class AssignmentController extends Controller
         $assignment->dismissHelpscoutDraft(auth()->id());
 
         return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * Generate a fresh $10 WooCommerce discount coupon for this order, replacing
+     * any previously generated code (the old coupon remains in WooCommerce but is
+     * no longer referenced in the completion email).
+     */
+    public function regenerateDiscountCode(Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        try {
+            Assignment::generateWooDiscountCode($assignment->order_number);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Could not generate discount code: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Discount code regenerated.');
     }
 
     public function edit(Assignment $assignment)
