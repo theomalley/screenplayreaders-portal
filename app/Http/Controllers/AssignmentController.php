@@ -1,5 +1,10 @@
 <?php
 
+// v2.18 — 2026-06-12 | create(): pass assignableUsers + appTimezone to view for Assigned Reader
+//                      field and Upload Date/Time labels. store(): coerce empty-string FK fields
+//                      to null (same fix as v2.16), authorize assigned_reader_id via canAssign(),
+//                      set oversized_fee_included/exempt_from_word_counts from request, and wire
+//                      date/time inputs to created_at (same pattern as update()'s $newCreatedAt).
 // v2.17 — 2026-06-12 | Fix: update() auto-promotes status unassigned->assigned when admin picks
 //                      an Assigned Reader without changing the Status dropdown — previously the
 //                      unassigned branch silently nulled the reader selection on save.
@@ -302,8 +307,10 @@ class AssignmentController extends Controller
             ->with('readerProfile')
             ->orderBy('name')
             ->get();
+        $assignableUsers = $this->assignableUsers();
+        $appTimezone     = Setting::getAppTimezone();
 
-        return view('assignments.create', compact('rates', 'readers'));
+        return view('assignments.create', compact('rates', 'readers', 'assignableUsers', 'appTimezone'));
     }
 
     public function store(StoreAssignmentRequest $request)
@@ -311,9 +318,30 @@ class AssignmentController extends Controller
         $this->authorize('create', Assignment::class);
 
         $data         = $request->validated();
-        $data['rush'] = $request->boolean('rush');
+        $data['rush']                    = $request->boolean('rush');
+        $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
+        $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['tier'] = (int) ($data['tier'] ?? 1) ?: 1;
         $numReaders   = (int) $data['num_readers'];
+
+        // Empty selects submit '' for these nullable FK columns, which MySQL's
+        // strict mode rejects as an invalid integer — coerce to null.
+        foreach (['requested_reader_id_1', 'requested_reader_id_2', 'requested_reader_id_3', 'assigned_reader_id'] as $fkField) {
+            if (($data[$fkField] ?? null) === '') {
+                $data[$fkField] = null;
+            }
+        }
+
+        if (!empty($data['assigned_reader_id'])) {
+            abort_unless($this->canAssign((int) $data['assigned_reader_id']), 403);
+        }
+
+        $newCreatedAt = null;
+        if (!empty($data['date']) && !empty($data['time'])) {
+            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time'], Setting::getAppTimezone())
+                ->utc();
+        }
+        unset($data['date'], $data['time']);
 
         // Extract per-slot reader IDs then strip form-only keys from $data
         $readerIds = [
@@ -369,6 +397,12 @@ class AssignmentController extends Controller
                 }
                 $createdAssignments[] = $created;
             }
+        }
+
+        if ($newCreatedAt) {
+            DB::table('assignments')
+                ->whereIn('id', collect($createdAssignments)->pluck('id'))
+                ->update(['created_at' => $newCreatedAt->format('Y-m-d H:i:s')]);
         }
 
         if ($firstAssignment && $request->hasFile('script')) {

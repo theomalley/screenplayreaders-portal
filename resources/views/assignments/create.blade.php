@@ -26,7 +26,6 @@
                               this.$watch('assignmentType', val => { if (val === 'budget') this.tier = '2'; });
                           },
                           updatePayDisplay() {
-                              if (this.overrideRate && this.numReaders === '1') return;
                               const r = window._srRates;
                               const map = {
                                   sr: {
@@ -41,14 +40,55 @@
                                       development_notes: r.rate_wd_development_notes,
                                   },
                               };
+                              const typeLabels = {
+                                  script_coverage:   'Script Coverage',
+                                  notes_only:        'Notes-Only',
+                                  deep_dive:         'Deep-Dive Dev Notes',
+                                  short:             'Short Coverage',
+                                  budget:            'Budget Coverage',
+                                  coverage:          'WD Coverage',
+                                  development_notes: 'WD Dev Notes',
+                              };
                               const oversized121 = { sr: r.rate_sr_oversized_121_160, wd: r.rate_wd_oversized_121_160 };
-                              const el = document.getElementById('pay_rate_display');
-                              const hidden = document.getElementById('pay_rate_hidden');
+                              const el        = document.getElementById('pay_rate_display');
+                              const hidden    = document.getElementById('pay_rate_hidden');
+                              const breakdown = document.getElementById('pay_rate_breakdown');
+                              if (breakdown) breakdown.textContent = '';
+
+                              const pages   = parseInt(this.pageCount, 10);
+                              const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
+
+                              // Build breakdown parts — 1R only, regardless of override mode
+                              if (this.numReaders === '1') {
+                                  const hasReq = !!this.requestedReaders[0];
+                                  if (this.assignmentType && !(this.vendor === 'sr' && this.assignmentType === 'book')) {
+                                      const base = (map[this.vendor] || {})[this.assignmentType];
+                                      if (base !== undefined && breakdown) {
+                                          const parts = [typeLabels[this.assignmentType] + ' $' + parseFloat(base).toFixed(2)];
+                                          if (!isNaN(pages)) {
+                                              if (pages >= 121 && pages <= 160) {
+                                                  const fee = parseFloat(oversized121[this.vendor] || 0);
+                                                  if (fee) parts.push('Oversized 121–160pp $' + fee.toFixed(2));
+                                              } else if (pages >= 161) {
+                                                  const fee = parseFloat(this.customOversizedFee);
+                                                  if (!isNaN(fee) && fee > 0) parts.push('Oversized 161+pp $' + fee.toFixed(2));
+                                              }
+                                          }
+                                          if (this.rush) {
+                                              const fee = parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
+                                              if (fee) parts.push('Rush $' + fee.toFixed(2));
+                                          }
+                                          if (hasReq && reqRate && this.assignmentType !== 'deep_dive') parts.push('Reader Request $' + reqRate.toFixed(2));
+                                          if (parts.length > 1) breakdown.textContent = parts.join(' + ');
+                                      }
+                                  }
+                              }
+
+                              if (this.overrideRate && this.numReaders === '1') return;
                               if (!el) return;
 
                               // Shared modifiers: oversized + rush (same for every sub-assignment)
                               let sharedMod = 0;
-                              const pages = parseInt(this.pageCount, 10);
                               if (!isNaN(pages)) {
                                   if (pages >= 121 && pages <= 160) {
                                       sharedMod += parseFloat(oversized121[this.vendor] || 0);
@@ -62,7 +102,6 @@
 
                               // Reader request modifier — per slot, since each reader may or may not be requested
                               // Deep-Dive Dev Notes includes a free reader request — never add the fee
-                              const reqRate = parseFloat({ sr: r.rate_sr_request, wd: r.rate_wd_request }[this.vendor] || 0);
                               const isDeepDive1R = this.numReaders === '1' && this.assignmentType === 'deep_dive';
                               const modFor  = (i) => (this.requestedReaders[i] && !isDeepDive1R) ? reqRate : 0;
 
@@ -118,6 +157,81 @@
                           get isBatchClient() { return this.batchClientIds.includes(parseInt(this.invoiceClientId)); }
                       }">
                     @csrf
+
+                    <div>
+                        <x-input-label for="order_number" value="Order/Invoice #" />
+                        <input type="text" id="order_number" name="order_number"
+                            value="{{ old('order_number') }}"
+                            placeholder="e.g. 12345"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="status" value="Status" />
+                        <select id="status" name="status"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="incoming"   {{ old('status', 'incoming') === 'incoming'   ? 'selected' : '' }}>Pending</option>
+                            <option value="unassigned" {{ old('status', 'incoming') === 'unassigned' ? 'selected' : '' }}>Available</option>
+                            <option value="assigned"   {{ old('status', 'incoming') === 'assigned'   ? 'selected' : '' }}>Assigned</option>
+                            <option value="qc"         {{ old('status', 'incoming') === 'qc'         ? 'selected' : '' }}>QC</option>
+                            <option value="completed"  {{ old('status', 'incoming') === 'completed'  ? 'selected' : '' }}>Completed</option>
+                            <option value="on_hold_customer" {{ old('status', 'incoming') === 'on_hold_customer' ? 'selected' : '' }}>On Hold – Customer</option>
+                            <option value="on_hold_sr"       {{ old('status', 'incoming') === 'on_hold_sr'       ? 'selected' : '' }}>On Hold – SR</option>
+                            <option value="cancelled"  {{ old('status', 'incoming') === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('status')" class="mt-1" />
+                    </div>
+
+                    <div x-show="numReaders === '1'">
+                        <x-input-label for="assigned_reader_id" value="Assigned Reader" />
+                        <select id="assigned_reader_id" name="assigned_reader_id"
+                            :disabled="numReaders !== '1'"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                            <option value="">None</option>
+                            @foreach ($assignableUsers as $aUser)
+                                @php
+                                    $aInitials = $aUser->readerProfile?->initials
+                                        ?? $aUser->editorProfile?->initials
+                                        ?? strtoupper(substr($aUser->name, 0, 2));
+                                    $aName = $aUser->readerProfile?->displayName()
+                                        ?? $aUser->editorProfile?->displayName()
+                                        ?? $aUser->name;
+                                @endphp
+                                <option value="{{ $aUser->id }}" {{ old('assigned_reader_id') == $aUser->id ? 'selected' : '' }}>
+                                    {{ $aInitials }} — {{ $aName }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('assigned_reader_id')" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="helpscout_ticket_number" value="HelpScout Ticket #" />
+                        <input type="text" id="helpscout_ticket_number" name="helpscout_ticket_number"
+                            value="{{ old('helpscout_ticket_number') }}"
+                            placeholder="e.g. 9731"
+                            class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <p class="mt-1 text-xs text-gray-400">For manually created orders — the # shown at the top of the HelpScout ticket.</p>
+                        <x-input-error :messages="$errors->get('helpscout_ticket_number')" class="mt-1" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="date" value="Upload Date" />
+                            <input type="date" id="date" name="date"
+                                value="{{ old('date', now()->toDateString()) }}"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('date')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="time" value="Upload Time ({{ $appTimezone }})" />
+                            <input type="time" id="time" name="time"
+                                value="{{ old('time', now()->format('H:i')) }}"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('time')" class="mt-1" />
+                        </div>
+                    </div>
 
                     {{-- Invoice --}}
                     @if(\App\Models\Client::count() > 0)
@@ -213,6 +327,8 @@
                             <option value="short"            {{ old('assignment_type') === 'short'            ? 'selected' : '' }}>Short Coverage</option>
                             <option value="budget"           {{ old('assignment_type') === 'budget'           ? 'selected' : '' }}>Budget Coverage</option>
                             <option value="book"             {{ old('assignment_type') === 'book'             ? 'selected' : '' }}>Book Coverage</option>
+                            <option value="formatting"       {{ old('assignment_type') === 'formatting'       ? 'selected' : '' }}>Formatting</option>
+                            <option value="proofreading"     {{ old('assignment_type') === 'proofreading'     ? 'selected' : '' }}>Proofreading</option>
                         </select>
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                     </div>
@@ -242,6 +358,47 @@
                         <x-input-error :messages="$errors->get('assignment_type')" class="mt-1" />
                     </div>
 
+                    {{-- Pay Rate --}}
+                    <div class="pt-4 border-t border-gray-100">
+                        <x-input-label value="Pay Rate" />
+
+                        <input type="hidden" id="pay_rate_hidden" name="pay_rate" value="" />
+
+                        <div x-show="overrideRate" class="mt-1">
+                            <div class="flex items-center gap-1">
+                                <span class="text-gray-400 text-sm">$</span>
+                                <input type="number" id="pay_rate_override"
+                                    min="0" step="0.01" placeholder="0.00"
+                                    @input="document.getElementById('pay_rate_hidden').value = $event.target.value"
+                                    class="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
+                        </div>
+
+                        <div x-show="!overrideRate" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
+                            <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
+                        </div>
+
+                        <div x-show="parseInt(pageCount) >= 161 && !overrideRate" class="mt-3">
+                            <x-input-label for="custom_oversized_fee" value="Oversized Fee (161+ pages)" />
+                            <div class="mt-1 flex items-center gap-1">
+                                <span class="text-gray-400 text-sm">+$</span>
+                                <input type="number" id="custom_oversized_fee" name="custom_oversized_fee"
+                                    min="0" step="0.01" placeholder="0.00"
+                                    x-model="customOversizedFee"
+                                    @input="updatePayDisplay()"
+                                    class="block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
+                        </div>
+
+                        <div x-show="numReaders === '1'" class="mt-2 flex items-center gap-2">
+                            <input type="checkbox" id="override_rate" x-model="overrideRate"
+                                @change="if (!overrideRate) updatePayDisplay()"
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+                            <label for="override_rate" class="text-xs text-gray-500 cursor-pointer select-none">Override pay rate</label>
+                        </div>
+                        <p id="pay_rate_breakdown" class="mt-1.5 text-xs text-gray-400 leading-snug"></p>
+                    </div>
+
                     {{-- Tier --}}
                     <div>
                         <x-input-label for="tier" value="Tier" />
@@ -251,33 +408,6 @@
                             <option value="2">Tier 2 (Budget Coverage)</option>
                         </select>
                         <p class="mt-1 text-xs text-gray-400">Budget Coverage auto-sets to Tier 2.</p>
-                    </div>
-
-                    {{-- Page Count --}}
-                    <div>
-                        <x-input-label for="page_count" value="Page Count" />
-                        <input type="number" id="page_count" name="page_count"
-                            min="1" step="1" placeholder="e.g. 95"
-                            x-model="pageCount"
-                            @input="updatePayDisplay()"
-                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                        <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
-                    </div>
-
-                    {{-- Turnaround --}}
-                    <div>
-                        <x-input-label value="Turnaround" />
-                        <div class="mt-2 flex items-center gap-3">
-                            <label class="flex items-center gap-2 cursor-pointer select-none">
-                                <input type="checkbox" name="rush" value="1"
-                                    {{ old('rush') ? 'checked' : '' }}
-                                    @change="rush = $event.target.checked; updatePayDisplay()"
-                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
-                                <span class="text-sm text-gray-700">Rush</span>
-                            </label>
-                            <span x-show="!rush" class="text-sm text-gray-400">Standard</span>
-                            <span x-show="rush" class="text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
-                        </div>
                     </div>
 
                     {{-- Reader Request(s) --}}
@@ -343,125 +473,100 @@
 
                     </div>
 
-                    {{-- Pay Rate display --}}
-                    <div class="pt-4 border-t border-gray-100">
-                        <x-input-label value="Pay Rate" />
-
-                        <input type="hidden" id="pay_rate_hidden" name="pay_rate" value="" />
-
-                        <div x-show="!overrideRate" class="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[38px] flex items-center">
-                            <span id="pay_rate_display" class="text-sm text-gray-400">—</span>
-                        </div>
-
-                        <div x-show="parseInt(pageCount) >= 161 && !overrideRate" class="mt-3">
-                            <x-input-label for="custom_oversized_fee" value="Oversized Fee (161+ pages)" />
-                            <div class="mt-1 flex items-center gap-1">
-                                <span class="text-gray-400 text-sm">+$</span>
-                                <input type="number" id="custom_oversized_fee" name="custom_oversized_fee"
-                                    min="0" step="0.01" placeholder="0.00"
-                                    x-model="customOversizedFee"
-                                    @input="updatePayDisplay()"
-                                    class="block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            </div>
-                        </div>
-
-                        <div x-show="overrideRate" class="mt-1">
-                            <input type="number" id="pay_rate_override"
-                                min="0" step="0.01" placeholder="0.00"
-                                @input="document.getElementById('pay_rate_hidden').value = $event.target.value"
-                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                        </div>
-
-                        <div x-show="numReaders === '1'" class="mt-2 flex items-center gap-2">
-                            <input type="checkbox" id="override_rate" x-model="overrideRate"
-                                @change="if (!overrideRate) updatePayDisplay()"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
-                            <label for="override_rate" class="text-xs text-gray-500 cursor-pointer select-none">Override pay rate</label>
+                    {{-- Turnaround --}}
+                    <div>
+                        <x-input-label value="Turnaround" />
+                        <div class="mt-2 flex items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" name="rush" value="1"
+                                    {{ old('rush') ? 'checked' : '' }}
+                                    @change="rush = $event.target.checked; updatePayDisplay()"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+                                <span class="text-sm text-gray-700">Rush</span>
+                            </label>
+                            <span x-show="!rush" class="text-sm text-gray-400">Standard</span>
+                            <span x-show="rush" class="text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
                         </div>
                     </div>
 
-                    {{-- Assignment Details --}}
-                    <div class="pt-4 border-t border-gray-100 space-y-5">
+                    <div class="pt-4 border-t border-gray-100">
+                        <x-input-label for="script_title" value="Title" />
+                        <input type="text" id="script_title" name="script_title"
+                            value="{{ old('script_title') }}"
+                            placeholder="Script title"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
+                    </div>
 
+                    <div>
+                        <x-input-label for="writer_name" value="Writer Name" />
+                        <input type="text" id="writer_name" name="writer_name"
+                            value="{{ old('writer_name') }}"
+                            placeholder="e.g. John Smith"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
+                    </div>
+
+                    {{-- Page Count --}}
+                    <div>
+                        <x-input-label for="page_count" value="Page Count" />
+                        <input type="number" id="page_count" name="page_count"
+                            min="1" step="1" placeholder="e.g. 95"
+                            x-model="pageCount"
+                            @input="updatePayDisplay()"
+                            class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <x-input-error :messages="$errors->get('page_count')" class="mt-1" />
+                    </div>
+
+                    {{-- Page Count Flags (Over 120 / Over 160 HelpScout draft) --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <x-input-label for="order_number" value="Order #" />
-                            <input type="text" id="order_number" name="order_number"
-                                value="{{ old('order_number') }}"
-                                placeholder="e.g. 12345"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="script_title" value="Title" />
-                            <input type="text" id="script_title" name="script_title"
-                                value="{{ old('script_title') }}"
-                                placeholder="Script title"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <x-input-error :messages="$errors->get('script_title')" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="writer_name" value="Writer Name" />
-                            <input type="text" id="writer_name" name="writer_name"
-                                value="{{ old('writer_name') }}"
-                                placeholder="e.g. John Smith"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <x-input-error :messages="$errors->get('writer_name')" class="mt-1" />
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <x-input-label for="date" value="Date" />
-                                <input type="date" id="date" name="date"
-                                    value="{{ old('date', now()->toDateString()) }}"
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                                <x-input-error :messages="$errors->get('date')" class="mt-1" />
-                            </div>
-                            <div>
-                                <x-input-label for="time" value="Time" />
-                                @php
-                                    $defaultTime = now()->setMinutes(now()->minute < 30 ? 0 : 30)->format('H:i');
-                                @endphp
-                                <select id="time" name="time"
-                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                    @for ($h = 0; $h < 24; $h++)
-                                        @foreach ([0, 30] as $m)
-                                            @php $t = sprintf('%02d:%02d', $h, $m); @endphp
-                                            <option value="{{ $t }}" {{ old('time', $defaultTime) === $t ? 'selected' : '' }}>{{ $t }}</option>
-                                        @endforeach
-                                    @endfor
-                                </select>
-                                <x-input-error :messages="$errors->get('time')" class="mt-1" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <x-input-label for="helpscout_ticket_number" value="HelpScout Ticket #" />
-                            <input type="text" id="helpscout_ticket_number" name="helpscout_ticket_number"
-                                value="{{ old('helpscout_ticket_number') }}"
-                                placeholder="e.g. 9731"
-                                class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <p class="mt-1 text-xs text-gray-400">For manually created orders — the # shown at the top of the HelpScout ticket.</p>
-                            <x-input-error :messages="$errors->get('helpscout_ticket_number')" class="mt-1" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="status" value="Status" />
-                            <select id="status" name="status"
+                            <x-input-label for="manual_page_flag" value="Manual Page Flag" />
+                            <select id="manual_page_flag" name="manual_page_flag"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                                <option value="incoming"   {{ old('status', 'incoming') === 'incoming'   ? 'selected' : '' }}>Pending</option>
-                                <option value="unassigned" {{ old('status', 'incoming') === 'unassigned' ? 'selected' : '' }}>Available</option>
-                                <option value="assigned"   {{ old('status', 'incoming') === 'assigned'   ? 'selected' : '' }}>Assigned</option>
-                                <option value="qc"         {{ old('status', 'incoming') === 'qc'         ? 'selected' : '' }}>QC</option>
-                                <option value="completed"  {{ old('status', 'incoming') === 'completed'  ? 'selected' : '' }}>Completed</option>
-                                <option value="on_hold_customer" {{ old('status', 'incoming') === 'on_hold_customer' ? 'selected' : '' }}>On Hold – Customer</option>
-                                <option value="on_hold_sr"       {{ old('status', 'incoming') === 'on_hold_sr'       ? 'selected' : '' }}>On Hold – SR</option>
-                                <option value="cancelled"  {{ old('status', 'incoming') === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
+                                <option value="" {{ old('manual_page_flag', '') === '' ? 'selected' : '' }}>None (use page count)</option>
+                                <option value="over_120" {{ old('manual_page_flag') === 'over_120' ? 'selected' : '' }}>Over 120</option>
+                                <option value="over_160" {{ old('manual_page_flag') === 'over_160' ? 'selected' : '' }}>Over 160</option>
                             </select>
-                            <x-input-error :messages="$errors->get('status')" class="mt-1" />
+                            <p class="mt-1 text-xs text-gray-400">Set when a visual inspection shows the script is over a threshold even if the page count above doesn't reflect it.</p>
+                            <x-input-error :messages="$errors->get('manual_page_flag')" class="mt-1" />
                         </div>
+                        <div class="flex items-start pt-7">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="hidden" name="oversized_fee_included" value="0" />
+                                <input type="checkbox" id="oversized_fee_included" name="oversized_fee_included" value="1"
+                                    {{ old('oversized_fee_included') ? 'checked' : '' }}
+                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">
+                                    <span class="font-medium">Order includes oversized fee</span>
+                                    <span class="text-gray-400 ml-1">— suppresses the "Over 120" flag (121–160pp only)</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
 
+                    <div>
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="hidden" name="exempt_from_word_counts" value="0" />
+                            <input type="checkbox" id="exempt_from_word_counts" name="exempt_from_word_counts" value="1"
+                                {{ old('exempt_from_word_counts') ? 'checked' : '' }}
+                                class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            <span class="text-sm text-gray-700">
+                                <span class="font-medium">Exempt from word counts</span>
+                                <span class="text-gray-400 ml-1">— reader may submit coverage even if word count minimums are not met</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    {{-- Notes (visible to readers) --}}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            Notes
+                            <span class="ml-1 text-[10px] font-normal text-gray-400 normal-case tracking-normal">(visible to the reader)</span>
+                        </h3>
+                        <textarea id="notes" name="notes" rows="3"
+                            class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">{{ old('notes') }}</textarea>
+                        <x-input-error :messages="$errors->get('notes')" class="mt-1" />
                     </div>
 
                     {{-- Script upload (optional) --}}
