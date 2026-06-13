@@ -1,5 +1,7 @@
 <?php
 
+// v1.5 — 2026-06-13 | deleteAssignmentPay() now also sets reader_paid_at so the line item
+//                      is actually dropped from the unpaid batch, not just zeroed
 // v1.4 — 2026-06-11 | Add deleteAssignmentPay() — zero an individual unpaid assignment's pay_rate
 // v1.3 — 2026-06-11 | Move dashboard into Payroll — remove index(), redirect actions to payroll.index
 // v1.2 — 2026-05-28 | Add markUnpaid — revert a paid batch back to unpaid
@@ -88,7 +90,9 @@ class ReaderPayController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
         abort_unless(is_null($assignment->reader_paid_at), 422);
 
-        $assignment->update(['pay_rate' => 0]);
+        // Zero the pay and mark as paid (now) so it drops out of the unpaid batch entirely,
+        // while keeping the assignment record intact for order/coverage history.
+        $assignment->update(['pay_rate' => 0, 'reader_paid_at' => now()]);
 
         return redirect()->route('payroll.index')
             ->with('success', "Pay for order {$assignment->order_number} removed.");
