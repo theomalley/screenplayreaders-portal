@@ -1,5 +1,8 @@
 <?php
 
+// v2.19 — 2026-06-13 | store()/update(): accept blocked_reader_ids[] (manual reader blocking
+//                      for editors/admins); update() syncs the block list across all sibling
+//                      assignments for the order.
 // v2.18 — 2026-06-12 | create(): pass assignableUsers + appTimezone to view for Assigned Reader
 //                      field and Upload Date/Time labels. store(): coerce empty-string FK fields
 //                      to null (same fix as v2.16), authorize assigned_reader_id via canAssign(),
@@ -322,6 +325,9 @@ class AssignmentController extends Controller
         $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['tier'] = (int) ($data['tier'] ?? 1) ?: 1;
+        $data['blocked_reader_ids'] = !empty($data['blocked_reader_ids'])
+            ? array_map('intval', $data['blocked_reader_ids'])
+            : null;
         $numReaders   = (int) $data['num_readers'];
 
         // Empty selects submit '' for these nullable FK columns, which MySQL's
@@ -873,6 +879,9 @@ class AssignmentController extends Controller
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['oversized_fee_included'] = $request->boolean('oversized_fee_included');
         $data['tier']                   = (int) ($data['tier'] ?? 1) ?: 1;
+        $data['blocked_reader_ids']     = !empty($data['blocked_reader_ids'])
+            ? array_map('intval', $data['blocked_reader_ids'])
+            : null;
 
         // Empty selects submit '' for these nullable FK columns, which MySQL's
         // strict mode rejects as an invalid integer — coerce to null.
@@ -949,6 +958,14 @@ class AssignmentController extends Controller
         }
 
         $assignment->update($data);
+
+        // Blocked readers apply to the whole order, not just this slot — keep
+        // every sibling assignment for this order_number in sync.
+        if ($assignment->order_number) {
+            Assignment::where('order_number', $assignment->order_number)
+                ->where('id', '!=', $assignment->id)
+                ->update(['blocked_reader_ids' => json_encode($data['blocked_reader_ids'])]);
+        }
 
         if ($transitioningToUnassigned) {
             app(ReaderNotificationService::class)->notifyNewAssignment($assignment->fresh());

@@ -34,6 +34,8 @@ class UpdateAssignmentRequest extends FormRequest
             'page_count'      => ['required', 'integer', 'min:1', 'max:9999'],
             'requested_reader_id'  => ['nullable', 'exists:users,id'],
             'assigned_reader_id'   => ['nullable', 'exists:users,id'],
+            'blocked_reader_ids'   => ['nullable', 'array'],
+            'blocked_reader_ids.*' => ['integer', 'exists:users,id'],
             'rush'                 => ['nullable', 'boolean'],
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'notes'                    => ['nullable', 'string', 'max:2000'],

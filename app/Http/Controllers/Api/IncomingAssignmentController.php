@@ -1,5 +1,8 @@
 <?php
 
+// v1.6 — 2026-06-13 | Accept block_initials (hyphen-separated reader initials the customer
+//                     blocked on the upload form) and resolve to blocked_reader_ids on every
+//                     slot created for the order.
 // v1.5 — 2026-05-28 | Deep-Dive Dev Notes includes a free reader request — exclude request fee from pay rate.
 // v1.4.1 — 2026-05-24 | Force redeploy with formatting upload fixes.
 // v1.4 — 2026-05-24 | Preserve original file extension in stored filename so UploadScriptToDrive
@@ -56,6 +59,7 @@ class IncomingAssignmentController extends Controller
             'reader_request_1' => 'nullable|string|max:20',
             'reader_request_2' => 'nullable|string|max:20',
             'reader_request_3' => 'nullable|string|max:20',
+            'block_initials'   => 'nullable|string|max:255',
             'script'           => 'required|file|max:5120',
         ]);
 
@@ -88,6 +92,18 @@ class IncomingAssignmentController extends Controller
             }
         }
 
+        // Resolve block initials ("AB-CD") → User IDs via readerProfile.initials.
+        // Applied to every slot created for this order, since a customer-blocked
+        // reader shouldn't be eligible for any slot of the order.
+        $blockedReaderIds = [];
+        $blockTokens = array_filter(explode('-', strtoupper((string) ($data['block_initials'] ?? ''))));
+        foreach ($blockTokens as $initials) {
+            $user = User::whereHas('readerProfile', fn ($q) => $q->where('initials', $initials))->first();
+            if ($user) {
+                $blockedReaderIds[] = $user->id;
+            }
+        }
+
         $rates     = Setting::ratesForForms();
         $pageCount = (int) ($data['page_count'] ?? 0);
         $rush      = (bool) ($data['rush'] ?? false);
@@ -109,6 +125,7 @@ class IncomingAssignmentController extends Controller
                     'pay_rate'            => $payRate,
                     'status'              => Assignment::STATUS_INCOMING,
                     'requested_reader_id' => $readerIds[$i] ?? null,
+                    'blocked_reader_ids'  => $blockedReaderIds ?: null,
                 ]);
             } catch (\Throwable $e) {
                 Log::error('IncomingAssignment: slot create failed', [

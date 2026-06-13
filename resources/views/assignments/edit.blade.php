@@ -534,6 +534,28 @@
 
                     </div>
 
+                    {{-- Block Readers --}}
+                    <div>
+                        <x-input-label value="Block Readers" />
+                        <p class="mt-1 text-xs text-gray-400">These readers will not see this order in their available pool, for any slot.</p>
+                        <div class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            @php
+                                $blockedReaderIds = $isOld
+                                    ? (array) old('blocked_reader_ids', [])
+                                    : array_map('strval', $assignment->blocked_reader_ids ?? []);
+                            @endphp
+                            @foreach ($readers as $reader)
+                                <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700">
+                                    <input type="checkbox" name="blocked_reader_ids[]" value="{{ $reader->id }}"
+                                        {{ in_array((string) $reader->id, $blockedReaderIds, true) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+                                    {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                </label>
+                            @endforeach
+                        </div>
+                        <x-input-error :messages="$errors->get('blocked_reader_ids')" class="mt-1" />
+                    </div>
+
                     {{-- Turnaround --}}
                     <div>
                         <x-input-label value="Turnaround" />

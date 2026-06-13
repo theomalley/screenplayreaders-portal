@@ -1,5 +1,7 @@
 <?php
 
+// v1.21 — 2026-06-13 | Add blocked_reader_ids (customer/editor "do not assign" list);
+//                      isReaderBlocked() helper; scopeAvailable() excludes blocked readers.
 // v1.20 — 2026-06-12 | Add woo_discount_code + generateWooDiscountCode() — portal-generated
 //                      $10 single-use coupon, replacing the sr-orders Zap's coupon step.
 // v1.19 — 2026-06-11 | Add helpscout_draft_dismissed_by + isHelpscoutDraftDismissedBy/dismissHelpscoutDraft for goback-ready notification
@@ -49,6 +51,7 @@ class Assignment extends Model
         'writer_name',
         'page_count',
         'requested_reader_id',
+        'blocked_reader_ids',
         'rush',
         'pay_rate',
         'notes',
@@ -83,6 +86,7 @@ class Assignment extends Model
     {
         return [
             'rush'           => 'boolean',
+            'blocked_reader_ids' => 'array',
             'public_opt_in'  => 'boolean',
             'pay_rate'       => 'decimal:2',
             'unassigned_at'  => 'datetime',
@@ -191,6 +195,12 @@ class Assignment extends Model
         return !empty($this->drive_script_file_id);
     }
 
+    /** True if the given user is on this assignment's blocked-readers list. */
+    public function isReaderBlocked(int $userId): bool
+    {
+        return \in_array($userId, $this->blocked_reader_ids ?: []);
+    }
+
     /** Whether the given user has dismissed the "goback ready at HelpScout" notice for this order. */
     public function isHelpscoutDraftDismissedBy(int $userId): bool
     {
@@ -293,6 +303,10 @@ class Assignment extends Model
             ->where(function ($q) use ($userId) {
                 $q->whereNull('requested_reader_id')
                   ->orWhere('requested_reader_id', $userId);
+            })
+            ->where(function ($q) use ($userId) {
+                $q->whereNull('blocked_reader_ids')
+                  ->orWhereJsonDoesntContain('blocked_reader_ids', $userId);
             });
     }
 
