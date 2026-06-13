@@ -876,6 +876,7 @@
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                            @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                             <div class="mt-1.5">
                                                 <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
                                                       x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
@@ -1298,6 +1299,7 @@
                                             @endif
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ $meUser->isAdmin() ? '0.00' : number_format($assignment->pay_rate, 2) }}</div>
+                                            @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                             <div class="mt-1.5">
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                             </div>
@@ -1678,6 +1680,7 @@
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                                    @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                                     @if ($isRequestedForMe)
                                                         <div class="flex items-center gap-1 mt-1">
                                                             <span class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-mono font-semibold shrink-0">
@@ -1971,6 +1974,7 @@
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                                    @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                                     <div class="mt-1.5">
                                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                                     </div>
@@ -2164,6 +2168,7 @@
                                                         <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                         <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                         <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                                        @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                                         @if($assignment->coverageSubmission)
                                                             <div class="mt-1">
                                                                 <button @click="textOpen = true" type="button"
@@ -2280,6 +2285,7 @@
                                                 <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                 <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                 <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                                @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                             </td>
                                             <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                                 <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
@@ -2386,6 +2392,7 @@
                                                             <div class="font-medium text-gray-900 text-xs">{{ $assignment->script_title }}</div>
                                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · <span class="font-bold text-gray-600">${{ number_format($assignment->pay_rate, 2) }}</span></div>
+                                                            @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                                             <div class="text-[10px] text-gray-400 tabular-nums mt-0.5">Completed {{ $assignment->completed_at?->copy()->setTimezone($appTimezone ?? 'UTC')->format('D M j, Y g:ia') ?? '—' }}</div>
                                                             @if($rtaStr)
                                                                 <div class="text-[10px] text-gray-400 tabular-nums">Reader turnaround time: {{ $rtaStr }}</div>

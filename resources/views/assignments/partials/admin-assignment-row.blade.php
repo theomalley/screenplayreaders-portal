@@ -219,6 +219,7 @@
         </div>
         <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
         <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+        @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
         @if ($reqInitials)
             <div class="flex items-center gap-1 mt-1">
                 <span class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-mono font-semibold shrink-0">

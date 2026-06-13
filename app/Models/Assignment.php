@@ -1,7 +1,9 @@
 <?php
 
 // v1.21 — 2026-06-13 | Add blocked_reader_ids (customer/editor "do not assign" list);
-//                      isReaderBlocked() helper; scopeAvailable() excludes blocked readers.
+//                      isReaderBlocked() + blockedReaderInitials() helpers; scopeAvailable()
+//                      excludes blocked readers; blockedReaderInitials() surfaced as a
+//                      "Blocked: XX, YY" badge in every assignment line item.
 // v1.20 — 2026-06-12 | Add woo_discount_code + generateWooDiscountCode() — portal-generated
 //                      $10 single-use coupon, replacing the sr-orders Zap's coupon step.
 // v1.19 — 2026-06-11 | Add helpscout_draft_dismissed_by + isHelpscoutDraftDismissedBy/dismissHelpscoutDraft for goback-ready notification
@@ -199,6 +201,20 @@ class Assignment extends Model
     public function isReaderBlocked(int $userId): bool
     {
         return \in_array($userId, $this->blocked_reader_ids ?: []);
+    }
+
+    /** Initials of every reader blocked from this assignment's order, for display in line items. */
+    public function blockedReaderInitials(): array
+    {
+        if (empty($this->blocked_reader_ids)) {
+            return [];
+        }
+
+        return User::whereIn('id', $this->blocked_reader_ids)
+            ->with('readerProfile')
+            ->get()
+            ->map(fn (User $u) => $u->readerProfile?->initials ?? $u->name)
+            ->all();
     }
 
     /** Whether the given user has dismissed the "goback ready at HelpScout" notice for this order. */
