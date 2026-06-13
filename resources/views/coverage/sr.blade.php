@@ -31,6 +31,8 @@
         </div>
     </x-slot>
 
+    @include('partials.pdf-text-layer-styles')
+
     <div class="py-6">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
