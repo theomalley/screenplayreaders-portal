@@ -351,6 +351,7 @@
                     <form method="POST" action="{{ route('assignments.cancel', $assignment) }}">
                         @csrf
                         <button type="submit"
+                                onclick="return confirm('Return this assignment to the pool?')"
                                 class="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded hover:bg-gray-300">
                             Return to Pool
                         </button>
