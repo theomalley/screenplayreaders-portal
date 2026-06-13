@@ -1,11 +1,14 @@
 <?php
 
+// v1.1 — 2026-06-13 | Skip readers who opted into notify_only_if_under_capacity and are
+//                      currently at their assignment capacity.
 // v1.0 — 2026-05-30 | Initial: email readers of new unassigned assignments per their profile prefs
 
 namespace App\Services;
 
 use App\Mail\NewAssignmentMail;
 use App\Models\Assignment;
+use App\Models\ReaderProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
@@ -28,7 +31,8 @@ class ReaderNotificationService
             if (
                 $requested &&
                 $requested->readerProfile?->email_notifications &&
-                $requested->readerProfile?->email_notify_requests
+                $requested->readerProfile?->email_notify_requests &&
+                ! $this->skipForCapacity($requested->readerProfile, true)
             ) {
                 Mail::to($requested->email)
                     ->send(new NewAssignmentMail($assignment, $requested, 'request'));
@@ -57,8 +61,25 @@ class ReaderNotificationService
         $context = $assignment->rush ? 'rush' : 'any';
 
         foreach ($readers as $reader) {
+            if ($this->skipForCapacity($reader->readerProfile, false)) {
+                continue;
+            }
+
             Mail::to($reader->email)
                 ->send(new NewAssignmentMail($assignment, $reader, $context));
         }
+    }
+
+    /**
+     * True if the reader opted into "only notify if under capacity" and is currently
+     * at (or over) their assignment capacity.
+     */
+    private function skipForCapacity(?ReaderProfile $profile, bool $isRequestedAssignment): bool
+    {
+        if (! $profile?->notify_only_if_under_capacity) {
+            return false;
+        }
+
+        return $profile->isAtCapacity($isRequestedAssignment);
     }
 }

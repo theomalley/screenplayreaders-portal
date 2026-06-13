@@ -124,6 +124,20 @@
             </div>
         </div>
 
+        {{-- Capacity-aware notifications --}}
+        <div class="flex items-start gap-3 pt-2 border-t border-gray-100">
+            <input id="notify_only_if_under_capacity" name="notify_only_if_under_capacity" type="checkbox" value="1"
+                   {{ auth()->user()->readerProfile?->notify_only_if_under_capacity ? 'checked' : '' }}
+                   class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+            <div>
+                <label for="notify_only_if_under_capacity" class="text-sm font-medium text-gray-700">Only notify me when I'm under my assignment capacity</label>
+                <p class="text-xs text-gray-500">
+                    Skip new-assignment notifications while I'm already at my max of
+                    {{ auth()->user()->readerProfile?->max_concurrent_assignments }} active assignment(s).
+                </p>
+            </div>
+        </div>
+
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
 

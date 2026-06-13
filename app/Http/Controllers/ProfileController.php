@@ -75,6 +75,7 @@ class ProfileController extends Controller
                 'sms_notify_followup'    => $request->boolean('sms_notify_followup'),
                 'email_notify_qc_fail'   => $request->boolean('email_notify_qc_fail'),
                 'sms_notify_qc_fail'     => $request->boolean('sms_notify_qc_fail'),
+                'notify_only_if_under_capacity' => $request->boolean('notify_only_if_under_capacity'),
             ]
         );
 

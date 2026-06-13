@@ -1,5 +1,7 @@
 <?php
 
+// v1.13 — 2026-06-13 | Add notify_only_if_under_capacity flag — skip new-assignment
+//                      notifications when the reader is at their assignment capacity.
 // v1.12 — 2026-06-05 | Add tier_1/tier_2 fields; tiers() helper
 // v1.11 — 2026-06-05 | Add about_photo fields to fillable
 // v1.10 — 2026-06-03 | Add custom_message to fillable
@@ -41,6 +43,7 @@ class ReaderProfile extends Model
         'about_photo_rejection_note',
         'max_concurrent_assignments',
         'requests_bypass_capacity',
+        'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',
         'phone',
@@ -67,6 +70,7 @@ class ReaderProfile extends Model
     protected $casts = [
         'is_1099'                  => 'boolean',
         'requests_bypass_capacity' => 'boolean',
+        'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',
         'sms_notify_rush'      => 'boolean',
