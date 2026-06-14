@@ -185,6 +185,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/announcements/history', [AnnouncementController::class, 'history'])->name('announcements.history');
     Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+    Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
     Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
     Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->name('announcements.mark-read');
     Route::post('/announcements/{announcement}/dismiss', [AnnouncementController::class, 'dismiss'])->name('announcements.dismiss');

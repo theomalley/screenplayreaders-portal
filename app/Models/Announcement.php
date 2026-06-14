@@ -33,6 +33,12 @@ class Announcement extends Model
         return $this->expires_at !== null && $this->expires_at->isPast();
     }
 
+    /** Admins can edit any announcement; editors can only edit their own. */
+    public function canBeEditedBy(User $user): bool
+    {
+        return $user->isAdmin() || ($user->isEditor() && $this->created_by === $user->id);
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

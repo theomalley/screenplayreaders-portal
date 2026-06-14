@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-06-14 | Add update() — admins can edit any announcement, editors only their own
 // v1.1 — 2026-06-02 | Add expires_at support to store(); add history() for all-user announcement archive
 // v1.0 — 2026-05-26 | Create/delete announcements (admin/editor); mark-read/dismiss (reader).
 
@@ -36,6 +37,28 @@ class AnnouncementController extends Controller
         ]);
 
         return back()->with('success', 'Announcement posted.');
+    }
+
+    public function update(Request $request, Announcement $announcement): RedirectResponse
+    {
+        abort_unless($announcement->canBeEditedBy(auth()->user()), 403);
+
+        $request->validate([
+            'body'       => 'required|string|max:2000',
+            'expires_at' => 'nullable|date_format:Y-m-d\TH:i',
+        ]);
+
+        $expiresAt = null;
+        if ($request->filled('expires_at')) {
+            $expiresAt = Carbon::createFromFormat('Y-m-d\TH:i', $request->input('expires_at'), Setting::getAppTimezone())->utc();
+        }
+
+        $announcement->update([
+            'body'       => trim($request->input('body')),
+            'expires_at' => $expiresAt,
+        ]);
+
+        return back()->with('success', 'Announcement updated.');
     }
 
     public function destroy(Announcement $announcement): RedirectResponse

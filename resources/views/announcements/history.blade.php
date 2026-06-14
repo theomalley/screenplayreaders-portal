@@ -51,45 +51,71 @@
                         $read         = $ann->reads->first();
                         $wasRead      = $read?->read_at !== null;
                         $wasDismissed = $read?->dismissed_at !== null;
+                        $canEdit      = $ann->canBeEditedBy(auth()->user());
                     @endphp
-                    <div class="bg-white rounded-lg shadow-sm border {{ $annExpired ? 'border-gray-100' : 'border-amber-100' }} px-5 py-4
+                    <div x-data="{ editing: false }" class="bg-white rounded-lg shadow-sm border {{ $annExpired ? 'border-gray-100' : 'border-amber-100' }} px-5 py-4
                                 {{ $annExpired ? 'opacity-70' : '' }}">
-                        <div class="flex items-start justify-between gap-4">
-                            <p class="text-sm text-gray-800 leading-relaxed flex-1">{{ $ann->body }}</p>
-                            <div class="flex items-center gap-2 shrink-0">
-                                @if(!$annExpired && !$wasDismissed)
-                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">Active</span>
-                                @elseif($annExpired)
-                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">Expired</span>
+                        <div x-show="!editing">
+                            <div class="flex items-start justify-between gap-4">
+                                <p class="text-sm text-gray-800 leading-relaxed flex-1">{{ $ann->body }}</p>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    @if(!$annExpired && !$wasDismissed)
+                                        <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">Active</span>
+                                    @elseif($annExpired)
+                                        <span class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5">Expired</span>
+                                    @endif
+                                    @if($canEdit)
+                                        <button type="button" @click="editing = true" class="text-indigo-400 hover:text-indigo-600 text-xs underline whitespace-nowrap">Edit</button>
+                                    @endif
+                                    @if(auth()->user()->canManageAssignments())
+                                        <form method="POST" action="{{ route('announcements.destroy', $ann) }}"
+                                              onsubmit="return confirm('Delete this announcement for all users?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="text-red-400 hover:text-red-600 text-xs underline whitespace-nowrap">Delete</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+                                <span>Posted by <span class="text-gray-600">{{ $ann->createdBy?->name ?? 'Staff' }}</span></span>
+                                <span>&middot;</span>
+                                <span>{{ $ann->created_at->setTimezone($appTimezone)->format('M j, Y \a\t g:i A') }}</span>
+
+                                @if($ann->expires_at)
+                                    <span>&middot;</span>
+                                    <span class="{{ $annExpired ? 'text-red-400' : 'text-amber-500' }}">
+                                        {{ $annExpired ? 'Expired' : 'Expires' }}
+                                        {{ $ann->expires_at->setTimezone($appTimezone)->format('M j, Y \a\t g:i A') }}
+                                    </span>
                                 @endif
-                                @if(auth()->user()->canManageAssignments())
-                                    <form method="POST" action="{{ route('announcements.destroy', $ann) }}"
-                                          onsubmit="return confirm('Delete this announcement for all users?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs underline whitespace-nowrap">Delete</button>
-                                    </form>
+
+                                @if($wasRead)
+                                    <span>&middot;</span>
+                                    <span class="text-green-500">&#10003; Read {{ $read->read_at->setTimezone($appTimezone)->format('M j') }}</span>
                                 @endif
                             </div>
                         </div>
 
-                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
-                            <span>Posted by <span class="text-gray-600">{{ $ann->createdBy?->name ?? 'Staff' }}</span></span>
-                            <span>&middot;</span>
-                            <span>{{ $ann->created_at->setTimezone($appTimezone)->format('M j, Y \a\t g:i A') }}</span>
-
-                            @if($ann->expires_at)
-                                <span>&middot;</span>
-                                <span class="{{ $annExpired ? 'text-red-400' : 'text-amber-500' }}">
-                                    {{ $annExpired ? 'Expired' : 'Expires' }}
-                                    {{ $ann->expires_at->setTimezone($appTimezone)->format('M j, Y \a\t g:i A') }}
-                                </span>
-                            @endif
-
-                            @if($wasRead)
-                                <span>&middot;</span>
-                                <span class="text-green-500">&#10003; Read {{ $read->read_at->setTimezone($appTimezone)->format('M j') }}</span>
-                            @endif
-                        </div>
+                        @if($canEdit)
+                        <form x-show="editing" method="POST" action="{{ route('announcements.update', $ann) }}" class="space-y-3">
+                            @csrf @method('PUT')
+                            <div>
+                                <textarea name="body" rows="2" maxlength="2000" required
+                                          class="block w-full text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">{{ $ann->body }}</textarea>
+                            </div>
+                            <div class="flex items-end gap-4">
+                                <div>
+                                    <x-input-label value="Expires at (optional)" />
+                                    <input type="datetime-local" name="expires_at"
+                                           value="{{ $ann->expires_at?->setTimezone($appTimezone)->format('Y-m-d\TH:i') }}"
+                                           class="mt-1 block w-52 text-sm rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                                </div>
+                                <x-primary-button class="mb-0.5">Save</x-primary-button>
+                                <button type="button" @click="editing = false" class="text-xs text-gray-400 hover:text-gray-600 underline mb-1.5">Cancel</button>
+                            </div>
+                        </form>
+                        @endif
                     </div>
                     @endforeach
                 </div>
