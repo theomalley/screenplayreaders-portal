@@ -1606,6 +1606,7 @@
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
                                                     : null;
                                                 $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
+                                                $isBlockedForMe = $assignment->isReaderBlocked(auth()->id());
                                                 $rowClass = $isRequestedForMe
                                                     ? 'border-l-4 request-pulse'
                                                     : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
@@ -1734,6 +1735,12 @@
                                                           x-text="error"
                                                           class="text-xs text-red-600 font-medium"></span>
                                                     <div x-show="!error" class="flex flex-col items-end gap-1">
+                                                        @if ($isBlockedForMe)
+                                                        <span class="inline-flex items-center px-3 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-semibold text-gray-400 cursor-not-allowed"
+                                                              title="You are blocked from accepting this order">
+                                                            🚫 Blocked
+                                                        </span>
+                                                        @else
                                                         <button type="button"
                                                                 :disabled="accepting || declining"
                                                                 @click="accepting = true; error = '';
@@ -1754,6 +1761,7 @@
                                                                 class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white transition">
                                                             <span x-text="accepting ? 'Accepting…' : 'Accept'"></span>
                                                         </button>
+                                                        @endif
                                                         @if ($isRequestedForMe)
                                                         <button type="button"
                                                                 :disabled="accepting || declining"

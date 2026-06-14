@@ -1,5 +1,7 @@
 <?php
 
+// v1.3 — 2026-06-13 | accept: deny readers blocked from the assignment's order
+//                     (isReaderBlocked) even though it now shows in their Available pool.
 // v1.2 — 2026-05-28 | delete: allow editors (canManageAssignments) not just admins.
 // v1.1 — 2026-05-24 | submitCoverage allows admin/editor when they are the assigned user.
 // v1.0 — 2026-05-16 | Role-based access for assignments. All authz flows through here — no inline checks in controllers.
@@ -52,7 +54,8 @@ class AssignmentPolicy
     public function accept(User $user, Assignment $assignment): bool
     {
         return $assignment->isAvailable()
-            && ($user->isReader() || $user->canManageAssignments());
+            && ($user->isReader() || $user->canManageAssignments())
+            && ! $assignment->isReaderBlocked($user->id);
     }
 
     /** Reader cancelling their own accepted assignment */

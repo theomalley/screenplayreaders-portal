@@ -1,5 +1,8 @@
 <?php
 
+// v1.22 — 2026-06-13 | scopeAvailable() no longer hides assignments from blocked readers —
+//                      they now see the assignment in their Available pool (with the
+//                      "Blocked" badge) but cannot Accept it (enforced in AssignmentPolicy).
 // v1.21 — 2026-06-13 | Add blocked_reader_ids (customer/editor "do not assign" list);
 //                      isReaderBlocked() + blockedReaderInitials() helpers; scopeAvailable()
 //                      excludes blocked readers; blockedReaderInitials() surfaced as a
@@ -308,7 +311,11 @@ class Assignment extends Model
 
     // --- Scopes ---
 
-    /** Assignments visible to a specific reader in the available list, filtered to their tiers */
+    /**
+     * Assignments visible to a specific reader in the available list, filtered to their tiers.
+     * Assignments that block this reader are still included (so the reader can see why an
+     * order is unavailable to them) — AssignmentPolicy::accept() prevents them from accepting.
+     */
     public function scopeAvailable($query, int $userId, array $tiers = [1])
     {
         if (empty($tiers)) {
@@ -319,10 +326,6 @@ class Assignment extends Model
             ->where(function ($q) use ($userId) {
                 $q->whereNull('requested_reader_id')
                   ->orWhere('requested_reader_id', $userId);
-            })
-            ->where(function ($q) use ($userId) {
-                $q->whereNull('blocked_reader_ids')
-                  ->orWhereJsonDoesntContain('blocked_reader_ids', $userId);
             });
     }
 
