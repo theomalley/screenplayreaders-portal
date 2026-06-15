@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-06-15 | createDraftReply: reopen (set status active) closed conversations before drafting
 // v1.6 — 2026-06-02 | createDirectReaderDraft — new outgoing draft addressed to a single reader
 // v1.5 — 2026-05-31 | createReaderBroadcastDraft — new outgoing draft with BCC list for reader broadcasts
 // v1.4 — 2026-05-31 | Fetch conversation once for ID + status; attempt draft directly on closed conversations
@@ -55,6 +56,10 @@ class HelpScoutService
             'status'          => $convStatus,
             'customer_id'     => $customerId,
         ]);
+
+        if ($convStatus === 'closed') {
+            $this->updateConversationStatus($conversationId, 'active', $token);
+        }
 
         $body = [
             'customer' => ['id' => $customerId],
@@ -305,6 +310,33 @@ class HelpScoutService
         }
 
         return $response->json();
+    }
+
+    /** Reopen a closed conversation (e.g. to 'active') so a new draft reply is visible to agents. */
+    private function updateConversationStatus(string $conversationId, string $status, string $token): void
+    {
+        $response = Http::withToken($token)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->patch(self::API_BASE . "/conversations/{$conversationId}", [
+                'op'    => 'replace',
+                'path'  => '/status',
+                'value' => $status,
+            ]);
+
+        if (! $response->successful()) {
+            Log::error('HelpScout conversation status update failed', [
+                'conversation_id' => $conversationId,
+                'status'          => $status,
+                'http_status'     => $response->status(),
+                'body'            => $response->body(),
+            ]);
+            return;
+        }
+
+        Log::info('HelpScout conversation status updated', [
+            'conversation_id' => $conversationId,
+            'status'          => $status,
+        ]);
     }
 
     private function extractCustomerId(array $conversation, string $conversationId): int
