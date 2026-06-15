@@ -1,5 +1,8 @@
 <?php
 
+// v1.11 — 2026-06-15 | Add BLOCKED_READERS_DEFAULTS and getBlockedReaderLimits() — admin-configurable
+//                      cap on how many readers a customer can block per order, exposed to the
+//                      WordPress upload form via /api/upload-settings.
 // v1.10 — 2026-06-12 | COMPLETION_DRAFT_DEFAULT: replace manual coupon placeholder with
 //                      {{woodiscountcode}} — auto-filled by the portal-generated coupon.
 // v1.9 — 2026-06-12 | Add getTestHelpscoutConversationId()/setTestHelpscoutConversationId() — admin-configurable sandbox ticket for draft testing
@@ -335,5 +338,32 @@ HTML;
     public static function setCompletionDraftBody(string $body): void
     {
         static::updateOrCreate(['key' => 'completion_draft_body'], ['value' => $body]);
+    }
+
+    /**
+     * Max readers a customer can block on the upload form, by order reader-count tier.
+     * '1r' applies to single-reader orders, 'multi' applies to 2-reader and 3-reader orders.
+     */
+    public const BLOCKED_READERS_DEFAULTS = [
+        'max_blockable_1r'    => 2,
+        'max_blockable_multi' => 1,
+    ];
+
+    /**
+     * Returns the configured block-reader caps, falling back to BLOCKED_READERS_DEFAULTS
+     * for any missing row. Consumed directly by the settings page and via
+     * Api\UploadSettingsController for the WordPress upload form.
+     */
+    public static function getBlockedReaderLimits(): array
+    {
+        $keys   = array_keys(self::BLOCKED_READERS_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        $result = [];
+        foreach (self::BLOCKED_READERS_DEFAULTS as $key => $default) {
+            $result[$key] = isset($stored[$key]) ? (int) $stored[$key] : (int) $default;
+        }
+
+        return $result;
     }
 }

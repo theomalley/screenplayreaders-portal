@@ -138,6 +138,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/completion-draft', [SettingController::class, 'updateCompletionDraft'])->name('settings.completion-draft');
     Route::post('/settings/completion-draft/test', [SettingController::class, 'testCompletionDraft'])->name('settings.completion-draft.test');
     Route::patch('/settings/word-counts', [SettingController::class, 'updateWordCounts'])->name('settings.word-counts');
+    Route::patch('/settings/blocked-reader-limits', [SettingController::class, 'updateBlockedReaderLimits'])->name('settings.blocked-reader-limits');
     Route::patch('/settings/pay-period',  [SettingController::class, 'updatePayPeriod'])->name('settings.pay-period');
     Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');
     Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');

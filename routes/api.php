@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\IncomingAssignmentController;
 use App\Http\Controllers\Api\OrderRevenueController;
 use App\Http\Controllers\Api\ReadersController;
 use App\Http\Controllers\Api\StaffProfileController;
+use App\Http\Controllers\Api\UploadSettingsController;
 use Illuminate\Support\Facades\Route;
 
 // PORTAL INTEGRATION: called by WordPress sr-upload-system.php after customer checkout + script upload
@@ -13,6 +14,9 @@ Route::post('/incoming-assignment', [IncomingAssignmentController::class, 'store
 
 // PORTAL INTEGRATION: called by WordPress sr-upload-system.php to populate the reader dropdown
 Route::get('/readers', [ReadersController::class, 'index']);
+
+// PORTAL INTEGRATION: called by WordPress sr-upload-system.php to fetch block-reader limit settings
+Route::get('/upload-settings', [UploadSettingsController::class, 'index']);
 
 // ZAPIER INTEGRATION: called by sr-orders zap after HelpScout ticket is created — stores order → conversation ID
 Route::post('/helpscout-conversation', [HelpScoutConversationController::class, 'store']);

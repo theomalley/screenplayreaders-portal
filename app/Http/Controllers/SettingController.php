@@ -1,5 +1,7 @@
 <?php
 
+// v2.14 — 2026-06-15 | Add updateBlockedReaderLimits() — admin-configurable cap on how many
+//                      readers a customer can block per order (1-reader vs 2R/3R tiers).
 // v2.13 — 2026-06-12 | testCompletionDraft(): substitute a placeholder for {{woodiscountcode}}
 //                      (no real coupon created for the test draft).
 // v2.12 — 2026-06-12 | Completion draft email template — admin-editable body + send-test-draft action.
@@ -84,6 +86,7 @@ class SettingController extends Controller
         $completionDraftBody  = $isAdmin ? Setting::getCompletionDraftBody() : null;
         $testHelpscoutConvId  = $isAdmin ? Setting::getTestHelpscoutConversationId() : null;
         $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
+        $blockedReaderLimits  = $isAdmin ? Setting::getBlockedReaderLimits() : null;
         $payPeriod            = $isAdmin ? Setting::getPayPeriod()  : null;
         $payoutSchedule       = $isAdmin ? Setting::getPayoutSchedule() : null;
         $nextPayout           = $isAdmin ? PayPeriod::nextPayoutDate()  : null;
@@ -100,7 +103,7 @@ class SettingController extends Controller
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody', 'testHelpscoutConvId',
-            'wordCounts', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
+            'wordCounts', 'blockedReaderLimits', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
     }
 
@@ -479,6 +482,21 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'Word count minimums saved.');
+    }
+
+    public function updateBlockedReaderLimits(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate([
+            'max_blockable_1r'    => 'required|integer|min:0|max:10',
+            'max_blockable_multi' => 'required|integer|min:0|max:10',
+        ]);
+
+        Setting::setValue('max_blockable_1r',    (int) $request->input('max_blockable_1r'));
+        Setting::setValue('max_blockable_multi', (int) $request->input('max_blockable_multi'));
+
+        return back()->with('success', 'Block-reader limits saved.');
     }
 
     public function uploadPortalPhoto(Request $request): RedirectResponse

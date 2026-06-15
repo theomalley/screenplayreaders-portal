@@ -1165,6 +1165,43 @@
             </div>
             @endif
 
+            @if($isAdmin && $blockedReaderLimits !== null)
+            {{-- Block-Reader Limits --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Block-Reader Limits</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Sets how many readers a customer can block on the script upload form. Applies to
+                    coverage orders only.
+                </p>
+
+                <form method="POST" action="{{ route('settings.blocked-reader-limits') }}" class="space-y-4">
+                    @csrf
+                    @method('PATCH')
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <div>
+                            <x-input-label value="1-reader orders" />
+                            <input type="number" name="max_blockable_1r" min="0" max="10"
+                                value="{{ old('max_blockable_1r', $blockedReaderLimits['max_blockable_1r']) }}"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <p class="mt-0.5 text-xs text-gray-400">Max readers a customer can block</p>
+                        </div>
+                        <div>
+                            <x-input-label value="2-reader / 3-reader orders" />
+                            <input type="number" name="max_blockable_multi" min="0" max="10"
+                                value="{{ old('max_blockable_multi', $blockedReaderLimits['max_blockable_multi']) }}"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <p class="mt-0.5 text-xs text-gray-400">Max readers a customer can block</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end border-t border-gray-100 pt-4">
+                        <x-primary-button>Save block-reader limits</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
             {{-- Quick-Login Link --}}
             @if($isAdmin)
             @php $qlToken = \App\Http\Controllers\QuickLoginController::currentToken(); @endphp
