@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-06-15 | When the draft is actually sent, clear helpscout_draft_sent_at /
+//                     helpscout_draft_dismissed_by so the "goback ready" alert disappears
+//                     for everyone instead of lingering until manually dismissed.
 // v1.1 — 2026-06-12 | Only stamp helpscout_sent_at if the order already has at least one
 //                     submitted assignment — convo.agent.reply.created also fires for the
 //                     order-creation ticket message and other non-delivery agent replies,
@@ -64,6 +67,15 @@ class HelpScoutWebhookController extends Controller
                 ]);
             } else {
                 $conversation->update(['helpscout_sent_at' => now()]);
+
+                // The "goback ready at HelpScout" alert is keyed off helpscout_draft_sent_at —
+                // clear it now that the draft has actually been sent, so it disappears for everyone.
+                Assignment::where('order_number', $conversation->order_number)
+                    ->whereNotNull('helpscout_draft_sent_at')
+                    ->update([
+                        'helpscout_draft_sent_at'      => null,
+                        'helpscout_draft_dismissed_by' => null,
+                    ]);
 
                 Log::info('HelpScout webhook: processed', [
                     'conversation_id' => $conversationId,
