@@ -53,6 +53,14 @@
                 Write Coverage
             </a>
         @endcan
+        @if (\App\Support\Permission::check('script.download'))
+            <a href="{{ route('assignments.downloadScript', $assignment) }}"
+               class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
+        @endif
+        @if (\App\Support\Permission::check('script.print'))
+            <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
+               class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
+        @endif
         @if (auth()->user()->isReader() && $assignment->assigned_reader_id === auth()->id())
             <span x-data="{ dlBusy: false, dlErr: '' }">
                 <button type="button" :disabled="dlBusy"

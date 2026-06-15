@@ -1255,7 +1255,7 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl ?? ''))">
+                                        <td class="px-3 py-3" x-data="readerPdfViewer(@js($viewUrl ?? ''), @js($assignment->id), @js(csrf_token()))">
                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($viewUrl)
                                                 <button @click="openViewer()" type="button"
@@ -1264,43 +1264,7 @@
                                                      @keydown.escape.window="open = false"
                                                      tabindex="-1"
                                                      class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                                    <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2">
-                                                        <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? $assignment->script_title }}</span>
-                                                        <div class="flex items-center gap-2 shrink-0">
-                                                            @if (\App\Support\Permission::check('script.download'))
-                                                                <a href="{{ route('assignments.downloadScript', $assignment) }}"
-                                                                   class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
-                                                            @endif
-                                                            @if (\App\Support\Permission::check('script.print'))
-                                                                <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
-                                                                   class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
-                                                            @endif
-                                                            <button @click="open = false" type="button"
-                                                                    class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
-                                                        </div>
-                                                    </div>
-                                                    <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
-                                                        <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
-                                                        <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
-                                                            Go to page
-                                                            <input type="number" min="1" :max="totalPages"
-                                                                   @change="scrollToPage($event.target.value)"
-                                                                   @keydown.enter.prevent="scrollToPage($event.target.value)"
-                                                                   class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
-                                                            / <span x-text="totalPages"></span>
-                                                        </span>
-                                                        <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400" title="Tip: Ctrl + scroll to zoom">
-                                                            <button type="button" @click="zoomOut()"
-                                                                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom out">−</button>
-                                                            <button type="button" @click="resetZoom()" x-text="Math.round(zoomLevel * 100) + '%'"
-                                                                    class="w-12 text-center hover:text-white" title="Reset zoom"></button>
-                                                            <button type="button" @click="zoomIn()"
-                                                                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom in">+</button>
-                                                        </div>
-                                                    </div>
-                                                    <div x-ref="canvasWrap" @wheel="onWheelZoom($event)" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
-                                                        <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
-                                                    </div>
+                                                    @include('partials.reader-pdf-viewer', ['assignment' => $assignment])
                                                 </div>
                                             @else
                                                 <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
