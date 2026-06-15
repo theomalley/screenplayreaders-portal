@@ -893,6 +893,15 @@
                                 </button>
                             </form>
                         @endif
+
+                        <form method="POST" action="{{ route('assignments.duplicate', $assignment) }}">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-600 hover:bg-gray-50 transition"
+                                    title="Create a new incoming assignment with the same details">
+                                Duplicate
+                            </button>
+                        </form>
                     </div>
                     <div class="flex items-center gap-3">
                         <a href="{{ route('assignments.index') }}"

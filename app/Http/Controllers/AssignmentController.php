@@ -1,5 +1,7 @@
 <?php
 
+// v2.20 — 2026-06-15 | Add duplicate() — admin/editor clones an assignment (script, writer,
+//                      pay rate, type, etc.) into a fresh "incoming" draft for editing.
 // v2.19 — 2026-06-13 | store()/update(): accept blocked_reader_ids[] (manual reader blocking
 //                      for editors/admins); update() syncs the block list across all sibling
 //                      assignments for the order.
@@ -637,6 +639,42 @@ class AssignmentController extends Controller
         ]);
 
         return back()->with('success', 'Notes-Only assignment added to this order.');
+    }
+
+    /**
+     * Clone an assignment (script details, pay rate, type, etc.) into a fresh
+     * "incoming" draft so an admin/editor can quickly set up a similar
+     * assignment without re-entering everything from scratch.
+     */
+    public function duplicate(Assignment $assignment)
+    {
+        $this->authorize('duplicate', $assignment);
+
+        $copy = $assignment->replicate([
+            'status',
+            'assigned_reader_id',
+            'requested_reader_id',
+            'reader_declined',
+            'accepted_at',
+            'submitted_at',
+            'completed_at',
+            'reader_paid_at',
+            'unassigned_at',
+            'available_at',
+            'drive_coverage_doc_id',
+            'drive_coverage_pdf_id',
+            'helpscout_draft_sent_at',
+            'helpscout_draft_dismissed_by',
+            'created_at',
+            'updated_at',
+        ]);
+
+        $copy->status          = Assignment::STATUS_INCOMING;
+        $copy->reader_declined = false;
+        $copy->save();
+
+        return redirect()->route('assignments.edit', $copy)
+            ->with('success', 'Assignment duplicated — review and update the details below.');
     }
 
     public function show(Assignment $assignment)

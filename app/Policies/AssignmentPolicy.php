@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-06-15 | Add duplicate() — admin/editor can clone an assignment as a new draft.
 // v1.3 — 2026-06-13 | accept: deny readers blocked from the assignment's order
 //                     (isReaderBlocked) even though it now shows in their Available pool.
 // v1.2 — 2026-05-28 | delete: allow editors (canManageAssignments) not just admins.
@@ -36,6 +37,12 @@ class AssignmentPolicy
     }
 
     public function create(User $user): bool
+    {
+        return $user->canManageAssignments();
+    }
+
+    /** Admin/editor can clone an existing assignment as a new draft */
+    public function duplicate(User $user, Assignment $assignment): bool
     {
         return $user->canManageAssignments();
     }

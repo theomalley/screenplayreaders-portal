@@ -85,6 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/remove-pages', [AssignmentController::class, 'removePages'])->name('assignments.removePages');
     Route::post('assignments/{assignment}/script/unlock', [AssignmentController::class, 'unlockScript'])->name('assignments.unlockScript');
     Route::post('assignments/{assignment}/add-reader', [AssignmentController::class, 'addReader'])->name('assignments.addReader');
+    Route::post('assignments/{assignment}/duplicate', [AssignmentController::class, 'duplicate'])->name('assignments.duplicate');
     Route::post('assignments/{assignment}/accept', [AssignmentController::class, 'accept'])->name('assignments.accept');
     Route::post('assignments/{assignment}/over-120', [AssignmentController::class, 'over120'])->name('assignments.over-120');
     Route::post('assignments/{assignment}/over-160', [AssignmentController::class, 'over160'])->name('assignments.over-160');
