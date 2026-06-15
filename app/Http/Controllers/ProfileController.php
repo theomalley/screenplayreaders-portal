@@ -99,6 +99,17 @@ class ProfileController extends Controller
         return back()->with('status', 'custom-message-updated');
     }
 
+    public function updateRefreshInterval(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'refresh_interval_seconds' => 'required|integer|min:30|max:3600',
+        ]);
+
+        $request->user()->update(['refresh_interval_seconds' => $data['refresh_interval_seconds']]);
+
+        return back()->with('status', 'refresh-interval-updated');
+    }
+
     public function updateBio(Request $request): RedirectResponse
     {
         $user = $request->user();

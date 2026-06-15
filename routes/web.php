@@ -65,6 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
+    Route::patch('/profile/refresh-interval', [ProfileController::class, 'updateRefreshInterval'])->name('profile.refresh-interval');
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto'])->name('profile.photo');
     Route::post('/profile/about-photo', [ProfileController::class, 'uploadAboutPhoto'])->name('profile.about-photo');
     Route::patch('/profile/bio', [ProfileController::class, 'updateBio'])->name('profile.bio');

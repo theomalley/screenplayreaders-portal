@@ -33,6 +33,35 @@
             </div>
             @endif
 
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Dashboard Refresh Rate</h2>
+                    <p class="text-sm text-gray-600 mb-4">How often the assignments dashboard automatically refreshes itself while you're on the "All" tab.</p>
+
+                    @if (session('status') === 'refresh-interval-updated')
+                        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                            Saved.
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('profile.refresh-interval') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <x-input-label for="refresh_interval_seconds" value="Refresh every (seconds)" />
+                            <input type="number" id="refresh_interval_seconds" name="refresh_interval_seconds" min="30" max="3600"
+                                   value="{{ old('refresh_interval_seconds', $user->refresh_interval_seconds) }}"
+                                   class="mt-1 block w-32 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('refresh_interval_seconds')" class="mt-1" />
+                            <p class="mt-1 text-xs text-gray-400">Minimum 30 seconds.</p>
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             @if($user->isAdminOrEditor() || $user->isReader())
             @php
                 $currentPhoto            = $profile?->photo             ? asset('storage/' . $profile->photo)             : null;

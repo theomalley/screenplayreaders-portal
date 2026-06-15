@@ -1440,7 +1440,7 @@
                          $watch('tab', val => history.replaceState(null, '', '#tab-' + val));
                          setInterval(() => {
                              if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')) location.reload();
-                         }, 300000)">
+                         }, {{ auth()->user()->getRefreshIntervalSeconds() * 1000 }})">
 
                     {{-- Tabs --}}
                     <div class="flex border-b border-gray-200 mb-4">

@@ -1,5 +1,7 @@
 <?php
 
+// v1.6 — 2026-06-15 | Add refresh_interval_seconds (per-user dashboard auto-refresh rate) +
+//                     getRefreshIntervalSeconds() helper enforcing a 30s minimum.
 // v1.5 — 2026-06-03 | Add lastOnlineText() helper for human-readable last-seen time.
 // v1.4 — 2026-06-02 | Add hidden_from_staff field for admin-controlled staff panel visibility.
 // v1.3 — 2026-05-24 | Remove dead isWriter() and isProducer() role helpers.
@@ -28,6 +30,7 @@ class User extends Authenticatable
         'role',
         'last_seen_at',
         'hidden_from_staff',
+        'refresh_interval_seconds',
     ];
 
     protected $hidden = [
@@ -58,6 +61,12 @@ class User extends Authenticatable
     }
 
     public function isOnline(): bool         { return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(5)); }
+
+    /** Dashboard auto-refresh interval, enforcing a 30s floor regardless of stored value. */
+    public function getRefreshIntervalSeconds(): int
+    {
+        return max(30, (int) $this->refresh_interval_seconds);
+    }
 
     public function lastOnlineText(): string
     {
