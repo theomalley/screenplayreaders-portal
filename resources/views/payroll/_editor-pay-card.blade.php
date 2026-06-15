@@ -122,7 +122,8 @@
                 <tr class="hover:bg-gray-50" x-data="{ editingCommission: false, grossHover: false, tipX: 0, tipY: 0 }">
                     <td class="px-4 py-2 text-gray-500 text-xs uppercase">Commission</td>
                     <td class="px-4 py-2">
-                        <div class="text-gray-800 font-mono text-xs">{{ $order->order_number }}</div>
+                        <div class="text-gray-800">{{ $order->script_title }}</div>
+                        <div class="text-xs text-gray-400 font-mono">{{ $order->order_number }}</div>
                         <div class="text-xs text-gray-400 truncate max-w-xs">{{ $order->services_purchased }}</div>
                     </td>
                     <td class="px-4 py-2 text-gray-500 text-xs">{{ $order->ordered_at->format('M j, Y') }}</td>
