@@ -1,5 +1,8 @@
 <?php
 
+// v2.15 — 2026-06-15 | Add updateNotificationHistoryRetention() — admin-configurable
+//                      expiry (in days) for Notification History rows, enforced by the
+//                      notifications:prune-history scheduled command.
 // v2.14 — 2026-06-15 | Add updateBlockedReaderLimits() — admin-configurable cap on how many
 //                      readers a customer can block per order (1-reader vs 2R/3R tiers).
 // v2.13 — 2026-06-12 | testCompletionDraft(): substitute a placeholder for {{woodiscountcode}}
@@ -87,6 +90,7 @@ class SettingController extends Controller
         $testHelpscoutConvId  = $isAdmin ? Setting::getTestHelpscoutConversationId() : null;
         $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
         $blockedReaderLimits  = $isAdmin ? Setting::getBlockedReaderLimits() : null;
+        $notificationHistoryRetentionDays = $isAdmin ? Setting::getNotificationHistoryRetentionDays() : null;
         $payPeriod            = $isAdmin ? Setting::getPayPeriod()  : null;
         $payoutSchedule       = $isAdmin ? Setting::getPayoutSchedule() : null;
         $nextPayout           = $isAdmin ? PayPeriod::nextPayoutDate()  : null;
@@ -103,7 +107,7 @@ class SettingController extends Controller
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
             'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody', 'testHelpscoutConvId',
-            'wordCounts', 'blockedReaderLimits', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
+            'wordCounts', 'blockedReaderLimits', 'notificationHistoryRetentionDays', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
         ));
     }
 
@@ -497,6 +501,19 @@ class SettingController extends Controller
         Setting::setValue('max_blockable_multi', (int) $request->input('max_blockable_multi'));
 
         return back()->with('success', 'Block-reader limits saved.');
+    }
+
+    public function updateNotificationHistoryRetention(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate([
+            'notification_history_retention_days' => 'required|integer|min:0|max:3650',
+        ]);
+
+        Setting::setValue('notification_history_retention_days', (int) $request->input('notification_history_retention_days'));
+
+        return back()->with('success', 'Notification history retention saved.');
     }
 
     public function uploadPortalPhoto(Request $request): RedirectResponse

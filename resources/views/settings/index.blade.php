@@ -1202,6 +1202,36 @@
             </div>
             @endif
 
+            @if($isAdmin && $notificationHistoryRetentionDays !== null)
+            {{-- Notification History Retention --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Notification History Retention</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Notifications older than this are deleted from everyone's Notification History.
+                    Set to 0 to keep notifications forever.
+                </p>
+
+                <form method="POST" action="{{ route('settings.notification-history-retention') }}" class="space-y-4">
+                    @csrf
+                    @method('PATCH')
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <div>
+                            <x-input-label value="Retention (days)" />
+                            <input type="number" name="notification_history_retention_days" min="0" max="3650"
+                                value="{{ old('notification_history_retention_days', $notificationHistoryRetentionDays) }}"
+                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <p class="mt-0.5 text-xs text-gray-400">0 = never expire</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end border-t border-gray-100 pt-4">
+                        <x-primary-button>Save retention period</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
             {{-- Quick-Login Link --}}
             @if($isAdmin)
             @php $qlToken = \App\Http\Controllers\QuickLoginController::currentToken(); @endphp

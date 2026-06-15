@@ -1,5 +1,8 @@
 <?php
 
+// v1.12 — 2026-06-15 | Add NOTIFICATION_HISTORY_RETENTION_DEFAULT and
+//                      getNotificationHistoryRetentionDays() — admin-configurable expiry
+//                      for Notification History rows (0 = never expire).
 // v1.11 — 2026-06-15 | Add BLOCKED_READERS_DEFAULTS and getBlockedReaderLimits() — admin-configurable
 //                      cap on how many readers a customer can block per order, exposed to the
 //                      WordPress upload form via /api/upload-settings.
@@ -365,5 +368,15 @@ HTML;
         }
 
         return $result;
+    }
+
+    /** Days after which Notification History rows are pruned. 0 = never expire. */
+    public const NOTIFICATION_HISTORY_RETENTION_DEFAULT = 90;
+
+    public static function getNotificationHistoryRetentionDays(): int
+    {
+        $value = static::where('key', 'notification_history_retention_days')->value('value');
+
+        return $value !== null ? (int) $value : self::NOTIFICATION_HISTORY_RETENTION_DEFAULT;
     }
 }

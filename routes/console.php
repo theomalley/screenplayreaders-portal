@@ -19,3 +19,7 @@ Schedule::command('marketing:check-partner-links')->everyFiveMinutes()->withoutO
 // Auto-add the editor's weekly flat-rate pay as a pending adjustment, once per pay period.
 Schedule::command('editor-pay:add-weekly-flat')->hourly()->withoutOverlapping();
 // 2026-06-11
+
+// Delete Notification History rows older than the admin-configured retention period (0 = never expire).
+Schedule::command('notifications:prune-history')->daily()->withoutOverlapping();
+// 2026-06-15
