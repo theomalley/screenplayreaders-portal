@@ -16,7 +16,7 @@
                        class="text-blue-600 underline">Download (admin link)</a>
                 </p>
                 <p class="text-xs text-gray-500 mt-2">
-                    The view link embeds via iframe with no download button1. The download link is admin-only — don't expose it to readers.
+                    The view link embeds via iframe with no download button. The download link is admin-only — don't expose it to readers.
                 </p>
                 <div class="mt-3 border rounded overflow-hidden" style="height:500px;">
                     <iframe src="{{ session('viewLink') }}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
