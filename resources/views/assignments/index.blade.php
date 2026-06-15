@@ -315,7 +315,7 @@
                                     <span class="text-xs text-gray-500">· Reader {{ $fqInitials }}</span>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                                         {{ $fqStatus === 'pending' ? 'bg-gray-100 text-gray-600' : ($fqStatus === 'answered' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700') }}">
-                                        {{ ucfirst($fqStatus) }}
+                                        {{ $fqStatus === 'pending' ? 'Questions need editor approval' : ucfirst($fqStatus) }}
                                     </span>
                                     @if ($fqDeadline && $fqStatus === 'unanswered')
                                         <div x-data="followupCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
@@ -344,13 +344,21 @@
 
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 mb-1">Customer's questions</label>
-                                            <div class="text-xs text-gray-500 italic bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
+                                            <div class="text-sm text-gray-700 whitespace-pre-line bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
                                         </div>
 
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">Edited questions shown to reader</label>
-                                            <textarea name="edited_questions" rows="3"
-                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
+                                        <div x-data="{ editingQuestions: false }">
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="block text-xs font-medium text-gray-600">Edited questions shown to reader</label>
+                                                <button type="button"
+                                                        @click="editingQuestions = !editingQuestions; if (editingQuestions) $nextTick(() => { $refs.editedQuestions.style.height = 'auto'; $refs.editedQuestions.style.height = $refs.editedQuestions.scrollHeight + 'px'; })"
+                                                        class="text-xs text-indigo-500 hover:text-indigo-700 underline">
+                                                    <span x-text="editingQuestions ? 'Hide' : 'Edit Questions'"></span>
+                                                </button>
+                                            </div>
+                                            <textarea x-show="editingQuestions" x-cloak x-ref="editedQuestions" name="edited_questions"
+                                                      @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
                                         </div>
 
                                         @if ($fqStatus === 'answered')
@@ -1077,13 +1085,21 @@
 
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 mb-1">Customer's questions</label>
-                                            <div class="text-xs text-gray-500 italic bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
+                                            <div class="text-sm text-gray-700 whitespace-pre-line bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
                                         </div>
 
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">Edited questions shown to reader</label>
-                                            <textarea name="edited_questions" rows="3"
-                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
+                                        <div x-data="{ editingQuestions: false }">
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="block text-xs font-medium text-gray-600">Edited questions shown to reader</label>
+                                                <button type="button"
+                                                        @click="editingQuestions = !editingQuestions; if (editingQuestions) $nextTick(() => { $refs.editedQuestions.style.height = 'auto'; $refs.editedQuestions.style.height = $refs.editedQuestions.scrollHeight + 'px'; })"
+                                                        class="text-xs text-indigo-500 hover:text-indigo-700 underline">
+                                                    <span x-text="editingQuestions ? 'Hide' : 'Edit Questions'"></span>
+                                                </button>
+                                            </div>
+                                            <textarea x-show="editingQuestions" x-cloak x-ref="editedQuestions" name="edited_questions"
+                                                      @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
                                         </div>
 
                                         @if ($fqStatus === 'answered')
