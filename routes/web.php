@@ -18,6 +18,7 @@ use App\Http\Controllers\FilenamesController;
 use App\Http\Controllers\HelpScoutWebhookLogController;
 use App\Http\Controllers\OrderLogController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\NotificationHistoryController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\ProfileController;
@@ -57,6 +58,10 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/notification-history', [NotificationHistoryController::class, 'index'])->name('notification-history.index');
+    Route::delete('/notification-history/{notification}', [NotificationHistoryController::class, 'destroy'])->name('notification-history.destroy');
+    Route::delete('/notification-history', [NotificationHistoryController::class, 'destroyAll'])->name('notification-history.destroyAll');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');

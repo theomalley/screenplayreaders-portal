@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-15 | Log deleted followup questions to Notification History
 // v1.0 — 2026-05-30 | Admin/editor management + reader response for followup questions
 
 namespace App\Http\Controllers;
@@ -7,6 +8,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\FollowupQuestion;
 use App\Models\FollowupToken;
+use App\Models\NotificationHistory;
 use App\Models\Setting;
 use App\Services\HelpScoutService;
 use Illuminate\Http\JsonResponse;
@@ -101,6 +103,15 @@ class FollowupQuestionController extends Controller
     public function destroy(FollowupQuestion $followup): RedirectResponse
     {
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
+
+        $assignment = $followup->assignment;
+
+        NotificationHistory::log(
+            auth()->id(),
+            "Deleted followup question — Order #{$assignment->order_number}",
+            $followup->customer_questions,
+            route('assignments.edit', $assignment)
+        );
 
         $followup->delete();
 

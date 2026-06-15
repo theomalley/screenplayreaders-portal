@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-15 | Log dismissed notes/replies to Notification History
 // v1.0 — 2026-05-31 | Reader notes on assignments + admin replies; per-user dismissal
 
 namespace App\Http\Controllers;
@@ -7,6 +8,7 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\AssignmentNote;
 use App\Models\AssignmentNoteReply;
+use App\Models\NotificationHistory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,12 +57,28 @@ class AssignmentNoteController extends Controller
     public function dismiss(AssignmentNote $note): JsonResponse
     {
         $note->dismiss(auth()->id());
+
+        NotificationHistory::log(
+            auth()->id(),
+            "Dismissed note — Order #{$note->assignment->order_number}",
+            $note->body,
+            route('assignments.edit', $note->assignment_id)
+        );
+
         return response()->json(['status' => 'ok']);
     }
 
     public function dismissReply(AssignmentNoteReply $reply): JsonResponse
     {
         $reply->dismiss(auth()->id());
+
+        NotificationHistory::log(
+            auth()->id(),
+            "Dismissed reply — {$reply->note->assignment->script_title}",
+            $reply->body,
+            route('assignments.index')
+        );
+
         return response()->json(['status' => 'ok']);
     }
 }

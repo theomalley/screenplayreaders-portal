@@ -1,5 +1,6 @@
 <?php
 
+// v2.21 — 2026-06-15 | dismissHelpscoutDraft() also logs to Notification History.
 // v2.20 — 2026-06-15 | Add duplicate() — admin/editor clones an assignment (script, writer,
 //                      pay rate, type, etc.) into a fresh "incoming" draft for editing.
 // v2.19 — 2026-06-13 | store()/update(): accept blocked_reader_ids[] (manual reader blocking
@@ -54,6 +55,7 @@ use App\Models\Client;
 use App\Models\AssignmentNote;
 use App\Models\FollowupQuestion;
 use App\Models\FollowupToken;
+use App\Models\NotificationHistory;
 use App\Models\ScriptDownload;
 use App\Models\Setting;
 use App\Models\User;
@@ -860,6 +862,13 @@ class AssignmentController extends Controller
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
 
         $assignment->dismissHelpscoutDraft(auth()->id());
+
+        NotificationHistory::log(
+            auth()->id(),
+            "Dismissed HelpScout draft — Order #{$assignment->order_number}",
+            $assignment->script_title,
+            route('assignments.edit', $assignment)
+        );
 
         return response()->json(['status' => 'ok']);
     }

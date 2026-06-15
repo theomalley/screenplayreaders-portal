@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-06-15 | Log bio/photo/about-photo approvals & rejections to Notification History
 // v1.3 — 2026-06-12 | Sanitize bio HTML when approving bio_pending -> bio
 // v1.2 — 2026-06-05 | Add approveAboutPhoto / rejectAboutPhoto
 // v1.1 — 2026-05-30 | Return JSON for XHR; accept rejection note; store bio/photo rejection notes
@@ -7,6 +8,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\NotificationHistory;
 use App\Models\User;
 use App\Support\Html;
 use Illuminate\Http\JsonResponse;
@@ -27,6 +29,8 @@ class AdminApprovalController extends Controller
                 'bio_pending'      => null,
                 'bio_rejection_note' => null,
             ]);
+
+            NotificationHistory::log($user->id, 'Bio approved', null, route('profile.edit'));
         }
 
         return response()->json(['status' => 'approved']);
@@ -44,6 +48,8 @@ class AdminApprovalController extends Controller
                 'bio_pending'        => null,
                 'bio_rejection_note' => $data['note'] ?? null,
             ]);
+
+            NotificationHistory::log($user->id, 'Bio rejected', $data['note'] ?? null, route('profile.edit'));
         }
 
         return response()->json(['status' => 'rejected']);
@@ -64,6 +70,8 @@ class AdminApprovalController extends Controller
                 'photo_pending'        => null,
                 'photo_rejection_note' => null,
             ]);
+
+            NotificationHistory::log($user->id, 'Reader icon approved', null, route('profile.edit'));
         }
 
         return response()->json(['status' => 'approved']);
@@ -82,6 +90,8 @@ class AdminApprovalController extends Controller
                 'photo_pending'        => null,
                 'photo_rejection_note' => $data['note'] ?? null,
             ]);
+
+            NotificationHistory::log($user->id, 'Reader icon rejected', $data['note'] ?? null, route('profile.edit'));
         }
 
         return response()->json(['status' => 'rejected']);
@@ -102,6 +112,8 @@ class AdminApprovalController extends Controller
                 'about_photo_pending'        => null,
                 'about_photo_rejection_note' => null,
             ]);
+
+            NotificationHistory::log($user->id, 'About photo approved', null, route('profile.edit'));
         }
 
         return response()->json(['status' => 'approved']);
@@ -120,6 +132,8 @@ class AdminApprovalController extends Controller
                 'about_photo_pending'        => null,
                 'about_photo_rejection_note' => $data['note'] ?? null,
             ]);
+
+            NotificationHistory::log($user->id, 'About photo rejected', $data['note'] ?? null, route('profile.edit'));
         }
 
         return response()->json(['status' => 'rejected']);

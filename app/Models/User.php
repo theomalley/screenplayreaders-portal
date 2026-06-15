@@ -111,4 +111,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Assignment::class, 'requested_reader_id');
     }
+
+    public function notificationHistory(): HasMany
+    {
+        return $this->hasMany(NotificationHistory::class);
+    }
 }
