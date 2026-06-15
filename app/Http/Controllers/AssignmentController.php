@@ -1,5 +1,7 @@
 <?php
 
+// v2.22 — 2026-06-15 | helpscoutDraftsReady: dismissal is now shared across admins/editors
+//                      (any one of them dismissing clears it for everyone), not per-user.
 // v2.21 — 2026-06-15 | dismissHelpscoutDraft() also logs to Notification History.
 // v2.20 — 2026-06-15 | Add duplicate() — admin/editor clones an assignment (script, writer,
 //                      pay rate, type, etc.) into a fresh "incoming" draft for editing.
@@ -183,10 +185,7 @@ class AssignmentController extends Controller
 
             $helpscoutDraftsReady = Assignment::where('status', Assignment::STATUS_COMPLETED)
                 ->whereNotNull('helpscout_draft_sent_at')
-                ->where(function ($q) use ($user) {
-                    $q->whereNull('helpscout_draft_dismissed_by')
-                      ->orWhereJsonDoesntContain('helpscout_draft_dismissed_by', $user->id);
-                })
+                ->whereNull('helpscout_draft_dismissed_by')
                 ->with('helpscoutConversation')
                 ->orderBy('helpscout_draft_sent_at', 'desc')
                 ->get()
@@ -856,7 +855,7 @@ class AssignmentController extends Controller
         ]);
     }
 
-    /** Dismiss the "goback ready at HelpScout" notification for the current user. */
+    /** Dismiss the "goback ready at HelpScout" notification for all admins/editors. */
     public function dismissHelpscoutDraft(Assignment $assignment)
     {
         abort_unless(auth()->user()->isAdminOrEditor(), 403);

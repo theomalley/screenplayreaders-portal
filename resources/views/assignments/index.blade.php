@@ -170,7 +170,7 @@
                                         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
                                     }).then(() => document.getElementById('hs-draft-{{ $hsAssignment->id }}').remove())"
                                     class="text-teal-400 hover:text-teal-700 text-lg leading-none shrink-0"
-                                    title="Dismiss">&times;</button>
+                                    title="Dismiss for everyone">&times;</button>
                         </div>
                     @endforeach
                 </div>

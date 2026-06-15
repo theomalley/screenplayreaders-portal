@@ -1,5 +1,8 @@
 <?php
 
+// v1.23 — 2026-06-15 | helpscout_draft_dismissed_by is now a shared dismissal — any
+//                      admin/editor dismissing the "goback ready" notice clears it for
+//                      everyone, matching the auto-clear when the draft is actually sent.
 // v1.22 — 2026-06-13 | scopeAvailable() no longer hides assignments from blocked readers —
 //                      they now see the assignment in their Available pool (with the
 //                      "Blocked" badge) but cannot Accept it (enforced in AssignmentPolicy).
@@ -220,25 +223,19 @@ class Assignment extends Model
             ->all();
     }
 
-    /** Whether the given user has dismissed the "goback ready at HelpScout" notice for this order. */
-    public function isHelpscoutDraftDismissedBy(int $userId): bool
+    /** Whether the "goback ready at HelpScout" notice for this order has been dismissed (shared across admins/editors). */
+    public function isHelpscoutDraftDismissed(): bool
     {
-        return \in_array($userId, $this->helpscout_draft_dismissed_by ?: []);
+        return ! empty($this->helpscout_draft_dismissed_by);
     }
 
-    /** Dismiss the "goback ready at HelpScout" notice for the given user, across all assignments in this order. */
+    /** Dismiss the "goback ready at HelpScout" notice for everyone, across all assignments in this order. */
     public function dismissHelpscoutDraft(int $userId): void
     {
+        // Query builder update() bypasses the 'array' cast, so encode manually.
         static::where('order_number', $this->order_number)
             ->whereNotNull('helpscout_draft_sent_at')
-            ->get(['id', 'helpscout_draft_dismissed_by'])
-            ->each(function (self $a) use ($userId) {
-                $ids = $a->helpscout_draft_dismissed_by ?: [];
-                if (! \in_array($userId, $ids)) {
-                    $ids[] = $userId;
-                    $a->update(['helpscout_draft_dismissed_by' => $ids]);
-                }
-            });
+            ->update(['helpscout_draft_dismissed_by' => json_encode([$userId])]);
     }
 
     /**
