@@ -575,6 +575,19 @@
                         </label>
                     </div>
 
+                    <div>
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="hidden" name="exempt_from_capacity" value="0" />
+                            <input type="checkbox" id="exempt_from_capacity" name="exempt_from_capacity" value="1"
+                                {{ old('exempt_from_capacity') ? 'checked' : '' }}
+                                class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            <span class="text-sm text-gray-700">
+                                <span class="font-medium">Exempt from max concurrent assignments</span>
+                                <span class="text-gray-400 ml-1">— does not count toward the reader's assignment cap</span>
+                            </span>
+                        </label>
+                    </div>
+
                     {{-- Notes (visible to readers) --}}
                     <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
                         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">

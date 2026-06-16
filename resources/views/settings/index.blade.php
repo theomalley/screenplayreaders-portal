@@ -29,25 +29,36 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('settings.capacity-override') }}" class="flex items-end gap-3">
+                <form method="POST" action="{{ route('settings.capacity-override') }}">
                     @csrf
                     @method('PATCH')
-                    <div>
-                        <x-input-label for="capacity_override" value="Max concurrent assignments (all readers)" />
-                        <input type="number" id="capacity_override" name="capacity_override"
-                               min="0" max="99" step="1"
-                               value="{{ $capacityOverride > 0 ? $capacityOverride : '' }}"
-                               placeholder="e.g. 3"
-                               class="mt-1 block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                        <x-input-error class="mt-1" :messages="$errors->get('capacity_override')" />
+                    <div class="flex items-end gap-3 flex-wrap">
+                        <div>
+                            <x-input-label for="capacity_override" value="Max concurrent assignments (all readers)" />
+                            <input type="number" id="capacity_override" name="capacity_override"
+                                   min="0" max="99" step="1"
+                                   value="{{ $capacityOverride > 0 ? $capacityOverride : '' }}"
+                                   placeholder="e.g. 3"
+                                   class="mt-1 block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error class="mt-1" :messages="$errors->get('capacity_override')" />
+                        </div>
+                        <x-primary-button>Save</x-primary-button>
+                        @if ($capacityOverride > 0)
+                            <button type="submit" name="capacity_override" value="0"
+                                    class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                                Clear override
+                            </button>
+                        @endif
                     </div>
-                    <x-primary-button>Save</x-primary-button>
-                    @if ($capacityOverride > 0)
-                        <button type="submit" name="capacity_override" value="0"
-                                class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
-                            Clear override
-                        </button>
-                    @endif
+                    <div class="mt-3">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="hidden" name="capacity_override_excludes_rush_requests" value="0" />
+                            <input type="checkbox" name="capacity_override_excludes_rush_requests" value="1"
+                                   {{ $capacityOverrideExcludesRushRequests ? 'checked' : '' }}
+                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            <span class="text-sm text-gray-700">Reader Requests and Rush orders do not apply to this cap</span>
+                        </label>
+                    </div>
                 </form>
             </div>
 

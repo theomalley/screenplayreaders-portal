@@ -1342,13 +1342,6 @@
                     </div>
                 @endif
 
-                @if($readerMax > 0)
-                    <div class="mb-4 text-sm text-gray-500">
-                        <span class="font-medium text-gray-700">Current Maximum Assignments:</span> {{ $readerMax }}
-                        <span class="text-xs text-gray-400 ml-1">Rush orders and Reader Requests do not count toward this maximum.</span>
-                    </div>
-                @endif
-
                 {{-- Staff panel — all non-hidden editors/admins and readers; green dot for online; click for bio card --}}
                 @if ($staffEditors->isNotEmpty() || $staffReaders->isNotEmpty())
                 <div class="mb-5 flex items-center gap-2 flex-wrap">
@@ -1433,6 +1426,26 @@
                     @endforeach
 
                 </div>
+                @endif
+
+                @if($readerMax > 0)
+                    @php
+                        $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
+                        $showRushRequestNote = ($capacityOverride > 0 && $capacityOverrideExcludesRushRequests)
+                            || (!$capacityOverride && auth()->user()->readerProfile?->requests_bypass_capacity);
+                    @endphp
+                    <div class="mb-4 text-sm text-gray-500">
+                        <span class="font-medium text-gray-700">Max. concurrent assignments:</span> {{ $readerMax }}
+                        @if($showRushRequestNote)
+                            <span class="text-xs text-gray-400 ml-1">
+                                @if($capacityOverride > 0 && $capacityOverrideExcludesRushRequests)
+                                    Reader Requests and Rush orders do not apply to this cap.
+                                @else
+                                    Reader Requests do not count toward your limit.
+                                @endif
+                            </span>
+                        @endif
+                    </div>
                 @endif
 
                 <div x-data="{ tab: (location.hash.startsWith('#tab-') ? location.hash.slice(5) : 'mine') }"

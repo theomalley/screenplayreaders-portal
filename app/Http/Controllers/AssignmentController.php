@@ -1,5 +1,7 @@
 <?php
 
+// v2.23 — 2026-06-16 | store()/update(): handle exempt_from_capacity; accept(): pass rush flag
+//                      to isAtCapacity(); reader index(): pass capacityOverrideExcludesRushRequests.
 // v2.22 — 2026-06-15 | helpscoutDraftsReady: dismissal is now shared across admins/editors
 //                      (any one of them dismissing clears it for everyone), not per-user.
 // v2.21 — 2026-06-15 | dismissHelpscoutDraft() also logs to Notification History.
@@ -247,7 +249,8 @@ class AssignmentController extends Controller
         )->sortKeysDesc();
 
         $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
-        $readerMax      = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
+        $readerMax        = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
+        $capacityOverrideExcludesRushRequests = (bool) \App\Models\Setting::getValue('capacity_override_excludes_rush_requests', true);
 
         $staffEditors = User::whereIn('role', ['admin', 'editor'])
             ->where('hidden_from_staff', false)
@@ -291,6 +294,7 @@ class AssignmentController extends Controller
             'available'              => $available,
             'mine'                   => $mine,
             'readerMax'              => $readerMax,
+            'capacityOverrideExcludesRushRequests' => $capacityOverrideExcludesRushRequests,
             'periodStart'            => $periodStart,
             'periodEnd'              => $periodEnd,
             'archivedByPeriod'       => $archivedByPeriod,
@@ -327,6 +331,7 @@ class AssignmentController extends Controller
         $data['rush']                    = $request->boolean('rush');
         $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
+        $data['exempt_from_capacity']    = $request->boolean('exempt_from_capacity');
         $data['tier'] = (int) ($data['tier'] ?? 1) ?: 1;
         $data['blocked_reader_ids'] = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
@@ -921,9 +926,10 @@ class AssignmentController extends Controller
         $this->authorize('update', $assignment);
 
         $data         = $request->validated();
-        $data['rush']                   = $request->boolean('rush');
+        $data['rush']                    = $request->boolean('rush');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
-        $data['oversized_fee_included'] = $request->boolean('oversized_fee_included');
+        $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
+        $data['exempt_from_capacity']    = $request->boolean('exempt_from_capacity');
         $data['tier']                   = (int) ($data['tier'] ?? 1) ?: 1;
         $data['blocked_reader_ids']     = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
@@ -1103,7 +1109,7 @@ class AssignmentController extends Controller
 
             $profile = $user->readerProfile;
             $isRequestedForMe = $fresh->requested_reader_id === $user->id;
-            if ($profile && $profile->isAtCapacity(isRequestedAssignment: $isRequestedForMe)) {
+            if ($profile && $profile->isAtCapacity(isRequestedAssignment: $isRequestedForMe, isRushAssignment: (bool) $fresh->rush)) {
                 $error = 'You have reached your maximum concurrent assignments.';
                 return;
             }

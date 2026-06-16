@@ -1,5 +1,7 @@
 <?php
 
+// v1.24 — 2026-06-16 | Add exempt_from_capacity boolean — assignments marked exempt do not
+//                      count toward any reader's concurrent assignment cap.
 // v1.23 — 2026-06-15 | helpscout_draft_dismissed_by is now a shared dismissal — any
 //                      admin/editor dismissing the "goback ready" notice clears it for
 //                      everyone, matching the auto-clear when the draft is actually sent.
@@ -88,6 +90,7 @@ class Assignment extends Model
         'tier',
         'oversized_fee_included',
         'manual_page_flag',
+        'exempt_from_capacity',
     ];
 
     protected function casts(): array
@@ -110,6 +113,7 @@ class Assignment extends Model
             'is_test'                   => 'boolean',
             'tier'                      => 'integer',
             'oversized_fee_included'    => 'boolean',
+            'exempt_from_capacity'      => 'boolean',
         ];
     }
 

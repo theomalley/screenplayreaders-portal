@@ -1,5 +1,7 @@
 <?php
 
+// v2.16 — 2026-06-16 | updateCapacityOverride() saves capacity_override_excludes_rush_requests;
+//                      index() passes $capacityOverrideExcludesRushRequests to view.
 // v2.15 — 2026-06-15 | Add updateNotificationHistoryRetention() — admin-configurable
 //                      expiry (in days) for Notification History rows, enforced by the
 //                      notifications:prune-history scheduled command.
@@ -59,8 +61,9 @@ class SettingController extends Controller
         $loginMetaFile = storage_path('app/portal-login-logo-path.txt');
         $loginLogoUrl  = is_readable($loginMetaFile) ? asset('storage/' . trim(file_get_contents($loginMetaFile))) : null;
 
-        $capacityOverride    = (int) Setting::getValue('capacity_override', 0);
-        $sessionTimeout      = (int) Setting::getValue('session_timeout_minutes', 120);
+        $capacityOverride                     = (int) Setting::getValue('capacity_override', 0);
+        $capacityOverrideExcludesRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
+        $sessionTimeout                       = (int) Setting::getValue('session_timeout_minutes', 120);
 
         $faviconMetaFile = storage_path('app/portal-favicon-path.txt');
         $faviconUrl      = is_readable($faviconMetaFile) ? asset('storage/' . trim(file_get_contents($faviconMetaFile))) : null;
@@ -101,7 +104,7 @@ class SettingController extends Controller
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
-            'capacityOverride', 'sessionTimeout',
+            'capacityOverride', 'capacityOverrideExcludesRushRequests', 'sessionTimeout',
             'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
             'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
             'ageThresholds', 'ageThresholdTypes', 'appTimezone',
@@ -188,6 +191,10 @@ class SettingController extends Controller
 
         $value = (int) $request->input('capacity_override', 0);
         Setting::setValue('capacity_override', $value);
+        Setting::setValue(
+            'capacity_override_excludes_rush_requests',
+            $request->boolean('capacity_override_excludes_rush_requests') ? '1' : '0'
+        );
 
         return redirect()->route('settings.index')->with('success', $value > 0
             ? "Capacity override set to {$value} assignment" . ($value === 1 ? '' : 's') . ' for all readers.'

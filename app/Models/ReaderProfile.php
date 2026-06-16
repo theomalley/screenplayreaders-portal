@@ -1,5 +1,9 @@
 <?php
 
+// v1.14 — 2026-06-16 | isAtCapacity() accepts $isRushAssignment param; excludes exempt_from_capacity
+//                      assignments from count; when capacity_override is active and
+//                      capacity_override_excludes_rush_requests is true, rush + reader-request
+//                      assignments bypass the cap and are excluded from the active count.
 // v1.13 — 2026-06-13 | Add notify_only_if_under_capacity flag — skip new-assignment
 //                      notifications when the reader is at their assignment capacity.
 // v1.12 — 2026-06-05 | Add tier_1/tier_2 fields; tiers() helper
@@ -99,18 +103,38 @@ class ReaderProfile extends Model
                           ->whereIn('status', [Assignment::STATUS_ASSIGNED]);
     }
 
-    public function isAtCapacity(bool $isRequestedAssignment = false): bool
+    public function isAtCapacity(bool $isRequestedAssignment = false, bool $isRushAssignment = false): bool
     {
-        if ($isRequestedAssignment && $this->requests_bypass_capacity) {
+        $override = (int) Setting::getValue('capacity_override', 0);
+        $max      = $override > 0 ? $override : (int) $this->max_concurrent_assignments;
+
+        $excludeRushRequests = $override > 0
+            && (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
+
+        // When the override excludes rush/requests, those assignments always bypass the cap.
+        if ($excludeRushRequests && ($isRushAssignment || $isRequestedAssignment)) {
             return false;
         }
 
-        $override = (int) Setting::getValue('capacity_override', 0);
-        $max = $override > 0 ? $override : (int) $this->max_concurrent_assignments;
+        // Per-reader bypass for reader-requested assignments (only when no global override).
+        if (!$override && $isRequestedAssignment && $this->requests_bypass_capacity) {
+            return false;
+        }
 
-        return $this->user->assignments()
-                          ->where('status', Assignment::STATUS_ASSIGNED)
-                          ->count() >= $max;
+        $query = $this->user->assignments()
+            ->where('status', Assignment::STATUS_ASSIGNED)
+            ->where('exempt_from_capacity', false);
+
+        // When the override excludes rush/requests, also exclude them from the active count.
+        if ($excludeRushRequests) {
+            $query->where('rush', false)
+                  ->where(function ($q) {
+                      $q->whereNull('requested_reader_id')
+                        ->orWhere('requested_reader_id', '!=', $this->user_id);
+                  });
+        }
+
+        return $query->count() >= $max;
     }
 
     /** Returns the tier numbers (1 and/or 2) this reader belongs to. */
