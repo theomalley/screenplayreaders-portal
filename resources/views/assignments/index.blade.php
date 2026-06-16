@@ -499,6 +499,18 @@
                             @endforeach
                         </div>
 
+                        @if($capacityOverride > 0)
+                            @php
+                                $adminExcludesRushRequests = (bool) \App\Models\Setting::getValue('capacity_override_excludes_rush_requests', true);
+                            @endphp
+                            <div class="mt-2 text-sm text-gray-500">
+                                <span class="font-medium text-gray-700">Max. concurrent assignments:</span> {{ $capacityOverride }}
+                                @if($adminExcludesRushRequests)
+                                    <span class="text-xs text-gray-400 ml-1">Reader Requests and Rush orders do not apply to this cap.</span>
+                                @endif
+                            </div>
+                        @endif
+
                         {{-- Detail panels --}}
                         @foreach ($editors as $editor)
                             @php
