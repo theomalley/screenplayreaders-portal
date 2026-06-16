@@ -1,9 +1,9 @@
 <?php
 
 // v1.14 — 2026-06-16 | isAtCapacity() accepts $isRushAssignment param; excludes exempt_from_capacity
-//                      assignments from count; when capacity_override is active and
-//                      capacity_override_excludes_rush_requests is true, rush + reader-request
-//                      assignments bypass the cap and are excluded from the active count.
+//                      assignments from count; capacity_override_excludes_rush_requests applies to
+//                      all caps (override and individual) — rush + reader-request assignments
+//                      bypass the cap and are excluded from the active count when that setting is on.
 // v1.13 — 2026-06-13 | Add notify_only_if_under_capacity flag — skip new-assignment
 //                      notifications when the reader is at their assignment capacity.
 // v1.12 — 2026-06-05 | Add tier_1/tier_2 fields; tiers() helper
@@ -108,16 +108,16 @@ class ReaderProfile extends Model
         $override = (int) Setting::getValue('capacity_override', 0);
         $max      = $override > 0 ? $override : (int) $this->max_concurrent_assignments;
 
-        $excludeRushRequests = $override > 0
-            && (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
+        // Applies to all caps (override and individual reader caps).
+        $excludeRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
 
-        // When the override excludes rush/requests, those assignments always bypass the cap.
+        // Rush/request assignments always bypass the cap when the setting is on.
         if ($excludeRushRequests && ($isRushAssignment || $isRequestedAssignment)) {
             return false;
         }
 
-        // Per-reader bypass for reader-requested assignments (only when no global override).
-        if (!$override && $isRequestedAssignment && $this->requests_bypass_capacity) {
+        // Per-reader fallback: bypass reader-requested assignments even when the global setting is off.
+        if ($isRequestedAssignment && $this->requests_bypass_capacity) {
             return false;
         }
 
