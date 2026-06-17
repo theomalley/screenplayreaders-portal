@@ -388,8 +388,16 @@
                                    class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
                             / <span x-text="totalPages"></span>
                         </span>
+                        <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400" title="Tip: Ctrl + scroll to zoom">
+                            <button type="button" @click="zoomOut()"
+                                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom out">−</button>
+                            <button type="button" @click="resetZoom()" x-text="Math.round(zoomLevel * 100) + '%'"
+                                    class="w-12 text-center hover:text-white" title="Reset zoom"></button>
+                            <button type="button" @click="zoomIn()"
+                                    class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom in">+</button>
+                        </div>
                     </div>
-                    <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                    <div x-ref="canvasWrap" @wheel="onWheelZoom($event)" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
                         <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
                     </div>
                 </div>
