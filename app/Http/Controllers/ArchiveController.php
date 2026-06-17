@@ -12,8 +12,7 @@ class ArchiveController extends Controller
     {
         abort_unless(Permission::check('archive'), 403);
 
-        // Fetch all completed assignments and group by order number so multi-reader
-        // orders (2R, 3R) appear as a single row with one coverage link per reader.
+        // Completed — grouped by order number so multi-reader orders appear as one row.
         $groups = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
             ->where('status', Assignment::STATUS_COMPLETED)
             ->get()
@@ -26,6 +25,13 @@ class ArchiveController extends Controller
             ->flip()
             ->all();
 
-        return view('archive.index', compact('groups', 'ordersWithSubmissions'));
+        // Cancelled — grouped by order number, sorted by most recently created.
+        $cancelled = Assignment::with(['assignedReader.readerProfile'])
+            ->where('status', Assignment::STATUS_CANCELLED)
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('order_number');
+
+        return view('archive.index', compact('groups', 'ordersWithSubmissions', 'cancelled'));
     }
 }

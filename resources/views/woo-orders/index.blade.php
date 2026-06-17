@@ -92,7 +92,8 @@
                                     $customerName = trim(($o['billing']['first_name'] ?? '') . ' ' . ($o['billing']['last_name'] ?? ''));
                                     $date = \Carbon\Carbon::parse($o['date_created'])->format('Y-m-d');
                                 @endphp
-                                <tr class="hover:bg-gray-50 transition-colors">
+                                <tr class="hover:bg-gray-50 transition-colors cursor-pointer"
+                                    onclick="window.location='{{ route('woo-orders.show', $o['id']) }}'">
                                     <td class="px-4 py-2 font-mono text-xs text-indigo-600 font-semibold whitespace-nowrap">
                                         #{{ $o['number'] }}
                                     </td>
@@ -108,7 +109,7 @@
                                         </span>
                                     </td>
                                     <td class="px-4 py-2 text-xs text-gray-600">{{ $o['payment_method_title'] ?? '—' }}</td>
-                                    <td class="px-4 py-2 text-right">
+                                    <td class="px-4 py-2 text-right" onclick="event.stopPropagation()">
                                         <a href="{{ route('woo-orders.show', $o['id']) }}"
                                            class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View</a>
                                     </td>

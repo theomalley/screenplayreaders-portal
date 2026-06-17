@@ -4,8 +4,28 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4" x-data="{ tab: 'completed' }">
 
+            {{-- Tab bar --}}
+            <div class="flex gap-1 border-b border-gray-200">
+                <button type="button"
+                        @click="tab = 'completed'"
+                        :class="tab === 'completed' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-2 text-sm font-medium transition-colors -mb-px">
+                    Completed
+                    <span class="ml-1 text-xs text-gray-400">({{ $groups->count() }})</span>
+                </button>
+                <button type="button"
+                        @click="tab = 'cancelled'"
+                        :class="tab === 'cancelled' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-2 text-sm font-medium transition-colors -mb-px">
+                    Cancelled
+                    <span class="ml-1 text-xs text-gray-400">({{ $cancelled->count() }})</span>
+                </button>
+            </div>
+
+            {{-- ===================== COMPLETED TAB ===================== --}}
+            <div x-show="tab === 'completed'">
             @if($groups->isEmpty())
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-12 text-center text-gray-400 text-sm">
                     No completed assignments yet.
@@ -418,6 +438,107 @@
                 </div>
                 </div> {{-- /x-data search wrapper --}}
             @endif
+            </div> {{-- /completed tab --}}
+
+            {{-- ===================== CANCELLED TAB ===================== --}}
+            <div x-show="tab === 'cancelled'">
+            @if($cancelled->isEmpty())
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-12 text-center text-gray-400 text-sm">
+                    No cancelled assignments.
+                </div>
+            @else
+                <div x-data="{ search: '' }">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="relative flex-1 max-w-sm">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/>
+                        </svg>
+                        <input type="text" x-model="search"
+                               placeholder="Search order #, title, writer…"
+                               class="w-full pl-9 pr-8 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white" />
+                        <button x-show="search" @click="search = ''"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            <tr>
+                                <th class="px-4 py-3 text-left">Order</th>
+                                <th class="px-4 py-3 text-left">Title / Writer</th>
+                                <th class="px-4 py-3 text-left">Type</th>
+                                <th class="px-4 py-3 text-left">Status</th>
+                                <th class="px-4 py-3 text-left">Created</th>
+                                <th class="px-4 py-3 text-left">Reader(s)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($cancelled as $orderNumber => $group)
+                                @php
+                                    $first = $group->first();
+                                    $typeLabel = match($first->assignment_type) {
+                                        'script_coverage'   => 'Script Coverage',
+                                        'notes_only'        => 'Notes-Only',
+                                        'deep_dive'         => 'Deep-Dive',
+                                        'short'             => 'Short',
+                                        'budget'            => 'Budget',
+                                        'book'              => 'Book',
+                                        'coverage'          => 'Coverage',
+                                        'development_notes' => 'Dev Notes',
+                                        default             => $first->assignment_type ?? '—',
+                                    };
+                                    if ($first->vendor === 'wd') {
+                                        $typeLabel = 'WD ' . $typeLabel;
+                                    }
+                                    $readers = $group
+                                        ->map(fn($a) => $a->assignedReader?->readerProfile?->initials)
+                                        ->filter()
+                                        ->unique()
+                                        ->values();
+                                    $searchStr = strtolower(implode(' ', array_filter([
+                                        $orderNumber,
+                                        $first->script_title,
+                                        $first->writer_name,
+                                    ])));
+                                @endphp
+                                <tr class="hover:bg-gray-50 cursor-pointer"
+                                    x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
+                                    @click="if (!$event.target.closest('a,button')) window.location='{{ route('assignments.edit', $first) }}'">
+                                    <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
+                                        <a href="{{ route('assignments.show', $first) }}" class="hover:text-indigo-600">{{ $orderNumber }}</a>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
+                                        <div class="text-xs text-gray-400">{{ $first->writer_name }}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">
+                                            Cancelled
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
+                                        {{ $first->created_at?->setTimezone('America/Los_Angeles')->format('D M j, Y') ?? '—' }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @if($readers->isNotEmpty())
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($readers as $initials)
+                                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500">{{ $initials }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-gray-300 text-xs">—</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                </div> {{-- /x-data search wrapper --}}
+            @endif
+            </div> {{-- /cancelled tab --}}
 
         </div>
     </div>
