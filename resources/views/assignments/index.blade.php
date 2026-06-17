@@ -965,6 +965,11 @@
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
                                             @endif
                                             @if ($assignment->status === 'cancelled')
+                                                @if ($assignment->cancellation_reason)
+                                                    <div class="mt-2 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1 max-w-[180px]">
+                                                        <span class="font-semibold">Reason:</span> {{ $assignment->cancellation_reason }}
+                                                    </div>
+                                                @endif
                                                 <div class="mt-2" x-data>
                                                     <button type="button"
                                                             @click.stop="fetch('{{ route('assignments.dismiss-cancelled', $assignment) }}', {
@@ -1596,6 +1601,11 @@
                                             class="ml-auto text-red-300 hover:text-red-600 text-sm leading-none transition"
                                             title="Dismiss">✕</button>
                                 </div>
+                                @if ($ca->cancellation_reason)
+                                    <div class="border-t border-red-200 px-4 py-2 text-xs text-red-700">
+                                        <span class="font-semibold">Reason:</span> {{ $ca->cancellation_reason }}
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
 

@@ -1057,11 +1057,16 @@ class AssignmentController extends Controller
         $this->authorize('update', $assignment);
 
         $request->validate([
-            'status'             => ['required', 'in:incoming,unassigned,assigned,completed,qc,cancelled,on_hold_customer,on_hold_sr,needs_attention'],
-            'assigned_reader_id' => ['nullable', 'exists:users,id'],
+            'status'              => ['required', 'in:incoming,unassigned,assigned,completed,qc,cancelled,on_hold_customer,on_hold_sr,needs_attention'],
+            'assigned_reader_id'  => ['nullable', 'exists:users,id'],
+            'cancellation_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $data = ['status' => $request->status];
+
+        if ($request->status === Assignment::STATUS_CANCELLED) {
+            $data['cancellation_reason'] = $request->input('cancellation_reason');
+        }
 
         $transitioningToUnassigned = $request->status === Assignment::STATUS_UNASSIGNED
             && $assignment->status !== Assignment::STATUS_UNASSIGNED;

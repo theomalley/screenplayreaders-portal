@@ -75,6 +75,7 @@
                                   : '';
                           },
                           tier: '{{ $v('tier', (string)($assignment->tier ?? 1)) }}',
+                          statusVal: '{{ $v('status', $assignment->status) }}',
                           init() {
                               this.$watch('assignmentType', val => { if (val === 'budget') this.tier = '2'; });
                           },
@@ -195,6 +196,7 @@
                     <div>
                         <x-input-label for="status" value="Status" />
                         <select id="status" name="status"
+                            x-model="statusVal"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                             <option value="incoming"   {{ $v('status', $assignment->status) === 'incoming'   ? 'selected' : '' }}>Pending</option>
                             <option value="unassigned" {{ $v('status', $assignment->status) === 'unassigned' ? 'selected' : '' }}>Available</option>
@@ -206,6 +208,15 @@
                             <option value="cancelled"  {{ $v('status', $assignment->status) === 'cancelled'  ? 'selected' : '' }}>Cancelled</option>
                         </select>
                         <x-input-error :messages="$errors->get('status')" class="mt-1" />
+                    </div>
+
+                    <div x-show="statusVal === 'cancelled'" x-cloak>
+                        <x-input-label for="cancellation_reason" value="Cancellation Reason" />
+                        <textarea id="cancellation_reason" name="cancellation_reason" rows="2"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                            placeholder="Optional — explain why this was cancelled (visible to all users)"
+                        >{{ old('cancellation_reason', $assignment->cancellation_reason) }}</textarea>
+                        <x-input-error :messages="$errors->get('cancellation_reason')" class="mt-1" />
                     </div>
 
                     {{-- Auto-release to Available --}}

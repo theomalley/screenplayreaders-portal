@@ -510,6 +510,9 @@
                                     <td class="px-4 py-3">
                                         <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
                                         <div class="text-xs text-gray-400">{{ $first->writer_name }}</div>
+                                        @if ($first->cancellation_reason)
+                                            <div class="mt-1 text-[11px] text-red-600 italic">{{ $first->cancellation_reason }}</div>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap">

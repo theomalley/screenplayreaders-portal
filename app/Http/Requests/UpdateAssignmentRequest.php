@@ -39,6 +39,7 @@ class UpdateAssignmentRequest extends FormRequest
             'rush'                 => ['nullable', 'boolean'],
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'notes'                    => ['nullable', 'string', 'max:2000'],
+            'cancellation_reason'      => ['nullable', 'string', 'max:1000'],
             'helpscout_ticket_number'  => ['nullable', 'string', 'max:64'],
             'date'                 => ['nullable', 'date_format:Y-m-d'],
             'time'                 => ['nullable', 'date_format:H:i'],

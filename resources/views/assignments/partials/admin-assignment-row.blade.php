@@ -432,6 +432,11 @@
             </div>
         @endif
         @if ($assignment->status === 'cancelled')
+            @if ($assignment->cancellation_reason)
+                <div class="mt-2 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1 max-w-[180px]">
+                    <span class="font-semibold">Reason:</span> {{ $assignment->cancellation_reason }}
+                </div>
+            @endif
             <div class="mt-2" x-data>
                 <button type="button"
                         @click.stop="fetch(@js(route('assignments.dismiss-cancelled', $assignment)), {

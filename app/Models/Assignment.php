@@ -82,6 +82,7 @@ class Assignment extends Model
         'helpscout_draft_sent_at',
         'helpscout_draft_dismissed_by',
         'cancelled_dismissed_by',
+        'cancellation_reason',
         'woo_discount_code',
         'client_id',
         'reader_declined',
