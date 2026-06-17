@@ -848,7 +848,8 @@
                                             $assignment->writer_name,
                                         ])));
                                     @endphp
-                                    <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
+                                    <tr id="fmt-row-{{ $assignment->id }}"
+                                        class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
                                         x-show="!search || $el.dataset.search.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
@@ -962,6 +963,19 @@
                                             <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
                                             @if ($accStr)
                                                 <div class="text-[9px] text-gray-400 leading-none mt-0.5">ago</div>
+                                            @endif
+                                            @if ($assignment->status === 'cancelled')
+                                                <div class="mt-2" x-data>
+                                                    <button type="button"
+                                                            @click.stop="fetch('{{ route('assignments.dismiss-cancelled', $assignment) }}', {
+                                                                method: 'POST',
+                                                                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                                            }).then(() => document.getElementById('fmt-row-{{ $assignment->id }}').remove())"
+                                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-400 border border-red-200 hover:bg-red-100 hover:text-red-700 transition"
+                                                            title="Dismiss from your board">
+                                                        ✕ Dismiss
+                                                    </button>
+                                                </div>
                                             @endif
                                         </td>
                                     </tr>
@@ -1560,6 +1574,29 @@
                                 $fqDeadline = $fq->deadlineAt();
                             @endphp
                             @include('partials.reader-followup-row', ['fq' => $fq, 'fqA' => $fqA, 'fqDeadline' => $fqDeadline, 'appTimezone' => $appTimezone])
+                        @endforeach
+
+                        {{-- Cancelled assignment notices — visible until each user dismisses --}}
+                        @foreach (($cancelledAssignments ?? collect()) as $ca)
+                            <div class="mb-3 rounded-lg border-2 border-red-300 bg-red-50" id="cancelled-{{ $ca->id }}">
+                                <div class="flex items-center gap-3 px-4 py-3 flex-wrap">
+                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white uppercase leading-none">Cancelled</span>
+                                    <span class="text-sm font-medium text-gray-800">{{ $ca->script_title }}</span>
+                                    @if ($ca->writer_name)
+                                        <span class="text-xs text-gray-500">{{ $ca->writer_name }}</span>
+                                    @endif
+                                    <span class="text-xs text-gray-400">Order #{{ $ca->order_number }}</span>
+                                    <span class="text-xs text-gray-400">{{ $ca->created_at->setTimezone($appTimezone)->format('M j, Y') }}</span>
+                                    <button type="button"
+                                            x-data
+                                            @click="fetch('{{ route('assignments.dismiss-cancelled', $ca) }}', {
+                                                method: 'POST',
+                                                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                            }).then(() => document.getElementById('cancelled-{{ $ca->id }}').remove())"
+                                            class="ml-auto text-red-300 hover:text-red-600 text-sm leading-none transition"
+                                            title="Dismiss">✕</button>
+                                </div>
+                            </div>
                         @endforeach
 
                         @if($available->isEmpty())

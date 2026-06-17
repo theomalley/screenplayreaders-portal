@@ -431,6 +431,19 @@
                 <span x-show="err" x-text="err" class="block text-[10px] text-red-500 mt-0.5"></span>
             </div>
         @endif
+        @if ($assignment->status === 'cancelled')
+            <div class="mt-2" x-data>
+                <button type="button"
+                        @click.stop="fetch(@js(route('assignments.dismiss-cancelled', $assignment)), {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                        }).then(() => $el.closest('tr').remove())"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-400 border border-red-200 hover:bg-red-100 hover:text-red-700 transition"
+                        title="Dismiss from your board">
+                    ✕ Dismiss
+                </button>
+            </div>
+        @endif
     </td>
 
 </tr>

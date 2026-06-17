@@ -1,5 +1,8 @@
 <?php
 
+// v2.24 — 2026-06-17 | dismissCancelled(): per-user dismissal of cancelled assignments from board.
+//                      Admin index(): filter out personally-dismissed cancelled rows.
+//                      Reader index(): surface undismissed cancelled assignments in available view.
 // v2.23 — 2026-06-16 | store()/update(): handle exempt_from_capacity; accept(): pass rush flag
 //                      to isAtCapacity(); reader index(): pass capacityOverrideExcludesRushRequests.
 // v2.22 — 2026-06-15 | helpscoutDraftsReady: dismissal is now shared across admins/editors
@@ -89,7 +92,9 @@ class AssignmentController extends Controller
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->whereNotIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'asc')
-                ->get();
+                ->get()
+                ->filter(fn($a) => $a->status !== Assignment::STATUS_CANCELLED || ! $a->isCancelledDismissedBy($user->id))
+                ->values();
 
             $tier1Assignments = $allAssignments->where('tier', 1)->values();
             $tier2Assignments = $allAssignments->where('tier', '!=', 1)->values();
@@ -98,7 +103,9 @@ class AssignmentController extends Controller
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->whereIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->get()
+                ->filter(fn($a) => $a->status !== Assignment::STATUS_CANCELLED || ! $a->isCancelledDismissedBy($user->id))
+                ->values();
 
             $editors = User::whereIn('role', ['admin', 'editor'])
                 ->where('hidden_from_staff', false)
@@ -289,6 +296,13 @@ class AssignmentController extends Controller
             ->groupBy('assignment_id')
             ->pluck('note_count', 'assignment_id');
 
+        // Cancelled assignments not yet dismissed by this user — shown as notices until cleared
+        $cancelledAssignments = Assignment::where('status', Assignment::STATUS_CANCELLED)
+            ->orderByDesc('updated_at')
+            ->get()
+            ->filter(fn($a) => ! $a->isCancelledDismissedBy($user->id))
+            ->values();
+
         return view('assignments.index', [
             'canManage'              => false,
             'available'              => $available,
@@ -305,6 +319,7 @@ class AssignmentController extends Controller
             'myFollowups'            => $myFollowups,
             'myNoteReplies'          => $myNoteReplies,
             'myNotesByAssignment'    => $myNotesByAssignment,
+            'cancelledAssignments'   => $cancelledAssignments,
         ]);
     }
 
@@ -1310,6 +1325,17 @@ class AssignmentController extends Controller
         $assignment->update(['notes' => $request->input('notes')]);
 
         return response()->json(['success' => true]);
+    }
+
+    public function dismissCancelled(Assignment $assignment)
+    {
+        if ($assignment->status !== Assignment::STATUS_CANCELLED) {
+            return response()->json(['ok' => false], 422);
+        }
+
+        $assignment->dismissCancelledFor(auth()->id());
+
+        return response()->json(['ok' => true]);
     }
 
     public function cancel(Assignment $assignment)

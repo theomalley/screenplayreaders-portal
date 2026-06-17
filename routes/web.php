@@ -102,6 +102,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('assignments/{assignment}/status', [AssignmentController::class, 'updateStatus'])->name('assignments.updateStatus');
     Route::patch('assignments/{assignment}/notes', [AssignmentController::class, 'updateNotes'])->name('assignments.updateNotes');
     Route::post('assignments/{assignment}/dismiss-helpscout-draft', [AssignmentController::class, 'dismissHelpscoutDraft'])->name('assignments.dismissHelpscoutDraft');
+    Route::post('assignments/{assignment}/dismiss-cancelled', [AssignmentController::class, 'dismissCancelled'])->name('assignments.dismiss-cancelled');
     Route::post('assignments/{assignment}/regenerate-discount-code', [AssignmentController::class, 'regenerateDiscountCode'])->name('assignments.regenerateDiscountCode');
 
     Route::get('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'show'])->name('coverage.show');

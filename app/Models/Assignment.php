@@ -81,6 +81,7 @@ class Assignment extends Model
         'reader_paid_at',
         'helpscout_draft_sent_at',
         'helpscout_draft_dismissed_by',
+        'cancelled_dismissed_by',
         'woo_discount_code',
         'client_id',
         'reader_declined',
@@ -107,6 +108,7 @@ class Assignment extends Model
             'reader_paid_at'            => 'datetime',
             'helpscout_draft_sent_at'   => 'datetime',
             'helpscout_draft_dismissed_by' => 'array',
+            'cancelled_dismissed_by'       => 'array',
             'reader_declined'           => 'boolean',
             'available_at'              => 'datetime',
             'exempt_from_word_counts'   => 'boolean',
@@ -231,6 +233,20 @@ class Assignment extends Model
     public function isHelpscoutDraftDismissed(): bool
     {
         return ! empty($this->helpscout_draft_dismissed_by);
+    }
+
+    public function isCancelledDismissedBy(int $userId): bool
+    {
+        return in_array($userId, $this->cancelled_dismissed_by ?: []);
+    }
+
+    public function dismissCancelledFor(int $userId): void
+    {
+        $ids = $this->cancelled_dismissed_by ?: [];
+        if (! in_array($userId, $ids)) {
+            $ids[] = $userId;
+            $this->update(['cancelled_dismissed_by' => $ids]);
+        }
     }
 
     /** Dismiss the "goback ready at HelpScout" notice for everyone, across all assignments in this order. */
