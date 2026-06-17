@@ -217,6 +217,25 @@
                         </div>
                     </div>
 
+                    {{-- Invoice PDF --}}
+                    <div class="bg-white shadow-sm sm:rounded-lg">
+                        <div class="px-4 py-3 border-b border-gray-100">
+                            <h3 class="text-sm font-semibold text-gray-700">Invoice PDF</h3>
+                        </div>
+                        <div class="px-4 py-4">
+                            @if($errors->has('api'))
+                                <p class="text-xs text-red-600 mb-2">{{ $errors->first('api') }}</p>
+                            @endif
+                            <p class="text-xs text-gray-500 mb-3">
+                                Generates a Google Doc invoice from this order and downloads it as a PDF. No data is stored.
+                            </p>
+                            <a href="{{ route('woo-orders.invoice-pdf', $order['id']) }}"
+                               class="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                Download Invoice PDF
+                            </a>
+                        </div>
+                    </div>
+
                     {{-- Resend email --}}
                     <div class="bg-white shadow-sm sm:rounded-lg">
                         <div class="px-4 py-3 border-b border-gray-100">

@@ -1,9 +1,13 @@
 <?php
 
+// v1.1 — 2026-06-17 | Add invoicePdf() — generate a Google Doc invoice from a Woo order and stream as PDF download
 // v1.0 — 2026-05-26 | WooCommerce order browser — list, detail, refund, resend email (admin + editor)
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
+use App\Services\GoogleDocsService;
+use App\Services\InvoiceService;
 use App\Services\WooCommerceService;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -137,5 +141,66 @@ class WooOrderController extends Controller
 
         $dest = $testEmail ? "test address ({$testEmail})" : 'customer';
         return back()->with('success', "Order email resent to {$dest}.");
+    }
+
+    public function invoicePdf(int $id, WooCommerceService $woo, GoogleDocsService $docs)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+
+        try {
+            $order = $woo->getOrder($id);
+        } catch (ModelNotFoundException) {
+            abort(404);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['api' => $e->getMessage()]);
+        }
+
+        $b         = $order['billing'] ?? [];
+        $name      = trim(($b['first_name'] ?? '') . ' ' . ($b['last_name'] ?? ''));
+        $addrLine1 = trim(implode(', ', array_filter([$b['address_1'] ?? '', $b['address_2'] ?? ''])));
+        $addrLine2 = trim(implode(', ', array_filter([
+            $b['city'] ?? '',
+            $b['state'] ?? '',
+            $b['postcode'] ?? '',
+            $b['country'] ?? '',
+        ])));
+
+        $placeholders = [
+            '{{SR_ADDRESS}}'    => Setting::getValue('sr_invoice_address', ''),
+            '{{INVOICENUMBER}}' => (string) ($order['number'] ?? $id),
+            '{{DATE}}'          => now()->format('F j, Y'),
+            '{{name}}'          => $name,
+            '{{company}}'       => '',
+            '{{addressline1}}'  => $addrLine1,
+            '{{addressline2}}'  => $addrLine2,
+            '{{notes}}'         => '',
+            '{{TOTAL}}'         => number_format((float) ($order['total'] ?? 0), 2),
+            '{{URL}}'           => '',
+        ];
+
+        $lineItems = $order['line_items'] ?? [];
+        for ($i = 1; $i <= 8; $i++) {
+            $item = $lineItems[$i - 1] ?? null;
+            $qty  = $item ? max(1, (int) ($item['quantity'] ?? 1)) : 0;
+            $placeholders["{{service{$i}}}"]    = $item ? ($item['name'] ?? '') : '';
+            $placeholders["{{title{$i}}}"]      = '';
+            $placeholders["{{price{$i}}}"]      = $item ? number_format((float) ($item['total'] ?? 0) / $qty, 2) : '';
+            $placeholders["{{qty{$i}}}"]        = $item ? (string) $qty : '';
+            $placeholders["{{FINALPRICE{$i}}}"] = $item ? number_format((float) ($item['total'] ?? 0), 2) : '';
+        }
+
+        try {
+            $bytes = $docs->generatePdfBytesAndCleanup(InvoiceService::INVOICE_TEMPLATE_ID, $placeholders);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['api' => 'Invoice PDF generation failed: ' . $e->getMessage()]);
+        }
+
+        $filename = 'Invoice — Order #' . ($order['number'] ?? $id) . ($name ? ' — ' . $name : '') . '.pdf';
+
+        return response($bytes, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Length'      => strlen($bytes),
+        ]);
     }
 }

@@ -259,6 +259,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/woo-orders/{id}', [WooOrderController::class, 'show'])->name('woo-orders.show')->whereNumber('id');
     Route::post('/woo-orders/{id}/refund', [WooOrderController::class, 'refund'])->name('woo-orders.refund')->whereNumber('id');
     Route::post('/woo-orders/{id}/resend-email', [WooOrderController::class, 'resendEmail'])->name('woo-orders.resend-email')->whereNumber('id');
+    Route::get('/woo-orders/{id}/invoice-pdf', [WooOrderController::class, 'invoicePdf'])->name('woo-orders.invoice-pdf')->whereNumber('id');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/revenue/by-customer', [RevenueController::class, 'byCustomer'])->name('revenue.by-customer');
