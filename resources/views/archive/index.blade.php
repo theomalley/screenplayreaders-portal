@@ -101,6 +101,17 @@
                                 @php
                                     $archiveHsId = $group->first(fn($a) => !empty($a->helpscout_ticket_number))?->helpscout_ticket_number
                                         ?: $first->helpscoutConversation?->helpscout_conversation_id;
+
+                                    $creditLabel = null;
+                                    if (str_starts_with($orderNumber, 'CREDIT-')) {
+                                        $creditParts = explode('-', $orderNumber);
+                                        $creditUsage = (int) end($creditParts);
+                                        $creditWooOrder = $creditParts[1] ?? '';
+                                        $creditPkg = $creditWooOrder ? \App\Models\ReadCreditPackage::where('woo_order_number', $creditWooOrder)->first() : null;
+                                        $creditLabel = $creditPkg
+                                            ? 'Read Credit ' . $creditUsage . ' of ' . $creditPkg->credits_purchased
+                                            : 'Read Credit ' . $creditUsage;
+                                    }
                                 @endphp
                                 <tr class="hover:bg-gray-50 align-top cursor-pointer"
                                     x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
@@ -109,6 +120,11 @@
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
                                         <a href="{{ route('assignments.show', $first) }}"
                                            class="hover:text-indigo-600">{{ $orderNumber }}</a>
+                                        @if ($creditLabel)
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-700">{{ $creditLabel }}</span>
+                                            </div>
+                                        @endif
                                         @if ($archiveHsId)
                                             <div class="mt-1">
                                                 <a href="https://secure.helpscout.net/conversation/{{ $archiveHsId }}/"
@@ -500,12 +516,28 @@
                                         $first->script_title,
                                         $first->writer_name,
                                     ])));
+
+                                    $creditLabel = null;
+                                    if (str_starts_with($orderNumber, 'CREDIT-')) {
+                                        $creditParts = explode('-', $orderNumber);
+                                        $creditUsage = (int) end($creditParts);
+                                        $creditWooOrder = $creditParts[1] ?? '';
+                                        $creditPkg = $creditWooOrder ? \App\Models\ReadCreditPackage::where('woo_order_number', $creditWooOrder)->first() : null;
+                                        $creditLabel = $creditPkg
+                                            ? 'Read Credit ' . $creditUsage . ' of ' . $creditPkg->credits_purchased
+                                            : 'Read Credit ' . $creditUsage;
+                                    }
                                 @endphp
                                 <tr class="hover:bg-gray-50 cursor-pointer"
                                     x-show="!search || '{{ $searchStr }}'.includes(search.toLowerCase())"
                                     @click="if (!$event.target.closest('a,button')) window.location='{{ route('assignments.edit', $first) }}'">
                                     <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
                                         <a href="{{ route('assignments.show', $first) }}" class="hover:text-indigo-600">{{ $orderNumber }}</a>
+                                        @if ($creditLabel)
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-700">{{ $creditLabel }}</span>
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-3">
                                         <div class="font-medium text-gray-800">{{ $first->script_title }}</div>
