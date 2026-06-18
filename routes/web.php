@@ -35,6 +35,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\ReadCreditController;
 use App\Http\Controllers\WooOrderController;
 use App\Http\Controllers\Marketing\BaseEmailTemplateController;
 use App\Http\Controllers\Marketing\EmailCampaignController;
@@ -261,6 +262,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/woo-orders/{id}/refund', [WooOrderController::class, 'refund'])->name('woo-orders.refund')->whereNumber('id');
     Route::post('/woo-orders/{id}/resend-email', [WooOrderController::class, 'resendEmail'])->name('woo-orders.resend-email')->whereNumber('id');
     Route::get('/woo-orders/{id}/invoice-pdf', [WooOrderController::class, 'invoicePdf'])->name('woo-orders.invoice-pdf')->whereNumber('id');
+
+    // Read Credits (Notes-Only packages)
+    Route::get('/read-credits', [ReadCreditController::class, 'index'])->name('read-credits.index');
+    Route::get('/read-credits/create', [ReadCreditController::class, 'create'])->name('read-credits.create');
+    Route::post('/read-credits', [ReadCreditController::class, 'store'])->name('read-credits.store');
+    Route::get('/read-credits/{package}/edit', [ReadCreditController::class, 'edit'])->name('read-credits.edit');
+    Route::patch('/read-credits/{package}', [ReadCreditController::class, 'update'])->name('read-credits.update');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/revenue/by-customer', [RevenueController::class, 'byCustomer'])->name('revenue.by-customer');

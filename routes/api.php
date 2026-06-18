@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\HelpScoutConversationController;
 use App\Http\Controllers\Api\HelpScoutWebhookController;
 use App\Http\Controllers\Api\IncomingAssignmentController;
 use App\Http\Controllers\Api\OrderRevenueController;
+use App\Http\Controllers\Api\ReadCreditApiController;
 use App\Http\Controllers\Api\ReadersController;
 use App\Http\Controllers\Api\StaffProfileController;
 use App\Http\Controllers\Api\UploadSettingsController;
@@ -30,3 +31,8 @@ Route::post('/order-revenue', [OrderRevenueController::class, 'store']);
 
 // PUBLIC STAFF PROFILES: called by WordPress shortcodes to render staff bios and photos on the website
 Route::get('/staff/{user}', [StaffProfileController::class, 'show'])->middleware('throttle:60,1');
+
+// READ CREDITS: Notes-Only package credit management — called by WordPress
+Route::post('/read-credits', [ReadCreditApiController::class, 'store']);
+Route::get('/read-credits/{token}', [ReadCreditApiController::class, 'show'])->middleware('throttle:60,1');
+Route::post('/read-credits/{token}/redeem', [ReadCreditApiController::class, 'redeem']);

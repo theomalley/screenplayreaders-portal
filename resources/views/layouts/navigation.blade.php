@@ -33,7 +33,7 @@
 
                         {{-- Admin + Editor top-level tabs --}}
                         @if(auth()->user()?->isAdmin())
-                            @php $ordersActive = request()->routeIs('woo-orders.*') || request()->routeIs('order-log.*'); @endphp
+                            @php $ordersActive = request()->routeIs('woo-orders.*') || request()->routeIs('order-log.*') || request()->routeIs('read-credits.*'); @endphp
                             <div class="relative flex items-center"
                                  x-data="{ ordersOpen: false }"
                                  @mouseenter="ordersOpen = true"
@@ -54,6 +54,10 @@
                                     <a href="{{ route('order-log.index') }}"
                                        class="block px-4 py-2 text-sm {{ request()->routeIs('order-log.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                         Order Log
+                                    </a>
+                                    <a href="{{ route('read-credits.index') }}"
+                                       class="block px-4 py-2 text-sm {{ request()->routeIs('read-credits.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                        Read Credits
                                     </a>
                                 </div>
                             </div>
@@ -308,6 +312,9 @@
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('order-log.index')" :active="request()->routeIs('order-log.*')">
                         {{ __('Order Log') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('read-credits.index')" :active="request()->routeIs('read-credits.*')">
+                        {{ __('Read Credits') }}
                     </x-responsive-nav-link>
                 @endif
                 <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
