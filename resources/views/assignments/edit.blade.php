@@ -1016,8 +1016,16 @@
                                            class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
                                     / <span x-text="totalPages"></span>
                                 </span>
+                                <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400" title="Tip: Ctrl + scroll to zoom">
+                                    <button type="button" @click="zoomOut()"
+                                            class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom out">−</button>
+                                    <button type="button" @click="resetZoom()" x-text="Math.round(zoomLevel * 100) + '%'"
+                                            class="w-12 text-center hover:text-white" title="Reset zoom"></button>
+                                    <button type="button" @click="zoomIn()"
+                                            class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom in">+</button>
+                                </div>
                             </div>
-                            <div x-ref="canvasWrap" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                            <div x-ref="canvasWrap" @wheel="onWheelZoom($event)" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
                                 <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
                             </div>
                         </div>
@@ -1099,6 +1107,9 @@
                 currentPage: 0,
                 totalPages: 0,
                 loading: false,
+                zoomLevel: Math.max(0.5, Math.min(2.5, parseFloat(localStorage.getItem('sr_pdf_zoom')) || 1)),
+                _zoomTimer: null,
+                _zoomTarget: null,
                 pg: '',
                 pgStatus: '',
                 pgError: false,
@@ -1130,13 +1141,15 @@
                 async renderAllPages() {
                     const wrap = this.$refs.canvasWrap;
                     const dpr  = window.devicePixelRatio || 1;
+                    for (const c of [...wrap.querySelectorAll('canvas')]) c.remove();
                     pages = [];
                     const maxW = Math.max(wrap.clientWidth - 48, 200);
                     for (let i = 1; i <= this.totalPages; i++) {
                         this.currentPage = i;
                         const page = await pdfDoc.getPage(i);
                         const base  = page.getViewport({ scale: 1 });
-                        const scale = Math.min(maxW / base.width, 2.0);
+                        const fitScale = Math.min(maxW / base.width, 2.0);
+                        const scale = fitScale * this.zoomLevel;
                         const vp    = page.getViewport({ scale: scale * dpr });
                         const canvas = document.createElement('canvas');
                         canvas.width  = vp.width;
@@ -1153,6 +1166,41 @@
                 scrollToPage(num) {
                     const n = Math.max(1, Math.min(parseInt(num) || 1, this.totalPages));
                     if (pages[n - 1]) pages[n - 1].scrollIntoView({ behavior: 'smooth' });
+                },
+
+                async applyZoom() {
+                    if (!pdfDoc) return;
+                    const wrap = this.$refs.canvasWrap;
+                    const scrollableHeight = wrap.scrollHeight - wrap.clientHeight;
+                    const scrollRatio = scrollableHeight > 0 ? wrap.scrollTop / scrollableHeight : 0;
+                    await this.renderAllPages();
+                    await this.$nextTick();
+                    const newScrollable = wrap.scrollHeight - wrap.clientHeight;
+                    if (newScrollable > 0) wrap.scrollTop = scrollRatio * newScrollable;
+                },
+
+                setZoom(level) {
+                    const clamped = Math.max(0.5, Math.min(2.5, Math.round(level * 20) / 20));
+                    if (clamped === this.zoomLevel) return;
+                    this.zoomLevel = clamped;
+                    localStorage.setItem('sr_pdf_zoom', clamped);
+                    this.applyZoom();
+                },
+
+                zoomIn() { this.setZoom(this.zoomLevel + 0.1); },
+                zoomOut() { this.setZoom(this.zoomLevel - 0.1); },
+                resetZoom() { this.setZoom(1); },
+
+                onWheelZoom(e) {
+                    if (!e.ctrlKey) return;
+                    e.preventDefault();
+                    if (this._zoomTarget === null) this._zoomTarget = this.zoomLevel;
+                    this._zoomTarget += (e.deltaY < 0 ? 0.1 : -0.1);
+                    clearTimeout(this._zoomTimer);
+                    this._zoomTimer = setTimeout(() => {
+                        this.setZoom(this._zoomTarget);
+                        this._zoomTarget = null;
+                    }, 150);
                 },
 
                 async reloadPdf() {
