@@ -5,7 +5,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4"
-             x-data="readerPdfViewer(@js($viewUrl), @js($assignment->id), @js(csrf_token()))">
+             x-data="readerPdfViewer(@js($viewUrl), @js($assignment->id), @js(csrf_token()), @js($assignment->needsProofreading()))">
             <div class="flex items-center gap-4">
                 <a href="{{ route('assignments.index') }}" class="text-gray-400 hover:text-gray-600">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
