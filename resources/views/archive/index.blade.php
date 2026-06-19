@@ -386,7 +386,41 @@
                                     </td>
 
                                     {{-- GoBack draft status + actions --}}
-                                    <td class="px-4 py-3 text-center" x-data>
+                                    <td class="px-4 py-3 text-center"
+                                        x-data="{
+                                            busy: false,
+                                            needsTicket: false,
+                                            ticketNum: '',
+                                            errorMsg: '',
+                                            async redraft(ticketNumber) {
+                                                this.busy = true;
+                                                this.errorMsg = '';
+                                                try {
+                                                    const body = new URLSearchParams({ _token: document.querySelector('meta[name=csrf-token]').content });
+                                                    if (ticketNumber) body.append('ticket_number', ticketNumber);
+                                                    const r = await fetch(@js(route('archive.redraft-goback', $first)), {
+                                                        method: 'POST',
+                                                        headers: { 'Accept': 'application/json' },
+                                                        body,
+                                                    });
+                                                    const d = await r.json();
+                                                    if (r.ok && d.url) {
+                                                        this.needsTicket = false;
+                                                        window.open(d.url, '_blank');
+                                                        location.reload();
+                                                    } else if (d.needs_ticket) {
+                                                        this.needsTicket = true;
+                                                        this.errorMsg = '';
+                                                    } else {
+                                                        this.errorMsg = d.error || 'Draft failed.';
+                                                    }
+                                                } catch (e) {
+                                                    this.errorMsg = 'Request failed.';
+                                                } finally {
+                                                    this.busy = false;
+                                                }
+                                            }
+                                        }">
                                         @if($draftSent)
                                             <svg class="w-5 h-5 text-green-500 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="HelpScout draft created">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
@@ -396,20 +430,37 @@
                                         @endif
                                         <div class="flex flex-col gap-1 mt-1.5">
                                             <form method="POST" action="{{ route('archive.send-to-qc', $first) }}"
-                                                  @submit.prevent="if (confirm('Send #{{ $orderNumber }} back to QC?')) $el.submit()">
+                                                  @submit.prevent="if (confirm('Send order #{{ $orderNumber }} back to QC?')) $el.submit()">
                                                 @csrf
                                                 <button type="submit"
                                                         class="text-[10px] text-amber-600 hover:text-amber-800 whitespace-nowrap transition">
-                                                    Send to QC
+                                                    Send back to QC
                                                 </button>
                                             </form>
-                                            <form method="POST" action="{{ route('archive.redraft-goback', $first) }}">
-                                                @csrf
-                                                <button type="submit"
-                                                        class="text-[10px] text-indigo-400 hover:text-indigo-600 whitespace-nowrap transition">
-                                                    Recreate GoBack
-                                                </button>
-                                            </form>
+                                            <button type="button" @click="redraft()" :disabled="busy"
+                                                    x-show="!needsTicket"
+                                                    class="text-[10px] text-indigo-400 hover:text-indigo-600 whitespace-nowrap transition disabled:opacity-50">
+                                                <span x-show="!busy">Re-create goback email</span>
+                                                <span x-show="busy" x-cloak>Working…</span>
+                                            </button>
+                                            <div x-show="needsTicket" x-cloak class="mt-1 text-left">
+                                                <label class="block text-[10px] text-gray-500 mb-0.5">HelpScout ticket #</label>
+                                                <div class="flex items-center gap-1">
+                                                    <input type="text" x-model="ticketNum" placeholder="e.g. 9840"
+                                                           class="w-16 text-[11px] border border-gray-300 rounded px-1.5 py-0.5 focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400"
+                                                           @keydown.enter.prevent="if (ticketNum.trim()) redraft(ticketNum.trim())">
+                                                    <button type="button" :disabled="busy || !ticketNum.trim()"
+                                                            @click="redraft(ticketNum.trim())"
+                                                            class="text-[10px] px-1.5 py-0.5 bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50 whitespace-nowrap">
+                                                        <span x-show="!busy">Go</span>
+                                                        <span x-show="busy" x-cloak>…</span>
+                                                    </button>
+                                                    <button type="button" @click="needsTicket = false; errorMsg = ''"
+                                                            class="text-[10px] text-gray-400 hover:text-gray-600">Cancel</button>
+                                                </div>
+                                            </div>
+                                            <div x-show="errorMsg" x-cloak x-text="errorMsg"
+                                                 class="text-[10px] text-red-600 mt-0.5 max-w-[12rem] text-left"></div>
                                         </div>
                                     </td>
 

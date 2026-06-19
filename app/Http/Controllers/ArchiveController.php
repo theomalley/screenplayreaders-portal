@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-06-19 | redraftGoback() accepts optional ticket_number param — prompts inline when HS conversation is missing
 // v1.1 — 2026-06-19 | sendToQc() — return completed order to QC; redraftGoback() — recreate HelpScout draft from archive
 
 namespace App\Http\Controllers;
@@ -72,6 +73,9 @@ class ArchiveController extends Controller
         abort_unless(Permission::check('archive'), 403);
         abort_unless($assignment->status === Assignment::STATUS_COMPLETED, 422);
 
+        $isAjax      = request()->expectsJson();
+        $ticketInput = trim((string) request()->input('ticket_number', ''));
+
         $siblings = Assignment::where('order_number', $assignment->order_number)
             ->with(['assignedReader.readerProfile'])
             ->where('status', Assignment::STATUS_COMPLETED)
@@ -79,7 +83,8 @@ class ArchiveController extends Controller
             ->get();
 
         if ($siblings->isEmpty()) {
-            return back()->with('error', 'No coverage docs found for this order.');
+            $msg = 'No coverage docs found for this order.';
+            return $isAjax ? response()->json(['error' => $msg], 422) : back()->with('error', $msg);
         }
 
         foreach ($siblings as $sibling) {
@@ -102,7 +107,11 @@ class ArchiveController extends Controller
         }
 
         try {
-            $hsUrl = $this->buildHelpScoutDraft($siblings->all());
+            $hsUrl = $this->buildHelpScoutDraft($siblings->all(), $ticketInput ?: null);
+
+            if ($isAjax) {
+                return response()->json(['url' => $hsUrl]);
+            }
 
             $hsUrlJson     = json_encode($hsUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
             $returnUrl     = route('archive.index');
@@ -117,26 +126,43 @@ class ArchiveController extends Controller
                 200,
                 ['Content-Type' => 'text/html']
             );
+        } catch (\RuntimeException $e) {
+            $needsTicket = str_contains($e->getMessage(), 'No HelpScout conversation on record');
+
+            if ($isAjax && $needsTicket) {
+                return response()->json(['error' => $e->getMessage(), 'needs_ticket' => true], 422);
+            }
+
+            Log::error('Archive redraft HelpScout draft failed', [
+                'order_number' => $assignment->order_number,
+                'error'        => $e->getMessage(),
+            ]);
+
+            $msg = 'HelpScout draft could not be created: ' . $e->getMessage();
+            return $isAjax ? response()->json(['error' => $msg], 500) : back()->with('error', $msg);
         } catch (\Throwable $e) {
             Log::error('Archive redraft HelpScout draft failed', [
                 'order_number' => $assignment->order_number,
                 'error'        => $e->getMessage(),
             ]);
-            return back()->with('error', 'HelpScout draft could not be created: ' . $e->getMessage());
+
+            $msg = 'HelpScout draft could not be created: ' . $e->getMessage();
+            return $isAjax ? response()->json(['error' => $msg], 500) : back()->with('error', $msg);
         }
     }
 
-    private function buildHelpScoutDraft(array $assignments): string
+    private function buildHelpScoutDraft(array $assignments, ?string $manualTicket = null): string
     {
         $orderNumber = $assignments[0]->order_number;
 
         $record = HelpScoutConversation::where('order_number', $orderNumber)->first();
 
         if (! $record) {
-            $ticketNumber = collect($assignments)->pluck('helpscout_ticket_number')->filter()->first();
+            $ticketNumber = $manualTicket
+                ?: collect($assignments)->pluck('helpscout_ticket_number')->filter()->first();
 
             if (! $ticketNumber) {
-                throw new \RuntimeException("No HelpScout conversation on record for order #{$orderNumber}. Set the HelpScout ticket # on the assignment and try again.");
+                throw new \RuntimeException("No HelpScout conversation on record for order #{$orderNumber}.");
             }
 
             $helpScout      = new HelpScoutService();
