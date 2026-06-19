@@ -106,7 +106,7 @@
                                     if (str_starts_with($orderNumber, 'CREDIT-') && preg_match('/^CREDIT-(.+)-(\d+)$/', $orderNumber, $cm)) {
                                         $creditWooOrder = $cm[1];
                                         $creditUsage    = (int) $cm[2];
-                                        $creditPkg      = \App\Models\ReadCreditPackage::where('woo_order_number', $creditWooOrder)->first();
+                                        $creditPkg      = $creditPackages[$creditWooOrder] ?? null;
                                         $creditLabel    = $creditPkg
                                             ? 'Read Credit ' . $creditUsage . ' of ' . $creditPkg->credits_purchased
                                             : 'Read Credit ' . $creditUsage;
@@ -588,7 +588,7 @@
                                     if (str_starts_with($orderNumber, 'CREDIT-') && preg_match('/^CREDIT-(.+)-(\d+)$/', $orderNumber, $cm)) {
                                         $creditWooOrder = $cm[1];
                                         $creditUsage    = (int) $cm[2];
-                                        $creditPkg      = \App\Models\ReadCreditPackage::where('woo_order_number', $creditWooOrder)->first();
+                                        $creditPkg      = $creditPackages[$creditWooOrder] ?? null;
                                         $creditLabel    = $creditPkg
                                             ? 'Read Credit ' . $creditUsage . ' of ' . $creditPkg->credits_purchased
                                             : 'Read Credit ' . $creditUsage;

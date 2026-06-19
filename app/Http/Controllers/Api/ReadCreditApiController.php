@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-06-19 | Security: remove PII from show(); add mimes validation on redeem();
+//                     relax credits validation to accept any positive integer
 // v1.0 — 2026-06-18 | API endpoints for Notes-Only read credit packages: create (from WP),
 //                     check status (from WP upload form), use credit + create assignment.
 
@@ -29,7 +31,7 @@ class ReadCreditApiController extends Controller
             'customer_name'    => 'required|string|max:255',
             'woo_order_number' => 'required|string|max:64',
             'product_id'       => 'required|integer',
-            'credits'          => 'required|integer|in:5,10',
+            'credits'          => 'required|integer|min:1',
         ]);
 
         $existing = ReadCreditPackage::where('woo_order_number', $data['woo_order_number'])->first();
@@ -82,8 +84,6 @@ class ReadCreditApiController extends Controller
             'purchased_at_human' => $pkg->created_at->format('F j, Y'),
             'expires_at'         => $pkg->expires_at->toIso8601String(),
             'expires_at_human'   => $pkg->expires_at->format('F j, Y'),
-            'customer_name'      => $pkg->customer_name,
-            'customer_email'     => $pkg->customer_email,
             'status'             => $pkg->status,
             'package_label'      => $pkg->packageLabel(),
         ]);
@@ -99,7 +99,7 @@ class ReadCreditApiController extends Controller
             'script_title' => 'required|string|max:255',
             'writer_name'  => 'nullable|string|max:255',
             'page_count'   => 'nullable|integer|min:1',
-            'script'       => 'required|file|max:5120',
+            'script'       => 'required|file|mimes:pdf,docx|max:5120',
         ]);
 
         $pkg = ReadCreditPackage::where('upload_token', $token)->first();

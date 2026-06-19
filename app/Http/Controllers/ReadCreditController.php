@@ -61,7 +61,7 @@ class ReadCreditController extends Controller
         $pkg = ReadCreditPackage::create([
             'customer_email'    => $data['customer_email'],
             'customer_name'     => $data['customer_name'],
-            'woo_order_number'  => 'MANUAL-' . now()->format('Ymd') . '-' . auth()->id(),
+            'woo_order_number'  => 'MANUAL-' . now()->format('YmdHis') . '-' . auth()->id(),
             'product_id'        => 0,
             'credits_purchased' => $data['credits'],
             'credits_remaining' => $data['credits'],

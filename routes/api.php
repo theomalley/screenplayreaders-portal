@@ -33,6 +33,6 @@ Route::post('/order-revenue', [OrderRevenueController::class, 'store']);
 Route::get('/staff/{user}', [StaffProfileController::class, 'show'])->middleware('throttle:60,1');
 
 // READ CREDITS: Notes-Only package credit management — called by WordPress
-Route::post('/read-credits', [ReadCreditApiController::class, 'store']);
+Route::post('/read-credits', [ReadCreditApiController::class, 'store'])->middleware('throttle:10,1');
 Route::get('/read-credits/{token}', [ReadCreditApiController::class, 'show'])->middleware('throttle:60,1');
-Route::post('/read-credits/{token}/redeem', [ReadCreditApiController::class, 'redeem']);
+Route::post('/read-credits/{token}/redeem', [ReadCreditApiController::class, 'redeem'])->middleware('throttle:10,1');

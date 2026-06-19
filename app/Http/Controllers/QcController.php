@@ -1,5 +1,6 @@
 <?php
 
+// v1.11 — 2026-06-19 | Extract buildHelpScoutDraft + openInNewTab to CompletionDraftService
 // v1.10 — 2026-06-12 | regeneratePdf(): delete the previous Drive PDF after a replacement is
 //                      generated successfully, so repeated regeneration doesn't leave orphans.
 // v1.9 — 2026-06-12 | {{woodiscountcode}} replaced by a per-order WooCommerce coupon
@@ -21,12 +22,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
-use App\Models\FollowupToken;
-use App\Models\HelpScoutConversation;
 use App\Models\Setting;
+use App\Services\CompletionDraftService;
 use App\Services\GoogleDocsService;
 use App\Services\GoogleDriveService;
-use App\Services\HelpScoutService;
 use App\Support\FilenameGenerator;
 use App\Support\Permission;
 use Illuminate\Support\Facades\Log;
@@ -138,8 +137,8 @@ class QcController extends Controller
             $siblings = Assignment::where('order_number', $assignment->order_number)->get();
 
             try {
-                $hsUrl = $this->buildHelpScoutDraft($siblings->all());
-                return $this->openInNewTab($hsUrl, route('qc.index'));
+                $hsUrl = app(CompletionDraftService::class)->buildDraft($siblings->all());
+                return CompletionDraftService::openInNewTab($hsUrl, route('qc.index'));
             } catch (\Throwable $e) {
                 Log::error('HelpScout draft failed after QC approval', [
                     'order_number' => $assignment->order_number,
@@ -186,8 +185,8 @@ class QcController extends Controller
         }
 
         try {
-            $hsUrl = $this->buildHelpScoutDraft([$assignment]);
-            return $this->openInNewTab($hsUrl, route('qc.index'));
+            $hsUrl = app(CompletionDraftService::class)->buildDraft([$assignment]);
+            return CompletionDraftService::openInNewTab($hsUrl, route('qc.index'));
         } catch (\Throwable $e) {
             Log::error('HelpScout draftNow failed', [
                 'assignment_id' => $assignment->id,
@@ -231,8 +230,8 @@ class QcController extends Controller
         }
 
         try {
-            $hsUrl = $this->buildHelpScoutDraft($siblings->all());
-            return $this->openInNewTab($hsUrl, route('qc.index'));
+            $hsUrl = app(CompletionDraftService::class)->buildDraft($siblings->all());
+            return CompletionDraftService::openInNewTab($hsUrl, route('qc.index'));
         } catch (\Throwable $e) {
             Log::error('HelpScout draftAll failed', [
                 'order_number' => $assignment->order_number,
@@ -266,27 +265,6 @@ class QcController extends Controller
 
     // -------------------------------------------------------------------------
 
-    /**
-     * Return an HTML shim that opens $hsUrl in a new tab and redirects the
-     * current tab to $returnUrl. Works for standard form-POST responses where
-     * a server-side 302 can only navigate the current tab.
-     */
-    private function openInNewTab(string $hsUrl, string $returnUrl): \Illuminate\Http\Response
-    {
-        $hsUrlJson     = json_encode($hsUrl,     JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
-        $returnUrlJson = json_encode($returnUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
-
-        return response(
-            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Redirecting…</title></head><body>" .
-            "<script>window.open({$hsUrlJson},'_blank');window.location.replace({$returnUrlJson});</script>" .
-            "<noscript><p>Draft created. <a href=\"{$hsUrl}\" target=\"_blank\">Open in HelpScout</a> &mdash; " .
-            "<a href=\"{$returnUrl}\">Return to QC queue</a></p></noscript>" .
-            "</body></html>",
-            200,
-            ['Content-Type' => 'text/html']
-        );
-    }
-
     private function generatePdfForAssignment(Assignment $assignment): string
     {
         $initials = $assignment->assignedReader?->readerProfile?->initials;
@@ -297,98 +275,4 @@ class QcController extends Controller
         );
     }
 
-    /**
-     * Download coverage PDFs for the given assignments and post a draft reply
-     * to the matching HelpScout conversation. Stamps helpscout_draft_sent_at on
-     * all assignments after success.
-     *
-     * @param  Assignment[]  $assignments
-     * @return string  The HelpScout web URL for the conversation
-     * @throws \RuntimeException if no conversation ID is found or the API call fails
-     */
-    private function buildHelpScoutDraft(array $assignments): string
-    {
-        $orderNumber = $assignments[0]->order_number;
-
-        $record = HelpScoutConversation::where('order_number', $orderNumber)->first();
-
-        if (! $record) {
-            $ticketNumber = collect($assignments)->pluck('helpscout_ticket_number')->filter()->first();
-
-            if (! $ticketNumber) {
-                throw new \RuntimeException("No HelpScout conversation on record for order #{$orderNumber}. Set the HelpScout ticket # on the assignment and try again.");
-            }
-
-            $helpScout      = new HelpScoutService();
-            $conversationId = $helpScout->findConversationIdByTicketNumber($ticketNumber);
-
-            if (! $conversationId) {
-                throw new \RuntimeException("Could not find HelpScout conversation for ticket #{$ticketNumber}.");
-            }
-
-            $record = HelpScoutConversation::updateOrCreate(
-                ['order_number'              => $orderNumber],
-                ['helpscout_conversation_id' => $conversationId]
-            );
-        }
-
-        $drive       = new GoogleDriveService();
-        $attachments = [];
-
-        foreach ($assignments as $a) {
-            if (! $a->drive_coverage_pdf_id) {
-                continue;
-            }
-
-            $a->loadMissing('assignedReader.readerProfile');
-            $initials = $a->assignedReader?->readerProfile?->initials ?? null;
-            $filename = FilenameGenerator::coveragePdf($a, $initials);
-
-            $bytes = $drive->downloadContents($a->drive_coverage_pdf_id);
-
-            $attachments[] = [
-                'fileName' => $filename,
-                'mimeType' => 'application/pdf',
-                'data'     => base64_encode($bytes),
-            ];
-        }
-
-        if (empty($attachments)) {
-            throw new \RuntimeException("No coverage PDFs available for order #{$orderNumber}.");
-        }
-
-        $conversationId = $record->helpscout_conversation_id;
-        $helpScout      = new HelpScoutService();
-
-        try {
-            $discountCode = $assignments[0]->woo_discount_code
-                ?: Assignment::generateWooDiscountCode($orderNumber);
-        } catch (\Throwable $e) {
-            Log::error('WooCommerce discount coupon creation failed', [
-                'order_number' => $orderNumber,
-                'error'        => $e->getMessage(),
-            ]);
-            $discountCode = '(coupon unavailable — contact support)';
-        }
-
-        $followupUrl = FollowupToken::urlForOrder($orderNumber, collect($assignments)->pluck('id')->values()->all());
-        $body        = Setting::getCompletionDraftBody();
-        $body        = str_replace('{{followup_url}}', $followupUrl, $body);
-        $body        = str_replace('{{woodiscountcode}}', $discountCode, $body);
-        $body        = $helpScout->resolveBodyVariables($body, $conversationId);
-
-        $helpScout->createDraftReply($conversationId, $body, $attachments);
-
-        // Stamp all siblings for this order so the archive GoBack column shows ✓
-        Assignment::where('order_number', $orderNumber)
-            ->update(['helpscout_draft_sent_at' => now()]);
-
-        Log::info('HelpScout draft created', [
-            'order_number'    => $orderNumber,
-            'conversation_id' => $conversationId,
-            'attachments'     => count($attachments),
-        ]);
-
-        return 'https://secure.helpscout.net/conversation/' . $conversationId . '/';
-    }
 }
