@@ -49,7 +49,7 @@ class ReadCreditApiController extends Controller
             'credits_purchased' => $data['credits'],
             'credits_remaining' => $data['credits'],
             'status'           => ReadCreditPackage::STATUS_ACTIVE,
-            'expires_at'       => now()->addYear(),
+            'expires_at'       => now()->addYears(2),
         ]);
 
         Log::info('ReadCredit: provisioned', [
