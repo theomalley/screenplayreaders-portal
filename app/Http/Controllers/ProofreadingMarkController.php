@@ -28,7 +28,7 @@ class ProofreadingMarkController extends Controller
     {
         $data = $request->validate([
             'page_number' => ['required', 'integer', 'min:1'],
-            'type'        => ['required', 'string', 'in:strikethrough,arrow,note'],
+            'type'        => ['required', 'string', 'in:strikethrough,arrow,freehand,note'],
             'data'        => ['required', 'array'],
         ]);
 
@@ -123,11 +123,19 @@ class ProofreadingMarkController extends Controller
                 'end.x'   => ['required', 'numeric', 'between:0,1'],
                 'end.y'   => ['required', 'numeric', 'between:0,1'],
             ])->validate(),
+            'freehand' => validator($data, [
+                'points'     => ['required', 'array', 'min:2'],
+                'points.*.x' => ['required', 'numeric', 'between:0,1'],
+                'points.*.y' => ['required', 'numeric', 'between:0,1'],
+            ])->validate(),
             'note' => validator($data, [
                 'position'   => ['required', 'array'],
                 'position.x' => ['required', 'numeric', 'between:0,1'],
                 'position.y' => ['required', 'numeric', 'between:0,1'],
                 'text'       => ['required', 'string', 'max:5000'],
+                'width'      => ['nullable', 'numeric', 'between:0,1'],
+                'height'     => ['nullable', 'numeric', 'between:0,1'],
+                'background' => ['nullable', 'string', 'in:clear,white,dark'],
             ])->validate(),
         };
     }

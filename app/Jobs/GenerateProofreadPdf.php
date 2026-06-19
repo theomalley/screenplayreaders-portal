@@ -95,6 +95,7 @@ class GenerateProofreadPdf implements ShouldQueue
         match ($mark->type) {
             'strikethrough' => $this->drawStrikethrough($pdf, $data, $pageW, $pageH),
             'arrow'         => $this->drawArrow($pdf, $data, $pageW, $pageH),
+            'freehand'      => $this->drawFreehand($pdf, $data, $pageW, $pageH),
             'note'          => $this->drawNote($pdf, $data, $pageW, $pageH),
             default         => null,
         };
@@ -136,14 +137,48 @@ class GenerateProofreadPdf implements ShouldQueue
         $pdf->drawArrowhead($x1, $y1, $x2, $y2, 3);
     }
 
+    private function drawFreehand(ProofreadPdf $pdf, array $data, float $pageW, float $pageH): void
+    {
+        $points = $data['points'] ?? [];
+        if (count($points) < 2) return;
+
+        $pdf->SetLineWidth(0.5);
+        for ($i = 1, $len = count($points); $i < $len; $i++) {
+            $pdf->Line(
+                $points[$i - 1]['x'] * $pageW,
+                $points[$i - 1]['y'] * $pageH,
+                $points[$i]['x'] * $pageW,
+                $points[$i]['y'] * $pageH
+            );
+        }
+    }
+
     private function drawNote(ProofreadPdf $pdf, array $data, float $pageW, float $pageH): void
     {
         $x = $data['position']['x'] * $pageW;
         $y = $data['position']['y'] * $pageH;
-
-        $pdf->SetFont('Helvetica', '', 8);
         $text = @iconv('UTF-8', 'CP1252//TRANSLIT//IGNORE', $data['text']) ?: $data['text'];
-        $pdf->Text($x, $y, $text);
+
+        $bg = $data['background'] ?? 'clear';
+        if ($bg !== 'clear' && ! empty($data['width']) && ! empty($data['height'])) {
+            $w = $data['width'] * $pageW;
+            $h = $data['height'] * $pageH;
+            if ($bg === 'white') {
+                $pdf->SetFillColor(255, 255, 255);
+            } else {
+                $pdf->SetFillColor(30, 30, 30);
+            }
+            $pdf->Rect($x, $y, $w, $h, 'F');
+        }
+
+        if ($bg === 'dark') {
+            $pdf->SetTextColor(255, 60, 60);
+        } else {
+            $pdf->SetTextColor(255, 0, 0);
+        }
+        $pdf->SetFont('Helvetica', '', 8);
+        $pdf->Text($x + 1, $y + 3, $text);
+        $pdf->SetTextColor(255, 0, 0);
     }
 
     private function uploadToFolder(GoogleDriveService $drive, string $localPath, string $filename, string $folderId): string

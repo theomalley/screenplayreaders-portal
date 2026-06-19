@@ -84,7 +84,7 @@ document.addEventListener('alpine:init', () => {
 
             async renderAllPages() {
                 const wrap = this.$refs.canvasWrap;
-                const dpr  = window.devicePixelRatio || 1;
+                const dpr  = Math.max(window.devicePixelRatio || 1, 2);
                 if (pageObserver) pageObserver.disconnect();
                 pageRatios.clear();
                 this.clearOverlays();
@@ -278,6 +278,7 @@ document.addEventListener('alpine:init', () => {
             if (this.isProofreading) {
                 pageWrap.addEventListener('mousedown', (e) => {
                     if (this.proofMode === 'arrow') this.startProofArrow(e, pageNum, pageWrap);
+                    if (this.proofMode === 'draw') this.startProofDraw(e, pageNum, pageWrap);
                 });
             }
         },
@@ -546,6 +547,7 @@ document.addEventListener('alpine:init', () => {
                 switch (m.type) {
                     case 'strikethrough': this._renderStrikethrough(overlay.proofLayerEl, m); break;
                     case 'arrow':         this._renderArrow(overlay.proofLayerEl, m); break;
+                    case 'freehand':      this._renderFreehand(overlay.proofLayerEl, m); break;
                     case 'note':          this._renderNote(overlay.proofLayerEl, m); break;
                 }
             }
@@ -626,17 +628,156 @@ document.addEventListener('alpine:init', () => {
 
         _renderNote(layer, mark) {
             const d = mark.data;
-            const el = document.createElement('span');
-            el.className = 'proof-mark-note';
+            const bg = d.background || 'clear';
+            const el = document.createElement('div');
+            el.className = 'proof-mark-note bg-' + bg;
             el.textContent = d.text;
             el.style.left = (d.position.x * 100) + '%';
             el.style.top  = (d.position.y * 100) + '%';
-            el.title = 'Click to delete';
+            if (d.width)  el.style.width  = (d.width * 100) + '%';
+            if (d.height) el.style.height = (d.height * 100) + '%';
+            el.dataset.markId = mark.id;
+
+            const resize = document.createElement('div');
+            resize.className = 'proof-note-resize';
+            resize.style.display = 'none';
+            el.appendChild(resize);
+
+            // Click to select
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (confirm('Delete this note?')) this.deleteProofMark(mark.id);
+                this._selectNote(el, mark, layer);
             });
+
+            // Double-click to edit
+            el.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                this._editNote(el, mark);
+            });
+
+            // Drag to move
+            el.addEventListener('mousedown', (e) => {
+                if (e.target === resize) return;
+                if (el.contentEditable === 'true') return;
+                e.preventDefault();
+                e.stopPropagation();
+                const layerRect = layer.getBoundingClientRect();
+                const startX = e.clientX, startY = e.clientY;
+                const origLeft = parseFloat(el.style.left) / 100;
+                const origTop  = parseFloat(el.style.top) / 100;
+                const onMove = (ev) => {
+                    const dx = (ev.clientX - startX) / layerRect.width;
+                    const dy = (ev.clientY - startY) / layerRect.height;
+                    el.style.left = (Math.max(0, Math.min(1, origLeft + dx)) * 100) + '%';
+                    el.style.top  = (Math.max(0, Math.min(1, origTop + dy)) * 100) + '%';
+                };
+                const onUp = () => {
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onUp);
+                    const newX = parseFloat(el.style.left) / 100;
+                    const newY = parseFloat(el.style.top) / 100;
+                    if (newX !== origLeft || newY !== origTop) {
+                        this.updateProofMark(mark.id, { ...mark.data, position: { x: newX, y: newY } });
+                    }
+                };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+            });
+
+            // Resize handle
+            resize.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const layerRect = layer.getBoundingClientRect();
+                const startX = e.clientX, startY = e.clientY;
+                const origW = el.offsetWidth / layerRect.width;
+                const origH = el.offsetHeight / layerRect.height;
+                const onMove = (ev) => {
+                    const dw = (ev.clientX - startX) / layerRect.width;
+                    const dh = (ev.clientY - startY) / layerRect.height;
+                    el.style.width  = (Math.max(0.02, origW + dw) * 100) + '%';
+                    el.style.height = (Math.max(0.01, origH + dh) * 100) + '%';
+                };
+                const onUp = () => {
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onUp);
+                    const newW = el.offsetWidth / layerRect.width;
+                    const newH = el.offsetHeight / layerRect.height;
+                    this.updateProofMark(mark.id, { ...mark.data, width: newW, height: newH });
+                };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+            });
+
             layer.appendChild(el);
+        },
+
+        _selectNote(el, mark, layer) {
+            layer.querySelectorAll('.proof-note-selected').forEach(n => {
+                n.classList.remove('proof-note-selected');
+                n.querySelector('.proof-note-toolbar')?.remove();
+                n.querySelector('.proof-note-resize').style.display = 'none';
+            });
+            el.classList.add('proof-note-selected');
+            el.querySelector('.proof-note-resize').style.display = '';
+
+            const toolbar = document.createElement('div');
+            toolbar.className = 'proof-note-toolbar';
+            const bg = mark.data.background || 'clear';
+            ['clear', 'white', 'dark'].forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.title = opt;
+                if (opt === 'clear') btn.style.background = 'transparent';
+                else if (opt === 'white') btn.style.background = '#fff';
+                else btn.style.background = '#1a1a1a';
+                if (opt === bg) btn.classList.add('active');
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    el.className = 'proof-mark-note proof-note-selected bg-' + opt;
+                    toolbar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.updateProofMark(mark.id, { ...mark.data, background: opt });
+                });
+                toolbar.appendChild(btn);
+            });
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'proof-note-delete';
+            del.textContent = '×';
+            del.title = 'Delete note';
+            del.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.deleteProofMark(mark.id);
+            });
+            toolbar.appendChild(del);
+            el.appendChild(toolbar);
+        },
+
+        _editNote(el, mark) {
+            el.classList.add('proof-note-editing');
+            el.contentEditable = 'true';
+            el.querySelector('.proof-note-toolbar')?.remove();
+            el.focus();
+            const sel = window.getSelection();
+            sel.selectAllChildren(el);
+            sel.collapseToEnd();
+
+            const finish = () => {
+                el.contentEditable = 'false';
+                el.classList.remove('proof-note-editing');
+                const newText = el.textContent.trim();
+                if (newText && newText !== mark.data.text) {
+                    this.updateProofMark(mark.id, { ...mark.data, text: newText });
+                } else if (!newText) {
+                    this.deleteProofMark(mark.id);
+                }
+            };
+            el.addEventListener('blur', finish, { once: true });
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
+                if (e.key === 'Escape') { el.textContent = mark.data.text; el.blur(); }
+            });
         },
 
         async saveProofStrikethrough(pageNum, text, rects, popupX, popupY) {
@@ -713,31 +854,102 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('mouseup', onUp);
         },
 
-        handleProofNoteClick(e, pageNum, pageWrap) {
+        async handleProofNoteClick(e, pageNum, pageWrap) {
             if (this.proofMode !== 'note') return;
-            if (e.target.closest('.proof-mark-note, .proof-note-input')) return;
+            if (e.target.closest('.proof-mark-note')) return;
             const rect = pageWrap.getBoundingClientRect();
             const pos = {
                 x: (e.clientX - rect.left) / rect.width,
                 y: (e.clientY - rect.top) / rect.height,
             };
-            this.proofNoteInput = { pageNum, position: pos, text: '' };
-            this.$nextTick(() => {
-                const inp = document.querySelector('.proof-note-input input');
-                if (inp) inp.focus();
+            const mark = await this.saveProofMark('note', pageNum, { position: pos, text: 'note', background: 'clear' });
+            if (mark) {
+                this.$nextTick(() => {
+                    const overlay = pageOverlays.get(pageNum);
+                    if (!overlay) return;
+                    const el = overlay.proofLayerEl.querySelector('[data-mark-id="' + mark.id + '"]');
+                    if (el) this._editNote(el, mark);
+                });
+            }
+        },
+
+        _renderFreehand(layer, mark) {
+            const d = mark.data;
+            if (!d.points || d.points.length < 2) return;
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'proof-mark-freehand');
+            svg.setAttribute('viewBox', '0 0 100 100');
+            svg.setAttribute('preserveAspectRatio', 'none');
+            const pts = d.points.map(p => (p.x * 100) + ',' + (p.y * 100)).join(' ');
+            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polyline.setAttribute('points', pts);
+            polyline.setAttribute('stroke', 'red');
+            polyline.setAttribute('stroke-width', '0.3');
+            polyline.setAttribute('fill', 'none');
+            polyline.setAttribute('stroke-linecap', 'round');
+            polyline.setAttribute('stroke-linejoin', 'round');
+            polyline.style.cursor = 'pointer';
+            polyline.style.pointerEvents = 'auto';
+            polyline.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Delete this drawing?')) this.deleteProofMark(mark.id);
             });
+            svg.appendChild(polyline);
+            layer.appendChild(svg);
         },
 
-        async submitProofNote() {
-            const n = this.proofNoteInput;
-            if (!n || !n.text.trim()) { this.proofNoteInput = null; return; }
-            await this.saveProofMark('note', n.pageNum, { position: n.position, text: n.text.trim() });
-            this.proofNoteInput = null;
+        startProofDraw(e, pageNum, pageWrap) {
+            if (this.proofMode !== 'draw') return;
+            if (e.target.closest('.proof-mark-note, .proof-mark-freehand polyline')) return;
+            e.preventDefault();
+            const rect = pageWrap.getBoundingClientRect();
+            const start = {
+                x: (e.clientX - rect.left) / rect.width,
+                y: (e.clientY - rect.top) / rect.height,
+            };
+            const points = [start];
+
+            const overlay = pageOverlays.get(pageNum);
+            if (!overlay) return;
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'proof-mark-freehand');
+            svg.setAttribute('viewBox', '0 0 100 100');
+            svg.setAttribute('preserveAspectRatio', 'none');
+            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polyline.setAttribute('stroke', 'red');
+            polyline.setAttribute('stroke-width', '0.3');
+            polyline.setAttribute('fill', 'none');
+            polyline.setAttribute('stroke-linecap', 'round');
+            polyline.setAttribute('stroke-linejoin', 'round');
+            polyline.setAttribute('points', (start.x * 100) + ',' + (start.y * 100));
+            svg.appendChild(polyline);
+            overlay.proofLayerEl.appendChild(svg);
+
+            let lastX = e.clientX, lastY = e.clientY;
+            const onMove = (ev) => {
+                const dx = ev.clientX - lastX, dy = ev.clientY - lastY;
+                if (dx * dx + dy * dy < 9) return;
+                lastX = ev.clientX; lastY = ev.clientY;
+                const r = pageWrap.getBoundingClientRect();
+                const pt = {
+                    x: Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)),
+                    y: Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)),
+                };
+                points.push(pt);
+                polyline.setAttribute('points', points.map(p => (p.x * 100) + ',' + (p.y * 100)).join(' '));
+            };
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+                svg.remove();
+                if (points.length >= 2) {
+                    this.saveProofMark('freehand', pageNum, { points });
+                }
+            };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
         },
 
-        cancelProofNote() {
-            this.proofNoteInput = null;
-        },
         };
     });
 });

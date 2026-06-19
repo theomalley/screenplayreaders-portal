@@ -37,6 +37,11 @@
                         class="px-2 py-1 rounded transition-colors" title="Click-drag to draw an arrow">
                     Arrow
                 </button>
+                <button type="button" @click="proofMode = proofMode === 'draw' ? 'off' : 'draw'"
+                        :class="proofMode === 'draw' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                        class="px-2 py-1 rounded transition-colors" title="Freehand red pen drawing">
+                    Draw
+                </button>
                 <button type="button" @click="proofMode = proofMode === 'note' ? 'off' : 'note'"
                         :class="proofMode === 'note' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
                         class="px-2 py-1 rounded transition-colors whitespace-nowrap" title="Click to place a text note">
@@ -181,23 +186,6 @@
                     class="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] hover:bg-red-500">Save</button>
             <button type="button" @click="dismissProofCorrection()"
                     class="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-[10px] hover:bg-gray-600">Skip</button>
-        </div>
-    </div>
-    {{-- Proofreading: floating note text input --}}
-    <div x-show="proofNoteInput" x-cloak class="proof-note-input fixed z-[60]"
-         :style="`left: ${proofNoteInput ? (proofNoteInput.position.x * 100) + '%' : 0}; top: ${proofNoteInput ? (proofNoteInput.position.y * 100) + '%' : 0}`"
-         @keydown.escape="cancelProofNote()">
-        <div class="bg-gray-900 border border-red-700 rounded-md shadow-lg p-2">
-            <input type="text" x-model="proofNoteInput.text"
-                   @keydown.enter.prevent="submitProofNote()"
-                   placeholder="type note…"
-                   class="w-48 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-red-400 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500" />
-            <div class="flex gap-1 mt-1">
-                <button type="button" @click="submitProofNote()"
-                        class="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] hover:bg-red-500">Add</button>
-                <button type="button" @click="cancelProofNote()"
-                        class="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-[10px] hover:bg-gray-600">Cancel</button>
-            </div>
         </div>
     </div>
     {{-- Drag handle to resize the notes panel --}}
