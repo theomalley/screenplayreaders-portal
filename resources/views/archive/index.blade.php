@@ -385,8 +385,8 @@
                                         </div>
                                     </td>
 
-                                    {{-- GoBack draft status --}}
-                                    <td class="px-4 py-3 text-center">
+                                    {{-- GoBack draft status + actions --}}
+                                    <td class="px-4 py-3 text-center" x-data>
                                         @if($draftSent)
                                             <svg class="w-5 h-5 text-green-500 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="HelpScout draft created">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
@@ -394,6 +394,23 @@
                                         @else
                                             <span class="text-gray-300 text-xs">—</span>
                                         @endif
+                                        <div class="flex flex-col gap-1 mt-1.5">
+                                            <form method="POST" action="{{ route('archive.send-to-qc', $first) }}"
+                                                  @submit.prevent="if (confirm('Send #{{ $orderNumber }} back to QC?')) $el.submit()">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="text-[10px] text-amber-600 hover:text-amber-800 whitespace-nowrap transition">
+                                                    Send to QC
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('archive.redraft-goback', $first) }}">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="text-[10px] text-indigo-400 hover:text-indigo-600 whitespace-nowrap transition">
+                                                    Recreate GoBack
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
 
                                     {{-- Send / Reset Followups --}}

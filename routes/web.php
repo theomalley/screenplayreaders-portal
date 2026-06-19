@@ -227,6 +227,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/draft-all', [QcController::class, 'draftAll'])->name('qc.draft-all');
 
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+    Route::post('/archive/{assignment}/send-to-qc', [ArchiveController::class, 'sendToQc'])->name('archive.send-to-qc');
+    Route::post('/archive/{assignment}/redraft-goback', [ArchiveController::class, 'redraftGoback'])->name('archive.redraft-goback');
 
     Route::get('/order-log', [OrderLogController::class, 'index'])->name('order-log.index');
     Route::get('/order-log/create', [OrderLogController::class, 'create'])->name('order-log.create');
