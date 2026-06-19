@@ -56,6 +56,7 @@ class IncomingAssignmentController extends Controller
             'writer_name'      => 'nullable|string|max:255',
             'page_count'       => 'nullable|integer|min:1',
             'rush'             => 'nullable|boolean',
+            'proofreading'     => 'nullable|boolean',
             'reader_request_1' => 'nullable|string|max:20',
             'reader_request_2' => 'nullable|string|max:20',
             'reader_request_3' => 'nullable|string|max:20',
@@ -104,9 +105,10 @@ class IncomingAssignmentController extends Controller
             }
         }
 
-        $rates     = Setting::ratesForForms();
-        $pageCount = (int) ($data['page_count'] ?? 0);
-        $rush      = (bool) ($data['rush'] ?? false);
+        $rates        = Setting::ratesForForms();
+        $pageCount    = (int) ($data['page_count'] ?? 0);
+        $rush         = (bool) ($data['rush'] ?? false);
+        $proofreading = (bool) ($data['proofreading'] ?? false);
 
         // Create one Assignment row per reader slot
         $assignments = [];
@@ -118,6 +120,7 @@ class IncomingAssignmentController extends Controller
                     'order_number'        => $data['order_number'],
                     'vendor'              => 'sr',
                     'assignment_type'     => $type,
+                    'proofreading'        => $proofreading && $i === 0,
                     'script_title'        => $data['script_title'],
                     'writer_name'         => $data['writer_name'] ?? '',
                     'page_count'          => $data['page_count'] ?? null,
