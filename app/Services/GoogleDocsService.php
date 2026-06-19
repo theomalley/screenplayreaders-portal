@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-06-19 | exportToPdf: update existing PDF in place when existingPdfId is provided (prevents Drive orphans)
 // v1.2 — 2026-05-26 | Add generatePdfBytesAndCleanup() for transient PDF generation (WooCommerce order invoices)
 // v1.1 — 2026-05-26 | Add createInvoiceDoc() and exportDocToPdfBytes() for invoice generation
 // v1.0 — 2026-05-22 | Create coverage Google Docs from templates; export to PDF.
@@ -88,14 +89,15 @@ class GoogleDocsService
     }
 
     /**
-     * Export an existing Google Doc to PDF, save it to the coverage output folder,
-     * and return the new PDF file ID.
+     * Export an existing Google Doc to PDF. When $existingPdfId is provided,
+     * the existing file is updated in place (same file ID, no orphans).
+     * Otherwise a new file is created in the coverage folder.
      */
-    public function exportToPdf(string $docId, string $filename): string
+    public function exportToPdf(string $docId, string $filename, ?string $existingPdfId = null): string
     {
         $folderId = config('services.google.drive_coverage_folder_id');
 
-        Log::info('GoogleDocsService: exporting PDF', ['doc_id' => $docId, 'folder_id' => $folderId]);
+        Log::info('GoogleDocsService: exporting PDF', ['doc_id' => $docId, 'folder_id' => $folderId, 'existing_pdf_id' => $existingPdfId]);
 
         $response = $this->drive->files->export(
             $docId,
@@ -105,6 +107,22 @@ class GoogleDocsService
 
         $bytes = $response->getBody()->getContents();
         Log::info('GoogleDocsService: PDF exported', ['bytes' => strlen($bytes)]);
+
+        if ($existingPdfId) {
+            $file = $this->drive->files->update(
+                $existingPdfId,
+                new DriveFile(['name' => $filename . '.pdf']),
+                [
+                    'data'              => $bytes,
+                    'mimeType'          => 'application/pdf',
+                    'uploadType'        => 'multipart',
+                    'fields'            => 'id',
+                    'supportsAllDrives' => true,
+                ]
+            );
+            Log::info('GoogleDocsService: PDF updated in place', ['pdf_id' => $file->id]);
+            return $file->id;
+        }
 
         $file = $this->drive->files->create(
             new DriveFile([

@@ -25,7 +25,6 @@ use App\Models\Assignment;
 use App\Models\Setting;
 use App\Services\CompletionDraftService;
 use App\Services\GoogleDocsService;
-use App\Services\GoogleDriveService;
 use App\Support\FilenameGenerator;
 use App\Support\Permission;
 use Illuminate\Support\Facades\Log;
@@ -67,21 +66,8 @@ class QcController extends Controller
 
         try {
             $assignment->loadMissing('assignedReader.readerProfile');
-            $oldPdfId = $assignment->drive_coverage_pdf_id;
-            $pdfId    = $this->generatePdfForAssignment($assignment);
+            $pdfId = $this->generatePdfForAssignment($assignment, $assignment->drive_coverage_pdf_id);
             $assignment->update(['drive_coverage_pdf_id' => $pdfId]);
-
-            if ($oldPdfId && $oldPdfId !== $pdfId) {
-                try {
-                    (new GoogleDriveService())->deleteFile($oldPdfId);
-                } catch (\Throwable $e) {
-                    Log::warning('Failed to delete previous PDF after regeneration', [
-                        'assignment_id' => $assignment->id,
-                        'old_pdf_id'    => $oldPdfId,
-                        'error'         => $e->getMessage(),
-                    ]);
-                }
-            }
 
             return back()->with('success', 'PDF regenerated.');
         } catch (\Throwable $e) {
@@ -265,13 +251,14 @@ class QcController extends Controller
 
     // -------------------------------------------------------------------------
 
-    private function generatePdfForAssignment(Assignment $assignment): string
+    private function generatePdfForAssignment(Assignment $assignment, ?string $existingPdfId = null): string
     {
         $initials = $assignment->assignedReader?->readerProfile?->initials;
         $docs     = new GoogleDocsService();
         return $docs->exportToPdf(
             $assignment->drive_coverage_doc_id,
-            FilenameGenerator::coverageDoc($assignment, $initials)
+            FilenameGenerator::coverageDoc($assignment, $initials),
+            $existingPdfId
         );
     }
 

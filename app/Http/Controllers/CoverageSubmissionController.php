@@ -100,17 +100,17 @@ class CoverageSubmissionController extends Controller
             // Resubmission (e.g. after QC send-back) — remove the doc/PDF from the
             // previous attempt now that fresh ones have been saved successfully.
             if ($oldDocId || $oldPdfId) {
-                try {
-                    $drive = new GoogleDriveService();
-                    $drive->deleteFile($oldDocId);
-                    $drive->deleteFile($oldPdfId);
-                } catch (\Throwable $e) {
-                    Log::warning('Failed to delete previous coverage doc/PDF on resubmission', [
-                        'assignment_id' => $assignment->id,
-                        'old_doc_id'    => $oldDocId,
-                        'old_pdf_id'    => $oldPdfId,
-                        'error'         => $e->getMessage(),
-                    ]);
+                $drive = new GoogleDriveService();
+                foreach (array_filter([$oldDocId, $oldPdfId]) as $oldFileId) {
+                    try {
+                        $drive->deleteFile($oldFileId);
+                    } catch (\Throwable $e) {
+                        Log::warning('Failed to delete previous coverage file on resubmission', [
+                            'assignment_id' => $assignment->id,
+                            'file_id'       => $oldFileId,
+                            'error'         => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
         } catch (\Throwable $e) {
