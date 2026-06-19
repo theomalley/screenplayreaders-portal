@@ -76,14 +76,16 @@ class ReadCreditApiController extends Controller
         $pkg->checkExpiration();
 
         return response()->json([
-            'credits_remaining' => $pkg->credits_remaining,
-            'credits_purchased' => $pkg->credits_purchased,
-            'expires_at'        => $pkg->expires_at->toIso8601String(),
-            'expires_at_human'  => $pkg->expires_at->format('F j, Y'),
-            'customer_name'     => $pkg->customer_name,
-            'customer_email'    => $pkg->customer_email,
-            'status'            => $pkg->status,
-            'package_label'     => $pkg->packageLabel(),
+            'credits_remaining'  => $pkg->credits_remaining,
+            'credits_purchased'  => $pkg->credits_purchased,
+            'purchased_at'       => $pkg->created_at->toIso8601String(),
+            'purchased_at_human' => $pkg->created_at->format('F j, Y'),
+            'expires_at'         => $pkg->expires_at->toIso8601String(),
+            'expires_at_human'   => $pkg->expires_at->format('F j, Y'),
+            'customer_name'      => $pkg->customer_name,
+            'customer_email'     => $pkg->customer_email,
+            'status'             => $pkg->status,
+            'package_label'      => $pkg->packageLabel(),
         ]);
     }
 
