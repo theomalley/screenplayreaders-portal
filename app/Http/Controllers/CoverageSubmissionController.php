@@ -120,6 +120,12 @@ class CoverageSubmissionController extends Controller
             ]);
         }
 
+        // Generate proofread PDF if proofreading marks exist for this assignment
+        if ($assignment->needsProofreading()
+            && \App\Models\ProofreadingMark::where('assignment_id', $assignment->id)->exists()) {
+            \App\Jobs\GenerateProofreadPdf::dispatch($assignment->id);
+        }
+
         return redirect()->route('coverage.submitted')
             ->with('submitted_title', $assignment->script_title);
     }

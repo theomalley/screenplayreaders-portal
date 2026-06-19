@@ -875,6 +875,25 @@ class AssignmentController extends Controller
         ]);
     }
 
+    public function streamProofreadPdf(Assignment $assignment, GoogleDriveService $drive)
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless($assignment->drive_proofread_pdf_id, 404);
+
+        $contents = $drive->downloadContents($assignment->drive_proofread_pdf_id);
+
+        $assignment->loadMissing('assignedReader.readerProfile');
+        $initials = $assignment->assignedReader?->readerProfile?->initials;
+        $filename = FilenameGenerator::proofreadPdf($assignment, $initials);
+
+        return response($contents, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
+            'Cache-Control'       => 'private, no-store',
+            'X-Frame-Options'     => 'SAMEORIGIN',
+        ]);
+    }
+
     /** Dismiss the "goback ready at HelpScout" notification for all admins/editors. */
     public function dismissHelpscoutDraft(Assignment $assignment)
     {

@@ -72,6 +72,7 @@ class Assignment extends Model
         'drive_script_filename',
         'drive_coverage_doc_id',
         'drive_coverage_pdf_id',
+        'drive_proofread_pdf_id',
         'assigned_reader_id',
         'public_opt_in',
         'unassigned_at',
@@ -310,6 +311,17 @@ class Assignment extends Model
     public function editorNotes(): HasMany
     {
         return $this->hasMany(AssignmentEditorNote::class);
+    }
+
+    public function proofreadingMarks(): HasMany
+    {
+        return $this->hasMany(ProofreadingMark::class);
+    }
+
+    public function needsProofreading(): bool
+    {
+        return $this->assignment_type === 'proofreading'
+            || (bool) $this->coverageSubmission?->sr_proofreading;
     }
 
     public function client(): BelongsTo

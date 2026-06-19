@@ -34,4 +34,52 @@
         cursor: pointer;
         pointer-events: auto;
     }
+    .proof-marks-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+    }
+    .proof-mark-strikethrough {
+        position: absolute;
+        pointer-events: auto;
+        cursor: pointer;
+    }
+    .proof-mark-strikethrough::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        border-top: 2px solid red;
+    }
+    .proof-mark-correction {
+        position: absolute;
+        color: red;
+        font-size: 9px;
+        font-weight: bold;
+        pointer-events: auto;
+        cursor: pointer;
+        white-space: nowrap;
+        line-height: 1;
+    }
+    .proof-mark-note {
+        position: absolute;
+        color: red;
+        font-size: 11px;
+        font-weight: 600;
+        pointer-events: auto;
+        cursor: pointer;
+        white-space: nowrap;
+        line-height: 1;
+    }
+    .proof-mark-arrow {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+    .proof-mark-arrow line {
+        pointer-events: auto;
+        cursor: pointer;
+    }
 </style>

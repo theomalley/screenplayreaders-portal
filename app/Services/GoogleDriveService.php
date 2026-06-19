@@ -131,7 +131,7 @@ class GoogleDriveService
      * parser can read it. Modern PDFs use compressed cross-reference streams that
      * FPDI cannot parse without the paid add-on.
      */
-    private function flattenForFpdi(string $sourcePath): string
+    public function flattenForFpdi(string $sourcePath): string
     {
         $output   = tempnam(sys_get_temp_dir(), 'sr_flat_') . '.pdf';
         $exitCode = 0;

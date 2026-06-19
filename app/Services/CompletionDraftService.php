@@ -75,6 +75,24 @@ class CompletionDraftService
             ];
         }
 
+        // Attach proofread PDFs when available
+        foreach ($assignments as $a) {
+            if (! $a->drive_proofread_pdf_id) {
+                continue;
+            }
+
+            $a->loadMissing('assignedReader.readerProfile');
+            $initials = $a->assignedReader?->readerProfile?->initials ?? null;
+            $filename = FilenameGenerator::proofreadPdf($a, $initials);
+            $bytes    = $drive->downloadContents($a->drive_proofread_pdf_id);
+
+            $attachments[] = [
+                'fileName' => $filename,
+                'mimeType' => 'application/pdf',
+                'data'     => base64_encode($bytes),
+            ];
+        }
+
         if (empty($attachments)) {
             throw new \RuntimeException("No coverage PDFs available for order #{$orderNumber}.");
         }
