@@ -232,6 +232,45 @@
                 </div>
             @endif
 
+            {{-- Proofread PDF preview --}}
+            @if($assignment->needsProofreading())
+                <div class="mt-4">
+                    @if($assignment->drive_proofread_pdf_id)
+                        <div class="bg-white rounded-lg shadow-sm border border-red-200 overflow-hidden">
+                            <div class="flex items-center justify-between px-4 py-2 border-b border-red-100 bg-red-50">
+                                <span class="text-xs font-medium text-red-600 uppercase tracking-wide">Proofread Script</span>
+                                <div class="flex items-center gap-3">
+                                    <form method="POST" action="{{ route('qc.regenerate-proofread-pdf', $assignment) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-xs text-red-600 hover:text-red-800 font-medium">Regenerate</button>
+                                    </form>
+                                    <a href="https://drive.google.com/file/d/{{ $assignment->drive_proofread_pdf_id }}/view"
+                                       target="_blank"
+                                       class="text-xs text-red-600 hover:text-red-800">
+                                        Open in Drive ↗
+                                    </a>
+                                </div>
+                            </div>
+                            <iframe
+                                src="{{ route('assignments.streamProofreadPdf', $assignment) }}"
+                                class="w-full"
+                                style="height: clamp(400px, 75vh, 900px);">
+                            </iframe>
+                        </div>
+                    @else
+                        <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+                            <span>Proofreading is enabled but no proofread PDF has been generated yet.</span>
+                            <form method="POST" action="{{ route('qc.regenerate-proofread-pdf', $assignment) }}" class="inline">
+                                @csrf
+                                <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-500">
+                                    Generate Proofread PDF
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
         </div>
 
         {{-- Full-screen Google Docs editing overlay --}}
