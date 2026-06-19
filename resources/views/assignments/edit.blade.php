@@ -581,6 +581,14 @@
                             <span x-show="!rush" class="text-sm text-gray-400">Standard</span>
                             <span x-show="rush" class="text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
                         </div>
+                        <div class="mt-2 flex items-center gap-3">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" name="proofreading" value="1"
+                                    {{ $assignment->proofreading ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500 focus:ring-offset-0" />
+                                <span class="text-sm text-gray-700">Proofreading</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="pt-4 border-t border-gray-100">

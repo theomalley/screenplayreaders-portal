@@ -57,6 +57,7 @@ class Assignment extends Model
         'order_number',
         'vendor',
         'assignment_type',
+        'proofreading',
         'script_title',
         'writer_name',
         'page_count',
@@ -116,6 +117,7 @@ class Assignment extends Model
             'exempt_from_word_counts'   => 'boolean',
             'is_test'                   => 'boolean',
             'tier'                      => 'integer',
+            'proofreading'              => 'boolean',
             'oversized_fee_included'    => 'boolean',
             'exempt_from_capacity'      => 'boolean',
         ];
@@ -321,7 +323,7 @@ class Assignment extends Model
     public function needsProofreading(): bool
     {
         return $this->assignment_type === 'proofreading'
-            || (bool) $this->coverageSubmission?->sr_proofreading;
+            || (bool) $this->proofreading;
     }
 
     public function client(): BelongsTo

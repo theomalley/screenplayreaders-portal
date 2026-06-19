@@ -37,6 +37,7 @@ class UpdateAssignmentRequest extends FormRequest
             'blocked_reader_ids'   => ['nullable', 'array'],
             'blocked_reader_ids.*' => ['integer', 'exists:users,id'],
             'rush'                 => ['nullable', 'boolean'],
+            'proofreading'         => ['nullable', 'boolean'],
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'notes'                    => ['nullable', 'string', 'max:2000'],
             'cancellation_reason'      => ['nullable', 'string', 'max:1000'],

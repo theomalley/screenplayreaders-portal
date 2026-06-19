@@ -344,6 +344,7 @@ class AssignmentController extends Controller
 
         $data         = $request->validated();
         $data['rush']                    = $request->boolean('rush');
+        $data['proofreading']            = $request->boolean('proofreading');
         $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['exempt_from_capacity']    = $request->boolean('exempt_from_capacity');
@@ -961,6 +962,7 @@ class AssignmentController extends Controller
 
         $data         = $request->validated();
         $data['rush']                    = $request->boolean('rush');
+        $data['proofreading']            = $request->boolean('proofreading');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
         $data['exempt_from_capacity']    = $request->boolean('exempt_from_capacity');
