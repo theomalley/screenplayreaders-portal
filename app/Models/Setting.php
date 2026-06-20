@@ -106,7 +106,7 @@ class Setting extends Model
 
     public static function getAppTimezone(): string
     {
-        return static::where('key', 'app_timezone')->value('value') ?? 'UTC';
+        return static::where('key', 'app_timezone')->value('value') ?? config('app.timezone', 'UTC');
     }
 
     public static function getValue(string $key, mixed $default = null): mixed

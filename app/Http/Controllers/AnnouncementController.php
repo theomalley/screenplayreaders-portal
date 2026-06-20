@@ -27,7 +27,7 @@ class AnnouncementController extends Controller
 
         $expiresAt = null;
         if ($request->filled('expires_at')) {
-            $expiresAt = Carbon::createFromFormat('Y-m-d\TH:i', $request->input('expires_at'), Setting::getAppTimezone())->utc();
+            $expiresAt = Carbon::createFromFormat('Y-m-d\TH:i', $request->input('expires_at'), Setting::getAppTimezone());
         }
 
         Announcement::create([
@@ -50,7 +50,7 @@ class AnnouncementController extends Controller
 
         $expiresAt = null;
         if ($request->filled('expires_at')) {
-            $expiresAt = Carbon::createFromFormat('Y-m-d\TH:i', $request->input('expires_at'), Setting::getAppTimezone())->utc();
+            $expiresAt = Carbon::createFromFormat('Y-m-d\TH:i', $request->input('expires_at'), Setting::getAppTimezone());
         }
 
         $announcement->update([

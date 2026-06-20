@@ -368,8 +368,7 @@ class AssignmentController extends Controller
 
         $newCreatedAt = null;
         if (!empty($data['date']) && !empty($data['time'])) {
-            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time'], Setting::getAppTimezone())
-                ->utc();
+            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time'], Setting::getAppTimezone());
         }
         unset($data['date'], $data['time']);
 
@@ -971,8 +970,7 @@ class AssignmentController extends Controller
 
         $newCreatedAt = null;
         if (!empty($data['date']) && !empty($data['time'])) {
-            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time'], Setting::getAppTimezone())
-                ->utc();
+            $newCreatedAt = Carbon::createFromFormat('Y-m-d H:i', $data['date'] . ' ' . $data['time'], Setting::getAppTimezone());
         }
         unset($data['date'], $data['time']);
 
@@ -995,13 +993,13 @@ class AssignmentController extends Controller
             $data['available_at']       = null; // clear any pending auto-release when manually set to Available
         }
 
-        // Convert the datetime-local string to UTC, or clear if empty
+        // Convert the datetime-local string to app timezone, or clear if empty
         if (! empty($data['available_at'])) {
             $data['available_at'] = Carbon::createFromFormat(
                 'Y-m-d\TH:i',
                 $data['available_at'],
                 Setting::getAppTimezone()
-            )->utc();
+            );
         } else {
             $data['available_at'] = null;
         }
