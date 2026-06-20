@@ -88,7 +88,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/script/download-link', [\App\Http\Controllers\ScriptDownloadController::class, 'store'])->name('script-downloads.store');
     Route::post('script-downloads/{scriptDownload}/reset', [\App\Http\Controllers\ScriptDownloadController::class, 'reset'])->name('script-downloads.reset');
     Route::get('assignments/{assignment}/coverage-pdf', [AssignmentController::class, 'streamCoverage'])->name('assignments.streamCoverage');
-    Route::get('assignments/{assignment}/proofread-pdf', [AssignmentController::class, 'streamProofreadPdf'])->name('assignments.streamProofreadPdf');
     Route::post('assignments/{assignment}/script', [AssignmentController::class, 'uploadScript'])->name('assignments.uploadScript');
     Route::post('assignments/{assignment}/remove-pages', [AssignmentController::class, 'removePages'])->name('assignments.removePages');
     Route::post('assignments/{assignment}/script/unlock', [AssignmentController::class, 'unlockScript'])->name('assignments.unlockScript');
@@ -179,13 +178,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/assignments/{assignment}/highlights',  [\App\Http\Controllers\ScriptHighlightController::class, 'store'])->name('script-highlights.store');
     Route::delete('/highlights/{highlight}',             [\App\Http\Controllers\ScriptHighlightController::class, 'destroy'])->name('script-highlights.destroy');
 
-    // Proofreading marks (annotation marks on script PDFs for proofreading assignments)
-    Route::get('/assignments/{assignment}/proofreading-marks',   [\App\Http\Controllers\ProofreadingMarkController::class, 'index'])->name('proofreading-marks.index');
-    Route::post('/assignments/{assignment}/proofreading-marks',  [\App\Http\Controllers\ProofreadingMarkController::class, 'store'])->name('proofreading-marks.store');
-    Route::patch('/proofreading-marks/{mark}',                   [\App\Http\Controllers\ProofreadingMarkController::class, 'update'])->name('proofreading-marks.update');
-    Route::delete('/proofreading-marks/{mark}',                  [\App\Http\Controllers\ProofreadingMarkController::class, 'destroy'])->name('proofreading-marks.destroy');
-    Route::post('/assignments/{assignment}/submit-proofreading', [\App\Http\Controllers\ProofreadingMarkController::class, 'submit'])->name('proofreading.submit');
-
     // Followup question management (admin/editor)
     Route::get('/followup-history/{orderNumber}',       [FollowupQuestionController::class, 'history'])->name('followups.history');
     Route::delete('/followup-tokens/{followupToken}',   [FollowupQuestionController::class, 'destroyToken'])->name('followupTokens.destroy');
@@ -233,7 +225,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/send-back', [QcController::class, 'sendBack'])->name('qc.send-back');
     Route::post('/qc/{assignment}/draft-now', [QcController::class, 'draftNow'])->name('qc.draft-now');
     Route::post('/qc/{assignment}/draft-all', [QcController::class, 'draftAll'])->name('qc.draft-all');
-    Route::post('/qc/{assignment}/regenerate-proofread-pdf', [QcController::class, 'regenerateProofreadPdf'])->name('qc.regenerate-proofread-pdf');
+
 
     Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
     Route::post('/archive/{assignment}/send-to-qc', [ArchiveController::class, 'sendToQc'])->name('archive.send-to-qc');

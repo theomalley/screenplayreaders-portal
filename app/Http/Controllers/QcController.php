@@ -1,6 +1,5 @@
 <?php
 
-// v1.12 — 2026-06-19 | Add regenerateProofreadPdf() for QC proofreading PDF regeneration
 // v1.11 — 2026-06-19 | Extract buildHelpScoutDraft + openInNewTab to CompletionDraftService
 // v1.10 — 2026-06-12 | regeneratePdf(): delete the previous Drive PDF after a replacement is
 //                      generated successfully, so repeated regeneration doesn't leave orphans.
@@ -22,7 +21,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\GenerateProofreadPdf;
 use App\Models\Assignment;
 use App\Models\Setting;
 use App\Services\CompletionDraftService;
@@ -249,23 +247,6 @@ class QcController extends Controller
 
         return redirect()->route('qc.index')
             ->with('success', "#{$assignment->order_number} — {$assignment->script_title} sent back to reader.");
-    }
-
-    public function regenerateProofreadPdf(Assignment $assignment)
-    {
-        abort_unless(Permission::check('qc'), 403);
-        abort_unless($assignment->needsProofreading(), 422);
-
-        try {
-            GenerateProofreadPdf::dispatchSync($assignment->id);
-            return back()->with('success', 'Proofread PDF regenerated.');
-        } catch (\Throwable $e) {
-            Log::error('Proofread PDF regeneration failed', [
-                'assignment_id' => $assignment->id,
-                'error'         => $e->getMessage(),
-            ]);
-            return back()->with('error', 'Proofread PDF regeneration failed — check the logs.');
-        }
     }
 
     // -------------------------------------------------------------------------

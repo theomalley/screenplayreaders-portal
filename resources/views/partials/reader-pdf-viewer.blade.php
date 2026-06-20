@@ -24,33 +24,6 @@
             <button type="button" @click="zoomIn()"
                     class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom in">+</button>
         </div>
-        {{-- Proofreading tool mode switcher --}}
-        <template x-if="isProofreading">
-            <div class="flex items-center gap-1 text-xs border-r border-gray-700 pr-3 mr-1">
-                <button type="button" @click="proofMode = proofMode === 'select' ? 'off' : 'select'"
-                        :class="proofMode === 'select' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-                        class="px-2 py-1 rounded transition-colors whitespace-nowrap" title="Select text to strikethrough">
-                    Select &amp; Mark
-                </button>
-                <button type="button" @click="proofMode = proofMode === 'arrow' ? 'off' : 'arrow'"
-                        :class="proofMode === 'arrow' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-                        class="px-2 py-1 rounded transition-colors" title="Click-drag to draw an arrow">
-                    Arrow
-                </button>
-                <button type="button" @click="proofMode = proofMode === 'draw' ? 'off' : 'draw'"
-                        :class="proofMode === 'draw' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-                        class="px-2 py-1 rounded transition-colors" title="Freehand red pen drawing">
-                    Draw
-                </button>
-                <button type="button" @click="proofMode = proofMode === 'note' ? 'off' : 'note'"
-                        :class="proofMode === 'note' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-                        class="px-2 py-1 rounded transition-colors whitespace-nowrap" title="Click to place a text note">
-                    Text Note
-                </button>
-                <span x-show="proofMarks.length > 0" class="text-[10px] text-red-400 ml-1"
-                      x-text="proofMarks.length + ' mark' + (proofMarks.length === 1 ? '' : 's')"></span>
-            </div>
-        </template>
         <button type="button"
                 @click="searchOpen = !searchOpen; if (searchOpen) $nextTick(() => $refs.searchInput?.focus())"
                 :class="searchOpen ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
@@ -170,23 +143,6 @@
                 class="px-2 py-1.5 hover:bg-gray-700 border-l border-gray-700 flex items-center gap-1.5 whitespace-nowrap">
             <span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 inline-block"></span> Both
         </button>
-    </div>
-    {{-- Proofreading: correction text popup (appears after strikethrough) --}}
-    <div x-show="proofCorrectionPopup" x-cloak
-         :style="`left: ${proofCorrectionPopup?.x || 0}px; top: ${proofCorrectionPopup?.y || 0}px`"
-         class="fixed z-[60] bg-gray-900 text-white rounded-md shadow-lg border border-red-700 p-2 text-xs"
-         @keydown.escape="dismissProofCorrection()">
-        <label class="block text-[10px] text-red-400 mb-1">Correction (optional)</label>
-        <input type="text" x-model="proofCorrectionPopup.correction"
-               @keydown.enter.prevent="submitProofCorrection()"
-               placeholder="replacement text…"
-               class="w-48 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500" />
-        <div class="flex gap-1 mt-1.5">
-            <button type="button" @click="submitProofCorrection()"
-                    class="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] hover:bg-red-500">Save</button>
-            <button type="button" @click="dismissProofCorrection()"
-                    class="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-[10px] hover:bg-gray-600">Skip</button>
-        </div>
     </div>
     {{-- Drag handle to resize the notes panel --}}
     <div x-show="notesOpen" x-cloak

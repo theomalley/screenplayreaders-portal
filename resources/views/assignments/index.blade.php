@@ -1302,7 +1302,7 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-3" x-data="readerPdfViewer(@js($viewUrl ?? ''), @js($assignment->id), @js(csrf_token()), @js($assignment->needsProofreading()))">
+                                        <td class="px-3 py-3" x-data="readerPdfViewer(@js($viewUrl ?? ''), @js($assignment->id), @js(csrf_token()))">
                                             <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}</div>
                                             @if ($viewUrl)
                                                 <button @click="openViewer()" type="button"

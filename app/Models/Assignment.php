@@ -315,11 +315,6 @@ class Assignment extends Model
         return $this->hasMany(AssignmentEditorNote::class);
     }
 
-    public function proofreadingMarks(): HasMany
-    {
-        return $this->hasMany(ProofreadingMark::class);
-    }
-
     public function needsProofreading(): bool
     {
         return $this->assignment_type === 'proofreading'

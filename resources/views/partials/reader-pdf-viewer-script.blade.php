@@ -84,7 +84,7 @@ document.addEventListener('alpine:init', () => {
 
             async renderAllPages() {
                 const wrap = this.$refs.canvasWrap;
-                const dpr  = Math.max(window.devicePixelRatio || 1, 2);
+                const dpr  = window.devicePixelRatio || 1;
                 if (pageObserver) pageObserver.disconnect();
                 pageRatios.clear();
                 this.clearOverlays();
@@ -187,13 +187,12 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.data('pdfViewer', makePdfViewerData);
 
-    Alpine.data('readerPdfViewer', (url, assignmentId, csrfToken, isProofreading = false) => {
+    Alpine.data('readerPdfViewer', (url, assignmentId, csrfToken) => {
         let pageOverlays = new Map();
         let pageTextContents = new Map();
 
         return {
         ...makePdfViewerData(url),
-        isProofreading,
         notesOpen: localStorage.getItem('sr_notes_open') === '1',
         notesPanelWidth: Math.max(240, Math.min(parseInt(localStorage.getItem('sr_notes_width'), 10) || 288, window.innerWidth - 320)),
         notes: [],
@@ -206,11 +205,6 @@ document.addEventListener('alpine:init', () => {
         pageTexts: [],
         highlights: [],
         selectionToolbar: { show: false, x: 0, y: 0, text: '', pageNum: null, rects: [] },
-        proofMode: 'off',
-        proofMarks: [],
-        proofDrawing: null,
-        proofNoteInput: null,
-        proofCorrectionPopup: null,
 
         init() {
             if (this.notesOpen && !this.notesLoaded) this.loadNotes();
@@ -228,7 +222,6 @@ document.addEventListener('alpine:init', () => {
             this.pageTexts = texts;
             if (this.searchQuery.trim()) this.doSearch();
             await this.loadHighlights();
-            if (this.isProofreading) await this.loadProofMarks();
         },
 
         async renderPageOverlay(pageWrap, canvas, page, scale, pageNum) {
@@ -239,12 +232,6 @@ document.addEventListener('alpine:init', () => {
             highlightLayerEl.style.width  = cssVp.width + 'px';
             highlightLayerEl.style.height = cssVp.height + 'px';
             pageWrap.appendChild(highlightLayerEl);
-
-            const proofLayerEl = document.createElement('div');
-            proofLayerEl.className = 'proof-marks-layer';
-            proofLayerEl.style.width  = cssVp.width + 'px';
-            proofLayerEl.style.height = cssVp.height + 'px';
-            pageWrap.appendChild(proofLayerEl);
 
             const textLayerEl = document.createElement('div');
             textLayerEl.className = 'textLayer';
@@ -263,24 +250,10 @@ document.addEventListener('alpine:init', () => {
                 viewport: cssVp,
             }).promise;
 
-            pageOverlays.set(pageNum, { pageWrap, textLayerEl, highlightLayerEl, proofLayerEl });
+            pageOverlays.set(pageNum, { pageWrap, textLayerEl, highlightLayerEl });
             this.renderHighlightMarks(pageNum);
-            if (this.isProofreading) this.renderProofMarks(pageNum);
 
-            pageWrap.addEventListener('mouseup', (e) => {
-                if (this.proofMode === 'note') {
-                    this.handleProofNoteClick(e, pageNum, pageWrap);
-                } else {
-                    this.handleSelection(pageNum, pageWrap);
-                }
-            });
-
-            if (this.isProofreading) {
-                pageWrap.addEventListener('mousedown', (e) => {
-                    if (this.proofMode === 'arrow') this.startProofArrow(e, pageNum, pageWrap);
-                    if (this.proofMode === 'draw') this.startProofDraw(e, pageNum, pageWrap);
-                });
-            }
+            pageWrap.addEventListener('mouseup', () => this.handleSelection(pageNum, pageWrap));
         },
 
         clearOverlays() {
@@ -334,25 +307,18 @@ document.addEventListener('alpine:init', () => {
 
             const containerRect = pageWrap.getBoundingClientRect();
             const last = clientRects[clientRects.length - 1];
-            const rects = clientRects.map(r => ({
-                x: (r.left - containerRect.left) / containerRect.width,
-                y: (r.top - containerRect.top) / containerRect.height,
-                width: r.width / containerRect.width,
-                height: r.height / containerRect.height,
-            }));
-
-            if (this.proofMode === 'select') {
-                this.saveProofStrikethrough(pageNum, text, rects, last.right, last.bottom);
-                return;
-            }
-
             this.selectionToolbar = {
                 show: true,
                 x: last.right,
                 y: last.bottom,
                 text,
                 pageNum,
-                rects,
+                rects: clientRects.map(r => ({
+                    x: (r.left - containerRect.left) / containerRect.width,
+                    y: (r.top - containerRect.top) / containerRect.height,
+                    width: r.width / containerRect.width,
+                    height: r.height / containerRect.height,
+                })),
             };
         },
 
@@ -478,478 +444,6 @@ document.addEventListener('alpine:init', () => {
                 this.notes = this.notes.filter(n => n.id !== id);
             } catch (e) { console.error(e); }
         },
-
-        // --- Proofreading ---
-
-        async loadProofMarks() {
-            try {
-                const r = await fetch(`/assignments/${assignmentId}/proofreading-marks`, {
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                });
-                if (r.ok) {
-                    this.proofMarks = await r.json();
-                    for (const pg of pageOverlays.keys()) this.renderProofMarks(pg);
-                }
-            } catch (e) { console.error(e); }
-        },
-
-        async saveProofMark(type, pageNum, data) {
-            try {
-                const r = await fetch(`/assignments/${assignmentId}/proofreading-marks`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body: JSON.stringify({ page_number: pageNum, type, data }),
-                });
-                if (r.ok) {
-                    const mark = await r.json();
-                    this.proofMarks.push(mark);
-                    this.renderProofMarks(pageNum);
-                    return mark;
-                }
-            } catch (e) { console.error(e); }
-            return null;
-        },
-
-        async updateProofMark(id, data) {
-            try {
-                const r = await fetch(`/proofreading-marks/${id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body: JSON.stringify({ data }),
-                });
-                if (r.ok) {
-                    const updated = await r.json();
-                    const idx = this.proofMarks.findIndex(m => m.id === id);
-                    if (idx !== -1) this.proofMarks[idx] = updated;
-                    this.renderProofMarks(updated.page_number);
-                }
-            } catch (e) { console.error(e); }
-        },
-
-        async deleteProofMark(id) {
-            try {
-                await fetch(`/proofreading-marks/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                });
-                const mark = this.proofMarks.find(m => m.id === id);
-                this.proofMarks = this.proofMarks.filter(m => m.id !== id);
-                if (mark) this.renderProofMarks(mark.page_number);
-            } catch (e) { console.error(e); }
-        },
-
-        renderProofMarks(pageNum) {
-            const overlay = pageOverlays.get(pageNum);
-            if (!overlay || !overlay.proofLayerEl) return;
-            overlay.proofLayerEl.innerHTML = '';
-            const marks = this.proofMarks.filter(m => m.page_number === pageNum);
-            for (const m of marks) {
-                switch (m.type) {
-                    case 'strikethrough': this._renderStrikethrough(overlay.proofLayerEl, m); break;
-                    case 'arrow':         this._renderArrow(overlay.proofLayerEl, m); break;
-                    case 'freehand':      this._renderFreehand(overlay.proofLayerEl, m); break;
-                    case 'note':          this._renderNote(overlay.proofLayerEl, m); break;
-                }
-            }
-        },
-
-        _renderStrikethrough(layer, mark) {
-            const d = mark.data;
-            for (const r of (d.rects || [])) {
-                const el = document.createElement('div');
-                el.className = 'proof-mark-strikethrough';
-                el.style.left   = (r.x * 100) + '%';
-                el.style.top    = (r.y * 100) + '%';
-                el.style.width  = ((r.w || r.width) * 100) + '%';
-                el.style.height = ((r.h || r.height) * 100) + '%';
-                el.title = d.correction ? 'Correction: ' + d.correction : 'Click to delete';
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (confirm('Delete this mark?')) this.deleteProofMark(mark.id);
-                });
-                layer.appendChild(el);
-            }
-            if (d.correction) {
-                const lastRect = d.rects[d.rects.length - 1];
-                if (lastRect) {
-                    const label = document.createElement('span');
-                    label.className = 'proof-mark-correction';
-                    label.textContent = d.correction;
-                    label.style.left = (lastRect.x * 100) + '%';
-                    label.style.top  = ((lastRect.y + (lastRect.h || lastRect.height)) * 100) + '%';
-                    label.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (confirm('Delete this mark?')) this.deleteProofMark(mark.id);
-                    });
-                    layer.appendChild(label);
-                }
-            }
-        },
-
-        _renderArrow(layer, mark) {
-            const d = mark.data;
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('class', 'proof-mark-arrow');
-            svg.setAttribute('viewBox', '0 0 100 100');
-            svg.setAttribute('preserveAspectRatio', 'none');
-
-            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-            const markerId = 'ah' + mark.id;
-            marker.setAttribute('id', markerId);
-            marker.setAttribute('markerWidth', '10');
-            marker.setAttribute('markerHeight', '7');
-            marker.setAttribute('refX', '10');
-            marker.setAttribute('refY', '3.5');
-            marker.setAttribute('orient', 'auto');
-            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-            polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
-            polygon.setAttribute('fill', 'red');
-            marker.appendChild(polygon);
-            defs.appendChild(marker);
-            svg.appendChild(defs);
-
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', d.start.x * 100);
-            line.setAttribute('y1', d.start.y * 100);
-            line.setAttribute('x2', d.end.x * 100);
-            line.setAttribute('y2', d.end.y * 100);
-            line.setAttribute('stroke', 'red');
-            line.setAttribute('stroke-width', '0.4');
-            line.setAttribute('marker-end', `url(#${markerId})`);
-            line.style.cursor = 'pointer';
-            line.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (confirm('Delete this arrow?')) this.deleteProofMark(mark.id);
-            });
-            svg.appendChild(line);
-            layer.appendChild(svg);
-        },
-
-        _renderNote(layer, mark) {
-            const d = mark.data;
-            const bg = d.background || 'clear';
-            const el = document.createElement('div');
-            el.className = 'proof-mark-note bg-' + bg;
-            el.textContent = d.text;
-            el.style.left = (d.position.x * 100) + '%';
-            el.style.top  = (d.position.y * 100) + '%';
-            if (d.width)  el.style.width  = (d.width * 100) + '%';
-            if (d.height) el.style.height = (d.height * 100) + '%';
-            el.dataset.markId = mark.id;
-
-            const resize = document.createElement('div');
-            resize.className = 'proof-note-resize';
-            resize.style.display = 'none';
-            el.appendChild(resize);
-
-            // Click to select
-            el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this._selectNote(el, mark, layer);
-            });
-
-            // Double-click to edit
-            el.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                this._editNote(el, mark);
-            });
-
-            // Drag to move
-            el.addEventListener('mousedown', (e) => {
-                if (e.target === resize) return;
-                if (el.contentEditable === 'true') return;
-                e.preventDefault();
-                e.stopPropagation();
-                const layerRect = layer.getBoundingClientRect();
-                const startX = e.clientX, startY = e.clientY;
-                const origLeft = parseFloat(el.style.left) / 100;
-                const origTop  = parseFloat(el.style.top) / 100;
-                const onMove = (ev) => {
-                    const dx = (ev.clientX - startX) / layerRect.width;
-                    const dy = (ev.clientY - startY) / layerRect.height;
-                    el.style.left = (Math.max(0, Math.min(1, origLeft + dx)) * 100) + '%';
-                    el.style.top  = (Math.max(0, Math.min(1, origTop + dy)) * 100) + '%';
-                };
-                const onUp = () => {
-                    window.removeEventListener('mousemove', onMove);
-                    window.removeEventListener('mouseup', onUp);
-                    const newX = parseFloat(el.style.left) / 100;
-                    const newY = parseFloat(el.style.top) / 100;
-                    if (newX !== origLeft || newY !== origTop) {
-                        this.updateProofMark(mark.id, { ...mark.data, position: { x: newX, y: newY } });
-                    }
-                };
-                window.addEventListener('mousemove', onMove);
-                window.addEventListener('mouseup', onUp);
-            });
-
-            // Resize handle
-            resize.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const layerRect = layer.getBoundingClientRect();
-                const startX = e.clientX, startY = e.clientY;
-                const origW = el.offsetWidth / layerRect.width;
-                const origH = el.offsetHeight / layerRect.height;
-                const onMove = (ev) => {
-                    const dw = (ev.clientX - startX) / layerRect.width;
-                    const dh = (ev.clientY - startY) / layerRect.height;
-                    el.style.width  = (Math.max(0.02, origW + dw) * 100) + '%';
-                    el.style.height = (Math.max(0.01, origH + dh) * 100) + '%';
-                };
-                const onUp = () => {
-                    window.removeEventListener('mousemove', onMove);
-                    window.removeEventListener('mouseup', onUp);
-                    const newW = el.offsetWidth / layerRect.width;
-                    const newH = el.offsetHeight / layerRect.height;
-                    this.updateProofMark(mark.id, { ...mark.data, width: newW, height: newH });
-                };
-                window.addEventListener('mousemove', onMove);
-                window.addEventListener('mouseup', onUp);
-            });
-
-            layer.appendChild(el);
-        },
-
-        _selectNote(el, mark, layer) {
-            layer.querySelectorAll('.proof-note-selected').forEach(n => {
-                n.classList.remove('proof-note-selected');
-                n.querySelector('.proof-note-toolbar')?.remove();
-                n.querySelector('.proof-note-resize').style.display = 'none';
-            });
-            el.classList.add('proof-note-selected');
-            el.querySelector('.proof-note-resize').style.display = '';
-
-            const toolbar = document.createElement('div');
-            toolbar.className = 'proof-note-toolbar';
-            const bg = mark.data.background || 'clear';
-            ['clear', 'white', 'dark'].forEach(opt => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.title = opt;
-                if (opt === 'clear') btn.style.background = 'transparent';
-                else if (opt === 'white') btn.style.background = '#fff';
-                else btn.style.background = '#1a1a1a';
-                if (opt === bg) btn.classList.add('active');
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    el.className = 'proof-mark-note proof-note-selected bg-' + opt;
-                    toolbar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    this.updateProofMark(mark.id, { ...mark.data, background: opt });
-                });
-                toolbar.appendChild(btn);
-            });
-            const del = document.createElement('button');
-            del.type = 'button';
-            del.className = 'proof-note-delete';
-            del.textContent = '×';
-            del.title = 'Delete note';
-            del.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deleteProofMark(mark.id);
-            });
-            toolbar.appendChild(del);
-            el.appendChild(toolbar);
-        },
-
-        _editNote(el, mark) {
-            el.classList.add('proof-note-editing');
-            el.contentEditable = 'true';
-            el.querySelector('.proof-note-toolbar')?.remove();
-            el.focus();
-            const sel = window.getSelection();
-            sel.selectAllChildren(el);
-            sel.collapseToEnd();
-
-            const finish = () => {
-                el.contentEditable = 'false';
-                el.classList.remove('proof-note-editing');
-                const newText = el.textContent.trim();
-                if (newText && newText !== mark.data.text) {
-                    this.updateProofMark(mark.id, { ...mark.data, text: newText });
-                } else if (!newText) {
-                    this.deleteProofMark(mark.id);
-                }
-            };
-            el.addEventListener('blur', finish, { once: true });
-            el.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
-                if (e.key === 'Escape') { el.textContent = mark.data.text; el.blur(); }
-            });
-        },
-
-        async saveProofStrikethrough(pageNum, text, rects, popupX, popupY) {
-            const proofRects = rects.map(r => ({ x: r.x, y: r.y, w: r.width, h: r.height }));
-            const mark = await this.saveProofMark('strikethrough', pageNum, { text, correction: '', rects: proofRects });
-            window.getSelection()?.removeAllRanges();
-            if (mark) {
-                this.proofCorrectionPopup = { markId: mark.id, x: popupX, y: popupY, correction: '' };
-            }
-        },
-
-        async submitProofCorrection() {
-            const popup = this.proofCorrectionPopup;
-            if (!popup) return;
-            if (popup.correction.trim()) {
-                const mark = this.proofMarks.find(m => m.id === popup.markId);
-                if (mark) {
-                    await this.updateProofMark(popup.markId, { ...mark.data, correction: popup.correction.trim() });
-                }
-            }
-            this.proofCorrectionPopup = null;
-        },
-
-        dismissProofCorrection() {
-            this.proofCorrectionPopup = null;
-        },
-
-        startProofArrow(e, pageNum, pageWrap) {
-            if (this.proofMode !== 'arrow') return;
-            if (e.target.closest('.proof-mark-arrow')) return;
-            const rect = pageWrap.getBoundingClientRect();
-            const start = {
-                x: (e.clientX - rect.left) / rect.width,
-                y: (e.clientY - rect.top) / rect.height,
-            };
-            this.proofDrawing = { pageNum, pageWrap, start, current: { ...start } };
-
-            const overlay = pageOverlays.get(pageNum);
-            if (!overlay) return;
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('class', 'proof-mark-arrow proof-drawing');
-            svg.setAttribute('viewBox', '0 0 100 100');
-            svg.setAttribute('preserveAspectRatio', 'none');
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('stroke', 'red');
-            line.setAttribute('stroke-width', '0.4');
-            line.setAttribute('stroke-dasharray', '1,1');
-            svg.appendChild(line);
-            overlay.proofLayerEl.appendChild(svg);
-
-            const onMove = (ev) => {
-                const r = pageWrap.getBoundingClientRect();
-                const cx = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
-                const cy = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height));
-                line.setAttribute('x1', start.x * 100);
-                line.setAttribute('y1', start.y * 100);
-                line.setAttribute('x2', cx * 100);
-                line.setAttribute('y2', cy * 100);
-                this.proofDrawing.current = { x: cx, y: cy };
-            };
-            const onUp = () => {
-                window.removeEventListener('mousemove', onMove);
-                window.removeEventListener('mouseup', onUp);
-                svg.remove();
-                const d = this.proofDrawing;
-                const dx = d.current.x - d.start.x;
-                const dy = d.current.y - d.start.y;
-                if (Math.sqrt(dx * dx + dy * dy) > 0.01) {
-                    this.saveProofMark('arrow', pageNum, { start: d.start, end: d.current });
-                }
-                this.proofDrawing = null;
-            };
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
-        },
-
-        async handleProofNoteClick(e, pageNum, pageWrap) {
-            if (this.proofMode !== 'note') return;
-            if (e.target.closest('.proof-mark-note')) return;
-            const rect = pageWrap.getBoundingClientRect();
-            const pos = {
-                x: (e.clientX - rect.left) / rect.width,
-                y: (e.clientY - rect.top) / rect.height,
-            };
-            const mark = await this.saveProofMark('note', pageNum, { position: pos, text: 'note', background: 'clear' });
-            if (mark) {
-                this.$nextTick(() => {
-                    const overlay = pageOverlays.get(pageNum);
-                    if (!overlay) return;
-                    const el = overlay.proofLayerEl.querySelector('[data-mark-id="' + mark.id + '"]');
-                    if (el) this._editNote(el, mark);
-                });
-            }
-        },
-
-        _renderFreehand(layer, mark) {
-            const d = mark.data;
-            if (!d.points || d.points.length < 2) return;
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('class', 'proof-mark-freehand');
-            svg.setAttribute('viewBox', '0 0 100 100');
-            svg.setAttribute('preserveAspectRatio', 'none');
-            const pts = d.points.map(p => (p.x * 100) + ',' + (p.y * 100)).join(' ');
-            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-            polyline.setAttribute('points', pts);
-            polyline.setAttribute('stroke', 'red');
-            polyline.setAttribute('stroke-width', '0.3');
-            polyline.setAttribute('fill', 'none');
-            polyline.setAttribute('stroke-linecap', 'round');
-            polyline.setAttribute('stroke-linejoin', 'round');
-            polyline.style.cursor = 'pointer';
-            polyline.style.pointerEvents = 'auto';
-            polyline.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (confirm('Delete this drawing?')) this.deleteProofMark(mark.id);
-            });
-            svg.appendChild(polyline);
-            layer.appendChild(svg);
-        },
-
-        startProofDraw(e, pageNum, pageWrap) {
-            if (this.proofMode !== 'draw') return;
-            if (e.target.closest('.proof-mark-note, .proof-mark-freehand polyline')) return;
-            e.preventDefault();
-            const rect = pageWrap.getBoundingClientRect();
-            const start = {
-                x: (e.clientX - rect.left) / rect.width,
-                y: (e.clientY - rect.top) / rect.height,
-            };
-            const points = [start];
-
-            const overlay = pageOverlays.get(pageNum);
-            if (!overlay) return;
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('class', 'proof-mark-freehand');
-            svg.setAttribute('viewBox', '0 0 100 100');
-            svg.setAttribute('preserveAspectRatio', 'none');
-            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-            polyline.setAttribute('stroke', 'red');
-            polyline.setAttribute('stroke-width', '0.3');
-            polyline.setAttribute('fill', 'none');
-            polyline.setAttribute('stroke-linecap', 'round');
-            polyline.setAttribute('stroke-linejoin', 'round');
-            polyline.setAttribute('points', (start.x * 100) + ',' + (start.y * 100));
-            svg.appendChild(polyline);
-            overlay.proofLayerEl.appendChild(svg);
-
-            let lastX = e.clientX, lastY = e.clientY;
-            const onMove = (ev) => {
-                const dx = ev.clientX - lastX, dy = ev.clientY - lastY;
-                if (dx * dx + dy * dy < 9) return;
-                lastX = ev.clientX; lastY = ev.clientY;
-                const r = pageWrap.getBoundingClientRect();
-                const pt = {
-                    x: Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)),
-                    y: Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)),
-                };
-                points.push(pt);
-                polyline.setAttribute('points', points.map(p => (p.x * 100) + ',' + (p.y * 100)).join(' '));
-            };
-            const onUp = () => {
-                window.removeEventListener('mousemove', onMove);
-                window.removeEventListener('mouseup', onUp);
-                svg.remove();
-                if (points.length >= 2) {
-                    this.saveProofMark('freehand', pageNum, { points });
-                }
-            };
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
-        },
-
         };
     });
 });

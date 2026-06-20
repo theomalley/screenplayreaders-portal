@@ -317,7 +317,7 @@
 
             @if ($viewLink && $assignment->assigned_reader_id === auth()->id() || auth()->user()->isAdminOrEditor())
                 @if ($viewLink)
-                    <div x-data="readerPdfViewer(@js($viewLink), @js($assignment->id), @js(csrf_token()), @js($assignment->needsProofreading()))"
+                    <div x-data="readerPdfViewer(@js($viewLink), @js($assignment->id), @js(csrf_token()))"
                          x-init="loadPdf()"
                          class="flex flex-col bg-black/80" style="height: 80vh">
                         @include('partials.reader-pdf-viewer', ['assignment' => $assignment, 'standalone' => true])

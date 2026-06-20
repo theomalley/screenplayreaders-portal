@@ -57,14 +57,6 @@ class FilenameGenerator
         return self::coverageDoc($assignment, $readerInitials) . '.pdf';
     }
 
-    /** Proofread PDF filename: {base}_proofread-{initials}.pdf */
-    public static function proofreadPdf(Assignment $assignment, ?string $readerInitials = null): string
-    {
-        $base  = self::base($assignment);
-        $rider = $readerInitials ? '-' . $readerInitials : '';
-        return "{$base}_proofread{$rider}.pdf";
-    }
-
     /** Base segment: {prefix}_{YYYYMMDD}_{slug-title}_{writerCode} */
     public static function base(Assignment $assignment): string
     {
