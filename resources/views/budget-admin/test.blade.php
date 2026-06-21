@@ -54,16 +54,18 @@
                           this.$refs.cast_count.value = Math.floor(Math.random() * 16) + 1;
                           this.$refs.use_defaults.checked = Math.random() > 0.3;
 
-                          // Randomize customization points (must sum to <= 10)
+                          // Randomize customization points (whole numbers, sum to exactly 10)
                           let remaining = 10;
                           const fields = ['usercast','userstunts','usertravel','userspfx','usermufx','useranimals','uservfx'];
                           fields.forEach((f, i) => {
-                              const max = (i === fields.length - 1) ? remaining : Math.min(remaining, 5);
-                              const val = Math.round(Math.random() * max * 10) / 10;
-                              this.$refs[f].value = val;
-                              remaining -= val;
+                              if (i === fields.length - 1) {
+                                  this.$refs[f].value = remaining;
+                              } else {
+                                  const val = Math.floor(Math.random() * (Math.min(remaining, 6) + 1));
+                                  this.$refs[f].value = val;
+                                  remaining -= val;
+                              }
                           });
-                          if (remaining > 0) this.$refs.usercast.value = (parseFloat(this.$refs.usercast.value) + remaining).toFixed(1);
                       }
                   }">
                 @csrf
@@ -137,7 +139,7 @@
                                     <label class="block text-xs text-gray-400 text-center">{{ $label }}</label>
                                     <input type="number" name="{{ $key }}" x-ref="{{ $key }}"
                                            value="{{ old($key, $input[$key] ?? '') }}"
-                                           min="0" max="10" step="any" placeholder="—"
+                                           min="0" max="10" step="1" placeholder="—"
                                            class="w-full text-center border-gray-300 rounded shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm py-1" />
                                 </div>
                             @endforeach
