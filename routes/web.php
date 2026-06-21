@@ -218,6 +218,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');
 
+    // Budget admin
+    Route::get('/budget-admin', [\App\Http\Controllers\BudgetAdminController::class, 'index'])->name('budget-admin.index');
+    Route::get('/budget-admin/crew-rates', [\App\Http\Controllers\BudgetAdminController::class, 'crewRates'])->name('budget-admin.crew-rates');
+    Route::patch('/budget-admin/crew-rates', [\App\Http\Controllers\BudgetAdminController::class, 'updateCrewRates'])->name('budget-admin.crew-rates.update');
+    Route::get('/budget-admin/fringes', [\App\Http\Controllers\BudgetAdminController::class, 'fringes'])->name('budget-admin.fringes');
+    Route::patch('/budget-admin/fringes', [\App\Http\Controllers\BudgetAdminController::class, 'updateFringes'])->name('budget-admin.fringes.update');
+    Route::get('/budget-admin/states', [\App\Http\Controllers\BudgetAdminController::class, 'states'])->name('budget-admin.states');
+    Route::patch('/budget-admin/states', [\App\Http\Controllers\BudgetAdminController::class, 'updateStates'])->name('budget-admin.states.update');
+    Route::get('/budget-admin/allocations', [\App\Http\Controllers\BudgetAdminController::class, 'allocations'])->name('budget-admin.allocations');
+    Route::patch('/budget-admin/allocations', [\App\Http\Controllers\BudgetAdminController::class, 'updateAllocations'])->name('budget-admin.allocations.update');
+    Route::get('/budget-admin/guild-mappings', [\App\Http\Controllers\BudgetAdminController::class, 'guildMappings'])->name('budget-admin.guild-mappings');
+    Route::patch('/budget-admin/guild-mappings', [\App\Http\Controllers\BudgetAdminController::class, 'updateGuildMappings'])->name('budget-admin.guild-mappings.update');
+
     Route::get('/qc', [QcController::class, 'index'])->name('qc.index');
     Route::get('/qc/{assignment}', [QcController::class, 'show'])->name('qc.show');
     Route::post('/qc/{assignment}/regenerate-pdf', [QcController::class, 'regeneratePdf'])->name('qc.regenerate-pdf');

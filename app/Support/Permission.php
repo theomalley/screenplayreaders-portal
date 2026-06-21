@@ -25,6 +25,8 @@ class Permission
         'readers.delete'     => 'Readers — Delete',
         'editors.edit'       => 'Editors — Edit',
         'editors.delete'     => 'Editors — Delete',
+        'budget.admin'       => 'Budget — View Rates',
+        'budget.admin.edit'  => 'Budget — Edit Rates',
     ];
 
     // Defaults used when no DB record exists yet
@@ -44,6 +46,8 @@ class Permission
         'readers.delete'     => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
         'editors.edit'       => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
         'editors.delete'     => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
+        'budget.admin'       => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
+        'budget.admin.edit'  => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
     ];
 
     /** Settings key for a feature+role pair. */
