@@ -367,29 +367,53 @@ class BudgetCalculationService
             $deptLabor[$dept] = ($deptLabor[$dept] ?? 0) + $labor + $fringeTotal;
         }
 
+        // Map: crew department slug → [JS alloc name, DB department_allocations slug]
+        // JS uses names like "allocafterlabor_prod" while DB uses "production"
         $deptAllocMap = [
-            'cast' => 'cast', 'production' => 'production', 'camera' => 'camera',
-            'second_unit' => 'second_unit', 'production_sound' => 'production_sound',
-            'grip' => 'grip', 'electric' => 'electric', 'location' => 'location',
-            'transportation' => 'transportation', 'art' => 'art',
-            'construction' => 'set_construction', 'set_dressing' => 'set_dressing',
-            'property' => 'property', 'wardrobe' => 'wardrobe',
-            'hair_makeup' => 'hair_makeup', 'post_production' => 'editing',
-            'post_sound' => 'post_sound',
+            'cast'             => ['cast', 'cast'],
+            'production'       => ['prod', 'production'],
+            'camera'           => ['camera', 'camera'],
+            'second_unit'      => ['secondunit', 'second_unit'],
+            'production_sound' => ['prodsound', 'production_sound'],
+            'grip'             => ['grip', 'grip'],
+            'electric'         => ['electric', 'electric'],
+            'location'         => ['location', 'location'],
+            'transportation'   => ['transportation', 'transportation'],
+            'art'              => ['art', 'art'],
+            'construction'     => ['setconstruction', 'set_construction'],
+            'set_dressing'     => ['setdressing', 'set_dressing'],
+            'property'         => ['property', 'property'],
+            'wardrobe'         => ['wardrobe', 'wardrobe'],
+            'hair_makeup'      => ['makeuphair', 'hair_makeup'],
+            'post_production'  => ['editing', 'editing'],
+            'post_sound'       => ['postsound', 'post_sound'],
         ];
 
         $allocAfterLabor = [];
         $allocations = DepartmentAllocation::where('budget_class', $budgetClass)->get()->keyBy('department_slug');
 
-        foreach ($deptAllocMap as $dept => $allocSlug) {
-            $totalAlloc = $budget * (float) ($allocations[$allocSlug]->percentage ?? 0);
+        foreach ($deptAllocMap as $dept => [$jsName, $dbSlug]) {
+            $totalAlloc = $budget * (float) ($allocations[$dbSlug]->percentage ?? 0);
             $labor = $deptLabor[$dept] ?? 0;
-            $allocAfterLabor['allocafterlabor_' . $allocSlug] = max(0, $totalAlloc - $labor);
+            $allocAfterLabor['allocafterlabor_' . $jsName] = max(0, $totalAlloc - $labor);
         }
 
-        // Also add direct allocations (not "after labor")
-        foreach ($allocations as $slug => $alloc) {
-            $allocAfterLabor['alloc' . $slug] = $budget * (float) $alloc->percentage;
+        // Also add direct allocations using JS names (no underscores)
+        $directAllocMap = [
+            'development' => 'development', 'cast' => 'cast', 'production' => 'production',
+            'camera' => 'camera', 'prodsound' => 'production_sound', 'grip' => 'grip',
+            'electric' => 'electric', 'location' => 'location', 'transportation' => 'transportation',
+            'art' => 'art', 'setconstruction' => 'set_construction', 'setdressing' => 'set_dressing',
+            'property' => 'property', 'wardrobe' => 'wardrobe', 'makeuphair' => 'hair_makeup',
+            'editing' => 'editing', 'postsound' => 'post_sound', 'music' => 'music',
+            'backgroundtalent' => 'background_talent', 'publicity' => 'publicity',
+            'insurance' => 'insurance', 'otherexpenses' => 'other_expenses',
+            'secondunit' => 'second_unit', 'writer' => 'writer', 'producers' => 'producers',
+            'director' => 'director',
+        ];
+        foreach ($directAllocMap as $jsName => $dbSlug) {
+            $pct = (float) ($allocations[$dbSlug]->percentage ?? 0);
+            $allocAfterLabor['alloc' . $jsName] = $budget * $pct;
         }
 
         // Calculate each non-labor line item

@@ -130,6 +130,21 @@ return [
         [599, 'weekly', 3241.65, false],
     ]],
 
+    // ── PRODUCTION (non-union, no rate tiers) ──
+    ['932', 'assttodir', 'Assistant to Director', 'production', 'IATSE', 31, []],
+    ['934', 'dgatrainee', 'DGA Trainee', 'production', 'DGA_UPM', 32, []],
+    ['936', 'prodasst1', 'Production Assistant 1', 'production', 'IATSE', 33, []],
+    ['938', 'prodasst2', 'Production Assistant 2', 'production', 'IATSE', 34, []],
+    ['940', 'prodasst3', 'Production Assistant 3', 'production', 'IATSE', 35, []],
+    ['942', 'prodasst4', 'Production Assistant 4', 'production', 'IATSE', 36, []],
+    ['944', 'prodasst5', 'Production Assistant 5', 'production', 'IATSE', 37, []],
+
+    // ── ART (non-union, no rate tiers) ──
+    ['1720', 'artdeptasst', 'Art Dept Assistant', 'art', 'IATSE', 115, []],
+
+    // ── POST PRODUCTION (non-union, no rate tiers) ──
+    ['2910', 'postsupervisor', 'Post Supervisor', 'post_production', 'IATSE', 169, []],
+
     // ── CAMERA ──
     ['1010', 'dp', 'Director of Photography', 'camera', 'IATSE', 40, [
         [500, 'min_wage', 0, false],

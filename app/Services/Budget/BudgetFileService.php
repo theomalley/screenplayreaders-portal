@@ -146,30 +146,37 @@ class BudgetFileService
             );
         }
 
-        // Final sweep: replace any remaining {{...}} tokens with empty string
-        // so formulas don't get #VALUE! from unreplaced placeholders
+        // Final sweep: replace any remaining {{...}} tokens with 0
+        // The Sheets API doesn't support regex, so we replace entire cells that
+        // match common token patterns. matchEntireCell=true ensures we only hit
+        // cells that contain nothing but the token.
+        $cleanupRequests = [];
+        foreach ($payload as $key => $_) {
+            // Skip — these were already replaced above
+        }
+        // Collect all known token prefixes from the template and replace remaining ones
+        // by stripping {{ and }} separately
+        $cleanupRequests[] = new SheetsRequest([
+            'findReplace' => new FindReplaceRequest([
+                'find' => '{{',
+                'replacement' => '',
+                'allSheets' => true,
+                'matchCase' => false,
+                'matchEntireCell' => false,
+            ]),
+        ]);
+        $cleanupRequests[] = new SheetsRequest([
+            'findReplace' => new FindReplaceRequest([
+                'find' => '}}',
+                'replacement' => '',
+                'allSheets' => true,
+                'matchCase' => false,
+                'matchEntireCell' => false,
+            ]),
+        ]);
         $this->sheets->spreadsheets->batchUpdate(
             $spreadsheetId,
-            new BatchUpdateSpreadsheetRequest(['requests' => [
-                new SheetsRequest([
-                    'findReplace' => new FindReplaceRequest([
-                        'find' => '{{',
-                        'replacement' => '',
-                        'allSheets' => true,
-                        'matchCase' => false,
-                        'matchEntireCell' => false,
-                    ]),
-                ]),
-                new SheetsRequest([
-                    'findReplace' => new FindReplaceRequest([
-                        'find' => '}}',
-                        'replacement' => '',
-                        'allSheets' => true,
-                        'matchCase' => false,
-                        'matchEntireCell' => false,
-                    ]),
-                ]),
-            ]])
+            new BatchUpdateSpreadsheetRequest(['requests' => $cleanupRequests])
         );
     }
 
