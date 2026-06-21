@@ -71,13 +71,23 @@ class BudgetCalculationService
         // 6. Calculate fringe totals (ATL vs BTL production vs BTL post)
         $this->calculateFringeTotals($payload, $positionResults);
 
-        // 7. Calculate department allocation totals
+        // 7. Cast member calculations (before totals — cast labor counts toward ATL)
+        $this->calculateCastMembers($payload, $input, $resolver, $fringeCalc);
+
+        // 8. Writer and producer variables (before totals — ATL labor)
+        $this->calculateWriterProducer($payload, $input, $resolver, $crewCalc, $fringeCalc, $positions);
+
+        // 9. Department allocation amounts
         $this->calculateAllocations($payload, $budget, $budgetClass);
 
-        // 8. Calculate pre-surplus totals
-        $preSurplusTotal = ($payload['presurplus_total_ATL'] ?? 0) + ($payload['presurplus_total_BTL'] ?? 0);
+        // 10. Non-labor allocation line items (equipment, rentals, etc.)
+        // These must be computed BEFORE surplus — they're part of presurplus totals
+        $this->calculateNonLaborItems($payload, $positionResults, $budget, $budgetClass);
 
-        // 9. Surplus distribution
+        // 11. Calculate pre-surplus totals (labor + fringes + non-labor line items)
+        $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
+
+        // 12. Surplus distribution (customization points allocate what's left)
         $surplusPoints = [
             'cast' => (float) ($input['usercast'] ?? 0),
             'stunts' => (float) ($input['userstunts'] ?? 0),
@@ -95,15 +105,6 @@ class BudgetCalculationService
         foreach ($surplusResult['line_items'] as $key => $value) {
             $payload[$key] = $value;
         }
-
-        // 10. Cast member calculations (positions 512-560, special SAG-based logic)
-        $this->calculateCastMembers($payload, $input, $resolver, $fringeCalc);
-
-        // 11. Writer and producer variables
-        $this->calculateWriterProducer($payload, $input, $resolver, $crewCalc, $fringeCalc, $positions);
-
-        // 12. Non-labor allocation line items (equipment, rentals, etc. per department)
-        $this->calculateNonLaborItems($payload, $positionResults, $budget, $budgetClass);
 
         // 13. Text/label variables
         $this->calculateTextVariables($payload, $resolver);
@@ -254,6 +255,60 @@ class BudgetCalculationService
         }
 
         return $payload;
+    }
+
+    private function computePreSurplusTotal(
+        array &$payload, array $positionResults, float $budget, int $budgetClass
+    ): float {
+        // Pre-surplus = labor totals + fringe totals + non-labor line item totals
+        // This matches the JS: presurplus_total = labortotal + lineitemstotal + fringestotal
+
+        $laborTotal = 0;
+        $fringeTotal = 0;
+        foreach ($positionResults as $data) {
+            $laborTotal += $data['result']['labor_total'];
+            $fringeTotal += $data['fringes']['fringe_total'] ?? 0;
+        }
+
+        // Add cast labor + fringes
+        for ($i = 1; $i <= 25; $i++) {
+            $num = str_pad($i, 2, '0', STR_PAD_LEFT);
+            $lineId = 510 + ($i * 2);
+            $prefix = '_' . $lineId . 'cast' . $num;
+            $laborTotal += (float) ($payload[$prefix . 'labortotal'] ?? 0);
+            $fringeTotal += (float) ($payload[$prefix . 'SAGpension'] ?? 0);
+            $fringeTotal += (float) ($payload[$prefix . 'FICA'] ?? 0);
+            $fringeTotal += (float) ($payload[$prefix . 'Medicare'] ?? 0);
+            $fringeTotal += (float) ($payload[$prefix . 'FUI'] ?? 0);
+            $fringeTotal += (float) ($payload[$prefix . 'SUI'] ?? 0);
+            $fringeTotal += (float) ($payload[$prefix . 'payroll'] ?? 0);
+        }
+
+        // Add writer and producer labor
+        $laborTotal += (float) ($payload['_210writerlabortotal'] ?? 0);
+        $laborTotal += (float) ($payload['_310producerslabortotal'] ?? 0);
+        $fringeTotal += (float) ($payload['_210writerFICA'] ?? 0);
+        $fringeTotal += (float) ($payload['_210writerMedicare'] ?? 0);
+        $fringeTotal += (float) ($payload['_210writerFUI'] ?? 0);
+        $fringeTotal += (float) ($payload['_210writerSUI'] ?? 0);
+        $fringeTotal += (float) ($payload['_210writerpayroll'] ?? 0);
+        $fringeTotal += (float) ($payload['_210writerWGApension'] ?? 0);
+        $fringeTotal += (float) ($payload['_210writerWGAhealth'] ?? 0);
+
+        // Sum all non-labor line items (keys from the non-labor data file)
+        $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
+        $lineItemsTotal = 0;
+        foreach ($nonLaborItems as $varName => $_) {
+            $lineItemsTotal += (float) ($payload[$varName] ?? 0);
+        }
+
+        $total = $laborTotal + $fringeTotal + $lineItemsTotal;
+
+        $payload['presurplus_total_ATL'] = $payload['presurplus_total_ATL'] ?? 0;
+        $payload['presurplus_total_BTL'] = $payload['presurplus_total_BTL'] ?? 0;
+        $payload['presurplus_total_FINAL'] = $total;
+
+        return $total;
     }
 
     private function calculateCastMembers(
