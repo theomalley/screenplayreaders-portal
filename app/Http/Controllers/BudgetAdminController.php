@@ -202,23 +202,35 @@ class BudgetAdminController extends Controller
             'guilds'       => 'nullable|string',
             'cast_count'   => 'nullable|integer|min:0|max:25',
             'use_defaults' => 'nullable|boolean',
+            'usercast'     => 'nullable|numeric|min:0|max:10',
+            'userstunts'   => 'nullable|numeric|min:0|max:10',
+            'usertravel'   => 'nullable|numeric|min:0|max:10',
+            'userspfx'     => 'nullable|numeric|min:0|max:10',
+            'usermufx'     => 'nullable|numeric|min:0|max:10',
+            'useranimals'  => 'nullable|numeric|min:0|max:10',
+            'uservfx'      => 'nullable|numeric|min:0|max:10',
         ]);
 
         $budget = (float) $validated['budget'];
         $guilds = $validated['guilds'] ?? 'all';
+
+        // Customization points: use form values if provided, else defaults for budget level
+        $hasCustomPoints = $request->filled('usercast') || $request->filled('userstunts')
+            || $request->filled('userspfx') || $request->filled('usermufx') || $request->filled('uservfx');
 
         $input = [
             'budget'              => $budget,
             'shootingstate'       => $validated['shootingstate'] ?? 'California',
             'userusetimedefaults' => ($validated['use_defaults'] ?? true) ? '1' : '0',
             'usercastsize'        => (string) ($validated['cast_count'] ?? 4),
-            'usercast'            => $budget < 500000 ? '8.5' : '4',
-            'userstunts'          => $budget < 500000 ? '0.5' : '1',
-            'usertravel'          => '0',
-            'userspfx'            => $budget < 500000 ? '0.5' : '1',
-            'usermufx'            => $budget < 500000 ? '0.5' : '1',
-            'useranimals'         => '0',
-            'uservfx'             => $budget < 500000 ? '0' : '3',
+            '_guilds'             => $guilds,
+            'usercast'            => $hasCustomPoints ? (string) ($validated['usercast'] ?? '0') : ($budget < 500000 ? '8.5' : '4'),
+            'userstunts'          => $hasCustomPoints ? (string) ($validated['userstunts'] ?? '0') : ($budget < 500000 ? '0.5' : '1'),
+            'usertravel'          => (string) ($validated['usertravel'] ?? '0'),
+            'userspfx'            => $hasCustomPoints ? (string) ($validated['userspfx'] ?? '0') : ($budget < 500000 ? '0.5' : '1'),
+            'usermufx'            => $hasCustomPoints ? (string) ($validated['usermufx'] ?? '0') : ($budget < 500000 ? '0.5' : '1'),
+            'useranimals'         => (string) ($validated['useranimals'] ?? '0'),
+            'uservfx'             => $hasCustomPoints ? (string) ($validated['uservfx'] ?? '0') : ($budget < 500000 ? '0' : '3'),
             'userweeksprep'       => '0',
             'userweeksshoot'      => '0',
             'userweekswrap'       => '0',
@@ -281,56 +293,15 @@ class BudgetAdminController extends Controller
     {
         abort_unless(Permission::check('budget.admin.edit'), 403);
 
-        $validated = $request->validate([
+        $request->validate([
             'budget'        => 'required|numeric|min:25000|max:250000000',
-            'shootingstate' => 'nullable|string|max:50',
-            'guilds'        => 'nullable|string',
-            'cast_count'    => 'nullable|integer|min:0|max:25',
-            'use_defaults'  => 'nullable|boolean',
             'test_email'    => 'required|email|max:255',
             'topsheet_only' => 'nullable|boolean',
         ]);
 
-        $budget = (float) $validated['budget'];
-        $guilds = $validated['guilds'] ?? 'all';
-
-        $input = [
-            'budget'              => $budget,
-            'shootingstate'       => $validated['shootingstate'] ?? 'California',
-            'userusetimedefaults' => ($validated['use_defaults'] ?? true) ? '1' : '0',
-            'usercastsize'        => (string) ($validated['cast_count'] ?? 4),
-            'usercast'            => $budget < 500000 ? '8.5' : '4',
-            'userstunts'          => $budget < 500000 ? '0.5' : '1',
-            'usertravel'          => '0',
-            'userspfx'            => $budget < 500000 ? '0.5' : '1',
-            'usermufx'            => $budget < 500000 ? '0.5' : '1',
-            'useranimals'         => '0',
-            'uservfx'             => $budget < 500000 ? '0' : '3',
-            'userweeksprep'       => '0',
-            'userweeksshoot'      => '0',
-            'userweekswrap'       => '0',
-            'userweekspost'       => '0',
-            'headertitle'         => 'Test Budget $' . number_format($budget, 0),
-            'headernamefirst'     => 'Test',
-            'headernamelast'      => 'User',
-            'headerdirector'      => '',
-            'headerdate'          => now()->format('m/d/Y'),
-            'budgettype'          => 'Feature or Short Film',
-            'projecttitle'        => 'Test Budget $' . number_format($budget, 0),
-        ];
-
-        if ($guilds === 'all') {
-            $input += ['usersag' => '1', 'userwga' => '1', 'userdga' => '1', 'useriatse' => '1', 'userteamsters' => '1'];
-        } elseif ($guilds === 'none') {
-            $input += ['usersag' => '0', 'userwga' => '0', 'userdga' => '0', 'useriatse' => '0', 'userteamsters' => '0'];
-        } else {
-            $input += ['usersag' => '1', 'userwga' => '0', 'userdga' => '0', 'useriatse' => '0', 'userteamsters' => '0'];
-        }
-
-        $castCount = (int) ($validated['cast_count'] ?? 4);
-        for ($i = 1; $i <= 25; $i++) {
-            $input['cast' . str_pad($i, 2, '0', STR_PAD_LEFT)] = $i <= $castCount ? "Cast Member {$i}" : '';
-        }
+        // The delivery form passes the exact same input array that produced the calculation results
+        $input = $request->except(['_token', 'test_email', 'topsheet_only']);
+        $budget = (float) ($input['budget'] ?? 0);
 
         try {
             $service = new BudgetCalculationService();
@@ -339,10 +310,10 @@ class BudgetAdminController extends Controller
             $order = BudgetOrder::create([
                 'woo_order_id'     => 'TEST-' . now()->format('YmdHis'),
                 'customer_name'    => 'Test User',
-                'customer_email'   => $validated['test_email'],
+                'customer_email'   => $request->input('test_email'),
                 'budget_amount'    => $budget,
                 'budget_class'     => $payload['budgetclass'] ?? 1,
-                'state'            => $validated['shootingstate'] ?? 'California',
+                'state'            => $input['shootingstate'] ?? 'California',
                 'guild_sag'        => ($input['usersag'] ?? '0') === '1',
                 'guild_wga'        => ($input['userwga'] ?? '0') === '1',
                 'guild_dga'        => ($input['userdga'] ?? '0') === '1',
@@ -352,9 +323,9 @@ class BudgetAdminController extends Controller
                 'weeks_shoot'      => (float) ($payload['weeksSHOOT'] ?? 0),
                 'weeks_wrap'       => (float) ($payload['weeksWRAP'] ?? 0),
                 'weeks_post'       => (float) ($payload['weeksPOST'] ?? 0),
-                'cast_size'        => $castCount,
-                'topsheet_only'    => (bool) ($validated['topsheet_only'] ?? false),
-                'header_data'      => ['title' => $input['headertitle'], 'name_first' => 'Test', 'name_last' => 'User', 'date' => $input['headerdate']],
+                'cast_size'        => (int) ($input['usercastsize'] ?? 4),
+                'topsheet_only'    => (bool) $request->input('topsheet_only', false),
+                'header_data'      => ['title' => $input['headertitle'] ?? 'Test Budget', 'name_first' => 'Test', 'name_last' => 'User', 'date' => $input['headerdate'] ?? ''],
                 'form_input_data'  => $input,
                 'payload_json'     => $payload,
                 'status'           => BudgetOrder::STATUS_PROCESSING,
@@ -366,11 +337,11 @@ class BudgetAdminController extends Controller
                 ->with('test_input', $input)
                 ->with('test_delivery', [
                     'order_id' => $order->id,
-                    'email'    => $validated['test_email'],
-                    'topsheet' => (bool) ($validated['topsheet_only'] ?? false),
+                    'email'    => $request->input('test_email'),
+                    'topsheet' => (bool) $request->input('topsheet_only', false),
                     'budget'   => $budget,
                 ])
-                ->with('success', 'Budget order #' . $order->id . ' created and queued for delivery to ' . $validated['test_email']);
+                ->with('success', 'Budget order #' . $order->id . ' created and queued for delivery to ' . $request->input('test_email'));
         } catch (\Throwable $e) {
             return redirect()->route('budget-admin.test')
                 ->with('test_input', $input)
