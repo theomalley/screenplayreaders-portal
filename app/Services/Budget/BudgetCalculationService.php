@@ -349,10 +349,12 @@ class BudgetCalculationService
         // so the grand total picks them up through the H-chain, not through SUM(G...).
         // We must match the spreadsheet's accounting to make surplus correct.
 
-        // Crew position labor (from phase calculations, NOT cast/writer/producer)
+        // Crew position labor (from payload, so scaled values are used after step 11b)
         $crewLabor = 0;
         foreach ($positionResults as $data) {
-            $crewLabor += $data['result']['labor_total'];
+            $pos = $data['position'];
+            $prefix = '_' . $pos->line_item_id . $pos->slug;
+            $crewLabor += (float) ($payload[$prefix . 'labortotal'] ?? 0);
         }
 
         // Non-labor items
