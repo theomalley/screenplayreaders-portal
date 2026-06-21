@@ -282,52 +282,58 @@ class BudgetCalculationService
     private function computePreSurplusTotal(
         array &$payload, array $positionResults, float $budget, int $budgetClass
     ): float {
-        // Pre-surplus = labor totals + fringe totals + non-labor line item totals
-        // This matches the JS: presurplus_total = labortotal + lineitemstotal + fringestotal
+        // Sum exactly what the spreadsheet sums in its SUM(G...) ranges:
+        // 1. Crew labor (per-phase weeks × rate for each position)
+        // 2. Cast labor totals
+        // 3. Writer rate + Producer rate
+        // 4. Non-labor allocation items
+        // 5. Department fringe totals (FICAtotal_ATL, etc.) — NOT per-position fringes
 
         $laborTotal = 0;
-        $fringeTotal = 0;
+
+        // Crew position labor: sum of (weeks × rate) per phase
         foreach ($positionResults as $data) {
             $laborTotal += $data['result']['labor_total'];
-            $fringeTotal += $data['fringes']['fringe_total'] ?? 0;
         }
 
-        // Add cast labor + fringes
+        // Cast labor
         for ($i = 1; $i <= 25; $i++) {
             $num = str_pad($i, 2, '0', STR_PAD_LEFT);
-            $lineId = 510 + ($i * 2);
-            $prefix = '_' . $lineId . 'cast' . $num;
+            $prefix = '_' . (510 + ($i * 2)) . 'cast' . $num;
             $laborTotal += (float) ($payload[$prefix . 'labortotal'] ?? 0);
-            $fringeTotal += (float) ($payload[$prefix . 'SAGpension'] ?? 0);
-            $fringeTotal += (float) ($payload[$prefix . 'FICA'] ?? 0);
-            $fringeTotal += (float) ($payload[$prefix . 'Medicare'] ?? 0);
-            $fringeTotal += (float) ($payload[$prefix . 'FUI'] ?? 0);
-            $fringeTotal += (float) ($payload[$prefix . 'SUI'] ?? 0);
-            $fringeTotal += (float) ($payload[$prefix . 'payroll'] ?? 0);
         }
 
-        // Add writer and producer labor
+        // Writer + Producer
         $laborTotal += (float) ($payload['_210writerlabortotal'] ?? 0);
         $laborTotal += (float) ($payload['_310producerslabortotal'] ?? 0);
-        $fringeTotal += (float) ($payload['_210writerFICA'] ?? 0);
-        $fringeTotal += (float) ($payload['_210writerMedicare'] ?? 0);
-        $fringeTotal += (float) ($payload['_210writerFUI'] ?? 0);
-        $fringeTotal += (float) ($payload['_210writerSUI'] ?? 0);
-        $fringeTotal += (float) ($payload['_210writerpayroll'] ?? 0);
-        $fringeTotal += (float) ($payload['_210writerWGApension'] ?? 0);
-        $fringeTotal += (float) ($payload['_210writerWGAhealth'] ?? 0);
 
-        // Sum all non-labor line items (keys from the non-labor data file)
+        // Non-labor items
         $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
         $lineItemsTotal = 0;
         foreach ($nonLaborItems as $varName => $_) {
             $lineItemsTotal += (float) ($payload[$varName] ?? 0);
         }
 
-        $total = $laborTotal + $fringeTotal + $lineItemsTotal;
+        // Department fringe totals (these are the tokens the template actually uses)
+        $fringeTotal = 0;
+        $fringeKeys = [
+            'FICAtotal_ATL', 'Medicaretotal_ATL', 'FUItotal_ATL', 'SUItotal_ATL', 'payrolltotal_ATL',
+            '_210writerWGApension', '_210writerWGAhealth', 'SAGpensiontotal_cast',
+            '_410directorDGApension', '_410directorDGAhealth',
+            'FICAtotal_prod_BTL', 'Medicaretotal_prod_BTL', 'FUItotal_prod_BTL',
+            'SUItotal_prod_BTL', 'payrolltotal_prod_BTL',
+            'DGApensiontotal_prod_BTL', 'DGAhealthtotal_prod_BTL',
+            'IATSEgrandtotal_prod_BTL', 'Teamstersgrandtotal_prod_BTL',
+            'FICAtotal_post_BTL', 'Medicaretotal_post_BTL', 'FUItotal_post_BTL',
+            'SUItotal_post_BTL', 'payrolltotal_post_BTL',
+            'IATSEgrandtotal_post_BTL',
+        ];
+        foreach ($fringeKeys as $key) {
+            $fringeTotal += (float) ($payload[$key] ?? 0);
+        }
 
-        $payload['presurplus_total_ATL'] = $payload['presurplus_total_ATL'] ?? 0;
-        $payload['presurplus_total_BTL'] = $payload['presurplus_total_BTL'] ?? 0;
+        $total = $laborTotal + $lineItemsTotal + $fringeTotal;
+
         $payload['presurplus_total_FINAL'] = $total;
 
         return $total;
