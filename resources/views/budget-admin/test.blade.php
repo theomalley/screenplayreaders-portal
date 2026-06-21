@@ -78,6 +78,120 @@
                 </div>
             </form>
 
+            {{-- Delivery Test --}}
+            <form method="POST" action="{{ route('budget-admin.test.deliver') }}" class="mb-6"
+                  x-data="{ showDeliver: false }">
+                @csrf
+
+                <div class="bg-white rounded-lg shadow-sm border border-amber-200 overflow-hidden">
+                    <button @click.prevent="showDeliver = !showDeliver" type="button"
+                            class="w-full px-5 py-3 bg-amber-50 border-b border-amber-200 flex items-center justify-between text-left">
+                        <h3 class="text-sm font-semibold text-amber-800 uppercase tracking-wider">Generate Files & Send Email</h3>
+                        <svg class="w-4 h-4 text-amber-400 transition-transform" :class="showDeliver && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="showDeliver" x-collapse>
+                        <div class="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Budget Amount ($)</label>
+                                <input type="number" name="budget"
+                                       value="{{ old('budget', $input['budget'] ?? 500000) }}"
+                                       min="25000" max="250000000" step="1000"
+                                       class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                       required />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                                <select name="shootingstate"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    <option value="0">Default (California rates)</option>
+                                    @foreach ($states as $state)
+                                        <option value="{{ $state }}" {{ ($input['shootingstate'] ?? '') === $state ? 'selected' : '' }}>{{ $state }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Guilds</label>
+                                <select name="guilds"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+                                    <option value="all" selected>All guilds (automatic)</option>
+                                    <option value="sag_only">SAG-AFTRA only</option>
+                                    <option value="none">No guilds</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cast Members</label>
+                                <input type="number" name="cast_count"
+                                       value="{{ old('cast_count', $input['usercastsize'] ?? 4) }}"
+                                       min="0" max="25"
+                                       class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
+                        </div>
+                        <div class="px-5 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Send to Email</label>
+                                <input type="email" name="test_email"
+                                       value="{{ old('test_email', auth()->user()->email) }}"
+                                       placeholder="you@example.com"
+                                       class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                       required />
+                            </div>
+                            <div class="flex items-end gap-4">
+                                <label class="flex items-center gap-2 text-sm text-gray-700 pb-2">
+                                    <input type="hidden" name="topsheet_only" value="0" />
+                                    <input type="checkbox" name="topsheet_only" value="1"
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                    Topsheet only (1-page PDF, no XLSX)
+                                </label>
+                                <input type="hidden" name="use_defaults" value="1" />
+                                <button type="submit"
+                                        class="px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 whitespace-nowrap"
+                                        onclick="return confirm('This will create a real budget order, generate files in Google Drive, and send an email. Continue?')">
+                                    Generate &amp; Deliver
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            {{-- Delivery Status --}}
+            @if (session('success'))
+                <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if ($delivery)
+                <div class="mb-4 bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
+                    <div class="px-5 py-3 bg-amber-100 border-b border-amber-200">
+                        <h3 class="text-sm font-semibold text-amber-800 uppercase tracking-wider">Delivery Queued</h3>
+                    </div>
+                    <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="text-amber-600 text-xs uppercase">Order ID</span>
+                            <div class="font-mono font-medium text-amber-900">#{{ $delivery['order_id'] }}</div>
+                        </div>
+                        <div>
+                            <span class="text-amber-600 text-xs uppercase">Budget</span>
+                            <div class="font-mono font-medium text-amber-900">${{ number_format((float) $delivery['budget'], 0) }}</div>
+                        </div>
+                        <div>
+                            <span class="text-amber-600 text-xs uppercase">Delivering to</span>
+                            <div class="font-medium text-amber-900">{{ $delivery['email'] }}</div>
+                        </div>
+                        <div>
+                            <span class="text-amber-600 text-xs uppercase">Format</span>
+                            <div class="font-medium text-amber-900">{{ $delivery['topsheet'] ? 'Topsheet PDF only' : 'Full PDF + XLSX' }}</div>
+                        </div>
+                    </div>
+                    <div class="px-5 pb-3 text-xs text-amber-600">
+                        The queue worker will copy the Google Sheets template, fill tokens, export files, and send the email. Check the order status below or your inbox.
+                    </div>
+                </div>
+            @endif
+
             {{-- Results --}}
             @if ($payload)
                 <div class="space-y-4">

@@ -12,6 +12,7 @@ use App\Models\Budget\FringeRate;
 use App\Models\Budget\GuildTierMapping;
 use App\Models\Budget\RateTier;
 use App\Models\Budget\StateRate;
+use App\Jobs\GenerateBudgetFiles;
 use App\Services\Budget\BudgetCalculationService;
 use App\Support\Permission;
 use Illuminate\Http\Request;
@@ -186,8 +187,9 @@ class BudgetAdminController extends Controller
         $payload = session('test_payload');
         $elapsed = session('test_elapsed');
         $input = session('test_input', []);
+        $delivery = session('test_delivery');
 
-        return view('budget-admin.test', compact('states', 'payload', 'elapsed', 'input'));
+        return view('budget-admin.test', compact('states', 'payload', 'elapsed', 'input', 'delivery'));
     }
 
     public function testRun(Request $request)
@@ -272,6 +274,107 @@ class BudgetAdminController extends Controller
             return redirect()->route('budget-admin.test')
                 ->with('test_input', $input)
                 ->withErrors(['calculation' => $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine()]);
+        }
+    }
+
+    public function testDeliver(Request $request)
+    {
+        abort_unless(Permission::check('budget.admin.edit'), 403);
+
+        $validated = $request->validate([
+            'budget'        => 'required|numeric|min:25000|max:250000000',
+            'shootingstate' => 'nullable|string|max:50',
+            'guilds'        => 'nullable|string',
+            'cast_count'    => 'nullable|integer|min:0|max:25',
+            'use_defaults'  => 'nullable|boolean',
+            'test_email'    => 'required|email|max:255',
+            'topsheet_only' => 'nullable|boolean',
+        ]);
+
+        $budget = (float) $validated['budget'];
+        $guilds = $validated['guilds'] ?? 'all';
+
+        $input = [
+            'budget'              => $budget,
+            'shootingstate'       => $validated['shootingstate'] ?? 'California',
+            'userusetimedefaults' => ($validated['use_defaults'] ?? true) ? '1' : '0',
+            'usercastsize'        => (string) ($validated['cast_count'] ?? 4),
+            'usercast'            => '0',
+            'userstunts'          => '0',
+            'usertravel'          => '0',
+            'userspfx'            => '0',
+            'usermufx'            => '0',
+            'useranimals'         => '0',
+            'uservfx'             => '0',
+            'userweeksprep'       => '0',
+            'userweeksshoot'      => '0',
+            'userweekswrap'       => '0',
+            'userweekspost'       => '0',
+            'headertitle'         => 'Test Budget $' . number_format($budget, 0),
+            'headernamefirst'     => 'Test',
+            'headernamelast'      => 'User',
+            'headerdirector'      => '',
+            'headerdate'          => now()->format('m/d/Y'),
+            'budgettype'          => 'Feature or Short Film',
+            'projecttitle'        => 'Test Budget $' . number_format($budget, 0),
+        ];
+
+        if ($guilds === 'all') {
+            $input += ['usersag' => '1', 'userwga' => '1', 'userdga' => '1', 'useriatse' => '1', 'userteamsters' => '1'];
+        } elseif ($guilds === 'none') {
+            $input += ['usersag' => '0', 'userwga' => '0', 'userdga' => '0', 'useriatse' => '0', 'userteamsters' => '0'];
+        } else {
+            $input += ['usersag' => '1', 'userwga' => '0', 'userdga' => '0', 'useriatse' => '0', 'userteamsters' => '0'];
+        }
+
+        $castCount = (int) ($validated['cast_count'] ?? 4);
+        for ($i = 1; $i <= 25; $i++) {
+            $input['cast' . str_pad($i, 2, '0', STR_PAD_LEFT)] = $i <= $castCount ? "Cast Member {$i}" : '';
+        }
+
+        try {
+            $service = new BudgetCalculationService();
+            $payload = $service->calculate($input);
+
+            $order = BudgetOrder::create([
+                'woo_order_id'     => 'TEST-' . now()->format('YmdHis'),
+                'customer_name'    => 'Test User',
+                'customer_email'   => $validated['test_email'],
+                'budget_amount'    => $budget,
+                'budget_class'     => $payload['budgetclass'] ?? 1,
+                'state'            => $validated['shootingstate'] ?? 'California',
+                'guild_sag'        => ($input['usersag'] ?? '0') === '1',
+                'guild_wga'        => ($input['userwga'] ?? '0') === '1',
+                'guild_dga'        => ($input['userdga'] ?? '0') === '1',
+                'guild_iatse'      => ($input['useriatse'] ?? '0') === '1',
+                'guild_teamsters'  => ($input['userteamsters'] ?? '0') === '1',
+                'weeks_prep'       => (float) ($payload['weeksPREP'] ?? 0),
+                'weeks_shoot'      => (float) ($payload['weeksSHOOT'] ?? 0),
+                'weeks_wrap'       => (float) ($payload['weeksWRAP'] ?? 0),
+                'weeks_post'       => (float) ($payload['weeksPOST'] ?? 0),
+                'cast_size'        => $castCount,
+                'topsheet_only'    => (bool) ($validated['topsheet_only'] ?? false),
+                'header_data'      => ['title' => $input['headertitle'], 'name_first' => 'Test', 'name_last' => 'User', 'date' => $input['headerdate']],
+                'form_input_data'  => $input,
+                'payload_json'     => $payload,
+                'status'           => BudgetOrder::STATUS_PROCESSING,
+            ]);
+
+            GenerateBudgetFiles::dispatch($order->id);
+
+            return redirect()->route('budget-admin.test')
+                ->with('test_input', $input)
+                ->with('test_delivery', [
+                    'order_id' => $order->id,
+                    'email'    => $validated['test_email'],
+                    'topsheet' => (bool) ($validated['topsheet_only'] ?? false),
+                    'budget'   => $budget,
+                ])
+                ->with('success', 'Budget order #' . $order->id . ' created and queued for delivery to ' . $validated['test_email']);
+        } catch (\Throwable $e) {
+            return redirect()->route('budget-admin.test')
+                ->with('test_input', $input)
+                ->withErrors(['delivery' => $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine()]);
         }
     }
 }
