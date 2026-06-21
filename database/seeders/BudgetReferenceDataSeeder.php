@@ -21,6 +21,7 @@ class BudgetReferenceDataSeeder extends Seeder
         $this->seedCrewPositionsAndTiers();
         $this->seedGuildTierMappings();
         $this->seedDepartmentAllocations();
+        $this->seedPhaseConfigs();
     }
 
     private function seedFringeRates(): void
@@ -101,6 +102,16 @@ class BudgetReferenceDataSeeder extends Seeder
                     ['tier_code' => $tierCode]
                 );
             }
+        }
+    }
+
+    private function seedPhaseConfigs(): void
+    {
+        $configs = require __DIR__ . '/data/budget_phase_configs.php';
+
+        foreach ($configs as $lineItemId => $phaseConfig) {
+            CrewPosition::where('line_item_id', $lineItemId)
+                ->update(['phase_config' => json_encode($phaseConfig)]);
         }
     }
 
