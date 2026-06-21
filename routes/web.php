@@ -230,6 +230,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/budget-admin/allocations', [\App\Http\Controllers\BudgetAdminController::class, 'updateAllocations'])->name('budget-admin.allocations.update');
     Route::get('/budget-admin/guild-mappings', [\App\Http\Controllers\BudgetAdminController::class, 'guildMappings'])->name('budget-admin.guild-mappings');
     Route::patch('/budget-admin/guild-mappings', [\App\Http\Controllers\BudgetAdminController::class, 'updateGuildMappings'])->name('budget-admin.guild-mappings.update');
+    Route::get('/budget-admin/test', [\App\Http\Controllers\BudgetAdminController::class, 'testForm'])->name('budget-admin.test');
+    Route::post('/budget-admin/test', [\App\Http\Controllers\BudgetAdminController::class, 'testRun'])->name('budget-admin.test.run');
 
     Route::get('/qc', [QcController::class, 'index'])->name('qc.index');
     Route::get('/qc/{assignment}', [QcController::class, 'show'])->name('qc.show');

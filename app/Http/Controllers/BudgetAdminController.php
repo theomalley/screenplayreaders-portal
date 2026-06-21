@@ -5,12 +5,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Budget\BudgetOrder;
 use App\Models\Budget\CrewPosition;
-use App\Models\Budget\RateTier;
-use App\Models\Budget\FringeRate;
-use App\Models\Budget\StateRate;
-use App\Models\Budget\GuildTierMapping;
 use App\Models\Budget\DepartmentAllocation;
+use App\Models\Budget\FringeRate;
+use App\Models\Budget\GuildTierMapping;
+use App\Models\Budget\RateTier;
+use App\Models\Budget\StateRate;
+use App\Services\Budget\BudgetCalculationService;
 use App\Support\Permission;
 use Illuminate\Http\Request;
 
@@ -172,5 +174,104 @@ class BudgetAdminController extends Controller
         }
 
         return back()->with('success', 'Guild tier mappings saved.');
+    }
+
+    // ── Test Calculator ──
+
+    public function testForm(Request $request)
+    {
+        abort_unless(Permission::check('budget.admin'), 403);
+
+        $states = StateRate::orderBy('state_name')->pluck('state_name')->toArray();
+        $payload = session('test_payload');
+        $elapsed = session('test_elapsed');
+        $input = session('test_input', []);
+
+        return view('budget-admin.test', compact('states', 'payload', 'elapsed', 'input'));
+    }
+
+    public function testRun(Request $request)
+    {
+        abort_unless(Permission::check('budget.admin.edit'), 403);
+
+        $validated = $request->validate([
+            'budget'       => 'required|numeric|min:25000|max:250000000',
+            'shootingstate' => 'nullable|string|max:50',
+            'guilds'       => 'nullable|string',
+            'cast_count'   => 'nullable|integer|min:0|max:25',
+            'use_defaults' => 'nullable|boolean',
+        ]);
+
+        $budget = (float) $validated['budget'];
+        $guilds = $validated['guilds'] ?? 'all';
+
+        $input = [
+            'budget'              => $budget,
+            'shootingstate'       => $validated['shootingstate'] ?? 'California',
+            'userusetimedefaults' => ($validated['use_defaults'] ?? true) ? '1' : '0',
+            'usercastsize'        => (string) ($validated['cast_count'] ?? 4),
+            'usercast'            => '0',
+            'userstunts'          => '0',
+            'usertravel'          => '0',
+            'userspfx'            => '0',
+            'usermufx'            => '0',
+            'useranimals'         => '0',
+            'uservfx'             => '0',
+            'userweeksprep'       => '0',
+            'userweeksshoot'      => '0',
+            'userweekswrap'       => '0',
+            'userweekspost'       => '0',
+            'headertitle'         => 'Test Budget',
+            'headernamefirst'     => 'Test',
+            'headernamelast'      => 'User',
+            'headerdirector'      => '',
+            'headerdate'          => now()->format('m/d/Y'),
+            'budgettype'          => 'Feature or Short Film',
+            'projecttitle'        => 'Test Budget',
+        ];
+
+        // Guild flags
+        if ($guilds === 'all') {
+            $input['usersag'] = '1';
+            $input['userwga'] = '1';
+            $input['userdga'] = '1';
+            $input['useriatse'] = '1';
+            $input['userteamsters'] = '1';
+        } elseif ($guilds === 'none') {
+            $input['usersag'] = '0';
+            $input['userwga'] = '0';
+            $input['userdga'] = '0';
+            $input['useriatse'] = '0';
+            $input['userteamsters'] = '0';
+        } else {
+            $input['usersag'] = '1';
+            $input['userwga'] = '0';
+            $input['userdga'] = '0';
+            $input['useriatse'] = '0';
+            $input['userteamsters'] = '0';
+        }
+
+        // Cast member names
+        $castCount = (int) ($validated['cast_count'] ?? 4);
+        for ($i = 1; $i <= 25; $i++) {
+            $input['cast' . str_pad($i, 2, '0', STR_PAD_LEFT)] = $i <= $castCount ? "Cast Member {$i}" : '';
+        }
+
+        $start = microtime(true);
+
+        try {
+            $service = new BudgetCalculationService();
+            $payload = $service->calculate($input);
+            $elapsed = round((microtime(true) - $start) * 1000);
+
+            return redirect()->route('budget-admin.test')
+                ->with('test_payload', $payload)
+                ->with('test_elapsed', $elapsed)
+                ->with('test_input', $input);
+        } catch (\Throwable $e) {
+            return redirect()->route('budget-admin.test')
+                ->with('test_input', $input)
+                ->withErrors(['calculation' => $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine()]);
+        }
     }
 }

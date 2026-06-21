@@ -36,6 +36,12 @@
                 <p class="text-sm text-gray-500 mt-1">Which rate tier code each guild uses at each budget class</p>
             </a>
 
+            <a href="{{ route('budget-admin.test') }}"
+               class="block bg-indigo-50 rounded-lg shadow-sm border border-indigo-200 px-5 py-4 hover:border-indigo-400 hover:shadow transition">
+                <h3 class="text-base font-semibold text-indigo-800">Test Calculator</h3>
+                <p class="text-sm text-indigo-600 mt-1">Enter a budget amount and run the calculation engine — see guild codes, crew rates, and the full output payload</p>
+            </a>
+
         </div>
     </div>
 </x-app-layout>
