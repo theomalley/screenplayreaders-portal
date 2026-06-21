@@ -84,30 +84,13 @@ class BudgetCalculationService
         // These must be computed BEFORE surplus — they're part of presurplus totals
         $this->calculateNonLaborItems($payload, $positionResults, $budget, $budgetClass);
 
-        // 11. Calculate pre-surplus totals (labor + fringes + non-labor line items)
+        // 11. Calculate pre-surplus totals
+        // Use the same sum the spreadsheet computes: crew labor phases in G +
+        // non-labor items in G + fringe department totals in G.
+        // Writer/producer/cast labor go to column H in the template (via formulas),
+        // so they're NOT in the SUM(G...) that produces the grand total — the template
+        // adds them through section subtotals in H instead.
         $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
-
-        // 11b. If presurplus exceeds available budget (budget - contingency), scale down
-        // non-labor items proportionally so surplus doesn't go negative
-        $available = $budget * 0.9; // budget minus 10% contingency
-        if ($preSurplusTotal > $available) {
-            $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
-            $nonLaborTotal = 0;
-            foreach ($nonLaborItems as $varName => $_) {
-                $nonLaborTotal += (float) ($payload[$varName] ?? 0);
-            }
-            if ($nonLaborTotal > 0) {
-                // Target: non-labor should shrink by exactly the excess
-                $targetNonLabor = max(0, $nonLaborTotal - ($preSurplusTotal - $available));
-                $scaleFactor = $targetNonLabor / $nonLaborTotal;
-                foreach ($nonLaborItems as $varName => $_) {
-                    $payload[$varName] = (float) ($payload[$varName] ?? 0) * $scaleFactor;
-                }
-                // Force presurplus to exactly equal available (avoid float drift)
-                $preSurplusTotal = $available;
-                $payload['presurplus_total_FINAL'] = $available;
-            }
-        }
 
         // 12. Surplus distribution (customization points allocate what's left)
         // GF form computes defaults when user picks "No, Screenplay Readers do it":
@@ -285,30 +268,19 @@ class BudgetCalculationService
     private function computePreSurplusTotal(
         array &$payload, array $positionResults, float $budget, int $budgetClass
     ): float {
-        // Sum exactly what the spreadsheet sums in its SUM(G...) ranges:
-        // 1. Crew labor (per-phase weeks × rate for each position)
-        // 2. Cast labor totals
-        // 3. Writer rate + Producer rate
-        // 4. Non-labor allocation items
-        // 5. Department fringe totals (FICAtotal_ATL, etc.) — NOT per-position fringes
+        // Sum what the spreadsheet's SUM(G61:G171) + SUM(G177:G1029) captures:
+        // - Crew position labor (per-phase weeks × rate) → column G detail rows
+        // - Non-labor allocation items → column G via =F formulas
+        // - Department fringe totals → column G fringe section
+        // Writer, producer, and cast labor go into column H via section formulas,
+        // so the grand total picks them up through the H-chain, not through SUM(G...).
+        // We must match the spreadsheet's accounting to make surplus correct.
 
-        $laborTotal = 0;
-
-        // Crew position labor: sum of (weeks × rate) per phase
+        // Crew position labor (from phase calculations, NOT cast/writer/producer)
+        $crewLabor = 0;
         foreach ($positionResults as $data) {
-            $laborTotal += $data['result']['labor_total'];
+            $crewLabor += $data['result']['labor_total'];
         }
-
-        // Cast labor
-        for ($i = 1; $i <= 25; $i++) {
-            $num = str_pad($i, 2, '0', STR_PAD_LEFT);
-            $prefix = '_' . (510 + ($i * 2)) . 'cast' . $num;
-            $laborTotal += (float) ($payload[$prefix . 'labortotal'] ?? 0);
-        }
-
-        // Writer + Producer
-        $laborTotal += (float) ($payload['_210writerlabortotal'] ?? 0);
-        $laborTotal += (float) ($payload['_310producerslabortotal'] ?? 0);
 
         // Non-labor items
         $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
@@ -317,7 +289,7 @@ class BudgetCalculationService
             $lineItemsTotal += (float) ($payload[$varName] ?? 0);
         }
 
-        // Department fringe totals (these are the tokens the template actually uses)
+        // Department fringe totals
         $fringeTotal = 0;
         $fringeKeys = [
             'FICAtotal_ATL', 'Medicaretotal_ATL', 'FUItotal_ATL', 'SUItotal_ATL', 'payrolltotal_ATL',
@@ -335,7 +307,21 @@ class BudgetCalculationService
             $fringeTotal += (float) ($payload[$key] ?? 0);
         }
 
-        $total = $laborTotal + $lineItemsTotal + $fringeTotal;
+        // Writer, producer, cast labor — these go into the template's H column
+        // via section subtotal formulas. The grand total at H1040 chains through
+        // H1037 → H1034+H1035 → SUM(G...). The G column picks up the per-phase
+        // rate values for crew positions, and the section subtotals in H pick up
+        // writer/producer/cast. So we must include them for the surplus to be
+        // correct (budget = all_labor + fringes + non_labor + contingency + surplus).
+        $atlLabor = 0;
+        $atlLabor += (float) ($payload['_210writerlabortotal'] ?? 0);
+        $atlLabor += (float) ($payload['_310producerslabortotal'] ?? 0);
+        for ($i = 1; $i <= 25; $i++) {
+            $prefix = '_' . (510 + ($i * 2)) . 'cast' . str_pad($i, 2, '0', STR_PAD_LEFT);
+            $atlLabor += (float) ($payload[$prefix . 'labortotal'] ?? 0);
+        }
+
+        $total = $crewLabor + $atlLabor + $lineItemsTotal + $fringeTotal;
 
         $payload['presurplus_total_FINAL'] = $total;
 
