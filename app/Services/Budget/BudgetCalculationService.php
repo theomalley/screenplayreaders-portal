@@ -413,14 +413,38 @@ class BudgetCalculationService
         $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
 
         // Compute allocafterlabor for each department:
-        // allocafterlabor = max(0, department_allocation - department_labor_total)
-        $deptLabor = [];
+        // allocafterlabor = max(0, department_allocation - (labor + fringes))
+        $deptLaborAndFringes = [];
         foreach ($positionResults as $data) {
             $dept = $data['position']->department;
             $labor = $data['result']['labor_total'];
             $fringeTotal = $data['fringes']['fringe_total'] ?? 0;
-            $deptLabor[$dept] = ($deptLabor[$dept] ?? 0) + $labor + $fringeTotal;
+            $deptLaborAndFringes[$dept] = ($deptLaborAndFringes[$dept] ?? 0) + $labor + $fringeTotal;
         }
+
+        // Add cast labor+fringes to 'cast' department
+        for ($i = 1; $i <= 25; $i++) {
+            $num = str_pad($i, 2, '0', STR_PAD_LEFT);
+            $lineId = 510 + ($i * 2);
+            $prefix = '_' . $lineId . 'cast' . $num;
+            $castLabor = (float) ($payload[$prefix . 'labortotal'] ?? 0);
+            $castFringes = (float) ($payload[$prefix . 'SAGpension'] ?? 0)
+                + (float) ($payload[$prefix . 'FICA'] ?? 0)
+                + (float) ($payload[$prefix . 'Medicare'] ?? 0)
+                + (float) ($payload[$prefix . 'FUI'] ?? 0)
+                + (float) ($payload[$prefix . 'SUI'] ?? 0)
+                + (float) ($payload[$prefix . 'payroll'] ?? 0);
+            $deptLaborAndFringes['cast'] = ($deptLaborAndFringes['cast'] ?? 0) + $castLabor + $castFringes;
+        }
+
+        // Add writer to 'writing', producer to 'producers' (ATL departments)
+        $writerTotal = (float) ($payload['_210writerlabortotal'] ?? 0)
+            + (float) ($payload['_210writerFICA'] ?? 0) + (float) ($payload['_210writerMedicare'] ?? 0)
+            + (float) ($payload['_210writerFUI'] ?? 0) + (float) ($payload['_210writerSUI'] ?? 0)
+            + (float) ($payload['_210writerpayroll'] ?? 0)
+            + (float) ($payload['_210writerWGApension'] ?? 0) + (float) ($payload['_210writerWGAhealth'] ?? 0);
+        $deptLaborAndFringes['writing'] = ($deptLaborAndFringes['writing'] ?? 0) + $writerTotal;
+        $deptLaborAndFringes['producers'] = ($deptLaborAndFringes['producers'] ?? 0) + (float) ($payload['_310producerslabortotal'] ?? 0);
 
         // Map: crew department slug → [JS alloc name, DB department_allocations slug]
         // JS uses names like "allocafterlabor_prod" while DB uses "production"
@@ -449,8 +473,8 @@ class BudgetCalculationService
 
         foreach ($deptAllocMap as $dept => [$jsName, $dbSlug]) {
             $totalAlloc = $budget * (float) ($allocations[$dbSlug]->percentage ?? 0);
-            $labor = $deptLabor[$dept] ?? 0;
-            $allocAfterLabor['allocafterlabor_' . $jsName] = max(0, $totalAlloc - $labor);
+            $laborAndFringes = $deptLaborAndFringes[$dept] ?? 0;
+            $allocAfterLabor['allocafterlabor_' . $jsName] = max(0, $totalAlloc - $laborAndFringes);
         }
 
         // Also add direct allocations using JS names (no underscores)
