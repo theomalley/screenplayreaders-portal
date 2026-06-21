@@ -233,6 +233,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/budget-admin/test', [\App\Http\Controllers\BudgetAdminController::class, 'testForm'])->name('budget-admin.test');
     Route::post('/budget-admin/test', [\App\Http\Controllers\BudgetAdminController::class, 'testRun'])->name('budget-admin.test.run');
     Route::post('/budget-admin/test/deliver', [\App\Http\Controllers\BudgetAdminController::class, 'testDeliver'])->name('budget-admin.test.deliver');
+    Route::post('/budget-admin/test/batch', [\App\Http\Controllers\BudgetAdminController::class, 'testBatch'])->name('budget-admin.test.batch');
 
     Route::get('/qc', [QcController::class, 'index'])->name('qc.index');
     Route::get('/qc/{assignment}', [QcController::class, 'show'])->name('qc.show');

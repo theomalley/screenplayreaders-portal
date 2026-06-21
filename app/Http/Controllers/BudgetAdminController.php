@@ -188,8 +188,9 @@ class BudgetAdminController extends Controller
         $elapsed = session('test_elapsed');
         $input = session('test_input', []);
         $delivery = session('test_delivery');
+        $batchResults = session('batch_results');
 
-        return view('budget-admin.test', compact('states', 'payload', 'elapsed', 'input', 'delivery'));
+        return view('budget-admin.test', compact('states', 'payload', 'elapsed', 'input', 'delivery', 'batchResults'));
     }
 
     public function testRun(Request $request)
@@ -347,5 +348,99 @@ class BudgetAdminController extends Controller
                 ->with('test_input', $input)
                 ->withErrors(['delivery' => $e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine()]);
         }
+    }
+
+    public function testBatch(Request $request)
+    {
+        abort_unless(Permission::check('budget.admin.edit'), 403);
+
+        $count = min(50, max(1, (int) $request->input('batch_count', 10)));
+        $states = StateRate::pluck('state_name')->toArray();
+        $guildOptions = ['all', 'sag_only', 'none'];
+        $budgetRanges = [
+            [25000, 49999], [50000, 199999], [200000, 499999],
+            [500000, 1999999], [2000000, 3499999], [3500000, 10999999],
+            [11000000, 24999999], [25000000, 100000000],
+        ];
+
+        $results = [];
+        $service = new BudgetCalculationService();
+
+        for ($t = 0; $t < $count; $t++) {
+            $range = $budgetRanges[array_rand($budgetRanges)];
+            $budget = rand($range[0], $range[1]);
+            $guilds = $guildOptions[array_rand($guildOptions)];
+            $state = $states[array_rand($states)];
+            $castCount = rand(1, 15);
+
+            // Random customization points summing to 10
+            $remaining = 10;
+            $points = [];
+            foreach (['cast', 'stunts', 'travel', 'spfx', 'mufx', 'animals'] as $cat) {
+                $val = rand(0, min($remaining, 6));
+                $points[$cat] = $val;
+                $remaining -= $val;
+            }
+            $points['vfx'] = $remaining;
+
+            $input = [
+                'budget' => $budget, 'shootingstate' => $state,
+                'userusetimedefaults' => '1', 'usercastsize' => (string) $castCount,
+                'usercast' => (string) $points['cast'], 'userstunts' => (string) $points['stunts'],
+                'usertravel' => (string) $points['travel'], 'userspfx' => (string) $points['spfx'],
+                'usermufx' => (string) $points['mufx'], 'useranimals' => (string) $points['animals'],
+                'uservfx' => (string) $points['vfx'],
+                'userweeksprep' => '0', 'userweeksshoot' => '0', 'userweekswrap' => '0', 'userweekspost' => '0',
+                'headertitle' => 'Batch Test', 'headernamefirst' => 'Test', 'headernamelast' => 'User',
+                'headerdirector' => '', 'headerdate' => now()->format('m/d/Y'),
+                'budgettype' => 'Feature or Short Film', 'projecttitle' => 'Batch Test',
+            ];
+
+            if ($guilds === 'all') {
+                $input += ['usersag' => '1', 'userwga' => '1', 'userdga' => '1', 'useriatse' => '1', 'userteamsters' => '1'];
+            } elseif ($guilds === 'none') {
+                $input += ['usersag' => '0', 'userwga' => '0', 'userdga' => '0', 'useriatse' => '0', 'userteamsters' => '0'];
+            } else {
+                $input += ['usersag' => '1', 'userwga' => '0', 'userdga' => '0', 'useriatse' => '0', 'userteamsters' => '0'];
+            }
+
+            for ($i = 1; $i <= 25; $i++) {
+                $input['cast' . str_pad($i, 2, '0', STR_PAD_LEFT)] = $i <= $castCount ? "Cast {$i}" : '';
+            }
+
+            $start = microtime(true);
+            try {
+                $payload = $service->calculate($input);
+                $elapsed = round((microtime(true) - $start) * 1000);
+
+                $budgetAmt = (float) ($payload['budget'] ?? 0);
+                $contingency = (float) ($payload['contingency_total'] ?? 0);
+                $presurplus = (float) ($payload['presurplus_total_FINAL'] ?? 0);
+                $surplusKeys = ['_570additionalcastbudget','_572agentattyfees','_610stuntslaborbudget','_620purchases','_630rentals','_640boxrentals','_699miscexpenses','_710travel','_720lodging','_799miscexpenses','_2310makeupfxlaborbudget','_2312materials','_2314rentals','_2399miscexpenses','_2410specialfxlaborbudget','_2412purchasesrentals','_2414manufacturing','_2416riggingstriking','_2418boxrentals','_2499miscexpenses','_2510animalslaborbudget','_2512animals','_2514animalcarefeeding','_2516animaltravellodging','_2810visualfxbudget'];
+                $surplusTotal = 0;
+                foreach ($surplusKeys as $k) $surplusTotal += (float) ($payload[$k] ?? 0);
+                $engineTotal = $presurplus + $contingency + $surplusTotal;
+                $gap = $budgetAmt - $engineTotal;
+
+                $results[] = [
+                    'budget' => $budgetAmt, 'class' => $payload['budgetclass'] ?? '?',
+                    'state' => $state, 'guilds' => $guilds,
+                    'cast' => $castCount, 'points' => implode('/', array_values($points)),
+                    'engine_total' => $engineTotal, 'gap' => $gap,
+                    'pass' => abs($gap) < 1, 'ms' => $elapsed, 'error' => null,
+                ];
+            } catch (\Throwable $e) {
+                $results[] = [
+                    'budget' => $budget, 'class' => '?', 'state' => $state, 'guilds' => $guilds,
+                    'cast' => $castCount, 'points' => implode('/', array_values($points)),
+                    'engine_total' => 0, 'gap' => $budget, 'pass' => false,
+                    'ms' => round((microtime(true) - $start) * 1000),
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return redirect()->route('budget-admin.test')
+            ->with('batch_results', $results);
     }
 }

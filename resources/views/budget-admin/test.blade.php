@@ -149,9 +149,96 @@
 
                     <div class="px-5 pb-4 flex items-center gap-3 border-t border-gray-100 pt-3">
                         <x-primary-button>Run Calculation</x-primary-button>
+                        <button type="submit" @click="randomize()"
+                                class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            Randomize &amp; Calculate
+                        </button>
                     </div>
                 </div>
             </form>
+
+            {{-- Batch Test --}}
+            <form method="POST" action="{{ route('budget-admin.test.batch') }}" class="mb-6">
+                @csrf
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex items-center gap-4 flex-wrap">
+                    <label class="text-sm font-medium text-gray-700">Run</label>
+                    <input type="number" name="batch_count" value="10" min="1" max="50"
+                           class="w-20 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm text-center" />
+                    <label class="text-sm text-gray-700">random tests</label>
+                    <button type="submit"
+                            class="px-4 py-2 bg-gray-800 text-white text-sm font-semibold rounded-md hover:bg-gray-900">
+                        Run Batch
+                    </button>
+                </div>
+            </form>
+
+            {{-- Batch Results --}}
+            @if ($batchResults)
+                @php
+                    $passes = collect($batchResults)->where('pass', true)->count();
+                    $fails = collect($batchResults)->where('pass', false)->count();
+                    $total = count($batchResults);
+                @endphp
+                <div class="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                            Batch Results: {{ $total }} tests
+                        </h3>
+                        <div class="flex gap-3 text-sm">
+                            <span class="text-green-700 font-semibold">{{ $passes }} passed</span>
+                            @if ($fails > 0)
+                                <span class="text-red-700 font-semibold">{{ $fails }} failed</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-100 bg-gray-50/50">
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-8">#</th>
+                                    <th class="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-center w-10">OK</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Budget</th>
+                                    <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase w-10">Cls</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Engine Total</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Gap</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">State</th>
+                                    <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Guilds</th>
+                                    <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Cast</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Points</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">ms</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($batchResults as $i => $r)
+                                    <tr class="{{ $r['pass'] ? '' : 'bg-red-50' }}">
+                                        <td class="px-3 py-1.5 text-gray-400">{{ $i + 1 }}</td>
+                                        <td class="px-3 py-1.5 text-center">
+                                            @if ($r['error'])
+                                                <span class="text-red-500" title="{{ $r['error'] }}">ERR</span>
+                                            @elseif ($r['pass'])
+                                                <span class="text-green-600">OK</span>
+                                            @else
+                                                <span class="text-red-600 font-bold">FAIL</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-1.5 text-right font-mono">${{ number_format((float)$r['budget'], 0) }}</td>
+                                        <td class="px-3 py-1.5 text-center">{{ $r['class'] }}</td>
+                                        <td class="px-3 py-1.5 text-right font-mono">${{ number_format((float)$r['engine_total'], 2) }}</td>
+                                        <td class="px-3 py-1.5 text-right font-mono {{ $r['pass'] ? 'text-green-600' : 'text-red-600 font-bold' }}">
+                                            {{ $r['pass'] ? '$0.00' : '$' . number_format(abs((float)$r['gap']), 2) }}
+                                        </td>
+                                        <td class="px-3 py-1.5 text-gray-600 text-xs">{{ $r['state'] }}</td>
+                                        <td class="px-3 py-1.5 text-center text-xs">{{ $r['guilds'] }}</td>
+                                        <td class="px-3 py-1.5 text-center">{{ $r['cast'] }}</td>
+                                        <td class="px-3 py-1.5 text-xs text-gray-500">{{ $r['points'] }}</td>
+                                        <td class="px-3 py-1.5 text-right text-gray-400">{{ $r['ms'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
 
             {{-- Results --}}
             @if ($payload)

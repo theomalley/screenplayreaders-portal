@@ -82,21 +82,36 @@ class AllocationCalculator
             'vfx'     => $surplus * (($surplusPoints['vfx'] ?? 0) * 0.1),
         ];
 
-        // Distribute surplus to line items (floor at 0 — negative surplus means
-        // the department is already over-allocated by labor+fringes+non-labor)
+        // Distribute surplus to line items (floor at 0)
         $lineItems = [];
+        $categoryDistributed = [];
         foreach (self::SURPLUS_ITEMS as $itemKey => [$category, $multipliers]) {
             $mult = $multipliers[$budgetClass] ?? 0;
-            $lineItems[$itemKey] = max(0, min($mult * $categorySurplus[$category], 999999999));
+            $amount = max(0, $mult * $categorySurplus[$category]);
+            $lineItems[$itemKey] = $amount;
+            $categoryDistributed[$category] = ($categoryDistributed[$category] ?? 0) + $amount;
         }
 
-        // Catch undistributed surplus: when category multipliers don't sum to 1.0
-        // (classes 1-2 for travel, mufx, spfx, animals), add remainder to cast budget
+        // Cap each category's total distribution to its available surplus
+        // (some categories have multipliers that sum > 1.0 at certain budget classes)
+        foreach ($categoryDistributed as $category => $distributed) {
+            $available = max(0, $categorySurplus[$category]);
+            if ($distributed > $available && $distributed > 0) {
+                $scale = $available / $distributed;
+                foreach (self::SURPLUS_ITEMS as $itemKey => [$cat, $mults]) {
+                    if ($cat === $category) {
+                        $lineItems[$itemKey] *= $scale;
+                    }
+                }
+            }
+        }
+
+        // Add any undistributed surplus to additional cast budget
         $distributedTotal = array_sum($lineItems);
         $targetSurplus = max(0, $surplus);
-        $undistributed = $targetSurplus - $distributedTotal;
-        if ($undistributed > 0.01) {
-            $lineItems['_570additionalcastbudget'] = ($lineItems['_570additionalcastbudget'] ?? 0) + $undistributed;
+        $remainder = $targetSurplus - $distributedTotal;
+        if (abs($remainder) > 0.01) {
+            $lineItems['_570additionalcastbudget'] = ($lineItems['_570additionalcastbudget'] ?? 0) + $remainder;
         }
 
         return [
