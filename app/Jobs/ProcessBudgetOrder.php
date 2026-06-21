@@ -43,17 +43,14 @@ class ProcessBudgetOrder implements ShouldQueue
 
             $order->update([
                 'payload_json' => $payload,
-                'status' => BudgetOrder::STATUS_COMPLETED,
-                'completed_at' => now(),
             ]);
 
-            Log::info('ProcessBudgetOrder: calculation complete', [
+            Log::info('ProcessBudgetOrder: calculation complete, dispatching file generation', [
                 'budget_order_id' => $order->id,
                 'payload_keys' => count($payload),
             ]);
 
-            // Phase 5: dispatch GenerateBudgetFiles job here
-            // GenerateBudgetFiles::dispatch($order->id);
+            GenerateBudgetFiles::dispatch($order->id);
 
         } catch (\Throwable $e) {
             $order->update([

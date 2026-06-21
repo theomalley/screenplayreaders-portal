@@ -43,6 +43,10 @@ return [
         'drive_invoice_folder_id'  => env('GOOGLE_DRIVE_INVOICE_FOLDER_ID', '1tuXzuzdhp96qD3xWlLb-XIa31nkZK5G-'),
         // DWD: the Workspace user the service account impersonates for Drive/Docs calls
         'impersonate_user'         => env('GOOGLE_IMPERSONATE_USER'),
+        // Budget file generation
+        'budget_template_spreadsheet_id' => env('GOOGLE_BUDGET_TEMPLATE_ID', '1a92I5kbmx4GCJ3g0vI9Q7Tp5RceVs0mRhd1f4YdoBZw'),
+        'budget_spreadsheets_folder_id'  => env('GOOGLE_BUDGET_SPREADSHEETS_FOLDER_ID', '1iwUb06BwDEYSxuprcWQF9vyZ1xSrXzK7'),
+        'budget_output_folder_id'        => env('GOOGLE_BUDGET_OUTPUT_FOLDER_ID', '1CtPZ4ib7ZeKjRJO9YIraWTWyI3mVvGqJ'),
     ],
 
     'portal' => [
@@ -76,6 +80,7 @@ return [
         'api_key'                   => env('MAILERSEND_API_KEY'),
         'assignment_template_id'    => env('MAILERSEND_ASSIGNMENT_TEMPLATE_ID', 'neqvygm95xdl0p7w'),
         'invoice_template_id'       => env('MAILERSEND_INVOICE_TEMPLATE_ID', 'vywj2lpzxepg7oqz'),
+        'budget_template_id'        => env('MAILERSEND_BUDGET_TEMPLATE_ID', ''),
     ],
 
 ];
