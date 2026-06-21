@@ -6,15 +6,12 @@
 namespace App\Mail;
 
 use App\Models\Budget\BudgetOrder;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Queue\SerializesModels;
 use MailerSend\LaravelDriver\MailerSendTrait;
 
-class BudgetDeliveryMail extends Mailable implements ShouldQueue
+class BudgetDeliveryMail extends Mailable
 {
-    use Queueable, SerializesModels, MailerSendTrait;
+    use MailerSendTrait;
 
     public function __construct(
         private readonly BudgetOrder $order,
