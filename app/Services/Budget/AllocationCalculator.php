@@ -90,6 +90,15 @@ class AllocationCalculator
             $lineItems[$itemKey] = max(0, min($mult * $categorySurplus[$category], 999999999));
         }
 
+        // Catch undistributed surplus: when category multipliers don't sum to 1.0
+        // (classes 1-2 for travel, mufx, spfx, animals), add remainder to cast budget
+        $distributedTotal = array_sum($lineItems);
+        $targetSurplus = max(0, $surplus);
+        $undistributed = $targetSurplus - $distributedTotal;
+        if ($undistributed > 0.01) {
+            $lineItems['_570additionalcastbudget'] = ($lineItems['_570additionalcastbudget'] ?? 0) + $undistributed;
+        }
+
         return [
             'contingency_total' => $contingencyTotal,
             'surplus' => $surplus,
