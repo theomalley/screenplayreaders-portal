@@ -137,7 +137,7 @@
                                     <label class="block text-xs text-gray-400 text-center">{{ $label }}</label>
                                     <input type="number" name="{{ $key }}" x-ref="{{ $key }}"
                                            value="{{ old($key, $input[$key] ?? '') }}"
-                                           min="0" max="10" step="0.5" placeholder="—"
+                                           min="0" max="10" step="any" placeholder="—"
                                            class="w-full text-center border-gray-300 rounded shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm py-1" />
                                 </div>
                             @endforeach
