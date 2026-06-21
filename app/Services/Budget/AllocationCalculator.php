@@ -82,11 +82,12 @@ class AllocationCalculator
             'vfx'     => $surplus * (($surplusPoints['vfx'] ?? 0) * 0.1),
         ];
 
-        // Distribute surplus to line items
+        // Distribute surplus to line items (floor at 0 — negative surplus means
+        // the department is already over-allocated by labor+fringes+non-labor)
         $lineItems = [];
         foreach (self::SURPLUS_ITEMS as $itemKey => [$category, $multipliers]) {
             $mult = $multipliers[$budgetClass] ?? 0;
-            $lineItems[$itemKey] = min($mult * $categorySurplus[$category], 999999999);
+            $lineItems[$itemKey] = max(0, min($mult * $categorySurplus[$category], 999999999));
         }
 
         return [
