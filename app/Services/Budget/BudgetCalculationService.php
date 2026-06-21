@@ -87,6 +87,25 @@ class BudgetCalculationService
         // 11. Calculate pre-surplus totals (labor + fringes + non-labor line items)
         $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
 
+        // 11b. If presurplus exceeds available budget (budget - contingency), scale down
+        // non-labor items proportionally so surplus doesn't go negative
+        $available = $budget * 0.9; // budget minus 10% contingency
+        if ($preSurplusTotal > $available) {
+            $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
+            $nonLaborTotal = 0;
+            foreach ($nonLaborItems as $varName => $_) {
+                $nonLaborTotal += (float) ($payload[$varName] ?? 0);
+            }
+            if ($nonLaborTotal > 0) {
+                $excess = $preSurplusTotal - $available;
+                $scaleFactor = max(0, 1 - ($excess / $nonLaborTotal));
+                foreach ($nonLaborItems as $varName => $_) {
+                    $payload[$varName] = (float) ($payload[$varName] ?? 0) * $scaleFactor;
+                }
+                $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
+            }
+        }
+
         // 12. Surplus distribution (customization points allocate what's left)
         // GF form computes defaults when user picks "No, Screenplay Readers do it":
         //   Budget < $500K: cast=8.5, stunts=0.5, spfx=0.5, mufx=0.5
