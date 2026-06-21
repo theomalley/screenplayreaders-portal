@@ -245,9 +245,10 @@ class BudgetCalculationService
             $payload['text_taxincentive'] = '';
         }
 
-        // Normalize empty/zero values to empty string (matches JS post-processing)
+        // Normalize null values to empty string, but keep numeric 0 as "0"
+        // so spreadsheet formulas can compute on them
         foreach ($payload as $key => $value) {
-            if ($value === null || $value === 0 || $value === 0.0 || $value === '0') {
+            if ($value === null) {
                 $payload[$key] = '';
             }
         }

@@ -280,7 +280,7 @@ return [
         [504, 'hourly', 43.15, false],
         [599, 'hourly', 59.19, false],
     ]],
-    ['1316', 'companygrip1', 'Company Grip 1', 'grip', 'IATSE', 73, [
+    ['1316', 'companygrip', 'Company Grip 1', 'grip', 'IATSE', 73, [
         [500, 'min_wage', 0, false],
         [501, 'hourly', 26.81, false],
         [502, 'hourly', 28.42, false],
@@ -288,7 +288,7 @@ return [
         [504, 'hourly', 39.79, false],
         [599, 'hourly', 54.78, false],
     ]],
-    ['1318', 'companygrip2', 'Company Grip 2', 'grip', 'IATSE', 74, [
+    ['1318', 'companygrip', 'Company Grip 2', 'grip', 'IATSE', 74, [
         [500, 'min_wage', 0, false],
         [501, 'hourly', 26.81, false],
         [502, 'hourly', 28.42, false],
@@ -296,7 +296,7 @@ return [
         [504, 'hourly', 39.79, false],
         [599, 'hourly', 54.78, false],
     ]],
-    ['1320', 'companygrip3', 'Company Grip 3', 'grip', 'IATSE', 75, [
+    ['1320', 'companygrip', 'Company Grip 3', 'grip', 'IATSE', 75, [
         [500, 'min_wage', 0, false],
         [501, 'hourly', 26.81, false],
         [502, 'hourly', 28.42, false],
@@ -304,7 +304,7 @@ return [
         [504, 'hourly', 39.79, false],
         [599, 'hourly', 54.78, false],
     ]],
-    ['1322', 'companygrip4', 'Company Grip 4', 'grip', 'IATSE', 76, [
+    ['1322', 'companygrip', 'Company Grip 4', 'grip', 'IATSE', 76, [
         [500, 'min_wage', 0, false],
         [501, 'hourly', 26.81, false],
         [502, 'hourly', 28.42, false],
@@ -312,7 +312,7 @@ return [
         [504, 'hourly', 39.79, false],
         [599, 'hourly', 54.78, false],
     ]],
-    ['1324', 'companygrip5', 'Company Grip 5', 'grip', 'IATSE', 77, [
+    ['1324', 'companygrip', 'Company Grip 5', 'grip', 'IATSE', 77, [
         [500, 'min_wage', 0, false],
         [501, 'hourly', 26.81, false],
         [502, 'hourly', 28.42, false],
@@ -320,7 +320,7 @@ return [
         [504, 'hourly', 39.79, false],
         [599, 'hourly', 54.78, false],
     ]],
-    ['1326', 'companygrip6', 'Company Grip 6', 'grip', 'IATSE', 78, [
+    ['1326', 'companygrip', 'Company Grip 6', 'grip', 'IATSE', 78, [
         [500, 'min_wage', 0, false],
         [501, 'hourly', 27.07, false],
         [502, 'hourly', 28.69, false],
@@ -354,27 +354,27 @@ return [
         [504, 'hourly', 46.04, false],
         [599, 'weekly', 3793.59, false],
     ]],
-    ['1416', 'electric1', 'Electric 1', 'electric', 'IATSE', 83, [
+    ['1416', 'electric', 'Electric 1', 'electric', 'IATSE', 83, [
         [500, 'min_wage', 0, false], [501, 'hourly', 26.81, false], [502, 'hourly', 28.42, false],
         [503, 'hourly', 37.77, false], [504, 'hourly', 39.79, false], [599, 'hourly', 54.78, false],
     ]],
-    ['1418', 'electric2', 'Electric 2', 'electric', 'IATSE', 84, [
+    ['1418', 'electric', 'Electric 2', 'electric', 'IATSE', 84, [
         [500, 'min_wage', 0, false], [501, 'hourly', 26.81, false], [502, 'hourly', 28.42, false],
         [503, 'hourly', 37.77, false], [504, 'hourly', 39.79, false], [599, 'hourly', 54.78, false],
     ]],
-    ['1420', 'electric3', 'Electric 3', 'electric', 'IATSE', 85, [
+    ['1420', 'electric', 'Electric 3', 'electric', 'IATSE', 85, [
         [500, 'min_wage', 0, false], [501, 'hourly', 26.81, false], [502, 'hourly', 28.42, false],
         [503, 'hourly', 37.77, false], [504, 'hourly', 39.79, false], [599, 'hourly', 54.78, false],
     ]],
-    ['1422', 'electric4', 'Electric 4', 'electric', 'IATSE', 86, [
+    ['1422', 'electric', 'Electric 4', 'electric', 'IATSE', 86, [
         [500, 'min_wage', 0, false], [501, 'hourly', 26.81, false], [502, 'hourly', 28.42, false],
         [503, 'hourly', 37.77, false], [504, 'hourly', 39.79, false], [599, 'hourly', 54.78, false],
     ]],
-    ['1424', 'electric5', 'Electric 5', 'electric', 'IATSE', 87, [
+    ['1424', 'electric', 'Electric 5', 'electric', 'IATSE', 87, [
         [500, 'min_wage', 0, false], [501, 'hourly', 26.81, false], [502, 'hourly', 28.42, false],
         [503, 'hourly', 37.77, false], [504, 'hourly', 39.79, false], [599, 'hourly', 54.78, false],
     ]],
-    ['1426', 'electric6', 'Electric 6', 'electric', 'IATSE', 88, [
+    ['1426', 'electric', 'Electric 6', 'electric', 'IATSE', 88, [
         [500, 'min_wage', 0, false], [501, 'hourly', 26.81, false], [502, 'hourly', 28.42, false],
         [503, 'hourly', 37.77, false], [504, 'hourly', 39.79, false], [599, 'hourly', 54.78, false],
     ]],
@@ -522,7 +522,7 @@ return [
         [500, 'min_wage', 0, false], [501, 'hourly', 32.00, false], [502, 'hourly', 40.00, false],
         [503, 'hourly', 50.00, false], [504, 'hourly', 60.00, false], [599, 'weekly', 4988.70, false],
     ]],
-    ['2112', 'asstcostumedesigner', 'Asst Costume Designer', 'wardrobe', 'IATSE', 151, [
+    ['2112', 'assistantcostumedesigner', 'Asst Costume Designer', 'wardrobe', 'IATSE', 151, [
         [500, 'min_wage', 0, false], [501, 'hourly', 30.06, false], [502, 'hourly', 31.66, false],
         [503, 'hourly', 39.55, false], [504, 'hourly', 41.65, false], [599, 'weekly', 3139.61, false],
     ]],
