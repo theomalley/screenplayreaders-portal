@@ -86,7 +86,7 @@
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                             <div>
                                 <div class="text-indigo-200 text-xs uppercase tracking-wider">Budget</div>
-                                <div class="text-2xl font-bold">${{ number_format($payload['budget'] ?? 0, 0) }}</div>
+                                <div class="text-2xl font-bold">${{ number_format((float)($payload['budget'] ?? 0), 0) }}</div>
                             </div>
                             <div>
                                 <div class="text-indigo-200 text-xs uppercase tracking-wider">Class</div>
@@ -120,15 +120,15 @@
                             @endforeach
                             <div class="flex justify-between border-b border-gray-100 pb-1">
                                 <span class="text-gray-500">Non-union key</span>
-                                <span class="font-mono">${{ is_numeric($payload['rate_nonunionkey'] ?? '') ? number_format($payload['rate_nonunionkey'], 2) : '—' }}/wk</span>
+                                <span class="font-mono">${{ is_numeric($payload['rate_nonunionkey'] ?? '') ? number_format((float)$payload['rate_nonunionkey'], 2) : '—' }}/wk</span>
                             </div>
                             <div class="flex justify-between border-b border-gray-100 pb-1">
                                 <span class="text-gray-500">SAG rate</span>
-                                <span class="font-mono">${{ is_numeric($payload['rate_SAG'] ?? '') ? number_format($payload['rate_SAG'], 2) : '—' }}/wk</span>
+                                <span class="font-mono">${{ is_numeric($payload['rate_SAG'] ?? '') ? number_format((float)$payload['rate_SAG'], 2) : '—' }}/wk</span>
                             </div>
                             <div class="flex justify-between border-b border-gray-100 pb-1">
                                 <span class="text-gray-500">Min wage</span>
-                                <span class="font-mono">${{ is_numeric($payload['rate_minimumwage'] ?? '') ? number_format($payload['rate_minimumwage'], 2) : '—' }}/hr</span>
+                                <span class="font-mono">${{ is_numeric($payload['rate_minimumwage'] ?? '') ? number_format((float)$payload['rate_minimumwage'], 2) : '—' }}/hr</span>
                             </div>
                         </div>
                     </div>
@@ -177,10 +177,10 @@
                                         @if (is_numeric($labor) && $labor > 0)
                                             <tr class="hover:bg-blue-50/30">
                                                 <td class="px-4 py-1.5 text-gray-700">{{ $pos->name }} <span class="text-gray-400 text-xs">#{{ $pos->line_item_id }}</span></td>
-                                                <td class="px-3 py-1.5 text-right font-mono">${{ number_format($payload[$prefix . 'rateshoot'] ?? 0, 2) }}</td>
+                                                <td class="px-3 py-1.5 text-right font-mono">${{ number_format((float)($payload[$prefix . 'rateshoot'] ?? 0), 2) }}</td>
                                                 <td class="px-3 py-1.5 text-right font-mono">{{ $payload[$prefix . 'weeksshoot'] ?? 0 }}</td>
-                                                <td class="px-3 py-1.5 text-right font-mono font-medium">${{ number_format($labor, 2) }}</td>
-                                                <td class="px-3 py-1.5 text-right font-mono text-gray-500">${{ number_format($payload[$prefix . 'FICA'] ?? 0, 2) }}</td>
+                                                <td class="px-3 py-1.5 text-right font-mono font-medium">${{ number_format((float)$labor, 2) }}</td>
+                                                <td class="px-3 py-1.5 text-right font-mono text-gray-500">${{ number_format((float)($payload[$prefix . 'FICA'] ?? 0), 2) }}</td>
                                             </tr>
                                         @endif
                                     @endforeach
@@ -205,7 +205,7 @@
                                         @if ($value !== '' && $value !== null)
                                             <tr class="border-b border-gray-50 hover:bg-yellow-50/50">
                                                 <td class="py-0.5 pr-3 text-gray-500 whitespace-nowrap align-top">@{{ {{ $key }} }}</td>
-                                                <td class="py-0.5 text-gray-800 break-all">{{ is_numeric($value) ? number_format((float)$value, 2) : $value }}</td>
+                                                <td class="py-0.5 text-gray-800 break-all">{{ is_numeric($value) ? number_format((float) $value, 2) : $value }}</td>
                                             </tr>
                                         @endif
                                     @endforeach
