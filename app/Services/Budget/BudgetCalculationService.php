@@ -87,9 +87,10 @@ class BudgetCalculationService
         // 11. Calculate pre-surplus totals
         $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
 
-        // 11b. If presurplus exceeds available (budget - contingency), scale non-labor
-        // items down so surplus stays non-negative. The math: reduce non-labor by
-        // exactly the excess amount so presurplus = available after scaling.
+        // 11b. Scale down to fit within budget - contingency.
+        // First reduce non-labor, then if still over, reduce all variable components
+        // proportionally. This handles low-budget cases where cast labor alone
+        // exceeds the available amount.
         $available = $budget * 0.9;
         if ($preSurplusTotal > $available) {
             $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
@@ -97,15 +98,71 @@ class BudgetCalculationService
             foreach ($nonLaborItems as $varName => $_) {
                 $nonLaborTotal += (float) ($payload[$varName] ?? 0);
             }
-            if ($nonLaborTotal > 0) {
-                $excess = $preSurplusTotal - $available;
-                $scaleFactor = max(0, ($nonLaborTotal - $excess) / $nonLaborTotal);
+
+            $excess = $preSurplusTotal - $available;
+
+            if ($nonLaborTotal >= $excess) {
+                // Non-labor reduction is enough
+                $scaleFactor = ($nonLaborTotal - $excess) / $nonLaborTotal;
                 foreach ($nonLaborItems as $varName => $_) {
                     $payload[$varName] = (float) ($payload[$varName] ?? 0) * $scaleFactor;
                 }
-                // Recompute — should now equal $available within float precision
-                $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
+            } else {
+                // Zero out all non-labor items
+                foreach ($nonLaborItems as $varName => $_) {
+                    $payload[$varName] = 0;
+                }
+                // Scale remaining excess from all variable payload items (labor, fringes)
+                $remainingExcess = $excess - $nonLaborTotal;
+                $variableTotal = $preSurplusTotal - $nonLaborTotal;
+                if ($variableTotal > 0) {
+                    $laborScale = max(0, ($variableTotal - $remainingExcess) / $variableTotal);
+
+                    // Scale crew position labor
+                    foreach ($positionResults as $data) {
+                        $pos = $data['position'];
+                        $prefix = '_' . $pos->line_item_id . $pos->slug;
+                        foreach (['prep', 'shoot', 'wrap', 'post'] as $phase) {
+                            $rateKey = $prefix . 'rate' . $phase;
+                            if (isset($payload[$rateKey]) && is_numeric($payload[$rateKey])) {
+                                $payload[$rateKey] = (float) $payload[$rateKey] * $laborScale;
+                            }
+                        }
+                        $payload[$prefix . 'labortotal'] = (float) ($payload[$prefix . 'labortotal'] ?? 0) * $laborScale;
+                    }
+
+                    // Scale cast labor
+                    for ($i = 1; $i <= 25; $i++) {
+                        $prefix = '_' . (510 + ($i * 2)) . 'cast' . str_pad($i, 2, '0', STR_PAD_LEFT);
+                        $payload[$prefix . 'rate'] = (float) ($payload[$prefix . 'rate'] ?? 0) * $laborScale;
+                        $payload[$prefix . 'labortotal'] = (float) ($payload[$prefix . 'labortotal'] ?? 0) * $laborScale;
+                    }
+
+                    // Scale writer/producer
+                    foreach (['_210writerrate', '_210writerlabortotal', '_310producersrate', '_310producerslabortotal'] as $k) {
+                        $payload[$k] = (float) ($payload[$k] ?? 0) * $laborScale;
+                    }
+
+                    // Scale fringe totals
+                    $fringeKeys = [
+                        'FICAtotal_ATL', 'Medicaretotal_ATL', 'FUItotal_ATL', 'SUItotal_ATL', 'payrolltotal_ATL',
+                        '_210writerWGApension', '_210writerWGAhealth', 'SAGpensiontotal_cast',
+                        '_410directorDGApension', '_410directorDGAhealth',
+                        'FICAtotal_prod_BTL', 'Medicaretotal_prod_BTL', 'FUItotal_prod_BTL',
+                        'SUItotal_prod_BTL', 'payrolltotal_prod_BTL',
+                        'DGApensiontotal_prod_BTL', 'DGAhealthtotal_prod_BTL',
+                        'IATSEgrandtotal_prod_BTL', 'Teamstersgrandtotal_prod_BTL',
+                        'FICAtotal_post_BTL', 'Medicaretotal_post_BTL', 'FUItotal_post_BTL',
+                        'SUItotal_post_BTL', 'payrolltotal_post_BTL',
+                        'IATSEgrandtotal_post_BTL',
+                    ];
+                    foreach ($fringeKeys as $k) {
+                        $payload[$k] = (float) ($payload[$k] ?? 0) * $laborScale;
+                    }
+                }
             }
+
+            $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
         }
 
         // 12. Surplus distribution (customization points allocate what's left)
