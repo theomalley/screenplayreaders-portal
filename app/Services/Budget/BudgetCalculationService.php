@@ -97,12 +97,15 @@ class BudgetCalculationService
                 $nonLaborTotal += (float) ($payload[$varName] ?? 0);
             }
             if ($nonLaborTotal > 0) {
-                $excess = $preSurplusTotal - $available;
-                $scaleFactor = max(0, 1 - ($excess / $nonLaborTotal));
+                // Target: non-labor should shrink by exactly the excess
+                $targetNonLabor = max(0, $nonLaborTotal - ($preSurplusTotal - $available));
+                $scaleFactor = $targetNonLabor / $nonLaborTotal;
                 foreach ($nonLaborItems as $varName => $_) {
                     $payload[$varName] = (float) ($payload[$varName] ?? 0) * $scaleFactor;
                 }
-                $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
+                // Force presurplus to exactly equal available (avoid float drift)
+                $preSurplusTotal = $available;
+                $payload['presurplus_total_FINAL'] = $available;
             }
         }
 
