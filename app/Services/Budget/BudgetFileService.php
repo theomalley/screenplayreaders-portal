@@ -145,6 +145,32 @@ class BudgetFileService
                 new BatchUpdateSpreadsheetRequest(['requests' => $chunk])
             );
         }
+
+        // Final sweep: replace any remaining {{...}} tokens with empty string
+        // so formulas don't get #VALUE! from unreplaced placeholders
+        $this->sheets->spreadsheets->batchUpdate(
+            $spreadsheetId,
+            new BatchUpdateSpreadsheetRequest(['requests' => [
+                new SheetsRequest([
+                    'findReplace' => new FindReplaceRequest([
+                        'find' => '{{',
+                        'replacement' => '',
+                        'allSheets' => true,
+                        'matchCase' => false,
+                        'matchEntireCell' => false,
+                    ]),
+                ]),
+                new SheetsRequest([
+                    'findReplace' => new FindReplaceRequest([
+                        'find' => '}}',
+                        'replacement' => '',
+                        'allSheets' => true,
+                        'matchCase' => false,
+                        'matchEntireCell' => false,
+                    ]),
+                ]),
+            ]])
+        );
     }
 
     private function exportPdf(string $spreadsheetId): string

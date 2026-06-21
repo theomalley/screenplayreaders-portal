@@ -164,6 +164,61 @@ class BudgetCalculationService
             $payload[$field] = $input[$field] ?? '';
         }
 
+        // Computed header labels (replicate GF hidden fields 164-176)
+        $budgetType = $input['budgettype'] ?? 'Feature or Short Film';
+        $seriesType = $input['seriestype'] ?? '';
+        $numEpisodes = (int) ($input['headernumofepisodes'] ?? 0);
+
+        if ($budgetType === 'Feature or Short Film') {
+            $payload['headerlabelbudget'] = 'Budget | ';
+            $payload['headerlabeloverallseries'] = '';
+            $payload['headerlabelepisodebudget'] = '';
+            $payload['headerlabelepisodenumber'] = '';
+            $payload['headerlabelpipe2'] = '';
+            $payload['headerlabelepisodes'] = '';
+            $payload['headerlabelmakeplural'] = '';
+            $payload['headerdollarsign'] = '';
+            $payload['headerbudgetperepisode'] = '';
+            $payload['headerlabelperepisode'] = '';
+            $payload['headerlabelpipe1'] = '';
+        } elseif ($seriesType === 'Episode Budget') {
+            $payload['headerlabelbudget'] = '';
+            $payload['headerlabeloverallseries'] = '';
+            $payload['headerlabelepisodebudget'] = 'Episode Budget | ';
+            $payload['headerlabelepisodenumber'] = 'Episode ';
+            $payload['headerlabelpipe2'] = ' | ';
+            $payload['headerlabelepisodes'] = '';
+            $payload['headerlabelmakeplural'] = '';
+            $payload['headerdollarsign'] = '';
+            $payload['headerbudgetperepisode'] = '';
+            $payload['headerlabelperepisode'] = '';
+            $payload['headerlabelpipe1'] = '';
+        } elseif ($seriesType === 'Overall Series Budget') {
+            $payload['headerlabelbudget'] = '';
+            $payload['headerlabeloverallseries'] = 'Overall Series Budget | ';
+            $payload['headerlabelepisodebudget'] = '';
+            $payload['headerlabelepisodenumber'] = '';
+            $payload['headerlabelpipe2'] = '';
+            $payload['headerlabelepisodes'] = ' Episode';
+            $payload['headerlabelmakeplural'] = $numEpisodes > 1 ? 's' : '';
+            $payload['headerdollarsign'] = $numEpisodes > 1 ? '$' : '';
+            $payload['headerbudgetperepisode'] = $numEpisodes > 1 ? number_format($budget / $numEpisodes, 2) : '';
+            $payload['headerlabelperepisode'] = $numEpisodes > 1 ? ' Per Episode' : '';
+            $payload['headerlabelpipe1'] = ' | ';
+        } else {
+            $payload['headerlabelbudget'] = 'Budget | ';
+            $payload['headerlabeloverallseries'] = '';
+            $payload['headerlabelepisodebudget'] = '';
+            $payload['headerlabelepisodenumber'] = '';
+            $payload['headerlabelpipe2'] = '';
+            $payload['headerlabelepisodes'] = '';
+            $payload['headerlabelmakeplural'] = '';
+            $payload['headerdollarsign'] = '';
+            $payload['headerbudgetperepisode'] = '';
+            $payload['headerlabelperepisode'] = '';
+            $payload['headerlabelpipe1'] = '';
+        }
+
         // Cast member names (pass through)
         for ($i = 1; $i <= 25; $i++) {
             $key = 'cast' . str_pad($i, 2, '0', STR_PAD_LEFT);
