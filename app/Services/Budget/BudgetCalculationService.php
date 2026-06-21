@@ -96,6 +96,18 @@ class BudgetCalculationService
             $payload[$key] = $value;
         }
 
+        // 10. Cast member calculations (positions 512-560, special SAG-based logic)
+        $this->calculateCastMembers($payload, $input, $resolver, $fringeCalc);
+
+        // 11. Writer and producer variables
+        $this->calculateWriterProducer($payload, $input, $resolver, $crewCalc, $fringeCalc, $positions);
+
+        // 12. Non-labor allocation line items (equipment, rentals, etc. per department)
+        $this->calculateNonLaborItems($payload, $positionResults, $budget, $budgetClass);
+
+        // 13. Text/label variables
+        $this->calculateTextVariables($payload, $resolver);
+
         // 10. Add configuration and header variables
         $payload['budget'] = $budget;
         $payload['budgetclass'] = $budgetClass;
@@ -241,6 +253,159 @@ class BudgetCalculationService
         }
 
         return $payload;
+    }
+
+    private function calculateCastMembers(
+        array &$payload, array $input,
+        BudgetClassResolver $resolver, FringeCalculator $fringeCalc
+    ): void {
+        $castSize = (int) ($input['usercastsize'] ?? 0);
+        $sagRate = $resolver->rateSAG;
+        $nonUnionKey = $resolver->rateNonunionKey;
+        $sagCode = $resolver->guildCodeSAG;
+        $bc = $resolver->getBudgetClass();
+        $weeksSHOOT = $resolver->weeksSHOOT;
+
+        for ($i = 1; $i <= 25; $i++) {
+            $num = str_pad($i, 2, '0', STR_PAD_LEFT);
+            $lineId = 510 + ($i * 2);
+            $prefix = '_' . $lineId . 'cast' . $num;
+
+            if ($i > $castSize) {
+                $payload[$prefix . 'weeksshoot'] = '';
+                $payload[$prefix . 'rate'] = '';
+                $payload[$prefix . 'labortotal'] = '';
+                $payload[$prefix . 'SAGpension'] = '';
+                $payload[$prefix . 'FICA'] = '';
+                $payload[$prefix . 'Medicare'] = '';
+                $payload[$prefix . 'FUI'] = '';
+                $payload[$prefix . 'SUI'] = '';
+                $payload[$prefix . 'payroll'] = '';
+                continue;
+            }
+
+            $rate = ($sagCode == 0 || $sagCode == 999) ? $nonUnionKey : $sagRate;
+            $weeks = $weeksSHOOT;
+            $labor = $weeks * $rate;
+
+            $payload[$prefix . 'weeksshoot'] = $weeks;
+            $payload[$prefix . 'rate'] = $rate;
+            $payload[$prefix . 'labortotal'] = $labor;
+
+            $sagFringe = ($sagCode != 0 && $sagCode != 999)
+                ? $fringeCalc->calculateSAGFringes($labor, $sagCode)['sag'] : 0;
+            $payload[$prefix . 'SAGpension'] = $sagFringe;
+
+            $baseFringes = $fringeCalc->calculateFringes($labor, 'SAG', $sagCode, $weeks);
+            $payload[$prefix . 'FICA'] = $baseFringes['fica'];
+            $payload[$prefix . 'Medicare'] = $baseFringes['medicare'];
+            $payload[$prefix . 'FUI'] = $baseFringes['fui'];
+            $payload[$prefix . 'SUI'] = $baseFringes['sui'];
+            $payload[$prefix . 'payroll'] = $baseFringes['payroll'];
+        }
+    }
+
+    private function calculateWriterProducer(
+        array &$payload, array $input,
+        BudgetClassResolver $resolver, CrewRateCalculator $crewCalc,
+        FringeCalculator $fringeCalc, $positions
+    ): void {
+        $bc = $resolver->getBudgetClass();
+        $budget = $resolver->getBudget();
+
+        // Writer (210) — flat WGA fee
+        $writerPos = $positions->firstWhere('line_item_id', '210');
+        if ($writerPos) {
+            $wgaCode = $resolver->guildCodeWGA;
+            $nonWgaAmount = $budget * (DepartmentAllocation::where('department_slug', 'writer')
+                ->where('budget_class', $bc)->value('percentage') ?? 0);
+
+            $pubFee = match ($wgaCode) {
+                202 => 6250, 203, 299 => 12500, default => 0,
+            };
+
+            $writerFee = $crewCalc->wgaWriterFee($wgaCode, $nonWgaAmount, $pubFee, $writerPos);
+            $payload['_210writerrate'] = $writerFee;
+            $payload['_210writerlabortotal'] = $writerFee;
+
+            $wFringes = $fringeCalc->calculateFringes($writerFee, 'WGA', $wgaCode);
+            $payload['_210writerFICA'] = $wFringes['fica'];
+            $payload['_210writerMedicare'] = $wFringes['medicare'];
+            $payload['_210writerFUI'] = $wFringes['fui'];
+            $payload['_210writerSUI'] = $wFringes['sui'];
+            $payload['_210writerpayroll'] = $wFringes['payroll'];
+            $payload['_210writerWGApension'] = $wFringes['wga_pension'];
+            $payload['_210writerWGAhealth'] = $wFringes['wga_health'];
+
+            $payload['text_writeroriginalscreenplay'] = ($wgaCode != 0 && $wgaCode != 999)
+                ? 'Original Screenplay incl. Treatment' : 'Writer(s)';
+            $payload['text_scriptpublicationfee'] = $pubFee > 0
+                ? '$' . number_format($pubFee, 2) : '';
+        }
+
+        // Producer (310) — allocation-based
+        $producerAlloc = $budget * (DepartmentAllocation::where('department_slug', 'producers')
+            ->where('budget_class', $bc)->value('percentage') ?? 0);
+        $payload['_310producersrate'] = $producerAlloc;
+        $payload['_310producerslabortotal'] = $producerAlloc;
+    }
+
+    private function calculateNonLaborItems(
+        array &$payload, array $positionResults,
+        float $budget, int $budgetClass
+    ): void {
+        $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
+
+        // Compute allocafterlabor for each department:
+        // allocafterlabor = max(0, department_allocation - department_labor_total)
+        $deptLabor = [];
+        foreach ($positionResults as $data) {
+            $dept = $data['position']->department;
+            $labor = $data['result']['labor_total'];
+            $fringeTotal = $data['fringes']['fringe_total'] ?? 0;
+            $deptLabor[$dept] = ($deptLabor[$dept] ?? 0) + $labor + $fringeTotal;
+        }
+
+        $deptAllocMap = [
+            'cast' => 'cast', 'production' => 'production', 'camera' => 'camera',
+            'second_unit' => 'second_unit', 'production_sound' => 'production_sound',
+            'grip' => 'grip', 'electric' => 'electric', 'location' => 'location',
+            'transportation' => 'transportation', 'art' => 'art',
+            'construction' => 'set_construction', 'set_dressing' => 'set_dressing',
+            'property' => 'property', 'wardrobe' => 'wardrobe',
+            'hair_makeup' => 'hair_makeup', 'post_production' => 'editing',
+            'post_sound' => 'post_sound',
+        ];
+
+        $allocAfterLabor = [];
+        $allocations = DepartmentAllocation::where('budget_class', $budgetClass)->get()->keyBy('department_slug');
+
+        foreach ($deptAllocMap as $dept => $allocSlug) {
+            $totalAlloc = $budget * (float) ($allocations[$allocSlug]->percentage ?? 0);
+            $labor = $deptLabor[$dept] ?? 0;
+            $allocAfterLabor['allocafterlabor_' . $allocSlug] = max(0, $totalAlloc - $labor);
+        }
+
+        // Also add direct allocations (not "after labor")
+        foreach ($allocations as $slug => $alloc) {
+            $allocAfterLabor['alloc' . $slug] = $budget * (float) $alloc->percentage;
+        }
+
+        // Calculate each non-labor line item
+        foreach ($nonLaborItems as $varName => [$allocSource, $multipliers]) {
+            $mult = $multipliers[$budgetClass] ?? 0;
+            $sourceAmount = $allocAfterLabor[$allocSource] ?? 0;
+            $payload[$varName] = $mult * $sourceAmount;
+        }
+    }
+
+    private function calculateTextVariables(array &$payload, BudgetClassResolver $resolver): void
+    {
+        $dgaDirCode = $resolver->guildCodeDGADIR;
+        $payload['text_410directorrateflat'] = ($dgaDirCode == 303) ? 'Flat Rate:' : '';
+        $payload['_410directorrateflat'] = ($dgaDirCode == 303) ? 75000 : '';
+
+        $payload['text_taxincentive'] = $payload['text_taxincentive'] ?? '';
     }
 
     private function addPositionToPayload(
