@@ -63,7 +63,7 @@ class DeliverBudgetEmail implements ShouldQueue
                 ];
             }
 
-            Mail::send(new BudgetDeliveryMail($order, $this->fileUrls, $attachments));
+            Mail::send(new BudgetDeliveryMail($order, $this->fileUrls, budgetFiles: $attachments));
 
             $order->update([
                 'status' => BudgetOrder::STATUS_COMPLETED,

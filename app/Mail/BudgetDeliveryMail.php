@@ -19,7 +19,7 @@ class BudgetDeliveryMail extends Mailable implements ShouldQueue
     public function __construct(
         private readonly BudgetOrder $order,
         private readonly array $fileUrls,
-        private readonly array $attachments = [],
+        private readonly array $budgetFiles = [],
     ) {}
 
     public function build(): static
@@ -32,7 +32,7 @@ class BudgetDeliveryMail extends Mailable implements ShouldQueue
         $this->subject('Your SR Film Budget — ' . $title);
 
         // Attach PDF and XLSX files
-        foreach ($this->attachments as $file) {
+        foreach ($this->budgetFiles as $file) {
             $this->attach($file['path'], [
                 'as' => $file['as'],
                 'mime' => $file['mime'],
@@ -67,7 +67,7 @@ class BudgetDeliveryMail extends Mailable implements ShouldQueue
     private function fallbackHtml(string $name, string $title): string
     {
         $fileList = '';
-        foreach ($this->attachments as $file) {
+        foreach ($this->budgetFiles as $file) {
             $fileList .= '<li>' . e($file['as']) . '</li>';
         }
 
