@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\ScriptDownload;
+use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class ScriptDownloadController extends Controller
             $request->user()->isReader() && $assignment->assigned_reader_id === $request->user()->id,
             403
         );
+        abort_unless(Permission::check('script.download'), 403);
         abort_unless($assignment->hasCloudScript(), 404);
 
         $scriptDownload = ScriptDownload::create([
