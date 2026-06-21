@@ -30,11 +30,6 @@ class BudgetFileService
         $client->addScope(Drive::DRIVE);
         $client->addScope(Sheets::SPREADSHEETS);
 
-        $impersonateUser = config('services.google.impersonate_user');
-        if ($impersonateUser) {
-            $client->setSubject($impersonateUser);
-        }
-
         $this->drive = new Drive($client);
         $this->sheets = new Sheets($client);
     }
