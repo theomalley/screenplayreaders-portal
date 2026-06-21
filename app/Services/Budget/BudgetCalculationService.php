@@ -88,14 +88,17 @@ class BudgetCalculationService
         $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
 
         // 12. Surplus distribution (customization points allocate what's left)
+        // GF form computes defaults when user picks "No, Screenplay Readers do it":
+        //   Budget < $500K: cast=8.5, stunts=0.5, spfx=0.5, mufx=0.5
+        //   Budget >= $500K: cast=4, stunts=1, spfx=1, mufx=1, vfx=3
         $surplusPoints = [
-            'cast' => (float) ($input['usercast'] ?? 0),
-            'stunts' => (float) ($input['userstunts'] ?? 0),
+            'cast' => (float) ($input['usercast'] ?? ($budget < 500000 ? 8.5 : 4)),
+            'stunts' => (float) ($input['userstunts'] ?? ($budget < 500000 ? 0.5 : 1)),
             'travel' => (float) ($input['usertravel'] ?? 0),
-            'spfx' => (float) ($input['userspfx'] ?? 0),
-            'mufx' => (float) ($input['usermufx'] ?? 0),
+            'spfx' => (float) ($input['userspfx'] ?? ($budget < 500000 ? 0.5 : 1)),
+            'mufx' => (float) ($input['usermufx'] ?? ($budget < 500000 ? 0.5 : 1)),
             'animals' => (float) ($input['useranimals'] ?? 0),
-            'vfx' => (float) ($input['uservfx'] ?? 0),
+            'vfx' => (float) ($input['uservfx'] ?? ($budget < 500000 ? 0 : 3)),
         ];
 
         $allocCalc = new AllocationCalculator();
