@@ -85,12 +85,28 @@ class BudgetCalculationService
         $this->calculateNonLaborItems($payload, $positionResults, $budget, $budgetClass);
 
         // 11. Calculate pre-surplus totals
-        // Use the same sum the spreadsheet computes: crew labor phases in G +
-        // non-labor items in G + fringe department totals in G.
-        // Writer/producer/cast labor go to column H in the template (via formulas),
-        // so they're NOT in the SUM(G...) that produces the grand total — the template
-        // adds them through section subtotals in H instead.
         $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
+
+        // 11b. If presurplus exceeds available (budget - contingency), scale non-labor
+        // items down so surplus stays non-negative. The math: reduce non-labor by
+        // exactly the excess amount so presurplus = available after scaling.
+        $available = $budget * 0.9;
+        if ($preSurplusTotal > $available) {
+            $nonLaborItems = require database_path('seeders/data/budget_nonlabor_items.php');
+            $nonLaborTotal = 0;
+            foreach ($nonLaborItems as $varName => $_) {
+                $nonLaborTotal += (float) ($payload[$varName] ?? 0);
+            }
+            if ($nonLaborTotal > 0) {
+                $excess = $preSurplusTotal - $available;
+                $scaleFactor = max(0, ($nonLaborTotal - $excess) / $nonLaborTotal);
+                foreach ($nonLaborItems as $varName => $_) {
+                    $payload[$varName] = (float) ($payload[$varName] ?? 0) * $scaleFactor;
+                }
+                // Recompute — should now equal $available within float precision
+                $preSurplusTotal = $this->computePreSurplusTotal($payload, $positionResults, $budget, $budgetClass);
+            }
+        }
 
         // 12. Surplus distribution (customization points allocate what's left)
         // GF form computes defaults when user picks "No, Screenplay Readers do it":
