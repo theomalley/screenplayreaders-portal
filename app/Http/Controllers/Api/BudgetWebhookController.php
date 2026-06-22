@@ -89,7 +89,7 @@ class BudgetWebhookController extends Controller
             'status'          => BudgetOrder::STATUS_PENDING,
         ]);
 
-        ProcessBudgetOrder::dispatch($order);
+        ProcessBudgetOrder::dispatch($order->id);
 
         return response()->json([
             'status' => 'accepted',
