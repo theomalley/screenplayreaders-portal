@@ -33,6 +33,10 @@ Route::post('/order-revenue', [OrderRevenueController::class, 'store']);
 // Receives GF Form 9 data, runs budget calculation engine, dispatches file generation
 Route::post('/budget-order', [\App\Http\Controllers\Api\BudgetWebhookController::class, 'store']);
 
+// WOOCOMMERCE INTEGRATION: called by woo_scriptregistration.php on order completion for product 55560
+// Receives registration payloads, generates certificates, emails customers
+Route::post('/script-registration', [\App\Http\Controllers\Api\ScriptRegistrationWebhookController::class, 'store']);
+
 // PUBLIC STAFF PROFILES: called by WordPress shortcodes to render staff bios and photos on the website
 Route::get('/staff/{user}', [StaffProfileController::class, 'show'])->middleware('throttle:60,1');
 

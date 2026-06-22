@@ -36,6 +36,7 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReadCreditController;
+use App\Http\Controllers\ScriptRegistrationController;
 use App\Http\Controllers\WooOrderController;
 use App\Http\Controllers\Marketing\BaseEmailTemplateController;
 use App\Http\Controllers\Marketing\EmailCampaignController;
@@ -49,6 +50,10 @@ Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->nam
 
 // Tokenized admin quick-login (public, rate-limited)
 Route::get('/ql/{token}', [\App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login');
+
+// Public unlimited script registration — no auth required
+Route::get('/register/{token}', [\App\Http\Controllers\ScriptRegistrationPublicController::class, 'show'])->name('script-registration.public');
+Route::post('/register/{token}', [\App\Http\Controllers\ScriptRegistrationPublicController::class, 'submit'])->name('script-registration.public.submit');
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -289,6 +294,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/read-credits', [ReadCreditController::class, 'store'])->name('read-credits.store');
     Route::get('/read-credits/{package}/edit', [ReadCreditController::class, 'edit'])->name('read-credits.edit');
     Route::patch('/read-credits/{package}', [ReadCreditController::class, 'update'])->name('read-credits.update');
+
+    // Script Registrations (admin/editor)
+    Route::get('/script-registrations', [ScriptRegistrationController::class, 'index'])->name('script-registrations.index');
+    Route::get('/script-registrations/{registration}', [ScriptRegistrationController::class, 'show'])->name('script-registrations.show');
+    Route::post('/script-registrations/{registration}/regenerate', [ScriptRegistrationController::class, 'regenerateCertificate'])->name('script-registrations.regenerate');
+    Route::get('/script-registrations/{registration}/download', [ScriptRegistrationController::class, 'downloadCertificate'])->name('script-registrations.download');
+    Route::post('/script-registrations/{registration}/regenerate-token', [ScriptRegistrationController::class, 'regenerateToken'])->name('script-registrations.regenerate-token');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/revenue/by-customer', [RevenueController::class, 'byCustomer'])->name('revenue.by-customer');

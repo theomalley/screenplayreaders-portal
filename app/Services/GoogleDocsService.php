@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-06-22 | Add generateCertificatePdf() for script registration certificates (copy → fill → export → save to Drive → cleanup)
 // v1.3 — 2026-06-19 | exportToPdf: update existing PDF in place when existingPdfId is provided (prevents Drive orphans)
 // v1.2 — 2026-05-26 | Add generatePdfBytesAndCleanup() for transient PDF generation (WooCommerce order invoices)
 // v1.1 — 2026-05-26 | Add createInvoiceDoc() and exportDocToPdfBytes() for invoice generation
@@ -180,6 +181,46 @@ class GoogleDocsService
             } catch (\Throwable) {
                 // Non-fatal — log but don't interrupt the download
                 Log::warning('GoogleDocsService: failed to delete temp invoice doc', ['doc_id' => $docId]);
+            }
+        }
+    }
+
+    /**
+     * Copy the template, fill placeholders, export to PDF, save to a Drive folder, then
+     * delete the temp Google Doc copy. Returns the Drive file ID of the saved PDF.
+     */
+    public function generateCertificatePdf(string $templateId, array $placeholders, string $filename, string $outputFolderId): string
+    {
+        $docId = $this->copyTemplate($templateId, 'temp-cert-' . uniqid(), null);
+        try {
+            $this->fillPlaceholders($docId, $placeholders);
+            $bytes = $this->exportDocToPdfBytes($docId);
+
+            $file = $this->drive->files->create(
+                new DriveFile([
+                    'name'    => $filename . '.pdf',
+                    'parents' => [$outputFolderId],
+                ]),
+                [
+                    'data'              => $bytes,
+                    'mimeType'          => 'application/pdf',
+                    'uploadType'        => 'multipart',
+                    'fields'            => 'id',
+                    'supportsAllDrives' => true,
+                ]
+            );
+
+            Log::info('GoogleDocsService: certificate PDF saved to Drive', [
+                'pdf_id' => $file->id,
+                'filename' => $filename,
+            ]);
+
+            return $file->id;
+        } finally {
+            try {
+                $this->drive->files->delete($docId, ['supportsAllDrives' => true]);
+            } catch (\Throwable) {
+                Log::warning('GoogleDocsService: failed to delete temp certificate doc', ['doc_id' => $docId]);
             }
         }
     }

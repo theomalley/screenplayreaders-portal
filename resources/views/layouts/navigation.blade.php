@@ -198,7 +198,7 @@
 
                         {{-- Admin dropdown (Team, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('test-data.*') || request()->routeIs('budget-admin.*');
+                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('test-data.*') || request()->routeIs('budget-admin.*') || request()->routeIs('script-registrations.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -231,6 +231,10 @@
                                     Budget Admin
                                 </a>
                                 @endif
+                                <a href="{{ route('script-registrations.index') }}"
+                                    class="block px-4 py-2 text-sm {{ request()->routeIs('script-registrations.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Script Registrations
+                                </a>
                                 <a href="{{ route('manual.show') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
@@ -386,6 +390,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                     {{ __('Settings') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('script-registrations.index')" :active="request()->routeIs('script-registrations.*')">
+                    {{ __('Script Registrations') }}
                 </x-responsive-nav-link>
                 @if(\App\Support\Permission::check('team'))
                 <x-responsive-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')">
