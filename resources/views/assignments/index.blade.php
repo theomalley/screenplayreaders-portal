@@ -1666,10 +1666,20 @@
                                                     ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
                                                     : null;
                                                 $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
+                                                $isRequestedForOther = $assignment->requested_reader_id && $assignment->requested_reader_id !== auth()->id();
+                                                $isAcceptedByOther = $isRequestedForOther && $assignment->status === \App\Models\Assignment::STATUS_ASSIGNED;
+                                                $otherInitials = $isRequestedForOther ? ($assignment->requestedReader?->readerProfile?->initials ?? '??') : null;
+                                                $otherPhotoUrl = $isRequestedForOther && $assignment->requestedReader?->readerProfile?->photo
+                                                    ? asset('storage/' . $assignment->requestedReader->readerProfile->photo)
+                                                    : null;
                                                 $isBlockedForMe = $assignment->isReaderBlocked(auth()->id());
                                                 $rowClass = $isRequestedForMe
                                                     ? 'border-l-4 request-pulse'
-                                                    : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
+                                                    : ($isAcceptedByOther
+                                                        ? 'border-l-4 border-purple-200 opacity-60'
+                                                        : ($isRequestedForOther
+                                                            ? 'border-l-4 border-purple-200 opacity-75'
+                                                            : ($assignment->rush ? 'border-l-4 border-amber-400' : '')));
                                                 $viewUrl  = $assignment->hasCloudScript()
                                                     ? route('assignments.streamScript', $assignment)
                                                     : null;
@@ -1763,10 +1773,29 @@
                                                             </span>
                                                             <span class="text-[9px] text-purple-400 font-mono leading-none">Request</span>
                                                         </div>
+                                                    @elseif ($isRequestedForOther)
+                                                        <div class="flex items-center gap-1 mt-1">
+                                                            <span class="relative inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-50 text-purple-400 text-[9px] font-mono font-semibold shrink-0">
+                                                                @if ($otherPhotoUrl)
+                                                                    <span class="absolute inset-0 rounded-full overflow-hidden">
+                                                                        <img src="{{ $otherPhotoUrl }}" alt="{{ $otherInitials }}" class="w-full h-full object-cover opacity-60" />
+                                                                    </span>
+                                                                @else
+                                                                    {{ $otherInitials }}
+                                                                @endif
+                                                            </span>
+                                                            <span class="text-[9px] text-purple-300 font-mono leading-none">Requested for {{ $otherInitials }}</span>
+                                                        </div>
                                                     @endif
                                                     <div class="mt-1.5">
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
+                                                        @if ($isAcceptedByOther)
+                                                            @php $acceptedInitials = $assignment->assignedReader?->readerProfile?->initials ?? '??'; @endphp
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Accepted by {{ $acceptedInitials }}</span>
+                                                        @else
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Available</span>
+                                                        @endif
                                                     </div>
+                                                    @if (! $isAcceptedByOther)
                                                     @php $availNoteCount = ($myNotesByAssignment ?? collect())->get($assignment->id, 0); @endphp
                                                     @if ($availNoteCount < 3)
                                                     <div x-data="{ open: false }" class="mt-2">
@@ -1790,6 +1819,7 @@
                                                         </div>
                                                     </div>
                                                     @endif
+                                                    @endif
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-center" title="{{ $accStr ? 'Accepted ' . $accTitle : '' }}">
                                                     <div class="text-gray-500 tabular-nums text-xs leading-none">{{ $accStr ?? '—' }}</div>
@@ -1803,7 +1833,14 @@
                                                           x-text="error"
                                                           class="text-xs text-red-600 font-medium"></span>
                                                     <div x-show="!error" class="flex flex-col items-end gap-1">
-                                                        @if ($isBlockedForMe)
+                                                        @if ($isAcceptedByOther)
+                                                        {{-- Already accepted by the requested reader — no actions --}}
+                                                        @elseif ($isRequestedForOther)
+                                                        <span class="inline-flex items-center px-3 py-1 bg-purple-50 border border-purple-200 rounded text-xs font-semibold text-purple-400 cursor-not-allowed"
+                                                              title="This assignment is requested for {{ $otherInitials }}">
+                                                            Requested
+                                                        </span>
+                                                        @elseif ($isBlockedForMe)
                                                         <span class="inline-flex items-center px-3 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-semibold text-gray-400 cursor-not-allowed"
                                                               title="You are blocked from accepting this order">
                                                             🚫 Blocked

@@ -232,6 +232,12 @@ class AssignmentController extends Controller
             ->orderBy('unassigned_at', 'asc')
             ->get();
 
+        $acceptedRequests = Assignment::acceptedRequests($user->id, $readerTiers)
+            ->with(['requestedReader.readerProfile', 'assignedReader.readerProfile'])
+            ->get();
+
+        $available = $available->concat($acceptedRequests);
+
         [$periodStart, $periodEnd] = PayPeriod::current();
 
         $mine = Assignment::forReader($user->id)
@@ -1113,6 +1119,11 @@ class AssignmentController extends Controller
 
             if ($fresh->status !== Assignment::STATUS_UNASSIGNED) {
                 $error = 'This assignment is no longer available.';
+                return;
+            }
+
+            if ($fresh->requested_reader_id && $fresh->requested_reader_id !== $user->id) {
+                $error = 'This assignment is requested for another reader.';
                 return;
             }
 

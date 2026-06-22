@@ -340,6 +340,7 @@ class Assignment extends Model
 
     /**
      * Assignments visible to a specific reader in the available list, filtered to their tiers.
+     * Includes assignments requested for other readers (visible but not acceptble).
      * Assignments that block this reader are still included (so the reader can see why an
      * order is unavailable to them) — AssignmentPolicy::accept() prevents them from accepting.
      */
@@ -349,11 +350,22 @@ class Assignment extends Model
             return $query->whereRaw('1 = 0');
         }
         return $query->where('status', self::STATUS_UNASSIGNED)
+            ->whereIn('tier', $tiers);
+    }
+
+    /**
+     * Requested assignments accepted by other readers — visible to all readers
+     * so they can see the request was fulfilled.
+     */
+    public function scopeAcceptedRequests($query, int $userId, array $tiers = [1])
+    {
+        if (empty($tiers)) {
+            return $query->whereRaw('1 = 0');
+        }
+        return $query->where('status', self::STATUS_ASSIGNED)
             ->whereIn('tier', $tiers)
-            ->where(function ($q) use ($userId) {
-                $q->whereNull('requested_reader_id')
-                  ->orWhere('requested_reader_id', $userId);
-            });
+            ->whereNotNull('requested_reader_id')
+            ->where('requested_reader_id', '!=', $userId);
     }
 
     /** A reader's own active assignments */

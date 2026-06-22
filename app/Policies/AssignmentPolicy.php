@@ -62,7 +62,8 @@ class AssignmentPolicy
     {
         return $assignment->isAvailable()
             && ($user->isReader() || $user->canManageAssignments())
-            && ! $assignment->isReaderBlocked($user->id);
+            && ! $assignment->isReaderBlocked($user->id)
+            && (! $assignment->requested_reader_id || $assignment->requested_reader_id === $user->id);
     }
 
     /** Reader cancelling their own accepted assignment */
