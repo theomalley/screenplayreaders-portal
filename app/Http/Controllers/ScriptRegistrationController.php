@@ -8,7 +8,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GenerateRegistrationCertificate;
 use App\Models\ScriptRegistration;
-use App\Services\GoogleDriveService;
+use App\Services\GoogleDocsService;
 use Illuminate\Http\Request;
 
 class ScriptRegistrationController extends Controller
@@ -79,7 +79,7 @@ class ScriptRegistrationController extends Controller
         return back()->with('success', 'Certificate regeneration queued for ' . $script_registration->registration_id . '.');
     }
 
-    public function downloadCertificate(ScriptRegistration $script_registration, GoogleDriveService $drive)
+    public function downloadCertificate(ScriptRegistration $script_registration, GoogleDocsService $docs)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
@@ -87,7 +87,7 @@ class ScriptRegistrationController extends Controller
             return back()->withErrors(['download' => 'No certificate PDF available. Try regenerating first.']);
         }
 
-        $bytes = $drive->downloadContents($script_registration->drive_certificate_pdf_id);
+        $bytes = $docs->downloadDriveFileBytes($script_registration->drive_certificate_pdf_id);
         $safeTitle = preg_replace('/[^\w\s\-.]/', '', $script_registration->script_title);
         $filename = "SR Registration Certificate - {$safeTitle} - {$script_registration->registration_id}.pdf";
 

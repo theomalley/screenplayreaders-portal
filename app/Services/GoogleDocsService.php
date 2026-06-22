@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-06-22 | Add downloadDriveFileBytes() for downloading Drive files via impersonated client
 // v1.4 — 2026-06-22 | Add generateCertificatePdf() for script registration certificates (copy → fill → export → save to Drive → cleanup)
 // v1.3 — 2026-06-19 | exportToPdf: update existing PDF in place when existingPdfId is provided (prevents Drive orphans)
 // v1.2 — 2026-05-26 | Add generatePdfBytesAndCleanup() for transient PDF generation (WooCommerce order invoices)
@@ -183,6 +184,20 @@ class GoogleDocsService
                 Log::warning('GoogleDocsService: failed to delete temp invoice doc', ['doc_id' => $docId]);
             }
         }
+    }
+
+    /**
+     * Download a file from Drive and return its raw bytes.
+     * Uses the impersonated client so it can access files owned by the Workspace user.
+     */
+    public function downloadDriveFileBytes(string $fileId): string
+    {
+        $response = $this->drive->files->get($fileId, [
+            'alt'               => 'media',
+            'supportsAllDrives' => true,
+        ]);
+
+        return $response->getBody()->getContents();
     }
 
     /**
