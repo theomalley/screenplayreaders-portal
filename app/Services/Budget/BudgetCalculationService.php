@@ -32,15 +32,14 @@ class BudgetCalculationService
         $payload = [];
 
         foreach ($positions as $position) {
-            $guildCode = $resolver->guildCodeForPosition($position->guild);
+            // Writer (210) is handled entirely by calculateWriterProducer —
+            // the JS outputs _210writerrate as a flat fee, not per-phase rates.
+            if ($position->line_item_id === '210') {
+                continue;
+            }
 
-            $nonUnionBase = match ($position->guild) {
-                'DGA_DIR', 'DGA_UPM' => $resolver->rateNonunionKey,
-                'WGA' => $resolver->rateNonunionKey,
-                'IATSE' => $resolver->rateNonunionKey,
-                'TEAMSTERS' => $resolver->rateNonunionKey,
-                default => $resolver->rateNonunionKey,
-            };
+            $guildCode = $resolver->guildCodeForPosition($position->guild);
+            $nonUnionBase = $resolver->rateNonunionKey;
 
             $result = $crewCalc->calculatePosition(
                 $position, $guildCode, $nonUnionBase, $budgetClass,
@@ -48,7 +47,6 @@ class BudgetCalculationService
                 $resolver->weeksWRAP, $resolver->weeksPOST
             );
 
-            // Calculate fringes for this position
             $fringes = $fringeCalc->calculateFringes(
                 $result['labor_total'],
                 $position->guild,
@@ -63,7 +61,6 @@ class BudgetCalculationService
                 'fringes' => $fringes,
             ];
 
-            // Build per-position output variables (matching JS template token names)
             $prefix = '_' . $position->line_item_id . $position->slug;
             $this->addPositionToPayload($payload, $prefix, $result, $fringes, $position->guild);
         }
@@ -485,6 +482,14 @@ class BudgetCalculationService
             $payload['_210writerWGApension'] = $wFringes['wga_pension'];
             $payload['_210writerWGAhealth'] = $wFringes['wga_health'];
 
+            // Writer is excluded from the main crew loop, so add fringes to ATL totals here.
+            // Matches JS: FICAtotal_ATL = _210writerFICA + _410directorFICA + FICAtotal_cast
+            $payload['FICAtotal_ATL'] = ($payload['FICAtotal_ATL'] ?? 0) + $wFringes['fica'];
+            $payload['Medicaretotal_ATL'] = ($payload['Medicaretotal_ATL'] ?? 0) + $wFringes['medicare'];
+            $payload['FUItotal_ATL'] = ($payload['FUItotal_ATL'] ?? 0) + $wFringes['fui'];
+            $payload['SUItotal_ATL'] = ($payload['SUItotal_ATL'] ?? 0) + $wFringes['sui'];
+            $payload['payrolltotal_ATL'] = ($payload['payrolltotal_ATL'] ?? 0) + $wFringes['payroll'];
+
             $payload['text_writeroriginalscreenplay'] = ($wgaCode != 0 && $wgaCode != 999)
                 ? 'Original Screenplay incl. Treatment' : 'Writer(s)';
             $payload['text_scriptpublicationfee'] = $pubFee > 0
@@ -677,7 +682,9 @@ class BudgetCalculationService
             if ($guild === 'WGA') {
                 $guildTotals['WGApension'] += $fringes['wga_pension'];
                 $guildTotals['WGAhealth'] += $fringes['wga_health'];
-            } elseif ($guild === 'DGA_DIR' || $guild === 'DGA_UPM') {
+            } elseif ($guild === 'DGA_UPM') {
+                // JS only includes UPM/ADs in DGApensiontotal_prod_BTL.
+                // Director DGA fringes are output as separate per-position tokens.
                 $guildTotals['DGApension_prod'] += $fringes['dga_pension'];
                 $guildTotals['DGAhealth_prod'] += $fringes['dga_health'];
             } elseif ($guild === 'IATSE') {
