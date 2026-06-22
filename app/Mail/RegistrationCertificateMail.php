@@ -16,7 +16,7 @@ class RegistrationCertificateMail extends Mailable
 
     public function __construct(
         private readonly ScriptRegistration $registration,
-        private readonly array $attachments = [],
+        private readonly array $certificateFiles = [],
     ) {}
 
     public function build(): static
@@ -26,7 +26,7 @@ class RegistrationCertificateMail extends Mailable
         $this->to($reg->email);
         $this->subject('Your Script Registration Certificate — ' . $reg->script_title);
 
-        foreach ($this->attachments as $file) {
+        foreach ($this->certificateFiles as $file) {
             $this->attach($file['path'], [
                 'as'   => $file['as'],
                 'mime' => $file['mime'],
