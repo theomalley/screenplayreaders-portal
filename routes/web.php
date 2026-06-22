@@ -297,10 +297,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Script Registrations (admin/editor)
     Route::get('/script-registrations', [ScriptRegistrationController::class, 'index'])->name('script-registrations.index');
-    Route::get('/script-registrations/{registration}', [ScriptRegistrationController::class, 'show'])->name('script-registrations.show');
-    Route::post('/script-registrations/{registration}/regenerate', [ScriptRegistrationController::class, 'regenerateCertificate'])->name('script-registrations.regenerate');
-    Route::get('/script-registrations/{registration}/download', [ScriptRegistrationController::class, 'downloadCertificate'])->name('script-registrations.download');
-    Route::post('/script-registrations/{registration}/regenerate-token', [ScriptRegistrationController::class, 'regenerateToken'])->name('script-registrations.regenerate-token');
+    Route::get('/script-registrations/{script_registration}', [ScriptRegistrationController::class, 'show'])->name('script-registrations.show');
+    Route::post('/script-registrations/{script_registration}/regenerate', [ScriptRegistrationController::class, 'regenerateCertificate'])->name('script-registrations.regenerate');
+    Route::get('/script-registrations/{script_registration}/download', [ScriptRegistrationController::class, 'downloadCertificate'])->name('script-registrations.download');
+    Route::post('/script-registrations/{script_registration}/regenerate-token', [ScriptRegistrationController::class, 'regenerateToken'])->name('script-registrations.regenerate-token');
     Route::get('/script-registrations-test', [ScriptRegistrationController::class, 'testForm'])->name('script-registrations.test');
     Route::post('/script-registrations-test', [ScriptRegistrationController::class, 'testRun'])->name('script-registrations.test.run');
 

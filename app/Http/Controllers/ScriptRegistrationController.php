@@ -54,42 +54,42 @@ class ScriptRegistrationController extends Controller
         ]);
     }
 
-    public function show(ScriptRegistration $registration)
+    public function show(ScriptRegistration $script_registration)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
-        $registration->load('children', 'parent');
+        $script_registration->load('children', 'parent');
 
         return view('script-registrations.show', [
-            'registration' => $registration,
+            'registration' => $script_registration,
         ]);
     }
 
-    public function regenerateCertificate(ScriptRegistration $registration)
+    public function regenerateCertificate(ScriptRegistration $script_registration)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
-        $registration->update([
+        $script_registration->update([
             'status'        => ScriptRegistration::STATUS_PENDING,
             'error_message' => null,
         ]);
 
-        GenerateRegistrationCertificate::dispatch($registration->id);
+        GenerateRegistrationCertificate::dispatch($script_registration->id);
 
-        return back()->with('success', 'Certificate regeneration queued for ' . $registration->registration_id . '.');
+        return back()->with('success', 'Certificate regeneration queued for ' . $script_registration->registration_id . '.');
     }
 
-    public function downloadCertificate(ScriptRegistration $registration, GoogleDriveService $drive)
+    public function downloadCertificate(ScriptRegistration $script_registration, GoogleDriveService $drive)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
-        if (! $registration->drive_certificate_pdf_id) {
+        if (! $script_registration->drive_certificate_pdf_id) {
             return back()->withErrors(['download' => 'No certificate PDF available. Try regenerating first.']);
         }
 
-        $bytes = $drive->downloadContents($registration->drive_certificate_pdf_id);
-        $safeTitle = preg_replace('/[^\w\s\-.]/', '', $registration->script_title);
-        $filename = "SR Registration Certificate - {$safeTitle} - {$registration->registration_id}.pdf";
+        $bytes = $drive->downloadContents($script_registration->drive_certificate_pdf_id);
+        $safeTitle = preg_replace('/[^\w\s\-.]/', '', $script_registration->script_title);
+        $filename = "SR Registration Certificate - {$safeTitle} - {$script_registration->registration_id}.pdf";
 
         return response($bytes, 200, [
             'Content-Type'        => 'application/pdf',
@@ -98,19 +98,19 @@ class ScriptRegistrationController extends Controller
         ]);
     }
 
-    public function regenerateToken(ScriptRegistration $registration)
+    public function regenerateToken(ScriptRegistration $script_registration)
     {
         abort_unless(auth()->user()?->isAdmin(), 403);
 
-        if (! $registration->isUnlimited()) {
+        if (! $script_registration->isUnlimited()) {
             return back()->withErrors(['token' => 'Only unlimited registrations have tokens.']);
         }
 
-        $registration->update([
+        $script_registration->update([
             'unlimited_token' => bin2hex(random_bytes(32)),
         ]);
 
-        return back()->with('success', 'Unlimited token regenerated for ' . $registration->registration_id . '.');
+        return back()->with('success', 'Unlimited token regenerated for ' . $script_registration->registration_id . '.');
     }
 
     // ── Test Form ──
