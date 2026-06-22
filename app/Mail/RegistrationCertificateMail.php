@@ -47,7 +47,7 @@ class RegistrationCertificateMail extends Mailable
                 'variation_label'      => $reg->variation_label,
                 'unlimited_url'        => ($reg->isUnlimited() && $reg->unlimited_token)
                     ? $reg->publicRegistrationUrl()
-                    : '',
+                    : 'N/A',
             ];
 
             $this->mailersend(

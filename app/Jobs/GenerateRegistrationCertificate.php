@@ -90,7 +90,7 @@ class GenerateRegistrationCertificate implements ShouldQueue
             '{{AUTHCODE}}'          => $reg->authcode,
             '{{LIFETIMEURL}}'       => $reg->isUnlimited() && $reg->unlimited_token
                 ? $reg->publicRegistrationUrl()
-                : '',
+                : 'N/A',
         ];
     }
 }
