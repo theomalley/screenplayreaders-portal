@@ -9,6 +9,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class ScriptRegistration extends Model
 {
@@ -111,5 +112,10 @@ class ScriptRegistration extends Model
             $out .= $chars[random_int(0, strlen($chars) - 1)];
         }
         return $out;
+    }
+
+    public static function generateUnlimitedToken(): string
+    {
+        return Str::random(16);
     }
 }

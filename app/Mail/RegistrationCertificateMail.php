@@ -37,18 +37,18 @@ class RegistrationCertificateMail extends Mailable
 
         if ($templateId) {
             $personalization = [
-                'customer_name'     => $reg->author_first,
-                'script_title'      => $reg->script_title,
-                'registration_id'   => $reg->registration_id,
+                'customer_name'        => $reg->author_first,
+                'script_title'         => $reg->script_title,
+                'registration_id'      => $reg->registration_id,
+                'authcode'             => $reg->authcode,
                 'registration_expires' => $reg->expires_at
                     ? $reg->expires_at->format('F j, Y')
                     : 'Unlimited',
-                'variation_label'   => $reg->variation_label,
+                'variation_label'      => $reg->variation_label,
+                'unlimited_url'        => ($reg->isUnlimited() && $reg->unlimited_token)
+                    ? $reg->publicRegistrationUrl()
+                    : '',
             ];
-
-            if ($reg->isUnlimited() && $reg->unlimited_token) {
-                $personalization['unlimited_url'] = $reg->publicRegistrationUrl();
-            }
 
             $this->mailersend(
                 template_id: $templateId,

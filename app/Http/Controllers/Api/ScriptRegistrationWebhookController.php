@@ -74,7 +74,7 @@ class ScriptRegistrationWebhookController extends Controller
                 'registered_at'     => now(),
                 'expires_at'        => $this->parseExpiry($payload['sr_registration_expires'] ?? null, $variationId),
                 'unlimited_token'   => $variationId === ScriptRegistration::VAR_LIFETIME
-                    ? bin2hex(random_bytes(32))
+                    ? ScriptRegistration::generateUnlimitedToken()
                     : null,
                 'status'            => ScriptRegistration::STATUS_PENDING,
             ]);

@@ -136,9 +136,17 @@
                                             {{ ucfirst($reg->status) }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-2.5 text-right">
+                                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
                                         <a href="{{ route('script-registrations.show', $reg) }}"
                                            class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">View</a>
+                                        @if(auth()->user()?->isAdmin())
+                                            <form method="POST" action="{{ route('script-registrations.destroy', $reg) }}" class="inline ml-2"
+                                                  onsubmit="return confirm('Delete registration {{ $reg->registration_id }}?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

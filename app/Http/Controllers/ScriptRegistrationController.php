@@ -107,10 +107,21 @@ class ScriptRegistrationController extends Controller
         }
 
         $script_registration->update([
-            'unlimited_token' => bin2hex(random_bytes(32)),
+            'unlimited_token' => ScriptRegistration::generateUnlimitedToken(),
         ]);
 
         return back()->with('success', 'Unlimited token regenerated for ' . $script_registration->registration_id . '.');
+    }
+
+    public function destroy(ScriptRegistration $script_registration)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $regId = $script_registration->registration_id;
+        $script_registration->delete();
+
+        return redirect()->route('script-registrations.index')
+            ->with('success', "Registration {$regId} deleted.");
     }
 
     // ── Test Form ──
@@ -176,7 +187,7 @@ class ScriptRegistrationController extends Controller
                 default => now()->addDays(90),
             },
             'unlimited_token' => $variationId === ScriptRegistration::VAR_LIFETIME
-                ? bin2hex(random_bytes(32))
+                ? ScriptRegistration::generateUnlimitedToken()
                 : null,
             'status'          => ScriptRegistration::STATUS_PENDING,
         ]);
