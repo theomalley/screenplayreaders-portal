@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-22 | Add test form for end-to-end pipeline testing
 // v1.0 — 2026-06-22 | Initial: admin panel for script registrations — list, detail,
 //                      certificate download/regenerate, unlimited token management.
 
@@ -110,5 +111,86 @@ class ScriptRegistrationController extends Controller
         ]);
 
         return back()->with('success', 'Unlimited token regenerated for ' . $registration->registration_id . '.');
+    }
+
+    // ── Test Form ──
+
+    public function testForm()
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        return view('script-registrations.test', [
+            'result'     => session('test_result'),
+            'workTypes'  => ['Feature Screenplay', 'TV Pilot', 'Short', 'Treatment', 'Pitch Deck', 'Other'],
+            'variations' => ScriptRegistration::VARIATION_LABELS,
+        ]);
+    }
+
+    public function testRun(Request $request)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $data = $request->validate([
+            'test_email'    => 'required|email|max:255',
+            'variation_id'  => 'required|integer|in:' . implode(',', array_keys(ScriptRegistration::VARIATION_LABELS)),
+            'title'         => 'required|string|max:255',
+            'page_count'    => 'required|integer|min:1|max:9999',
+            'type_of_work'  => 'required|string|max:120',
+            'author_first'  => 'required|string|max:120',
+            'author_last'   => 'required|string|max:120',
+        ]);
+
+        $variationId = (int) $data['variation_id'];
+
+        $registration = ScriptRegistration::create([
+            'woo_order_id'    => 'TEST-' . now()->format('YmdHis') . '-' . auth()->id(),
+            'woo_order_number' => null,
+            'customer_name'   => trim($data['author_first'] . ' ' . $data['author_last']),
+            'customer_email'  => $data['test_email'],
+            'variation_id'    => $variationId,
+            'variation_label' => ScriptRegistration::VARIATION_LABELS[$variationId] ?? 'Unknown',
+            'registration_id' => ScriptRegistration::generateRegistrationId(),
+            'script_title'    => $data['title'],
+            'page_count'      => (int) $data['page_count'],
+            'type_of_work'    => $data['type_of_work'],
+            'author_first'    => $data['author_first'],
+            'author_last'     => $data['author_last'],
+            'additional_authors' => null,
+            'street_address'  => '123 Test Street',
+            'city'            => 'Los Angeles',
+            'state_or_province' => 'CA',
+            'postal_or_zip'   => '90001',
+            'country'         => 'United States',
+            'phone'           => '555-0100',
+            'unique_id'       => null,
+            'email'           => $data['test_email'],
+            'uploaded_file_url' => null,
+            'uploaded_file_name' => null,
+            'authcode'        => bin2hex(random_bytes(16)),
+            'registered_at'   => now(),
+            'expires_at'      => match ($variationId) {
+                ScriptRegistration::VAR_FREE_90 => now()->addDays(90),
+                ScriptRegistration::VAR_5YR     => now()->addYears(5),
+                ScriptRegistration::VAR_10YR    => now()->addYears(10),
+                ScriptRegistration::VAR_LIFETIME => null,
+                default => now()->addDays(90),
+            },
+            'unlimited_token' => $variationId === ScriptRegistration::VAR_LIFETIME
+                ? bin2hex(random_bytes(32))
+                : null,
+            'status'          => ScriptRegistration::STATUS_PENDING,
+        ]);
+
+        GenerateRegistrationCertificate::dispatch($registration->id);
+
+        return redirect()->route('script-registrations.test')
+            ->with('test_result', [
+                'id'              => $registration->id,
+                'registration_id' => $registration->registration_id,
+                'email'           => $data['test_email'],
+                'variation'       => $registration->variation_label,
+                'unlimited_url'   => $registration->publicRegistrationUrl(),
+            ])
+            ->with('success', "Test registration {$registration->registration_id} created and queued for delivery to {$data['test_email']}.");
     }
 }

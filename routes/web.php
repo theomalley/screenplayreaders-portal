@@ -301,6 +301,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/script-registrations/{registration}/regenerate', [ScriptRegistrationController::class, 'regenerateCertificate'])->name('script-registrations.regenerate');
     Route::get('/script-registrations/{registration}/download', [ScriptRegistrationController::class, 'downloadCertificate'])->name('script-registrations.download');
     Route::post('/script-registrations/{registration}/regenerate-token', [ScriptRegistrationController::class, 'regenerateToken'])->name('script-registrations.regenerate-token');
+    Route::get('/script-registrations-test', [ScriptRegistrationController::class, 'testForm'])->name('script-registrations.test');
+    Route::post('/script-registrations-test', [ScriptRegistrationController::class, 'testRun'])->name('script-registrations.test.run');
 
     Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
     Route::get('/revenue/by-customer', [RevenueController::class, 'byCustomer'])->name('revenue.by-customer');
