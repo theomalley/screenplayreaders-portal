@@ -66,33 +66,28 @@ class GenerateRegistrationCertificate implements ShouldQueue
         }
     }
 
-    // Placeholder names must match the {{tags}} in the Google Doc template.
-    // Verify against template 1qgeRv6I4HaMP6xozm_0bjyxuJ7kayXk3ZJsd5azNN7Q.
     private function buildPlaceholders(ScriptRegistration $reg): array
     {
         return [
-            '{{registration_id}}'       => $reg->registration_id,
-            '{{title}}'                 => $reg->script_title,
-            '{{page_count}}'            => (string) ($reg->page_count ?? ''),
-            '{{type_of_work}}'          => $reg->type_of_work,
-            '{{author_first}}'          => $reg->author_first,
-            '{{author_last}}'           => $reg->author_last,
-            '{{additional_authors}}'    => $reg->additional_authors ?? 'None provided',
-            '{{street_address}}'        => $reg->street_address,
-            '{{city}}'                  => $reg->city,
-            '{{state}}'                 => $reg->state_or_province,
-            '{{postal}}'               => $reg->postal_or_zip,
-            '{{country}}'              => $reg->country,
-            '{{phone}}'                => $reg->phone,
-            '{{unique_id}}'            => $reg->unique_id ?? 'None provided',
-            '{{email}}'                => $reg->email,
-            '{{registration_expires}}' => $reg->expires_at
+            '{{REGISTRATIONNO}}'    => $reg->registration_id,
+            '{{DATEREGISTRATION}}'  => $reg->registered_at->format('F j, Y g:i A T'),
+            '{{TITLE}}'             => $reg->script_title,
+            '{{TYPE}}'              => $reg->type_of_work,
+            '{{PAGES}}'             => (string) ($reg->page_count ?? ''),
+            '{{EMAIL}}'             => $reg->email,
+            '{{AUTHOR1FIRST}}'      => $reg->author_first,
+            '{{AUTHOR1LAST}}'       => $reg->author_last,
+            '{{ADDRESS}}'           => $reg->street_address,
+            '{{CITY}}'              => $reg->city,
+            '{{STATE}}'             => $reg->state_or_province,
+            '{{ZIP}}'               => $reg->postal_or_zip,
+            '{{COUNTRY}}'           => $reg->country,
+            '{{ADDITIONALAUTHORS}}' => $reg->additional_authors ?? 'None provided',
+            '{{UNIQUEID}}'          => $reg->unique_id ?? 'None provided',
+            '{{EXPIRATIONDATE}}'    => $reg->expires_at
                 ? $reg->expires_at->format('F j, Y')
                 : 'Unlimited',
-            '{{authcode}}'             => $reg->authcode,
-            '{{timestamp}}'            => $reg->registered_at->format('F j, Y g:i A T'),
-            '{{date}}'                 => $reg->registered_at->format('F j, Y'),
-            '{{uploaded_file_name}}'   => $reg->uploaded_file_name ?? '',
+            '{{AUTHCODE}}'          => $reg->authcode,
         ];
     }
 }
