@@ -71,6 +71,19 @@ class BudgetCalculationService
         // 7. Cast member calculations (before totals — cast labor counts toward ATL)
         $this->calculateCastMembers($payload, $input, $resolver, $fringeCalc);
 
+        // 7b. Add cast fringes to ATL totals and compute SAGpensiontotal_cast.
+        // JS: FICAtotal_ATL = writerFICA + directorFICA + FICAtotal_cast
+        $castSize = (int) ($input['usercastsize'] ?? 0);
+        for ($i = 1; $i <= $castSize; $i++) {
+            $prefix = '_' . (510 + ($i * 2)) . 'cast' . str_pad($i, 2, '0', STR_PAD_LEFT);
+            $payload['FICAtotal_ATL'] = ($payload['FICAtotal_ATL'] ?? 0) + (float) ($payload[$prefix . 'FICA'] ?? 0);
+            $payload['Medicaretotal_ATL'] = ($payload['Medicaretotal_ATL'] ?? 0) + (float) ($payload[$prefix . 'Medicare'] ?? 0);
+            $payload['FUItotal_ATL'] = ($payload['FUItotal_ATL'] ?? 0) + (float) ($payload[$prefix . 'FUI'] ?? 0);
+            $payload['SUItotal_ATL'] = ($payload['SUItotal_ATL'] ?? 0) + (float) ($payload[$prefix . 'SUI'] ?? 0);
+            $payload['payrolltotal_ATL'] = ($payload['payrolltotal_ATL'] ?? 0) + (float) ($payload[$prefix . 'payroll'] ?? 0);
+            $payload['SAGpensiontotal_cast'] = ($payload['SAGpensiontotal_cast'] ?? 0) + (float) ($payload[$prefix . 'SAGpension'] ?? 0);
+        }
+
         // 8. Writer and producer variables (before totals — ATL labor)
         $this->calculateWriterProducer($payload, $input, $resolver, $crewCalc, $fringeCalc, $positions);
 
