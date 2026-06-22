@@ -1,5 +1,7 @@
 <?php
 
+// v1.2 — 2026-06-22 | Add setCoupon(), expiredPendingCoupon(); show() returns coupon_code,
+//                     credits_at_expiry, and history log; redeem() logs the event
 // v1.1 — 2026-06-19 | Security: remove PII from show(); add mimes validation on redeem();
 //                     relax credits validation to accept any positive integer
 // v1.0 — 2026-06-18 | API endpoints for Notes-Only read credit packages: create (from WP),
@@ -77,6 +79,16 @@ class ReadCreditApiController extends Controller
 
         $pkg->checkExpiration();
 
+        $history = $pkg->logs->map(fn ($log) => [
+            'date'          => $log->created_at->format('F j, Y'),
+            'date_iso'      => $log->created_at->toIso8601String(),
+            'event'         => $log->event_type,
+            'note'          => $log->note,
+            'script_title'  => $log->script_title,
+            'order_number'  => $log->order_number,
+            'credits_after' => $log->credits_after,
+        ]);
+
         return response()->json([
             'credits_remaining'  => $pkg->credits_remaining,
             'credits_purchased'  => $pkg->credits_purchased,
@@ -86,6 +98,9 @@ class ReadCreditApiController extends Controller
             'expires_at_human'   => $pkg->expires_at->format('F j, Y'),
             'status'             => $pkg->status,
             'package_label'      => $pkg->packageLabel(),
+            'coupon_code'        => $pkg->coupon_code,
+            'credits_at_expiry'  => $pkg->credits_at_expiry,
+            'history'            => $history,
         ]);
     }
 
@@ -149,7 +164,16 @@ class ReadCreditApiController extends Controller
 
             UploadScriptToDrive::dispatch($assignment->id, $storagePath);
 
+            $creditsBefore = $pkg->credits_remaining;
             $pkg->useCredit();
+
+            $pkg->logs()->create([
+                'event_type'     => 'redeemed',
+                'credits_before' => $creditsBefore,
+                'credits_after'  => $pkg->credits_remaining,
+                'script_title'   => $data['script_title'],
+                'order_number'   => $orderNumber,
+            ]);
 
             Log::info('ReadCredit: credit used', [
                 'token'       => $pkg->upload_token,
@@ -165,6 +189,80 @@ class ReadCreditApiController extends Controller
                 'order_number'      => $orderNumber,
             ]);
         });
+    }
+
+    public function setCoupon(Request $request, string $token): JsonResponse
+    {
+        if (! $this->authorised($request)) {
+            return response()->json(['error' => 'Unauthorised.'], 401);
+        }
+
+        $data = $request->validate([
+            'coupon_code' => 'required|string|max:50',
+        ]);
+
+        $pkg = ReadCreditPackage::where('upload_token', $token)->first();
+
+        if (! $pkg) {
+            return response()->json(['error' => 'Invalid token.'], 404);
+        }
+
+        if ($pkg->status !== ReadCreditPackage::STATUS_EXPIRED) {
+            return response()->json(['error' => 'Package is not expired.'], 422);
+        }
+
+        if ($pkg->coupon_code !== null) {
+            return response()->json([
+                'status'      => 'already_set',
+                'coupon_code' => $pkg->coupon_code,
+            ]);
+        }
+
+        $pkg->update(['coupon_code' => $data['coupon_code']]);
+
+        $pkg->logs()->create([
+            'event_type'     => 'coupon_created',
+            'credits_before' => $pkg->credits_at_expiry ?? $pkg->credits_remaining,
+            'credits_after'  => $pkg->credits_at_expiry ?? $pkg->credits_remaining,
+            'note'           => $data['coupon_code'],
+        ]);
+
+        Log::info('ReadCredit: coupon set', [
+            'token'       => $token,
+            'coupon_code' => $data['coupon_code'],
+        ]);
+
+        return response()->json([
+            'status'      => 'set',
+            'coupon_code' => $data['coupon_code'],
+        ]);
+    }
+
+    public function expiredPendingCoupon(Request $request): JsonResponse
+    {
+        if (! $this->authorised($request)) {
+            return response()->json(['error' => 'Unauthorised.'], 401);
+        }
+
+        $packages = ReadCreditPackage::where('status', ReadCreditPackage::STATUS_EXPIRED)
+            ->whereNull('coupon_code')
+            ->where(function ($q) {
+                $q->where('credits_at_expiry', '>', 0)
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('credits_at_expiry')
+                         ->where('credits_remaining', '>', 0);
+                  });
+            })
+            ->get(['upload_token', 'credits_at_expiry', 'credits_remaining', 'expires_at', 'customer_email']);
+
+        $result = $packages->map(fn ($pkg) => [
+            'upload_token'     => $pkg->upload_token,
+            'credits_at_expiry' => $pkg->credits_at_expiry ?? $pkg->credits_remaining,
+            'expires_at_human' => $pkg->expires_at->format('F j, Y'),
+            'customer_email'   => $pkg->customer_email,
+        ]);
+
+        return response()->json(['packages' => $result]);
     }
 
     private function authorised(Request $request): bool

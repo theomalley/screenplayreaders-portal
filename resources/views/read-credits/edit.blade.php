@@ -80,6 +80,41 @@
                         <x-input-error :messages="$errors->get('status')" class="mt-1" />
                     </div>
 
+                    <div>
+                        <x-input-label for="adjustment_note" value="Adjustment Note" />
+                        <textarea id="adjustment_note" name="adjustment_note" rows="2" required
+                            placeholder="Reason for this change (required)"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">{{ old('adjustment_note') }}</textarea>
+                        <x-input-error :messages="$errors->get('adjustment_note')" class="mt-1" />
+                    </div>
+
+                    @if($package->logs->isNotEmpty())
+                    <div class="pt-4 border-t border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">Change History</h3>
+                        <div class="space-y-1.5 max-h-48 overflow-y-auto">
+                            @foreach($package->logs->reverse() as $log)
+                            <div class="text-xs text-gray-500 flex gap-2">
+                                <span class="text-gray-400 whitespace-nowrap">{{ $log->created_at->setTimezone($appTimezone)->format('M j, Y g:ia') }}</span>
+                                <span>
+                                    @if($log->event_type === 'redeemed')
+                                        <span class="text-blue-600">Used</span> — {{ $log->script_title }}
+                                        <span class="text-gray-400">({{ $log->credits_before }} → {{ $log->credits_after }})</span>
+                                    @elseif($log->event_type === 'adjustment')
+                                        <span class="text-amber-600">Adjusted</span> by {{ $log->performed_by }}:
+                                        {{ $log->note }}
+                                        <span class="text-gray-400">({{ $log->credits_before }} → {{ $log->credits_after }})</span>
+                                    @elseif($log->event_type === 'expired')
+                                        <span class="text-red-600">Expired</span> — {{ $log->note }}
+                                    @elseif($log->event_type === 'coupon_created')
+                                        <span class="text-green-600">Coupon created</span> — {{ $log->note }}
+                                    @endif
+                                </span>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                         <a href="{{ route('read-credits.index') }}"
                            class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>

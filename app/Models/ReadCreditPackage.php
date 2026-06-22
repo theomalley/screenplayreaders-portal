@@ -1,11 +1,14 @@
 <?php
 
+// v1.1 — 2026-06-22 | Add coupon_code, credits_at_expiry, logs relationship;
+//                     checkExpiration() now snapshots remaining credits and logs the event
 // v1.0 — 2026-06-18 | Notes-Only read credit packages — tracks purchased credits,
 //                     remaining balance, persistent upload token, and 1-year expiry.
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class ReadCreditPackage extends Model
@@ -23,6 +26,8 @@ class ReadCreditPackage extends Model
         'credits_remaining',
         'upload_token',
         'status',
+        'coupon_code',
+        'credits_at_expiry',
         'expires_at',
     ];
 
@@ -30,6 +35,7 @@ class ReadCreditPackage extends Model
         'product_id'        => 'integer',
         'credits_purchased' => 'integer',
         'credits_remaining' => 'integer',
+        'credits_at_expiry' => 'integer',
         'expires_at'        => 'datetime',
     ];
 
@@ -51,7 +57,21 @@ class ReadCreditPackage extends Model
     public function checkExpiration(): void
     {
         if ($this->status === self::STATUS_ACTIVE && $this->expires_at->isPast()) {
-            $this->update(['status' => self::STATUS_EXPIRED]);
+            $creditsBefore = $this->credits_remaining;
+
+            $this->update([
+                'status'           => self::STATUS_EXPIRED,
+                'credits_at_expiry' => $creditsBefore,
+            ]);
+
+            $this->logs()->create([
+                'event_type'     => 'expired',
+                'credits_before' => $creditsBefore,
+                'credits_after'  => $creditsBefore,
+                'note'           => $creditsBefore > 0
+                    ? "{$creditsBefore} credit(s) remaining at expiration"
+                    : 'All credits were used before expiration',
+            ]);
         }
     }
 
@@ -82,6 +102,11 @@ class ReadCreditPackage extends Model
     public function packageLabel(): string
     {
         return $this->credits_purchased . '-Pack';
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(ReadCreditLog::class)->orderBy('created_at');
     }
 
     public function uploadUrl(): string

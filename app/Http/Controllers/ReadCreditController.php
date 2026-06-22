@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-22 | Admin adjustment note required; log all credit changes
 // v1.0 — 2026-06-18 | Admin/editor views for Notes-Only read credit packages — list, create, edit
 
 namespace App\Http\Controllers;
@@ -90,9 +91,22 @@ class ReadCreditController extends Controller
             'credits_remaining' => 'required|integer|min:0|max:999',
             'expires_at'        => 'required|date',
             'status'            => 'required|in:active,expired,exhausted',
+            'adjustment_note'   => 'required|string|max:1000',
         ]);
 
+        $creditsBefore = $package->credits_remaining;
+        $note          = $data['adjustment_note'];
+        unset($data['adjustment_note']);
+
         $package->update($data);
+
+        $package->logs()->create([
+            'event_type'     => 'adjustment',
+            'credits_before' => $creditsBefore,
+            'credits_after'  => $package->credits_remaining,
+            'note'           => $note,
+            'performed_by'   => auth()->user()->name ?? auth()->user()->email,
+        ]);
 
         return redirect()->route('read-credits.index')
             ->with('success', "Credit package for {$package->customer_email} updated.");

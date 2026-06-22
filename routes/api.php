@@ -40,3 +40,5 @@ Route::get('/staff/{user}', [StaffProfileController::class, 'show'])->middleware
 Route::post('/read-credits', [ReadCreditApiController::class, 'store'])->middleware('throttle:10,1');
 Route::get('/read-credits/{token}', [ReadCreditApiController::class, 'show'])->middleware('throttle:60,1');
 Route::post('/read-credits/{token}/redeem', [ReadCreditApiController::class, 'redeem'])->middleware('throttle:10,1');
+Route::post('/read-credits/{token}/set-coupon', [ReadCreditApiController::class, 'setCoupon'])->middleware('throttle:10,1');
+Route::get('/read-credits-expired-pending-coupon', [ReadCreditApiController::class, 'expiredPendingCoupon'])->middleware('throttle:10,1');
