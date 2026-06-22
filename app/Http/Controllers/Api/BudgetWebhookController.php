@@ -136,8 +136,13 @@ class BudgetWebhookController extends Controller
 
     private function extractHeaderData(array $mapped): array
     {
+        $title = $mapped['headertitle'] ?? '';
+        if ($title === '') {
+            $title = $mapped['projecttitle'] ?? '';
+        }
+
         return array_filter([
-            'title'          => $mapped['headertitle'] ?? ($mapped['projecttitle'] ?? ''),
+            'title'          => $title,
             'director'       => $mapped['headerdirector'] ?? '',
             'date'           => $mapped['headerdate'] ?? '',
             'name_first'     => $mapped['headernamefirst'] ?? '',
