@@ -13,7 +13,7 @@ class PartnerSite extends Model
     protected $fillable = [
         'name', 'url', 'check_interval_minutes', 'active', 'notes',
         'coupon_code', 'coupon_uptime_threshold', 'coupon_discount_type', 'coupon_amount',
-        'next_check_at',
+        'next_check_at', 'source', 'contact_email',
     ];
 
     protected $casts = [

@@ -42,6 +42,7 @@ use App\Http\Controllers\WooOrderController;
 use App\Http\Controllers\Marketing\BaseEmailTemplateController;
 use App\Http\Controllers\Marketing\EmailCampaignController;
 use App\Http\Controllers\Marketing\EmailTemplateController;
+use App\Http\Controllers\Marketing\PartnerApplicationController;
 use App\Http\Controllers\Marketing\PartnerSiteController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,6 +60,10 @@ Route::middleware('throttle:30,1')->get('/register/{token}', [\App\Http\Controll
 Route::middleware('throttle:5,1')->post('/register/{token}', [\App\Http\Controllers\ScriptRegistrationPublicController::class, 'submit'])
     ->where('token', '[a-zA-Z0-9]+')
     ->name('script-registration.public.submit');
+
+// Public partner application form — no auth required
+Route::middleware('throttle:30,1')->get('/partner-apply', [PartnerApplicationController::class, 'show'])->name('partner-apply');
+Route::middleware('throttle:5,1')->post('/partner-apply', [PartnerApplicationController::class, 'submit'])->name('partner-apply.submit');
 
 Route::get('/', function () {
     return redirect()->route('login');

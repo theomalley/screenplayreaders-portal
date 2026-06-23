@@ -294,7 +294,7 @@ class PartnerSiteController extends Controller
      * - If it already exists: updates discount fields only — does NOT touch 'status'
      *   so monitoring-driven enable/disable (syncCouponStatus) is preserved.
      */
-    private static function syncWcCouponSettings(PartnerSite $site): void
+    public static function syncWcCouponSettings(PartnerSite $site): void
     {
         $code = trim((string) ($site->coupon_code ?? ''));
         if ($code === '') return;

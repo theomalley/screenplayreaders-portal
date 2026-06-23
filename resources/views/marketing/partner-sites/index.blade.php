@@ -169,6 +169,12 @@
                                 @if(!$site->active)
                                     <span class="text-xs text-amber-600">Paused</span>
                                 @endif
+                                @if($site->source === 'application')
+                                    <span class="inline-block text-xs px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded font-medium">Application</span>
+                                @endif
+                                @if($site->contact_email)
+                                    <a href="mailto:{{ $site->contact_email }}" class="text-xs text-gray-400 hover:text-indigo-600 block truncate max-w-xs">{{ $site->contact_email }}</a>
+                                @endif
                             </td>
 
                             {{-- Status --}}
