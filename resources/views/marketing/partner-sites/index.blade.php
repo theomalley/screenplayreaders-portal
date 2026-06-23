@@ -1,7 +1,26 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between flex-wrap gap-3">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Partner Link Monitor</h2>
+            <div class="flex items-center gap-3" x-data="{ showHelp: false }">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Partner Link Monitor</h2>
+                <div class="relative">
+                    <button type="button" @click="showHelp = !showHelp"
+                            class="text-xs text-gray-400 hover:text-indigo-600 underline underline-offset-2">How it works</button>
+                    <div x-show="showHelp" x-cloak @click.outside="showHelp = false" x-transition
+                         class="absolute left-0 top-full mt-2 w-[420px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 text-sm text-gray-600 p-5 space-y-3">
+                        <h3 class="text-sm font-semibold text-gray-800 mb-2">How the Partner Link Monitor works</h3>
+                        <p>Each partner site is checked on its configured interval. The monitor fetches the page, parses the HTML, and looks for any links pointing to <strong>screenplayreaders.com</strong>.</p>
+                        <p>A site is <strong class="text-green-600">Up</strong> if at least one backlink is found, and <strong class="text-red-500">Down</strong> if the page errors or has no backlinks.</p>
+                        <p class="font-medium text-gray-700 mt-1">Coupon auto-management</p>
+                        <p>If a WooCommerce coupon code is assigned to a partner, the monitor enables or disables it automatically after each check:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-xs text-gray-500">
+                            <li><strong>With an uptime threshold</strong> &mdash; coupon stays active while rolling uptime (last 20 checks) is at or above the threshold; paused when it drops below.</li>
+                            <li><strong>Without a threshold</strong> &mdash; coupon is toggled on each individual check (active when up, paused when down).</li>
+                        </ul>
+                        <p class="text-xs text-gray-400 pt-1">Checks run via <code class="bg-gray-100 px-1 rounded">marketing:check-partner-links</code> every 5 min; only sites past their next-check time are processed.</p>
+                    </div>
+                </div>
+            </div>
             <div class="flex items-center gap-3">
                 {{-- Period dropdown --}}
                 <form method="GET" action="{{ route('marketing.partner-sites.index') }}">
