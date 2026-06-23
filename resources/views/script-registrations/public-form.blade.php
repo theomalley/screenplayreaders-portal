@@ -209,8 +209,8 @@
             font-size: 0.9rem;
         }
         @media (max-width: 560px) {
-            .sr-reg__list-table th:nth-child(3),
-            .sr-reg__list-table td:nth-child(3) { display: none; }
+            .sr-reg__list-table th:nth-child(4),
+            .sr-reg__list-table td:nth-child(4) { display: none; }
         }
     </style>
 </head>
@@ -245,6 +245,7 @@
                 <thead>
                     <tr>
                         <th>Title</th>
+                        <th>Reg #</th>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Status</th>
@@ -254,6 +255,7 @@
                     @foreach($registrations as $reg)
                         <tr>
                             <td>{{ $reg->script_title }}</td>
+                            <td style="font-family:monospace;font-size:0.8rem">{{ $reg->registration_id }}</td>
                             <td>{{ $reg->registered_at ? $reg->registered_at->format('M j, Y') : '—' }}</td>
                             <td>{{ $reg->type_of_work }}</td>
                             <td>
