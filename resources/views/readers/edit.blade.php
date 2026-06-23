@@ -31,7 +31,8 @@
                     {{-- Photos --}}
                     @php
                         $currentPhotoUrl        = $profile?->photo ? asset('storage/' . $profile->photo) : '';
-                        $currentAboutPhotoUrl   = $profile?->about_photo ? asset('storage/' . $profile->about_photo) : '';
+                        $aboutPath              = $profile?->about_photo ?? $profile?->about_photo_pending;
+                        $currentAboutPhotoUrl   = $aboutPath ? asset('storage/' . $aboutPath) : '';
                         $pendingPhotoUrl        = $profile?->photo_pending ? asset('storage/' . $profile->photo_pending) : null;
                         $pendingAboutPhotoUrl   = $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null;
                         $pendingBioContent      = $profile?->bio_pending;
