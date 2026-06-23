@@ -44,12 +44,6 @@
                         @endforeach
                     </select>
                 </form>
-                @if(auth()->user()?->isAdmin())
-                    <a href="{{ route('script-registrations.test') }}"
-                       class="inline-flex items-center h-9 px-4 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition">
-                        Test
-                    </a>
-                @endif
             </div>
         </div>
     </x-slot>

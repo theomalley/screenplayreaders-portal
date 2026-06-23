@@ -36,6 +36,7 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReadCreditController;
+use App\Http\Controllers\BudgetOrderController;
 use App\Http\Controllers\ScriptRegistrationController;
 use App\Http\Controllers\WooOrderController;
 use App\Http\Controllers\Marketing\BaseEmailTemplateController;
@@ -298,6 +299,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/read-credits', [ReadCreditController::class, 'store'])->name('read-credits.store');
     Route::get('/read-credits/{package}/edit', [ReadCreditController::class, 'edit'])->name('read-credits.edit');
     Route::patch('/read-credits/{package}', [ReadCreditController::class, 'update'])->name('read-credits.update');
+
+    // Budget orders (admin/editor)
+    Route::get('/budget-orders', [BudgetOrderController::class, 'index'])->name('budget-orders.index');
+    Route::get('/budget-orders/{budgetOrder}', [BudgetOrderController::class, 'show'])->name('budget-orders.show');
+    Route::get('/budget-orders/{budgetOrder}/download-pdf', [BudgetOrderController::class, 'downloadPdf'])->name('budget-orders.download-pdf');
+    Route::get('/budget-orders/{budgetOrder}/download-xlsx', [BudgetOrderController::class, 'downloadXlsx'])->name('budget-orders.download-xlsx');
+    Route::post('/budget-orders/{budgetOrder}/regenerate', [BudgetOrderController::class, 'regenerate'])->name('budget-orders.regenerate');
 
     // Script Registrations (admin/editor)
     Route::get('/script-registrations', [ScriptRegistrationController::class, 'index'])->name('script-registrations.index');

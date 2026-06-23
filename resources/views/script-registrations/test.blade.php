@@ -1,9 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-3">
-            <a href="{{ route('script-registrations.index') }}" class="text-gray-400 hover:text-gray-600">&larr;</a>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Script Registration — Test</h2>
-        </div>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Script Registration</h2>
     </x-slot>
 
     <div class="py-6">
