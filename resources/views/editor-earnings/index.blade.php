@@ -44,7 +44,7 @@
                         @endforeach
                     </div>
 
-                    @if(count($current['orders']) > 0 || count($current['adjustments']) > 0)
+                    @if(count($current['orders']) > 0 || count($current['adjustments']) > 0 || ($current['period_flat_rate'] ?? 0) > 0)
                         <div class="text-sm text-gray-500">
                             This period:
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 ml-1">
@@ -100,6 +100,20 @@
                                         </td>
                                     </tr>
                                     @endforeach
+                                    @if(($current['period_flat_rate'] ?? 0) > 0)
+                                    <tr class="bg-blue-50/50">
+                                        <td class="px-6 py-2 text-blue-500 text-xs w-24">Flat Rate</td>
+                                        <td class="px-4 py-2 text-gray-700" colspan="3">
+                                            Weekly flat rate{{ $current['period_weeks'] > 1 ? " &times; {$current['period_weeks']} weeks" : '' }}
+                                        </td>
+                                        <td class="px-4 py-2 text-right text-green-700">+${{ number_format($current['period_flat_rate'], 2) }}</td>
+                                        <td class="px-5 py-2 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                                Pending
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    @endif
                                 </tbody>
                             </table>
                         </div>

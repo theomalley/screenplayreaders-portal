@@ -1,5 +1,6 @@
 <?php
 
+// v2.3 — 2026-06-23 | Add virtual flat rate as pending line item in current period
 // v2.2 — 2026-06-11 | Pass periodEnd so the PayPal payment ID reflects the pay period's last day
 // v2.1 — 2026-06-11 | Pass profile header data (photo, initials, PayPal) for "My Earnings" card
 // v2.0 — 2026-06-10 | Restructure around pay periods — current period summary + paginated collapsible history
@@ -9,6 +10,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EditorPayAdjustment;
 use App\Models\OrderRevenue;
+use App\Models\Setting;
 use App\Support\PayPeriod;
 use Carbon\Carbon;
 
@@ -38,6 +40,28 @@ class EditorEarningsController extends Controller
 
         $current['label']       = PayPeriod::label($curStart);
         $current['payout_date'] = PayPeriod::nextPayoutDate();
+
+        $profile    = $user->editorProfile;
+        $weeklyFlat = (float) ($profile?->editor_weekly_flat ?? 0.0);
+        $current['period_flat_rate'] = 0;
+        $current['period_weeks']     = 1;
+
+        if ($weeklyFlat > 0) {
+            $schedule    = Setting::getPayoutSchedule();
+            $periodWeeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
+            $periodFlat  = round($weeklyFlat * $periodWeeks, 2);
+
+            $hasPendingFlat = collect($current['adjustments'])->contains(
+                fn ($adj) => str_starts_with($adj->description, 'Weekly flat rate') && is_null($adj->editor_paid_at)
+            );
+
+            if (! $hasPendingFlat) {
+                $current['period_flat_rate'] = $periodFlat;
+                $current['period_weeks']     = $periodWeeks;
+                $current['total']           += $periodFlat;
+                $current['pending_total']   += $periodFlat;
+            }
+        }
 
         $historyAll = collect($periods)
             ->map(function ($p) {
