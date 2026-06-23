@@ -1,5 +1,6 @@
 <?php
 
+// v2.2 — 2026-06-23 | Auto-include editor flat rate as line item at end of pay period
 // v2.1 — 2026-06-11 | Pass periodEnd (last day of current pay period) for PayPal payment ID
 // v2.0 — 2026-06-11 | Consolidate Reader Pay + Editor Pay into Payroll: owed-so-far summary, unified searchable/sortable payment history
 // v1.2 — 2026-06-04 | Current-period card, 1099 CSV export
@@ -47,7 +48,7 @@ class PayrollController extends Controller
         $periodEnd  = PayPeriod::current()[1];
 
         [$byReader, $readerPay1099, $readerPayNon1099] = $this->unpaidReaderSummary();
-        [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $totalOwed] = $this->unpaidEditorSummary();
+        [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed] = $this->unpaidEditorSummary();
 
         $currentPeriod = [
             'label'        => PayPeriod::label(PayPeriod::current()[0]),
@@ -62,7 +63,7 @@ class PayrollController extends Controller
 
         return view('payroll.index', array_merge(compact(
             'period', 'schedule', 'nextPayout', 'periodEnd', 'currentPeriod',
-            'byReader', 'unpaidOrders', 'unpaidAdjustments', 'editor', 'weeklyFlat', 'totalOwed'
+            'byReader', 'unpaidOrders', 'unpaidAdjustments', 'editor', 'weeklyFlat', 'periodFlatRate', 'periodWeeks', 'totalOwed'
         ), $history));
     }
 
@@ -205,12 +206,17 @@ class PayrollController extends Controller
 
         $orderTotal      = $unpaidOrders->sum(fn($o) => (float) $o->cog_commission);
         $adjustmentTotal = $unpaidAdjustments->sum(fn($a) => (float) $a->amount);
-        $totalOwed       = round($orderTotal + $adjustmentTotal, 2);
 
         $editor = User::where('role', 'editor')->whereHas('editorProfile')->first();
         $weeklyFlat = (float) ($editor?->editorProfile?->editor_weekly_flat ?? 0.0);
 
-        return [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $totalOwed];
+        $schedule      = Setting::getPayoutSchedule();
+        $periodWeeks   = $schedule['frequency'] === 'biweekly' ? 2 : 1;
+        $periodFlatRate = round($weeklyFlat * $periodWeeks, 2);
+
+        $totalOwed = round($orderTotal + $adjustmentTotal + $periodFlatRate, 2);
+
+        return [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed];
     }
 
     private function buildPaidLineItems(): array

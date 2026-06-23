@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-06-23 | Auto-create flat rate adjustment on markPaid() so it appears in payment history
 // v1.5 — 2026-06-11 | Add clearUnpaidBatch() — zero pending commissions + delete pending adjustments
 // v1.4 — 2026-06-11 | Move dashboard into Payroll — remove index(), add markUnpaid(), redirect actions to payroll.index
 // v1.3 — 2026-06-10 | Admin can permanently delete a payment-history batch or wipe all history
@@ -10,6 +11,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EditorPayAdjustment;
 use App\Models\OrderRevenue;
+use App\Models\Setting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -21,6 +23,24 @@ class EditorPayController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
 
         $now = Carbon::now();
+
+        $editor = User::where('role', 'editor')->whereHas('editorProfile')->first();
+        $weeklyFlat = (float) ($editor?->editorProfile?->editor_weekly_flat ?? 0.0);
+
+        if ($weeklyFlat > 0 && $editor) {
+            $schedule = Setting::getPayoutSchedule();
+            $weeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
+            $periodFlatRate = round($weeklyFlat * $weeks, 2);
+
+            EditorPayAdjustment::create([
+                'user_id'          => $editor->id,
+                'amount'           => $periodFlatRate,
+                'description'      => $weeks > 1
+                    ? "Weekly flat rate × {$weeks} weeks"
+                    : 'Weekly flat rate',
+                'added_by_user_id' => auth()->id(),
+            ]);
+        }
 
         OrderRevenue::whereNull('editor_paid_at')
             ->where('skip_commission', false)

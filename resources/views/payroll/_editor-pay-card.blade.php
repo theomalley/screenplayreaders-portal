@@ -33,7 +33,7 @@
                 <span class="text-sm text-gray-500">· PayPal: <span class="font-mono text-xs">{{ $editor->editorProfile->paypal_email }}</span></span>
             @endif
             <span class="text-sm font-semibold {{ $totalOwed >= 0 ? 'text-blue-700' : 'text-red-600' }}">
-                · {{ $unpaidOrders->count() }} commission(s) + {{ $unpaidAdjustments->count() }} adjustment(s)
+                · {{ $unpaidOrders->count() }} commission(s) + {{ $unpaidAdjustments->count() }} adjustment(s)@if($periodFlatRate > 0) + flat rate @endif
                 &nbsp;·&nbsp; ${{ number_format($totalOwed, 2) }} owed
             </span>
         </div>
@@ -98,7 +98,7 @@
     @endif
 
     {{-- Commissions table --}}
-    @if($unpaidOrders->isEmpty() && $unpaidAdjustments->isEmpty())
+    @if($unpaidOrders->isEmpty() && $unpaidAdjustments->isEmpty() && $periodFlatRate <= 0)
         <div class="px-6 py-10 text-center text-gray-400 text-sm">No pending editor pay.</div>
     @else
         <table class="min-w-full table-fixed divide-y divide-gray-100 text-sm">
@@ -199,6 +199,19 @@
                     @endif
                 </tr>
                 @endforeach
+                @if($periodFlatRate > 0)
+                <tr class="bg-blue-50/50 hover:bg-blue-50 border-t border-blue-100">
+                    <td class="px-4 py-2 text-blue-600 text-xs uppercase font-medium">Flat Rate</td>
+                    <td class="px-4 py-2">
+                        <div class="text-gray-700">Weekly flat rate{{ $periodWeeks > 1 ? " &times; {$periodWeeks} weeks" : '' }}</div>
+                        <div class="text-xs text-gray-400">Auto-included at end of pay period</div>
+                    </td>
+                    <td class="px-4 py-2 text-gray-500 text-xs">{{ $periodEnd->format('M j, Y') }}</td>
+                    <td class="px-4 py-2"></td>
+                    <td class="px-4 py-2 text-right font-medium text-green-700">+${{ number_format($periodFlatRate, 2) }}</td>
+                    <td class="px-4 py-2"></td>
+                </tr>
+                @endif
             </tbody>
             <tfoot class="bg-blue-50 border-t-2 border-blue-200 text-sm font-semibold">
                 <tr>
