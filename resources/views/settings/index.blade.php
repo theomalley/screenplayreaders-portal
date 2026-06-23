@@ -830,7 +830,8 @@
                     <p class="text-xs text-gray-500 mb-4">
                         HTML body for the HelpScout draft created when all readers on an order are approved. Accepts raw HTML.
                         Use <code class="text-xs bg-gray-100 px-1 rounded">{%customer.firstName,fallback=...%}</code> for HelpScout
-                        merge fields, <code class="text-xs bg-gray-100 px-1 rounded">@{{followup_url}}</code> for the
+                        merge fields, <code class="text-xs bg-gray-100 px-1 rounded">@{{script_title}}</code> for the
+                        assignment's script title, <code class="text-xs bg-gray-100 px-1 rounded">@{{followup_url}}</code> for the
                         customer's followup-questions link, and <code class="text-xs bg-gray-100 px-1 rounded">@{{woodiscountcode}}</code>
                         for the auto-generated discount code (configured in Post-Coverage Discount Coupon below).
                     </p>

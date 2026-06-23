@@ -95,7 +95,10 @@ class CompletionDraftService
         }
 
         $followupUrl = FollowupToken::urlForOrder($orderNumber, collect($assignments)->pluck('id')->values()->all());
+        $scriptTitle  = $assignments[0]->script_title ?? '';
+
         $body        = Setting::getCompletionDraftBody();
+        $body        = str_replace('{{script_title}}', $scriptTitle, $body);
         $body        = str_replace('{{followup_url}}', $followupUrl, $body);
         $body        = str_replace('{{woodiscountcode}}', $discountCode, $body);
         $body        = $helpScout->resolveBodyVariables($body, $conversationId);

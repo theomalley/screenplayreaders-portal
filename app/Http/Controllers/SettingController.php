@@ -450,6 +450,7 @@ class SettingController extends Controller
 
             $helpScout = new HelpScoutService();
             $body      = Setting::getCompletionDraftBody();
+            $body      = str_replace('{{script_title}}', $testAssignment->script_title ?? 'Sample Script Title', $body);
             $body      = str_replace('{{followup_url}}', $followupUrl, $body);
             // No real coupon is created for the test draft — placeholder only.
             $body      = str_replace('{{woodiscountcode}}', 'SRZ-TEST-CODE', $body);
