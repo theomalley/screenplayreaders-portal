@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-06-23 | Role change (reader→editor) preserves all shared profile data; removed duplicate role-change block
 // v1.8 — 2026-06-12 | Sanitize bio on save: HTML allowlist for admins, plain text for everyone else
 // v1.7 — 2026-06-03 | Add custom_message to update validation/save
 // v1.6 — 2026-05-27 | Enforce Password::defaults() (min 12, mixed case, numbers, symbols) on create/update
@@ -109,12 +110,36 @@ class ReaderProfileController extends Controller
 
         if (auth()->user()->isAdmin() && $request->input('_action') === 'role_change') {
             abort_unless($request->input('role') === 'editor', 422);
+
+            $reader  = $user->readerProfile;
+            $nameParts = explode(' ', $user->name, 2);
+
+            $shared = [
+                'initials'                   => $reader?->initials ?? strtoupper(substr($user->name, 0, 2)),
+                'first_name'                 => $reader?->first_name ?? ($nameParts[0] ?? ''),
+                'last_name'                  => $reader?->last_name ?? ($nameParts[1] ?? ''),
+                'title'                      => $reader?->title,
+                'bio'                        => $reader?->bio,
+                'bio_pending'                => $reader?->bio_pending,
+                'bio_rejection_note'         => $reader?->bio_rejection_note,
+                'custom_message'             => $reader?->custom_message,
+                'photo'                      => $reader?->photo,
+                'photo_pending'              => $reader?->photo_pending,
+                'photo_rejection_note'       => $reader?->photo_rejection_note,
+                'about_photo'                => $reader?->about_photo,
+                'about_photo_pending'        => $reader?->about_photo_pending,
+                'about_photo_rejection_note' => $reader?->about_photo_rejection_note,
+                'paypal_email'               => $reader?->paypal_email,
+                'availability'               => $reader?->availability ?? 'available',
+                'availability_message'       => $reader?->availability_message,
+                'upload_warning'             => $reader?->upload_warning,
+                'timezone'                   => $reader?->timezone,
+            ];
+
             $user->update(['role' => 'editor']);
-            $user->editorProfile()->firstOrCreate(
-                ['user_id' => $user->id],
-                ['initials' => $user->readerProfile?->initials ?? strtoupper(substr($user->name, 0, 2))]
-            );
-            return redirect()->route('readers.index')->with('success', 'Role changed to editor.');
+            $user->editorProfile()->updateOrCreate(['user_id' => $user->id], $shared);
+
+            return redirect()->route('admin.editors.edit', $user)->with('success', 'Role changed to editor.');
         }
 
         $data = $request->validate([
@@ -171,16 +196,6 @@ class ReaderProfileController extends Controller
         $data['is_1099']                  = $request->boolean('is_1099');
         $data['tier_1']                   = $request->boolean('tier_1');
         $data['tier_2']                   = $request->boolean('tier_2');
-
-        // Admin-only: change user role to editor
-        if (auth()->user()->isAdmin() && $request->input('role') === 'editor') {
-            $user->update(['role' => 'editor']);
-            $user->editorProfile()->firstOrCreate(
-                ['user_id' => $user->id],
-                ['initials' => $user->readerProfile?->initials ?? strtoupper(substr($user->name, 0, 2))]
-            );
-            return redirect()->route('readers.index')->with('success', 'Role changed to editor.');
-        }
 
         $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],
