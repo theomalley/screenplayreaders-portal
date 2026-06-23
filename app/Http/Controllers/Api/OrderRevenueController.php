@@ -149,6 +149,7 @@ class OrderRevenueController extends Controller
 
         // Find the active editor (first editor user with a profile)
         $editor = User::where('role', 'editor')
+            ->where('is_test', false)
             ->whereHas('editorProfile')
             ->first();
 

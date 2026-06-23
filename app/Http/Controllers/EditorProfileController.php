@@ -1,5 +1,6 @@
 <?php
 
+// v1.12 — 2026-06-23 | Save is_test flag on user when admin edits editor profile
 // v1.11 — 2026-06-23 | Role change (editor→reader) preserves all shared profile data; removed duplicate role-change block
 // v1.10 — 2026-06-12 | Sanitize bio on save: HTML allowlist for admins, plain text for everyone else
 // v1.9 — 2026-06-03 | Add custom_message to update validation/save
@@ -184,6 +185,9 @@ class EditorProfileController extends Controller
         ];
         if (!empty($data['password'])) {
             $userUpdate['password'] = $data['password'];
+        }
+        if (auth()->user()->isAdmin() && $request->has('is_test')) {
+            $userUpdate['is_test'] = (bool) $request->input('is_test');
         }
         $user->update($userUpdate);
 

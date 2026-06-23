@@ -16,7 +16,7 @@ class AddEditorWeeklyFlatPay extends Command
 
     public function handle(): int
     {
-        $editor = User::where('role', 'editor')->whereHas('editorProfile')->first();
+        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->first();
         if (! $editor) {
             return Command::SUCCESS;
         }

@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-06-23 | Add is_test flag to exclude test users from payroll and editor lookups
 // v1.6 — 2026-06-15 | Add refresh_interval_seconds (per-user dashboard auto-refresh rate) +
 //                     getRefreshIntervalSeconds() helper enforcing a 30s minimum.
 // v1.5 — 2026-06-03 | Add lastOnlineText() helper for human-readable last-seen time.
@@ -31,6 +32,7 @@ class User extends Authenticatable
         'last_seen_at',
         'hidden_from_staff',
         'refresh_interval_seconds',
+        'is_test',
     ];
 
     protected $hidden = [
@@ -44,6 +46,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'last_seen_at'      => 'datetime',
             'hidden_from_staff' => 'boolean',
+            'is_test'           => 'boolean',
             'password'          => 'hashed',
         ];
     }

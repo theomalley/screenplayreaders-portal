@@ -207,7 +207,7 @@ class PayrollController extends Controller
         $orderTotal      = $unpaidOrders->sum(fn($o) => (float) $o->cog_commission);
         $adjustmentTotal = $unpaidAdjustments->sum(fn($a) => (float) $a->amount);
 
-        $editor = User::where('role', 'editor')->whereHas('editorProfile')->first();
+        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->first();
         $weeklyFlat = (float) ($editor?->editorProfile?->editor_weekly_flat ?? 0.0);
 
         $schedule      = Setting::getPayoutSchedule();
@@ -271,7 +271,7 @@ class PayrollController extends Controller
             ];
         }
 
-        $editor          = User::where('role', 'editor')->whereHas('editorProfile')->first();
+        $editor          = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->first();
         $editorProfile   = $editor?->editorProfile;
         $editorName      = $editorProfile?->displayName() ?? $editor?->name ?? 'Editor';
         $editorInitials  = $editorProfile?->initials ?? '?';

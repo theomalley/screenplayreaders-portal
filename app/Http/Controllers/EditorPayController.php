@@ -24,7 +24,7 @@ class EditorPayController extends Controller
 
         $now = Carbon::now();
 
-        $editor = User::where('role', 'editor')->whereHas('editorProfile')->first();
+        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->first();
         $weeklyFlat = (float) ($editor?->editorProfile?->editor_weekly_flat ?? 0.0);
 
         if ($weeklyFlat > 0 && $editor) {
@@ -92,7 +92,7 @@ class EditorPayController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        $editor = User::where('role', 'editor')->whereHas('editorProfile')->firstOrFail();
+        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->firstOrFail();
 
         $validated = $request->validate([
             'amount'      => 'required|numeric|not_in:0',
