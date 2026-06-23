@@ -644,6 +644,7 @@ class SettingController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
 
         $data = $request->validate([
+            'discount_coupon_prefix'               => 'required|string|min:1|max:10|regex:/^[A-Za-z0-9\-_]+$/',
             'discount_coupon_type'                 => 'required|in:fixed_cart,percent',
             'discount_coupon_amount'               => 'required|numeric|min:0|max:99999',
             'discount_coupon_duration_days'        => 'required|integer|min:1|max:3650',
@@ -655,6 +656,7 @@ class SettingController extends Controller
             'discount_coupon_description'          => 'nullable|string|max:500',
         ]);
 
+        Setting::setValue('discount_coupon_prefix', strtoupper(trim($data['discount_coupon_prefix'])));
         Setting::setValue('discount_coupon_type',   $data['discount_coupon_type']);
         Setting::setValue('discount_coupon_amount', number_format((float) $data['discount_coupon_amount'], 2, '.', ''));
         Setting::setValue('discount_coupon_duration_days', (int) $data['discount_coupon_duration_days']);

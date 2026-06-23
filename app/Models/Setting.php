@@ -411,6 +411,7 @@ HTML;
 
     /** Post-coverage discount coupon defaults — mirrors the previously hardcoded values. */
     public const DISCOUNT_COUPON_DEFAULTS = [
+        'discount_coupon_prefix'             => 'SRZ',
         'discount_coupon_type'               => 'fixed_cart',
         'discount_coupon_amount'             => '10.00',
         'discount_coupon_duration_days'      => 30,
@@ -428,6 +429,7 @@ HTML;
         $stored = static::whereIn('key', $keys)->pluck('value', 'key');
 
         return [
+            'discount_coupon_prefix'               => $stored['discount_coupon_prefix'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_prefix'],
             'discount_coupon_type'                 => $stored['discount_coupon_type'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_type'],
             'discount_coupon_amount'               => $stored['discount_coupon_amount'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_amount'],
             'discount_coupon_duration_days'        => (int) ($stored['discount_coupon_duration_days'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_duration_days']),

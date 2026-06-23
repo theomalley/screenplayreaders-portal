@@ -274,7 +274,8 @@ class Assignment extends Model
         for ($i = 0; $i < 8; $i++) {
             $suffix .= $chars[random_int(0, strlen($chars) - 1)];
         }
-        $code = 'SRZ' . $suffix;
+        $prefix = Setting::getDiscountCouponSettings()['discount_coupon_prefix'] ?? 'SRZ';
+        $code   = strtoupper($prefix) . $suffix;
 
         app(WooCommerceService::class)->createOrderDiscountCoupon($code);
 

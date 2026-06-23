@@ -907,7 +907,18 @@
                         @csrf
                         @method('PATCH')
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {{-- Code prefix --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Code Prefix</label>
+                                <input type="text" name="discount_coupon_prefix" maxlength="10"
+                                       value="{{ old('discount_coupon_prefix', $discountCoupon['discount_coupon_prefix'] ?? 'SRZ') }}"
+                                       placeholder="SRZ"
+                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono uppercase focus:border-indigo-500 focus:ring-indigo-500" />
+                                <p class="mt-1 text-xs text-gray-400">Prepended to each generated code (e.g. SRZ → SRZK4M9X2PL)</p>
+                                <x-input-error :messages="$errors->get('discount_coupon_prefix')" class="mt-1" />
+                            </div>
+
                             {{-- Discount type --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-1">Discount Type</label>
