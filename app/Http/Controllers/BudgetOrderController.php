@@ -88,6 +88,20 @@ class BudgetOrderController extends Controller
         ]);
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $data = $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $count = BudgetOrder::whereIn('id', $data['ids'])->delete();
+
+        return back()->with('success', $count . ' budget' . ($count === 1 ? '' : 's') . ' deleted.');
+    }
+
     public function regenerate(BudgetOrder $budgetOrder)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);

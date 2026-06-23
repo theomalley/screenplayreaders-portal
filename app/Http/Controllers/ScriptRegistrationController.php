@@ -113,6 +113,20 @@ class ScriptRegistrationController extends Controller
         return back()->with('success', 'Unlimited token regenerated for ' . $script_registration->registration_id . '.');
     }
 
+    public function bulkDestroy(Request $request)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $data = $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $count = ScriptRegistration::whereIn('id', $data['ids'])->delete();
+
+        return back()->with('success', $count . ' registration' . ($count === 1 ? '' : 's') . ' deleted.');
+    }
+
     public function destroy(ScriptRegistration $script_registration)
     {
         abort_unless(auth()->user()?->isAdmin(), 403);

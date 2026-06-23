@@ -306,6 +306,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/budget-orders/{budgetOrder}/download-pdf', [BudgetOrderController::class, 'downloadPdf'])->name('budget-orders.download-pdf');
     Route::get('/budget-orders/{budgetOrder}/download-xlsx', [BudgetOrderController::class, 'downloadXlsx'])->name('budget-orders.download-xlsx');
     Route::post('/budget-orders/{budgetOrder}/regenerate', [BudgetOrderController::class, 'regenerate'])->name('budget-orders.regenerate');
+    Route::post('/budget-orders/bulk-delete', [BudgetOrderController::class, 'bulkDestroy'])->name('budget-orders.bulk-destroy');
 
     // Script Registrations (admin/editor)
     Route::get('/script-registrations', [ScriptRegistrationController::class, 'index'])->name('script-registrations.index');
@@ -314,6 +315,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/script-registrations/{script_registration}/download', [ScriptRegistrationController::class, 'downloadCertificate'])->name('script-registrations.download');
     Route::post('/script-registrations/{script_registration}/regenerate-token', [ScriptRegistrationController::class, 'regenerateToken'])->name('script-registrations.regenerate-token');
     Route::delete('/script-registrations/{script_registration}', [ScriptRegistrationController::class, 'destroy'])->name('script-registrations.destroy');
+    Route::post('/script-registrations/bulk-delete', [ScriptRegistrationController::class, 'bulkDestroy'])->name('script-registrations.bulk-destroy');
     Route::get('/script-registrations-test', [ScriptRegistrationController::class, 'testForm'])->name('script-registrations.test');
     Route::post('/script-registrations-test', [ScriptRegistrationController::class, 'testRun'])->name('script-registrations.test.run');
 

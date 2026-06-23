@@ -48,13 +48,47 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
+    @php $isAdmin = auth()->user()?->isAdmin(); @endphp
+
+    <div class="py-8" @if($isAdmin) x-data="{
+        selected: [],
+        allIds: @js($registrations->pluck('id')->values()),
+        get allChecked() { return this.allIds.length > 0 && this.selected.length === this.allIds.length },
+        toggleAll() {
+            this.selected = this.allChecked ? [] : [...this.allIds];
+        },
+        toggle(id) {
+            const i = this.selected.indexOf(id);
+            i === -1 ? this.selected.push(id) : this.selected.splice(i, 1);
+        }
+    }" @endif>
         <div class="max-w-full mx-auto sm:px-6 lg:px-8">
 
             @if(session('success'))
                 <div class="mb-4 px-4 py-3 rounded bg-green-50 border border-green-200 text-green-800 text-sm">
                     {{ session('success') }}
                 </div>
+            @endif
+
+            {{-- Bulk action bar --}}
+            @if($isAdmin)
+            <div x-show="selected.length > 0" x-cloak
+                 class="mb-3 flex items-center gap-3 px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-lg text-sm">
+                <span class="text-indigo-800 font-medium" x-text="selected.length + ' selected'"></span>
+                <form method="POST" action="{{ route('script-registrations.bulk-destroy') }}"
+                      @submit.prevent="if(confirm('Delete ' + selected.length + ' registration(s)? This cannot be undone.')) { $el.submit() }">
+                    @csrf
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="ids[]" :value="id">
+                    </template>
+                    <button type="submit"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 border border-transparent rounded text-xs font-medium text-white hover:bg-red-700 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Delete Selected
+                    </button>
+                </form>
+                <button type="button" @click="selected = []" class="text-xs text-indigo-600 hover:text-indigo-800">Clear</button>
+            </div>
             @endif
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -69,6 +103,12 @@
                     <table class="min-w-full text-sm divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
+                                @if($isAdmin)
+                                <th class="px-3 py-2 w-10">
+                                    <input type="checkbox" :checked="allChecked" @click="toggleAll()"
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                </th>
+                                @endif
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Reg ID</th>
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Author</th>
@@ -82,7 +122,14 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-100">
                             @forelse($registrations as $reg)
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-gray-50"
+                                    @if($isAdmin) :class="selected.includes({{ $reg->id }}) ? 'bg-indigo-50/50' : ''" @endif>
+                                    @if($isAdmin)
+                                    <td class="px-3 py-2.5" onclick="event.stopPropagation()">
+                                        <input type="checkbox" :checked="selected.includes({{ $reg->id }})" @click="toggle({{ $reg->id }})"
+                                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    </td>
+                                    @endif
                                     <td class="px-4 py-2.5 font-mono text-xs text-gray-900">
                                         {{ $reg->registration_id }}
                                         @if($reg->children_count > 0)
@@ -130,22 +177,14 @@
                                             {{ ucfirst($reg->status) }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                                    <td class="px-4 py-2.5 text-right">
                                         <a href="{{ route('script-registrations.show', $reg) }}"
                                            class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">View</a>
-                                        @if(auth()->user()?->isAdmin())
-                                            <form method="POST" action="{{ route('script-registrations.destroy', $reg) }}" class="inline ml-2"
-                                                  onsubmit="return confirm('Delete registration {{ $reg->registration_id }}?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
-                                            </form>
-                                        @endif
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="px-4 py-8 text-center text-gray-400">No script registrations found.</td>
+                                    <td colspan="{{ $isAdmin ? 10 : 9 }}" class="px-4 py-8 text-center text-gray-400">No script registrations found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
