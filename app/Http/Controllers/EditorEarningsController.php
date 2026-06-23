@@ -41,6 +41,21 @@ class EditorEarningsController extends Controller
         $current['label']       = PayPeriod::label($curStart);
         $current['payout_date'] = PayPeriod::nextPayoutDate();
 
+        // Paid flat-rate adjustments in the current period are leftovers from a
+        // previous markPaid() that timestamped them at the period boundary. Strip
+        // them so they don't inflate this period's "Paid Out" total.
+        $paidFlatAdjs = collect($current['adjustments'])->filter(
+            fn ($adj) => str_starts_with($adj->description, 'Weekly flat rate') && ! is_null($adj->editor_paid_at)
+        );
+        foreach ($paidFlatAdjs as $adj) {
+            $amt = (float) $adj->amount;
+            $current['total']      -= $amt;
+            $current['paid_total'] -= $amt;
+        }
+        $current['adjustments'] = collect($current['adjustments'])->reject(
+            fn ($adj) => str_starts_with($adj->description, 'Weekly flat rate') && ! is_null($adj->editor_paid_at)
+        )->values()->all();
+
         $profile    = $user->editorProfile;
         $weeklyFlat = (float) ($profile?->editor_weekly_flat ?? 0.0);
         $current['period_flat_rate'] = 0;
