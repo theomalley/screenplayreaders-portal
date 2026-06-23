@@ -1,5 +1,8 @@
 <?php
 
+// v1.14 — 2026-06-23 | Add DISCOUNT_COUPON_DEFAULTS and getDiscountCouponSettings() — admin-configurable
+//                      post-coverage discount coupon: type, amount, duration, product restrictions,
+//                      usage limits, and description.
 // v1.13 — 2026-06-23 | Add ORDER_LOG_COLUMNS and getOrderLogEditorSettings() for admin-configurable
 //                      editor visibility: hide $0 / woo / invoice orders, block by product ID,
 //                      and per-column visibility in the unified order log.
@@ -405,6 +408,37 @@ HTML;
         'payment_method'    => 'Payment',
         'coupon'            => 'Coupon',
     ];
+
+    /** Post-coverage discount coupon defaults — mirrors the previously hardcoded values. */
+    public const DISCOUNT_COUPON_DEFAULTS = [
+        'discount_coupon_type'               => 'fixed_cart',
+        'discount_coupon_amount'             => '10.00',
+        'discount_coupon_duration_days'      => 30,
+        'discount_coupon_product_ids'        => '',
+        'discount_coupon_individual_use'     => 0,
+        'discount_coupon_free_shipping'      => 0,
+        'discount_coupon_usage_limit'        => 1,
+        'discount_coupon_usage_limit_per_user' => 1,
+        'discount_coupon_description'        => '$10.00 off your next order',
+    ];
+
+    public static function getDiscountCouponSettings(): array
+    {
+        $keys   = array_keys(self::DISCOUNT_COUPON_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        return [
+            'discount_coupon_type'                 => $stored['discount_coupon_type'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_type'],
+            'discount_coupon_amount'               => $stored['discount_coupon_amount'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_amount'],
+            'discount_coupon_duration_days'        => (int) ($stored['discount_coupon_duration_days'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_duration_days']),
+            'discount_coupon_product_ids'          => $stored['discount_coupon_product_ids'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_product_ids'],
+            'discount_coupon_individual_use'       => (bool) ($stored['discount_coupon_individual_use'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_individual_use']),
+            'discount_coupon_free_shipping'        => (bool) ($stored['discount_coupon_free_shipping'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_free_shipping']),
+            'discount_coupon_usage_limit'          => (int) ($stored['discount_coupon_usage_limit'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_usage_limit']),
+            'discount_coupon_usage_limit_per_user' => (int) ($stored['discount_coupon_usage_limit_per_user'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_usage_limit_per_user']),
+            'discount_coupon_description'          => $stored['discount_coupon_description'] ?? self::DISCOUNT_COUPON_DEFAULTS['discount_coupon_description'],
+        ];
+    }
 
     public static function getOrderLogEditorSettings(): array
     {

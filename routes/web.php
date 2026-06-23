@@ -162,6 +162,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');
     Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');
     Route::patch('/settings/order-log-editor', [SettingController::class, 'updateOrderLogEditor'])->name('settings.order-log-editor');
+    Route::patch('/settings/discount-coupon', [SettingController::class, 'updateDiscountCoupon'])->name('settings.discount-coupon');
     Route::post('/settings/commission-products/add', [SettingController::class, 'addCommissionProduct'])->name('settings.commission-products.add');
     Route::post('/settings/commission-products/remove', [SettingController::class, 'removeCommissionProduct'])->name('settings.commission-products.remove');
     Route::post('/settings/reset-last-seen-all', [SettingController::class, 'resetAllLastSeen'])->name('settings.reset-last-seen-all');

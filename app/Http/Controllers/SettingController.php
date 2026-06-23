@@ -1,5 +1,7 @@
 <?php
 
+// v2.17 — 2026-06-23 | Add discount coupon settings — admin-configurable type, amount, duration,
+//                      product restrictions, usage limits for post-coverage coupons.
 // v2.16 — 2026-06-16 | updateCapacityOverride() saves capacity_override_excludes_rush_requests;
 //                      index() passes $capacityOverrideExcludesRushRequests to view.
 // v2.15 — 2026-06-15 | Add updateNotificationHistoryRetention() — admin-configurable
@@ -105,6 +107,7 @@ class SettingController extends Controller
 
         $orderLogEditorSettings = $isAdmin ? Setting::getOrderLogEditorSettings() : null;
         $orderLogColumns        = Setting::ORDER_LOG_COLUMNS;
+        $discountCoupon         = $isAdmin ? Setting::getDiscountCouponSettings() : null;
 
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
@@ -115,7 +118,7 @@ class SettingController extends Controller
             'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody', 'testHelpscoutConvId',
             'wordCounts', 'blockedReaderLimits', 'notificationHistoryRetentionDays', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
-            'orderLogEditorSettings', 'orderLogColumns',
+            'orderLogEditorSettings', 'orderLogColumns', 'discountCoupon',
         ));
     }
 
@@ -634,6 +637,38 @@ class SettingController extends Controller
         Setting::setValue('order_log_editor_hidden_columns', json_encode($data['hidden_columns'] ?? []));
 
         return back()->with('success', 'Order log editor visibility updated.');
+    }
+
+    public function updateDiscountCoupon(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $data = $request->validate([
+            'discount_coupon_type'                 => 'required|in:fixed_cart,percent',
+            'discount_coupon_amount'               => 'required|numeric|min:0|max:99999',
+            'discount_coupon_duration_days'        => 'required|integer|min:1|max:3650',
+            'discount_coupon_product_ids'          => 'nullable|string|max:500',
+            'discount_coupon_individual_use'       => 'nullable|boolean',
+            'discount_coupon_free_shipping'        => 'nullable|boolean',
+            'discount_coupon_usage_limit'          => 'required|integer|min:0|max:9999',
+            'discount_coupon_usage_limit_per_user' => 'required|integer|min:0|max:9999',
+            'discount_coupon_description'          => 'nullable|string|max:500',
+        ]);
+
+        Setting::setValue('discount_coupon_type',   $data['discount_coupon_type']);
+        Setting::setValue('discount_coupon_amount', number_format((float) $data['discount_coupon_amount'], 2, '.', ''));
+        Setting::setValue('discount_coupon_duration_days', (int) $data['discount_coupon_duration_days']);
+
+        $ids = implode(',', array_filter(array_map(fn($v) => (string)(int)trim($v), explode(',', $data['discount_coupon_product_ids'] ?? ''))));
+        Setting::setValue('discount_coupon_product_ids', $ids);
+
+        Setting::setValue('discount_coupon_individual_use',       $request->boolean('discount_coupon_individual_use') ? '1' : '0');
+        Setting::setValue('discount_coupon_free_shipping',        $request->boolean('discount_coupon_free_shipping') ? '1' : '0');
+        Setting::setValue('discount_coupon_usage_limit',          (int) $data['discount_coupon_usage_limit']);
+        Setting::setValue('discount_coupon_usage_limit_per_user', (int) $data['discount_coupon_usage_limit_per_user']);
+        Setting::setValue('discount_coupon_description',          trim($data['discount_coupon_description'] ?? ''));
+
+        return back()->with('success', 'Discount coupon settings saved.');
     }
 
     public function addCommissionProduct(Request $request): RedirectResponse

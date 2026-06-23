@@ -832,7 +832,7 @@
                         Use <code class="text-xs bg-gray-100 px-1 rounded">{%customer.firstName,fallback=...%}</code> for HelpScout
                         merge fields, <code class="text-xs bg-gray-100 px-1 rounded">@{{followup_url}}</code> for the
                         customer's followup-questions link, and <code class="text-xs bg-gray-100 px-1 rounded">@{{woodiscountcode}}</code>
-                        for the auto-generated $10 discount code.
+                        for the auto-generated discount code (configured in Post-Coverage Discount Coupon below).
                     </p>
 
                     <form method="POST" action="{{ route('settings.completion-draft') }}" class="space-y-4">
@@ -889,6 +889,115 @@
                             sandbox conversation — it does not contact a real customer and does not create a real discount coupon
                             (@{{woodiscountcode}} is replaced with a placeholder).
                         </p>
+                    </form>
+                </div>
+                @endif
+
+                {{-- Discount Coupon Settings --}}
+                @if($isAdmin)
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Post-Coverage Discount Coupon</h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        Configure the WooCommerce coupon auto-generated when coverage is approved.
+                        The code (SRZ + 8 random chars) is inserted into the completion email via
+                        <code class="text-xs bg-gray-100 px-1 rounded">@{{woodiscountcode}}</code>.
+                    </p>
+
+                    <form method="POST" action="{{ route('settings.discount-coupon') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {{-- Discount type --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Discount Type</label>
+                                <select name="discount_coupon_type"
+                                        class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="fixed_cart" {{ ($discountCoupon['discount_coupon_type'] ?? '') === 'fixed_cart' ? 'selected' : '' }}>Fixed cart discount ($)</option>
+                                    <option value="percent" {{ ($discountCoupon['discount_coupon_type'] ?? '') === 'percent' ? 'selected' : '' }}>Percentage discount (%)</option>
+                                </select>
+                                <x-input-error :messages="$errors->get('discount_coupon_type')" class="mt-1" />
+                            </div>
+
+                            {{-- Amount --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Amount</label>
+                                <input type="number" name="discount_coupon_amount" step="0.01" min="0"
+                                       value="{{ old('discount_coupon_amount', $discountCoupon['discount_coupon_amount'] ?? '10.00') }}"
+                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                <x-input-error :messages="$errors->get('discount_coupon_amount')" class="mt-1" />
+                            </div>
+
+                            {{-- Duration --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Valid for (days)</label>
+                                <input type="number" name="discount_coupon_duration_days" min="1" max="3650"
+                                       value="{{ old('discount_coupon_duration_days', $discountCoupon['discount_coupon_duration_days'] ?? 30) }}"
+                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                <x-input-error :messages="$errors->get('discount_coupon_duration_days')" class="mt-1" />
+                            </div>
+
+                            {{-- Description --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                <input type="text" name="discount_coupon_description"
+                                       value="{{ old('discount_coupon_description', $discountCoupon['discount_coupon_description'] ?? '') }}"
+                                       placeholder="e.g. $10.00 off your next order"
+                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                <x-input-error :messages="$errors->get('discount_coupon_description')" class="mt-1" />
+                            </div>
+
+                            {{-- Usage limit --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Usage limit (total)</label>
+                                <input type="number" name="discount_coupon_usage_limit" min="0" max="9999"
+                                       value="{{ old('discount_coupon_usage_limit', $discountCoupon['discount_coupon_usage_limit'] ?? 1) }}"
+                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                <p class="mt-1 text-xs text-gray-400">0 = unlimited</p>
+                                <x-input-error :messages="$errors->get('discount_coupon_usage_limit')" class="mt-1" />
+                            </div>
+
+                            {{-- Usage limit per user --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Usage limit per customer</label>
+                                <input type="number" name="discount_coupon_usage_limit_per_user" min="0" max="9999"
+                                       value="{{ old('discount_coupon_usage_limit_per_user', $discountCoupon['discount_coupon_usage_limit_per_user'] ?? 1) }}"
+                                       class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                <p class="mt-1 text-xs text-gray-400">0 = unlimited</p>
+                                <x-input-error :messages="$errors->get('discount_coupon_usage_limit_per_user')" class="mt-1" />
+                            </div>
+                        </div>
+
+                        {{-- Product IDs --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Restrict to product IDs (optional)</label>
+                            <input type="text" name="discount_coupon_product_ids"
+                                   value="{{ old('discount_coupon_product_ids', $discountCoupon['discount_coupon_product_ids'] ?? '') }}"
+                                   placeholder="e.g. 55560, 55562"
+                                   class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500" />
+                            <p class="mt-1 text-xs text-gray-400">Comma-separated WooCommerce product IDs. Leave blank for sitewide.</p>
+                            <x-input-error :messages="$errors->get('discount_coupon_product_ids')" class="mt-1" />
+                        </div>
+
+                        {{-- Checkboxes --}}
+                        <div class="flex flex-wrap gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="discount_coupon_individual_use" value="1"
+                                       {{ ($discountCoupon['discount_coupon_individual_use'] ?? false) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">Individual use only</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="discount_coupon_free_shipping" value="1"
+                                       {{ ($discountCoupon['discount_coupon_free_shipping'] ?? false) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-700">Grant free shipping</span>
+                            </label>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-primary-button>Save</x-primary-button>
+                        </div>
                     </form>
                 </div>
                 @endif
