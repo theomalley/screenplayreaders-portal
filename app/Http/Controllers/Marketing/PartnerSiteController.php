@@ -430,14 +430,15 @@ class PartnerSiteController extends Controller
 
         $keys = array_keys(\App\Models\Setting::PARTNER_FORM_DEFAULTS);
 
-        $intKeys = ['partner_form_discount_percent', 'partner_form_uptime_threshold'];
+        $intKeys = ['partner_form_discount_percent', 'partner_form_uptime_threshold', 'partner_form_check_interval_minutes'];
 
         $data = $request->validate(
             collect($keys)->mapWithKeys(fn($k) => [
                 $k => match (true) {
-                    $k === 'partner_form_discount_percent' => 'required|integer|min:1|max:100',
-                    $k === 'partner_form_uptime_threshold' => 'required|integer|min:0|max:100',
-                    default                                => 'required|string|max:1000',
+                    $k === 'partner_form_discount_percent'       => 'required|integer|min:1|max:100',
+                    $k === 'partner_form_uptime_threshold'       => 'required|integer|min:0|max:100',
+                    $k === 'partner_form_check_interval_minutes' => 'required|integer|min:5|max:43200',
+                    default                                      => 'required|string|max:1000',
                 },
             ])->all()
         );

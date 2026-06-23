@@ -43,6 +43,7 @@ class PartnerApplicationController extends Controller
         $s         = Setting::getPartnerFormSettings();
         $percent   = (int) $s['partner_form_discount_percent'];
         $threshold = (int) $s['partner_form_uptime_threshold'];
+        $interval  = (int) $s['partner_form_check_interval_minutes'];
 
         PartnerSite::create([
             'name'                    => $data['name'],
@@ -51,7 +52,7 @@ class PartnerApplicationController extends Controller
             'notes'                   => $data['notes'] ?? '',
             'active'                  => false,
             'source'                  => 'application',
-            'check_interval_minutes'  => 1440,
+            'check_interval_minutes'  => $interval > 0 ? $interval : 1440,
             'coupon_code'             => $code,
             'coupon_discount_type'    => 'percent',
             'coupon_amount'           => $percent,

@@ -455,6 +455,16 @@
                                 </div>
                                 <p class="mt-0.5 text-xs text-gray-400">Coupon is disabled if rolling uptime (last 20 checks) drops below this. 0 = per-check toggle.</p>
                             </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Check Interval</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" name="partner_form_check_interval_minutes" min="5" max="43200" step="1"
+                                           value="{{ old('partner_form_check_interval_minutes', $partnerFormSettings['partner_form_check_interval_minutes']) }}"
+                                           class="w-28 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <span class="text-xs text-gray-400">minutes</span>
+                                </div>
+                                <p class="mt-0.5 text-xs text-gray-400">60 = hourly, 1440 = daily, 10080 = weekly</p>
+                            </div>
                         </div>
 
                         <div class="border-t border-gray-100 pt-4">
