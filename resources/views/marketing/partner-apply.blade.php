@@ -162,6 +162,40 @@
             margin-bottom: 1.25rem;
         }
 
+        .sr-partner__copy-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 0.5rem 0.7rem;
+            margin-bottom: 1.25rem;
+        }
+        .sr-partner__copy-url {
+            flex: 1;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.85rem;
+            color: #374151;
+            user-select: all;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .sr-partner__copy-btn {
+            flex-shrink: 0;
+            padding: 0.3rem 0.65rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #4f46e5;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .sr-partner__copy-btn:hover { background: #e0e7ff; }
+
         .sr-partner__footer {
             text-align: center;
             margin-top: 1.5rem;
@@ -184,8 +218,8 @@
             <img src="https://screenplayreaders.com/wp-content/themes/generatepress_child/images/logo_login_640x168.png"
                  alt="Screenplay Readers" class="sr-partner__logo">
         </a>
-        <h1>Partner Program</h1>
-        <p>Link to Screenplay Readers and get a permanent private discount code for {{ $discountPercent }}% off.</p>
+        <h1>Link to Screenplay Readers...</h1>
+        <p>...and get a permanent private discount code for {{ $discountPercent }}% off.</p>
     </div>
 
     @if(session('success'))
@@ -214,6 +248,11 @@
             </div>
         @endif
 
+        <div class="sr-partner__copy-row">
+            <span class="sr-partner__copy-url" id="sr-url">https://screenplayreaders.com</span>
+            <button type="button" class="sr-partner__copy-btn" id="sr-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('sr-url').textContent).then(function(){var b=document.getElementById('sr-copy-btn');b.textContent='Copied!';setTimeout(function(){b.textContent='Copy URL'},1500)})">Copy URL</button>
+        </div>
+
         <div class="sr-partner__note">
             Please make sure your link to screenplayreaders.com is a standard <strong>dofollow</strong> link.
             Links with <code style="font-size:0.85em;">rel="nofollow"</code> or <code style="font-size:0.85em;">rel="sponsored"</code> aren't eligible for the partner program.
@@ -229,7 +268,7 @@
                 </div>
 
                 <div class="sr-partner__field">
-                    <label class="sr-partner__label" for="name">Partner / Company Name</label>
+                    <label class="sr-partner__label" for="name">Your name or company</label>
                     <input type="text" name="name" id="name" required maxlength="255"
                            value="{{ old('name') }}"
                            class="sr-partner__input"

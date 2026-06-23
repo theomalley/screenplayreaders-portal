@@ -62,8 +62,8 @@ Route::middleware('throttle:5,1')->post('/register/{token}', [\App\Http\Controll
     ->name('script-registration.public.submit');
 
 // Public partner application form — no auth required
-Route::middleware('throttle:30,1')->get('/partner-apply', [PartnerApplicationController::class, 'show'])->name('partner-apply');
-Route::middleware('throttle:5,1')->post('/partner-apply', [PartnerApplicationController::class, 'submit'])->name('partner-apply.submit');
+Route::middleware('throttle:30,1')->get('/partner', [PartnerApplicationController::class, 'show'])->name('partner-apply');
+Route::middleware('throttle:5,1')->post('/partner', [PartnerApplicationController::class, 'submit'])->name('partner-apply.submit');
 
 Route::get('/', function () {
     return redirect()->route('login');
