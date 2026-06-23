@@ -1,5 +1,6 @@
 <?php
 
+// v1.7 — 2026-06-23 | Add updateFlatRate() and deleteFlatRate() for inline editing of flat rate line item
 // v1.6 — 2026-06-23 | Auto-create flat rate adjustment on markPaid() so it appears in payment history
 // v1.5 — 2026-06-11 | Add clearUnpaidBatch() — zero pending commissions + delete pending adjustments
 // v1.4 — 2026-06-11 | Move dashboard into Payroll — remove index(), add markUnpaid(), redirect actions to payroll.index
@@ -181,5 +182,36 @@ class EditorPayController extends Controller
 
         return redirect()->route('payroll.index')
             ->with('success', 'Adjustment removed.');
+    }
+
+    public function updateFlatRate(Request $request)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $validated = $request->validate([
+            'period_flat_rate' => 'required|numeric|min:0',
+        ]);
+
+        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->firstOrFail();
+
+        $schedule = Setting::getPayoutSchedule();
+        $weeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
+        $weeklyFlat = round((float) $validated['period_flat_rate'] / $weeks, 2);
+
+        $editor->editorProfile->update(['editor_weekly_flat' => $weeklyFlat]);
+
+        return redirect()->route('payroll.index')
+            ->with('success', 'Flat rate updated to $' . number_format((float) $validated['period_flat_rate'], 2) . '/period ($' . number_format($weeklyFlat, 2) . '/week).');
+    }
+
+    public function deleteFlatRate()
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->firstOrFail();
+        $editor->editorProfile->update(['editor_weekly_flat' => 0]);
+
+        return redirect()->route('payroll.index')
+            ->with('success', 'Flat rate removed.');
     }
 }

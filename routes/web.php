@@ -346,6 +346,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/editor-pay/order/{order}/commission', [EditorPayController::class, 'deleteCommission'])->name('editor-pay.delete-commission');
     Route::delete('/editor-pay/history/{date}', [EditorPayController::class, 'deleteHistoryBatch'])->name('editor-pay.delete-history-batch');
     Route::delete('/editor-pay/history', [EditorPayController::class, 'deleteAllHistory'])->name('editor-pay.delete-all-history');
+    Route::patch('/editor-pay/flat-rate', [EditorPayController::class, 'updateFlatRate'])->name('editor-pay.update-flat-rate');
+    Route::delete('/editor-pay/flat-rate', [EditorPayController::class, 'deleteFlatRate'])->name('editor-pay.delete-flat-rate');
 
     Route::get('/editor-payments', [EditorPaymentsController::class, 'index'])->name('editor-payments.index');
 
