@@ -133,7 +133,7 @@
                     <p class="text-sm text-gray-600 mb-3">Displayed on the public website's About page. Min 600×600 px.</p>
                     <form method="POST" action="{{ route('profile.about-photo') }}" enctype="multipart/form-data"
                           x-data="{
-                            preview: '{{ $currentAboutPhoto }}',
+                            preview: '',
                             dragging: false,
                             hasFile: false,
                             readPreview(file) {
@@ -158,13 +158,14 @@
                              @dragover.prevent="dragging = true"
                              @dragleave.prevent="dragging = false"
                              @drop.prevent="dragging = false; onDrop($event.dataTransfer.files[0])">
-                            <template x-if="preview">
-                                <img :src="preview" class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
-                            </template>
+                            @if($currentAboutPhoto)
+                                <img src="{{ $currentAboutPhoto }}" x-show="!preview" class="absolute inset-0 w-full h-full object-cover" alt="About photo" />
+                            @endif
+                            <img x-show="preview" :src="preview" x-cloak class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
                             <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
-                                 :class="preview ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
-                                <svg class="w-8 h-8" :class="preview ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                                <span class="text-sm font-medium" :class="preview ? 'text-white' : 'text-gray-500'">Drop photo here or click to browse</span>
+                                 :class="(preview || {{ $currentAboutPhoto ? 'true' : 'false' }}) ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                                <svg class="w-8 h-8" :class="(preview || {{ $currentAboutPhoto ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                                <span class="text-sm font-medium" :class="(preview || {{ $currentAboutPhoto ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-500'">Drop photo here or click to browse</span>
                             </div>
                         </div>
                         <p class="mt-2 text-xs text-gray-500">JPG, PNG or WebP &nbsp;·&nbsp; minimum 600×600 px &nbsp;·&nbsp; max 8 MB</p>
@@ -394,19 +395,20 @@
 
                 {{-- About Page Photo --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl" x-data="{ previewUrl: '{{ $currentAboutPhotoUrl }}', hasFile: false }">
+                    <div class="max-w-xl" x-data="{ previewUrl: '', hasFile: false }">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">About Page Photo</h2>
                         <p class="text-sm text-gray-600 mb-3">Displayed on the public website's About page. Min 600×600 px. Leave blank to keep current.</p>
                         <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-3"
                              style="width:200px;height:200px"
                              @click="$refs.aboutInput.click()">
-                            <template x-if="previewUrl">
-                                <img :src="previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
-                            </template>
+                            @if($currentAboutPhotoUrl)
+                                <img src="{{ $currentAboutPhotoUrl }}" x-show="!previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="About photo" />
+                            @endif
+                            <img x-show="previewUrl" :src="previewUrl" x-cloak class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
                             <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
-                                 :class="previewUrl ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
-                                <svg class="w-8 h-8" :class="previewUrl ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                                <span class="text-sm font-medium" :class="previewUrl ? 'text-white' : 'text-gray-500'">Click to browse</span>
+                                 :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                                <svg class="w-8 h-8" :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                                <span class="text-sm font-medium" :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-500'">Click to browse</span>
                             </div>
                         </div>
                         <input x-ref="aboutInput" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
