@@ -27,11 +27,14 @@ class ScriptRegistrationPublicController extends Controller
     public function show(string $token)
     {
         $parent = $this->findParent($token);
+        $registrations = $parent->children()->orderByDesc('registered_at')->get();
+        $registrations->prepend($parent);
 
         return view('script-registrations.public-form', [
-            'parent'    => $parent,
-            'token'     => $token,
-            'workTypes' => self::ALLOWED_WORK_TYPES,
+            'parent'        => $parent,
+            'token'         => $token,
+            'workTypes'     => self::ALLOWED_WORK_TYPES,
+            'registrations' => $registrations,
         ]);
     }
 
