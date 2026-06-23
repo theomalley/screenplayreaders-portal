@@ -38,13 +38,46 @@
         </div>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-6" @if($isAdmin) x-data="{
+        selected: [],
+        allIds: @js($orders->pluck('id')->values()),
+        get allChecked() { return this.allIds.length > 0 && this.selected.length === this.allIds.length },
+        toggleAll() {
+            this.selected = this.allChecked ? [] : [...this.allIds];
+        },
+        toggle(id) {
+            const i = this.selected.indexOf(id);
+            i === -1 ? this.selected.push(id) : this.selected.splice(i, 1);
+        }
+    }" @endif>
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
 
             @if(session('success'))
                 <div class="mb-4 px-4 py-3 rounded bg-green-50 border border-green-200 text-green-800 text-sm">
                     {{ session('success') }}
                 </div>
+            @endif
+
+            {{-- Bulk action bar --}}
+            @if($isAdmin)
+            <div x-show="selected.length > 0" x-cloak
+                 class="mb-3 flex items-center gap-3 px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-lg text-sm">
+                <span class="text-indigo-800 font-medium" x-text="selected.length + ' selected'"></span>
+                <form method="POST" action="{{ route('order-log.bulk-destroy') }}"
+                      x-ref="bulkForm"
+                      @submit.prevent="if(confirm('Delete ' + selected.length + ' order(s)? This cannot be undone.')) { $el.submit() }">
+                    @csrf
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="ids[]" :value="id">
+                    </template>
+                    <button type="submit"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 border border-transparent rounded text-xs font-medium text-white hover:bg-red-700 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Delete Selected
+                    </button>
+                </form>
+                <button type="button" @click="selected = []" class="text-xs text-indigo-600 hover:text-indigo-800">Clear</button>
+            </div>
             @endif
 
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -67,7 +100,12 @@
                         <thead class="bg-gray-50 text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
                             <tr>
                                 @if($isAdmin)
-                                <th class="px-3 py-2 sticky left-0 bg-gray-50 z-10 border-r border-gray-200"></th>
+                                <th class="px-3 py-2 sticky left-0 bg-gray-50 z-10 border-r border-gray-200">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" :checked="allChecked" @click="toggleAll()"
+                                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    </div>
+                                </th>
                                 @endif
                                 @if($show('customer_name'))  <th class="px-3 py-2 text-left">Customer</th>    @endif
                                 @if($show('date'))           <th class="px-3 py-2 text-left">Date</th>        @endif
@@ -98,27 +136,22 @@
                                 $clickUrl  = $isWoo ? route('woo-orders.show', $o->woocommerce_order_id) : null;
                             @endphp
                             <tr class="hover:bg-gray-50 {{ $clickUrl ? 'cursor-pointer' : '' }}"
-                                @if($clickUrl) onclick="window.location='{{ $clickUrl }}'" @endif>
+                                @if($clickUrl) onclick="window.location='{{ $clickUrl }}'" @endif
+                                @if($isAdmin) :class="selected.includes({{ $o->id }}) ? 'bg-indigo-50/50' : ''" @endif>
 
-                                {{-- Admin actions (sticky) --}}
+                                {{-- Admin: checkbox + actions (sticky) --}}
                                 @if($isAdmin)
-                                <td class="px-2 py-2 sticky left-0 bg-white z-10 border-r border-gray-100" onclick="event.stopPropagation()">
-                                    <div class="flex items-center gap-1">
+                                <td class="px-2 py-2 sticky left-0 z-10 border-r border-gray-100"
+                                    :class="selected.includes({{ $o->id }}) ? 'bg-indigo-50/50' : 'bg-white'"
+                                    onclick="event.stopPropagation()">
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="checkbox" :checked="selected.includes({{ $o->id }})" @click="toggle({{ $o->id }})"
+                                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                         <a href="{{ route('order-log.edit', $o) }}"
                                            class="p-1 text-gray-400 hover:text-indigo-600 rounded transition"
                                            title="Edit">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </a>
-                                        <form method="POST" action="{{ route('order-log.destroy', $o) }}"
-                                              onsubmit="return confirm('Delete order {{ $o->order_number }}?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="p-1 text-gray-400 hover:text-red-600 rounded transition"
-                                                    title="Delete">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
-                                        </form>
                                     </div>
                                 </td>
                                 @endif

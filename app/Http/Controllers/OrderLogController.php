@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-06-23 | Add bulkDestroy() for multi-select delete
 // v1.3 — 2026-06-23 | Unified order log: open index to editors with admin-configurable filters
 //                      (hide $0 / woo / invoice orders, block by product ID, column visibility).
 //                      Admins see all orders unfiltered. WC orders are clickable to detail view.
@@ -153,6 +154,20 @@ class OrderLogController extends Controller
         $orderLog->delete();
 
         return back()->with('success', 'Order deleted.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $data = $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $count = OrderRevenue::whereIn('id', $data['ids'])->delete();
+
+        return back()->with('success', $count . ' order' . ($count === 1 ? '' : 's') . ' deleted.');
     }
 
     /**
