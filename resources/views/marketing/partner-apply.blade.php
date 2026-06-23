@@ -35,11 +35,13 @@
             color: #6b7280;
         }
 
+        .sr-partner__logo-link { display: block; text-align: center; margin-bottom: 1rem; }
         .sr-partner__logo {
-            display: block;
-            margin: 0 auto 1.25rem;
             height: 38px;
+            opacity: 0.9;
+            transition: opacity 0.15s;
         }
+        .sr-partner__logo:hover { opacity: 1; }
 
         .sr-partner__card {
             background: #fff;
@@ -150,6 +152,16 @@
             letter-spacing: 0.05em;
         }
 
+        .sr-partner__note {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 6px;
+            padding: 0.6rem 0.85rem;
+            font-size: 0.82rem;
+            color: #92400e;
+            margin-bottom: 1.25rem;
+        }
+
         .sr-partner__footer {
             text-align: center;
             margin-top: 1.5rem;
@@ -168,24 +180,24 @@
 <div class="sr-partner">
 
     <div class="sr-partner__header">
-        <a href="https://screenplayreaders.com">
-            <img src="https://screenplayreaders.com/wp-content/uploads/screenplay-readers-coverage-service-logo-dark.png"
+        <a href="https://screenplayreaders.com" class="sr-partner__logo-link">
+            <img src="https://screenplayreaders.com/wp-content/themes/generatepress_child/images/logo_login_640x168.png"
                  alt="Screenplay Readers" class="sr-partner__logo">
         </a>
-        <h1>Partner Program Application</h1>
-        <p>Link to us and get a coupon code to share with your audience.</p>
+        <h1>Partner Program</h1>
+        <p>Link to Screenplay Readers and get a permanent private discount code for {{ $discountPercent }}% off.</p>
     </div>
 
     @if(session('success'))
         <div class="sr-partner__flash sr-partner__flash--success">
-            <strong>Application received!</strong> We'll review your site and activate monitoring shortly.
+            <strong>You're all set!</strong> We'll verify your link and activate your coupon shortly.
             @if(session('coupon_code'))
                 <div class="sr-partner__coupon-box">
                     <div>Your coupon code:</div>
                     <div class="sr-partner__coupon-code">{{ session('coupon_code') }}</div>
                 </div>
                 <p style="margin-top:0.5rem;font-size:0.82rem;color:#6b7280;">
-                    We'll configure the discount amount once your application is approved. Hold on to this code.
+                    This code will be good for {{ $discountPercent }}% off any order at screenplayreaders.com. Share it with your audience!
                 </p>
             @endif
         </div>
@@ -202,8 +214,13 @@
             </div>
         @endif
 
+        <div class="sr-partner__note">
+            Please make sure your link to screenplayreaders.com is a standard <strong>dofollow</strong> link.
+            Links with <code style="font-size:0.85em;">rel="nofollow"</code> or <code style="font-size:0.85em;">rel="sponsored"</code> aren't eligible for the partner program.
+        </div>
+
         <div class="sr-partner__card">
-            <form method="POST" action="{{ route('partner-apply') }}">
+            <form method="POST" action="{{ route('partner-apply.submit') }}">
                 @csrf
 
                 <div class="sr-partner__honeypot" aria-hidden="true">
@@ -221,7 +238,7 @@
                 </div>
 
                 <div class="sr-partner__field">
-                    <label class="sr-partner__label" for="url">Page URL containing your link to us</label>
+                    <label class="sr-partner__label" for="url">Page URL containing your link to Screenplay Readers</label>
                     <input type="url" name="url" id="url" required maxlength="500"
                            value="{{ old('url') }}"
                            class="sr-partner__input"
@@ -247,7 +264,7 @@
                     @error('notes') <div class="sr-partner__error">{{ $message }}</div> @enderror
                 </div>
 
-                <button type="submit" class="sr-partner__submit">Submit Application</button>
+                <button type="submit" class="sr-partner__submit">Get My Coupon Code</button>
             </form>
         </div>
 

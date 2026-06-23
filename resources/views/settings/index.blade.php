@@ -1013,6 +1013,34 @@
                 </div>
                 @endif
 
+                {{-- Partner Program Coupon --}}
+                @if($isAdmin)
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-1">Partner Program Coupon</h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        Default discount for new partner sign-ups via <a href="{{ route('partner-apply') }}" target="_blank" class="text-indigo-600 hover:underline">/partner-apply</a>.
+                        Changing this only affects future sign-ups — existing partner coupons are unchanged.
+                    </p>
+                    <form method="POST" action="{{ route('settings.partner-coupon') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Discount (%)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="partner_coupon_default_percent" min="1" max="100" step="1"
+                                       value="{{ old('partner_coupon_default_percent', \App\Models\Setting::getValue('partner_coupon_default_percent', 10)) }}"
+                                       class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-500">% off</span>
+                            </div>
+                            <x-input-error :messages="$errors->get('partner_coupon_default_percent')" class="mt-1" />
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+                @endif
+
                 {{-- Dev Autofill --}}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-sm font-semibold text-gray-800 mb-1">Coverage Form — Dev Autofill</h3>

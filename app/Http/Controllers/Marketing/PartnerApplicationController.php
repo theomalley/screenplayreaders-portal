@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Marketing;
 
 use App\Http\Controllers\Controller;
 use App\Models\PartnerSite;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +15,9 @@ class PartnerApplicationController extends Controller
 {
     public function show(): View
     {
-        return view('marketing.partner-apply');
+        return view('marketing.partner-apply', [
+            'discountPercent' => self::discountPercent(),
+        ]);
     }
 
     public function submit(Request $request): RedirectResponse
@@ -32,9 +35,10 @@ class PartnerApplicationController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $code = 'PRT_' . self::generateSuffix(8);
+        $code    = 'PRT_' . self::generateSuffix(8);
+        $percent = self::discountPercent();
 
-        $site = PartnerSite::create([
+        PartnerSite::create([
             'name'                   => $data['name'],
             'url'                    => $data['url'],
             'contact_email'          => $data['email'],
@@ -44,12 +48,17 @@ class PartnerApplicationController extends Controller
             'check_interval_minutes' => 1440,
             'coupon_code'            => $code,
             'coupon_discount_type'   => 'percent',
-            'coupon_amount'          => 0,
+            'coupon_amount'          => $percent,
         ]);
 
         return redirect()->route('partner-apply')
             ->with('success', true)
             ->with('coupon_code', $code);
+    }
+
+    private static function discountPercent(): int
+    {
+        return (int) Setting::getValue('partner_coupon_default_percent', 10);
     }
 
     private static function generateSuffix(int $length): string
