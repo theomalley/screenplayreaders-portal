@@ -400,12 +400,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Partner link monitor
         Route::get('/partner-sites',                               [PartnerSiteController::class, 'index'])->name('partner-sites.index');
         Route::post('/partner-sites',                              [PartnerSiteController::class, 'store'])->name('partner-sites.store');
+        Route::patch('/partner-sites/form-settings',               [PartnerSiteController::class, 'updateFormSettings'])->name('partner-sites.form-settings');
         Route::patch('/partner-sites/{partnerSite}',               [PartnerSiteController::class, 'update'])->name('partner-sites.update');
         Route::delete('/partner-sites/{partnerSite}',              [PartnerSiteController::class, 'destroy'])->name('partner-sites.destroy');
         Route::post('/partner-sites/{partnerSite}/check-now',      [PartnerSiteController::class, 'checkNow'])->name('partner-sites.check-now');
         Route::post('/partner-sites/{partnerSite}/toggle-active',  [PartnerSiteController::class, 'toggleActive'])->name('partner-sites.toggle-active');
         Route::get('/partner-sites/{partnerSite}/history',         [PartnerSiteController::class, 'history'])->name('partner-sites.history');
-        Route::patch('/partner-sites/form-settings',                  [PartnerSiteController::class, 'updateFormSettings'])->name('partner-sites.form-settings');
 
         // Base email template (structural layout editor)
         Route::get('/base-email-template',         [BaseEmailTemplateController::class, 'edit'])->name('base-email-template.edit');
