@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <a href="{{ route('woo-orders.index') }}" class="text-sm text-gray-500 hover:text-gray-700">← Orders</a>
+                <a href="{{ route('order-log.index') }}" class="text-sm text-gray-500 hover:text-gray-700">← Orders</a>
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     Order #{{ $order['number'] }}
                 </h2>

@@ -1318,6 +1318,75 @@
             </div>
             @endif
 
+            {{-- Order Log — Editor Visibility --}}
+            @if($isAdmin && $orderLogEditorSettings)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Order Log — Editor Visibility</h3>
+                <p class="text-xs text-gray-500 mb-4">Control which orders and columns editors can see in the Order Log. Admins always see everything.</p>
+
+                <form method="POST" action="{{ route('settings.order-log-editor') }}" class="space-y-5">
+                    @csrf
+                    @method('PATCH')
+
+                    {{-- Order filters --}}
+                    <fieldset class="space-y-2">
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Hide from editors</legend>
+                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="hidden" name="hide_zero_dollar" value="0">
+                            <input type="checkbox" name="hide_zero_dollar" value="1"
+                                   {{ $orderLogEditorSettings['hide_zero_dollar'] ? 'checked' : '' }}
+                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            $0 orders
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="hidden" name="hide_woo_orders" value="0">
+                            <input type="checkbox" name="hide_woo_orders" value="1"
+                                   {{ $orderLogEditorSettings['hide_woo_orders'] ? 'checked' : '' }}
+                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            WooCommerce orders
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="hidden" name="hide_invoice_orders" value="0">
+                            <input type="checkbox" name="hide_invoice_orders" value="1"
+                                   {{ $orderLogEditorSettings['hide_invoice_orders'] ? 'checked' : '' }}
+                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            Invoice orders (INV-*)
+                        </label>
+                    </fieldset>
+
+                    {{-- Blocked product IDs --}}
+                    <div>
+                        <x-input-label for="blocked_product_ids" value="Block orders by product ID" />
+                        <x-text-input id="blocked_product_ids" name="blocked_product_ids" type="text"
+                            class="mt-1 block w-full text-sm"
+                            value="{{ implode(', ', $orderLogEditorSettings['blocked_product_ids']) }}"
+                            placeholder="e.g. 123, 456, 789" />
+                        <p class="mt-1 text-xs text-gray-400">Comma-separated WooCommerce product IDs. Orders containing these products are hidden from editors.</p>
+                    </div>
+
+                    {{-- Column visibility --}}
+                    <fieldset class="space-y-2">
+                        <legend class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Columns hidden from editors</legend>
+                        <p class="text-xs text-gray-400 -mt-1">Checked columns are <em>hidden</em> from editors. Admins always see all columns.</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1.5 mt-2">
+                            @foreach($orderLogColumns as $key => $label)
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="hidden_columns[]" value="{{ $key }}"
+                                           {{ in_array($key, $orderLogEditorSettings['hidden_columns']) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    {{ $label }}
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+
+                    <div class="flex justify-end">
+                        <x-primary-button>Save</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
+
             {{-- Last Seen Reset --}}
             @if($isAdmin)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">

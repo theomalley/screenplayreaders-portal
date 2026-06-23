@@ -1,5 +1,8 @@
 <?php
 
+// v1.3 — 2026-06-23 | Unified order log: open index to editors with admin-configurable filters
+//                      (hide $0 / woo / invoice orders, block by product ID, column visibility).
+//                      Admins see all orders unfiltered. WC orders are clickable to detail view.
 // v1.2 — 2026-05-26 | Add invoicePdf(): generate and stream a PDF invoice for any WooCommerce order
 // v1.1 — 2026-05-26 | Add create/edit/delete CRUD
 // v1.0 — 2026-05-25 | Order log — one row per WooCommerce order, admin only
@@ -33,16 +36,47 @@ class OrderLogController extends Controller
 
     public function index(Request $request)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
-        $period = $request->input('period', 'last_30');
+        $isAdmin = auth()->user()->isAdmin();
+        $period  = $request->input('period', 'last_30');
         if (! array_key_exists($period, self::$PERIODS)) {
             $period = 'last_30';
         }
 
         $q = trim((string) $request->input('q', ''));
 
-        $query = OrderRevenue::where('order_total', '>', 0)->orderByDesc('ordered_at');
+        $query = OrderRevenue::query()->orderByDesc('ordered_at');
+
+        // Admins see everything; editors get admin-configured filters.
+        $editorSettings  = null;
+        $hiddenColumns   = [];
+        if (! $isAdmin) {
+            $editorSettings = Setting::getOrderLogEditorSettings();
+            $hiddenColumns  = $editorSettings['hidden_columns'];
+
+            if ($editorSettings['hide_zero_dollar']) {
+                $query->where('order_total', '>', 0);
+            }
+            if ($editorSettings['hide_woo_orders']) {
+                $query->whereNull('woocommerce_order_id');
+            }
+            if ($editorSettings['hide_invoice_orders']) {
+                $query->where('order_number', 'not like', 'INV-%');
+            }
+
+            // Block orders containing specific WooCommerce product IDs.
+            $blockedIds = array_filter(array_map('intval', $editorSettings['blocked_product_ids']));
+            foreach ($blockedIds as $pid) {
+                $query->where(function ($q) use ($pid) {
+                    $q->whereNull('line_items_json')
+                      ->orWhere(function ($inner) use ($pid) {
+                          $inner->where('line_items_json', 'not like', "%\"product_id\":{$pid},%")
+                                ->where('line_items_json', 'not like', "%\"product_id\":{$pid}}%");
+                      });
+                });
+            }
+        }
 
         if ($period !== 'all') {
             [$start, $end] = $this->dateRange($period);
@@ -60,11 +94,19 @@ class OrderLogController extends Controller
 
         $orders = $query->paginate(50)->withQueryString();
 
+        $allColumns = Setting::ORDER_LOG_COLUMNS;
+        $visibleColumns = $isAdmin
+            ? array_keys($allColumns)
+            : array_values(array_diff(array_keys($allColumns), $hiddenColumns));
+
         return view('order-log.index', [
-            'orders'  => $orders,
-            'period'  => $period,
-            'periods' => self::$PERIODS,
-            'q'       => $q,
+            'orders'         => $orders,
+            'period'         => $period,
+            'periods'        => self::$PERIODS,
+            'q'              => $q,
+            'isAdmin'        => $isAdmin,
+            'allColumns'     => $allColumns,
+            'visibleColumns' => $visibleColumns,
         ]);
     }
 

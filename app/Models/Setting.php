@@ -1,5 +1,8 @@
 <?php
 
+// v1.13 — 2026-06-23 | Add ORDER_LOG_COLUMNS and getOrderLogEditorSettings() for admin-configurable
+//                      editor visibility: hide $0 / woo / invoice orders, block by product ID,
+//                      and per-column visibility in the unified order log.
 // v1.12 — 2026-06-15 | Add NOTIFICATION_HISTORY_RETENTION_DEFAULT and
 //                      getNotificationHistoryRetentionDays() — admin-configurable expiry
 //                      for Notification History rows (0 = never expire).
@@ -378,5 +381,39 @@ HTML;
         $value = static::where('key', 'notification_history_retention_days')->value('value');
 
         return $value !== null ? (int) $value : self::NOTIFICATION_HISTORY_RETENTION_DEFAULT;
+    }
+
+    /** All possible columns in the unified order log, keyed by slug. */
+    public const ORDER_LOG_COLUMNS = [
+        'customer_name'     => 'Customer',
+        'date'              => 'Date',
+        'order_number'      => 'Order #',
+        'email'             => 'Email',
+        'phone'             => 'Phone',
+        'address'           => 'Address',
+        'script_title'      => 'Script Title',
+        'services'          => 'Services',
+        'qty'               => 'Qty',
+        'total'             => 'Total',
+        'discount'          => 'Discount',
+        'cog_reader'        => 'COG Reader',
+        'cog_processing'    => 'COG Processing',
+        'cog_precommission' => 'Pre-Commission',
+        'cog_commission'    => 'Commission',
+        'cog_total'         => 'COG Total',
+        'net_revenue'       => 'Net Revenue',
+        'payment_method'    => 'Payment',
+        'coupon'            => 'Coupon',
+    ];
+
+    public static function getOrderLogEditorSettings(): array
+    {
+        return [
+            'hide_zero_dollar'    => (bool) self::getValue('order_log_editor_hide_zero_dollar', true),
+            'hide_woo_orders'     => (bool) self::getValue('order_log_editor_hide_woo_orders', false),
+            'hide_invoice_orders' => (bool) self::getValue('order_log_editor_hide_invoice_orders', false),
+            'blocked_product_ids' => array_filter(array_map('trim', explode(',', self::getValue('order_log_editor_blocked_product_ids', '')))),
+            'hidden_columns'      => json_decode(self::getValue('order_log_editor_hidden_columns', '[]'), true) ?: [],
+        ];
     }
 }

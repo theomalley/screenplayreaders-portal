@@ -156,6 +156,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/pay-period',  [SettingController::class, 'updatePayPeriod'])->name('settings.pay-period');
     Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');
     Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');
+    Route::patch('/settings/order-log-editor', [SettingController::class, 'updateOrderLogEditor'])->name('settings.order-log-editor');
     Route::post('/settings/reset-last-seen-all', [SettingController::class, 'resetAllLastSeen'])->name('settings.reset-last-seen-all');
     Route::post('/settings/reset-last-seen-me', [SettingController::class, 'resetMyLastSeen'])->name('settings.reset-last-seen-me');
     Route::post('/settings/quick-login/generate', [\App\Http\Controllers\QuickLoginController::class, 'generate'])->name('quick-login.generate');
@@ -282,7 +283,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
     Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
 
-    Route::get('/woo-orders', [WooOrderController::class, 'index'])->name('woo-orders.index');
+    Route::get('/woo-orders', fn () => redirect()->route('order-log.index'))->name('woo-orders.index');
     Route::get('/woo-orders/{id}', [WooOrderController::class, 'show'])->name('woo-orders.show')->whereNumber('id');
     Route::post('/woo-orders/{id}/refund', [WooOrderController::class, 'refund'])->name('woo-orders.refund')->whereNumber('id');
     Route::post('/woo-orders/{id}/resend-email', [WooOrderController::class, 'resendEmail'])->name('woo-orders.resend-email')->whereNumber('id');

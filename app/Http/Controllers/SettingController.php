@@ -47,6 +47,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class SettingController extends Controller
@@ -102,6 +103,9 @@ class SettingController extends Controller
         $adminPortalPhotoUrl = $adminProfile?->photo      ? asset('storage/' . $adminProfile->photo)       : null;
         $adminAboutPhotoUrl  = $adminProfile?->about_photo ? asset('storage/' . $adminProfile->about_photo) : null;
 
+        $orderLogEditorSettings = $isAdmin ? Setting::getOrderLogEditorSettings() : null;
+        $orderLogColumns        = Setting::ORDER_LOG_COLUMNS;
+
         return view('settings.index', compact(
             'logoUrl', 'loginLogoUrl', 'faviconUrl',
             'capacityOverride', 'capacityOverrideExcludesRushRequests', 'sessionTimeout',
@@ -111,6 +115,7 @@ class SettingController extends Controller
             'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody', 'testHelpscoutConvId',
             'wordCounts', 'blockedReaderLimits', 'notificationHistoryRetentionDays', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
+            'orderLogEditorSettings', 'orderLogColumns',
         ));
     }
 
@@ -607,5 +612,27 @@ class SettingController extends Controller
         auth()->user()->update(['last_seen_at' => null]);
 
         return back()->with('success', 'Your last-seen time cleared.');
+    }
+
+    public function updateOrderLogEditor(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $data = $request->validate([
+            'blocked_product_ids' => ['nullable', 'string', 'max:500'],
+            'hidden_columns'      => ['nullable', 'array'],
+            'hidden_columns.*'    => ['string', Rule::in(array_keys(Setting::ORDER_LOG_COLUMNS))],
+        ]);
+
+        Setting::setValue('order_log_editor_hide_zero_dollar',    $request->boolean('hide_zero_dollar')    ? '1' : '0');
+        Setting::setValue('order_log_editor_hide_woo_orders',     $request->boolean('hide_woo_orders')     ? '1' : '0');
+        Setting::setValue('order_log_editor_hide_invoice_orders', $request->boolean('hide_invoice_orders') ? '1' : '0');
+
+        $ids = implode(',', array_filter(array_map(fn($v) => (string)(int)trim($v), explode(',', $data['blocked_product_ids'] ?? ''))));
+        Setting::setValue('order_log_editor_blocked_product_ids', $ids);
+
+        Setting::setValue('order_log_editor_hidden_columns', json_encode($data['hidden_columns'] ?? []));
+
+        return back()->with('success', 'Order log editor visibility updated.');
     }
 }
