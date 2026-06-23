@@ -635,4 +635,50 @@ class SettingController extends Controller
 
         return back()->with('success', 'Order log editor visibility updated.');
     }
+
+    public function addCommissionProduct(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $data = $request->validate([
+            'product_id'    => ['required', 'integer', 'min:1'],
+            'product_label' => ['required', 'string', 'max:100'],
+            'commission'    => ['boolean'],
+        ]);
+
+        $custom = json_decode(Setting::getValue('commission_custom_products', '[]'), true) ?: [];
+
+        foreach ($custom as $p) {
+            if ((int) $p['id'] === (int) $data['product_id']) {
+                return back()->with('error', 'Product ID ' . $data['product_id'] . ' already exists.');
+            }
+        }
+
+        if (isset(\App\Models\EditorProductCommission::PRODUCTS[(int) $data['product_id']])) {
+            return back()->with('error', 'Product ID ' . $data['product_id'] . ' is already a built-in product.');
+        }
+
+        $custom[] = [
+            'id'         => (int) $data['product_id'],
+            'label'      => $data['product_label'],
+            'commission' => $request->boolean('commission'),
+        ];
+
+        Setting::setValue('commission_custom_products', json_encode($custom));
+
+        return back()->with('success', 'Product "' . $data['product_label'] . '" added to commission list.');
+    }
+
+    public function removeCommissionProduct(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $productId = (int) $request->input('product_id');
+        $custom    = json_decode(Setting::getValue('commission_custom_products', '[]'), true) ?: [];
+        $custom    = array_values(array_filter($custom, fn($p) => (int) $p['id'] !== $productId));
+
+        Setting::setValue('commission_custom_products', json_encode($custom));
+
+        return back()->with('success', 'Product removed from commission list.');
+    }
 }

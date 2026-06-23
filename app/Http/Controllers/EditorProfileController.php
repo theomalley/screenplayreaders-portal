@@ -226,7 +226,7 @@ class EditorProfileController extends Controller
 
         $submittedCommissions = $request->input('commissions', []);
 
-        foreach (EditorProductCommission::PRODUCTS as $productId => $product) {
+        foreach (EditorProductCommission::allProducts() as $productId => $product) {
             $enabled      = isset($submittedCommissions[$productId]['enabled']);
             $rawAmount    = $submittedCommissions[$productId]['amount'] ?? '';
             $customAmount = ($rawAmount !== '' && is_numeric($rawAmount)) ? (float) $rawAmount : null;

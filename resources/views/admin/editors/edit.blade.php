@@ -340,7 +340,11 @@
         </div>
 
         {{-- ── COMMISSION CONFIG ── (editors only) --}}
-        @php $commissionConfig = $profile?->productCommissionsKeyed() ?? collect(); @endphp
+        @php
+            $commissionConfig   = $profile?->productCommissionsKeyed() ?? collect();
+            $allProducts        = \App\Models\EditorProductCommission::allProducts();
+            $builtinIds         = array_keys(\App\Models\EditorProductCommission::PRODUCTS);
+        @endphp
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div class="px-5 py-4 bg-gray-50 border-b border-gray-200">
                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Commission Config</h3>
@@ -358,17 +362,22 @@
                             <th class="px-5 py-2 text-left">Product / Service</th>
                             <th class="px-4 py-2 text-center">Earns Commission</th>
                             <th class="px-4 py-2 text-right">Custom Commission</th>
+                            <th class="px-2 py-2 w-8"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        @foreach(\App\Models\EditorProductCommission::PRODUCTS as $productId => $product)
+                        @foreach($allProducts as $productId => $product)
                         @php
-                            $existing = $commissionConfig->get($productId);
-                            $enabled  = $existing ? $existing->commission_enabled : $product['commission'];
-                            $custom   = $existing?->custom_amount;
+                            $existing  = $commissionConfig->get($productId);
+                            $enabled   = $existing ? $existing->commission_enabled : $product['commission'];
+                            $custom    = $existing?->custom_amount;
+                            $isBuiltin = in_array($productId, $builtinIds, true);
                         @endphp
                         <tr class="hover:bg-gray-50 {{ !$enabled ? 'opacity-50' : '' }}">
-                            <td class="px-5 py-2 text-gray-700">{{ $product['label'] }}</td>
+                            <td class="px-5 py-2 text-gray-700">
+                                {{ $product['label'] }}
+                                <span class="ml-1 text-[10px] text-gray-400 font-mono">{{ $productId }}</span>
+                            </td>
                             <td class="px-4 py-2 text-center">
                                 <input type="checkbox"
                                     name="commissions[{{ $productId }}][enabled]"
@@ -386,6 +395,18 @@
                                         class="w-24 text-right text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                                 </div>
                             </td>
+                            <td class="px-2 py-2 text-center">
+                                @if(!$isBuiltin)
+                                <form method="POST" action="{{ route('settings.commission-products.remove') }}" class="inline"
+                                      onsubmit="return confirm('Remove {{ $product['label'] }} from the commission product list for all editors?')">
+                                    @csrf
+                                    <input type="hidden" name="product_id" value="{{ $productId }}">
+                                    <button type="submit" class="text-gray-300 hover:text-red-500 transition" title="Remove product">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </form>
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -394,6 +415,35 @@
                     <x-primary-button>Save Commission Config</x-primary-button>
                 </div>
             </form>
+
+            {{-- Add Product --}}
+            <div class="px-5 py-4 border-t border-gray-100" x-data="{ open: false }">
+                <button type="button" @click="open = !open"
+                        class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add product to commission list
+                </button>
+                <form method="POST" action="{{ route('settings.commission-products.add') }}"
+                      x-show="open" x-cloak class="mt-3 flex items-end gap-2 flex-wrap">
+                    @csrf
+                    <div>
+                        <x-input-label value="Product ID" class="text-xs" />
+                        <x-text-input name="product_id" type="number" min="1" required
+                            class="mt-1 w-28 text-sm" placeholder="e.g. 12345" />
+                    </div>
+                    <div>
+                        <x-input-label value="Label" class="text-xs" />
+                        <x-text-input name="product_label" type="text" required
+                            class="mt-1 w-40 text-sm" placeholder="e.g. Proofreading" />
+                    </div>
+                    <label class="flex items-center gap-1.5 text-xs text-gray-600 pb-2">
+                        <input type="checkbox" name="commission" value="1"
+                               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                        Earns commission by default
+                    </label>
+                    <x-primary-button class="text-xs py-1.5">Add</x-primary-button>
+                </form>
+            </div>
         </div>
         @endif
 

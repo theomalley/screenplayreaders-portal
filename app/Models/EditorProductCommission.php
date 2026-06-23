@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-06-23 | allProducts(): merge hardcoded PRODUCTS with admin-added custom products from settings
 // v1.0 — 2026-05-25 | Per-product commission config for an editor
 //   commission_enabled = false → product never earns commission for this editor
 //   custom_amount set → fixed dollar commission per order line occurrence
@@ -9,6 +10,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Setting;
 
 class EditorProductCommission extends Model
 {
@@ -38,6 +40,16 @@ class EditorProductCommission extends Model
         22965 => ['label' => 'Consultation',       'commission' => false],
         55672 => ['label' => 'Film Budget',        'commission' => false],
     ];
+
+    public static function allProducts(): array
+    {
+        $custom = json_decode(Setting::getValue('commission_custom_products', '[]'), true) ?: [];
+        $merged = self::PRODUCTS;
+        foreach ($custom as $p) {
+            $merged[(int) $p['id']] = ['label' => $p['label'], 'commission' => (bool) ($p['commission'] ?? false)];
+        }
+        return $merged;
+    }
 
     protected $fillable = [
         'editor_profile_id',
