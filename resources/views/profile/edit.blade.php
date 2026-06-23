@@ -65,7 +65,7 @@
             @if($user->isAdminOrEditor() || $user->isReader())
             @php
                 $currentPhoto            = $profile?->photo             ? asset('storage/' . $profile->photo)             : null;
-                $aboutPath               = $profile?->about_photo ?? $profile?->about_photo_pending;
+                $aboutPath               = $profile?->about_photo ?? $profile?->about_photo_pending ?? $profile?->photo;
                 $currentAboutPhoto       = $aboutPath ? asset('storage/' . $aboutPath) : null;
                 $pendingAboutPhotoSelf   = $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null;
                 $pendingBioSelf          = $profile?->bio_pending;
@@ -342,7 +342,7 @@
                 $isEditingReader      = $user->isReader();
                 $updateRoute          = $isEditingReader ? route('readers.update', $user) : route('admin.editors.update', $user);
                 $currentPhotoUrl      = $profile?->photo       ? asset('storage/' . $profile->photo)       : null;
-                $aboutPhotoPath       = $profile?->about_photo ?? $profile?->about_photo_pending;
+                $aboutPhotoPath       = $profile?->about_photo ?? $profile?->about_photo_pending ?? $profile?->photo;
                 $currentAboutPhotoUrl = $aboutPhotoPath ? asset('storage/' . $aboutPhotoPath) : null;
                 $nameParts            = explode(' ', $user->name, 2);
                 $fallbackFirst        = $nameParts[0] ?? '';
