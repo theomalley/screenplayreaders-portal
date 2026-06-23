@@ -435,14 +435,25 @@
                         @method('PATCH')
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="sm:col-span-2">
+                            <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-1">Default Discount (%)</label>
                                 <div class="flex items-center gap-2">
                                     <input type="number" name="partner_form_discount_percent" min="1" max="100" step="1"
                                            value="{{ old('partner_form_discount_percent', $partnerFormSettings['partner_form_discount_percent']) }}"
                                            class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <span class="text-xs text-gray-400">% off — applied to new sign-ups. Use <code class="bg-gray-100 px-1 rounded">@{{percent}}</code> in text fields to insert this value.</span>
+                                    <span class="text-xs text-gray-400">% off</span>
                                 </div>
+                                <p class="mt-0.5 text-xs text-gray-400">Use <code class="bg-gray-100 px-1 rounded">@{{percent}}</code> in text fields to insert this value.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Min. Uptime Threshold (%)</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" name="partner_form_uptime_threshold" min="0" max="100" step="1"
+                                           value="{{ old('partner_form_uptime_threshold', $partnerFormSettings['partner_form_uptime_threshold']) }}"
+                                           class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <span class="text-xs text-gray-400">%</span>
+                                </div>
+                                <p class="mt-0.5 text-xs text-gray-400">Coupon is disabled if rolling uptime (last 20 checks) drops below this. 0 = per-check toggle.</p>
                             </div>
                         </div>
 

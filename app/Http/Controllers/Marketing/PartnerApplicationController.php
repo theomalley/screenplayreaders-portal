@@ -39,20 +39,23 @@ class PartnerApplicationController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $code    = 'PRT_' . self::generateSuffix(8);
-        $percent = (int) Setting::getValue('partner_form_discount_percent', 10);
+        $code      = 'PRT_' . self::generateSuffix(8);
+        $s         = Setting::getPartnerFormSettings();
+        $percent   = (int) $s['partner_form_discount_percent'];
+        $threshold = (int) $s['partner_form_uptime_threshold'];
 
         PartnerSite::create([
-            'name'                   => $data['name'],
-            'url'                    => $data['url'],
-            'contact_email'          => $data['email'],
-            'notes'                  => $data['notes'] ?? '',
-            'active'                 => false,
-            'source'                 => 'application',
-            'check_interval_minutes' => 1440,
-            'coupon_code'            => $code,
-            'coupon_discount_type'   => 'percent',
-            'coupon_amount'          => $percent,
+            'name'                    => $data['name'],
+            'url'                     => $data['url'],
+            'contact_email'           => $data['email'],
+            'notes'                   => $data['notes'] ?? '',
+            'active'                  => false,
+            'source'                  => 'application',
+            'check_interval_minutes'  => 1440,
+            'coupon_code'             => $code,
+            'coupon_discount_type'    => 'percent',
+            'coupon_amount'           => $percent,
+            'coupon_uptime_threshold' => $threshold > 0 ? $threshold : null,
         ]);
 
         return redirect()->route('partner-apply')

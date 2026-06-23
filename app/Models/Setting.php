@@ -443,7 +443,8 @@ HTML;
     }
 
     public const PARTNER_FORM_DEFAULTS = [
-        'partner_form_discount_percent' => '10',
+        'partner_form_discount_percent'  => '10',
+        'partner_form_uptime_threshold'  => '75',
         'partner_form_heading'          => 'Link to Screenplay Readers...',
         'partner_form_subheading'       => '...and get a permanent private discount code for {{percent}}% off.',
         'partner_form_copy_url'         => 'https://screenplayreaders.com',
