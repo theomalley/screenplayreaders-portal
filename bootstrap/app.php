@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            \App\Http\Middleware\NoIndexHeaders::class,
             \App\Http\Middleware\TrackLastSeen::class,
             \App\Http\Middleware\CheckSessionTimeout::class,
         ]);
