@@ -32,7 +32,7 @@
                         </x-nav-link>
 
                         {{-- Orders dropdown (admin + editor) --}}
-                        @php $ordersActive = request()->routeIs('woo-orders.*') || request()->routeIs('order-log.*') || request()->routeIs('read-credits.*'); @endphp
+                        @php $ordersActive = request()->routeIs('woo-orders.*') || request()->routeIs('order-log.*') || request()->routeIs('read-credits.*') || request()->routeIs('budget-orders.*') || request()->routeIs('script-registrations.index') || request()->routeIs('script-registrations.show'); @endphp
                         <div class="relative flex items-center"
                              x-data="{ ordersOpen: false }"
                              @mouseenter="ordersOpen = true"
@@ -45,7 +45,7 @@
                                 </svg>
                             </button>
                             <div x-show="ordersOpen" x-cloak
-                                 class="absolute top-full left-0 mt-0 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                                 class="absolute top-full left-0 mt-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
                                 <a href="{{ route('order-log.index') }}"
                                    class="block px-4 py-2 text-sm {{ request()->routeIs('order-log.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Orders
@@ -53,6 +53,16 @@
                                 <a href="{{ route('read-credits.index') }}"
                                    class="block px-4 py-2 text-sm {{ request()->routeIs('read-credits.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Read Credits
+                                </a>
+                                @if(\App\Support\Permission::check('budget.admin'))
+                                <a href="{{ route('budget-orders.index') }}"
+                                   class="block px-4 py-2 text-sm {{ request()->routeIs('budget-orders.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Budgets
+                                </a>
+                                @endif
+                                <a href="{{ route('script-registrations.index') }}"
+                                   class="block px-4 py-2 text-sm {{ request()->routeIs('script-registrations.index') || request()->routeIs('script-registrations.show') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    Script Registrations
                                 </a>
                             </div>
                         </div>
@@ -167,7 +177,7 @@
 
                         {{-- Admin dropdown (Team, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('test-data.*') || request()->routeIs('budget-admin.*') || request()->routeIs('budget-orders.*') || request()->routeIs('script-registrations.*');
+                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('test-data.*') || request()->routeIs('budget-admin.*') || request()->routeIs('script-registrations.test');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -199,10 +209,6 @@
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('budget-admin.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Budget
                                 </a>
-                                <a href="{{ route('budget-orders.index') }}"
-                                    class="block px-4 py-2 text-sm {{ request()->routeIs('budget-orders.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Budgets
-                                </a>
                                 @endif
                                 @if(auth()->user()?->isAdmin())
                                 <a href="{{ route('script-registrations.test') }}"
@@ -210,10 +216,6 @@
                                     Script Registration
                                 </a>
                                 @endif
-                                <a href="{{ route('script-registrations.index') }}"
-                                    class="block px-4 py-2 text-sm {{ request()->routeIs('script-registrations.index') || request()->routeIs('script-registrations.show') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Script Registrations
-                                </a>
                                 <a href="{{ route('manual.show') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
@@ -324,6 +326,14 @@
                     {{ __('Read Credits') }}
                 </x-responsive-nav-link>
                 @endif
+                @if(\App\Support\Permission::check('budget.admin'))
+                <x-responsive-nav-link :href="route('budget-orders.index')" :active="request()->routeIs('budget-orders.*')">
+                    {{ __('Budgets') }}
+                </x-responsive-nav-link>
+                @endif
+                <x-responsive-nav-link :href="route('script-registrations.index')" :active="request()->routeIs('script-registrations.index') || request()->routeIs('script-registrations.show')">
+                    {{ __('Script Registrations') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                     {{ __('Clients') }}
                 </x-responsive-nav-link>
@@ -371,13 +381,7 @@
                 <x-responsive-nav-link :href="route('budget-admin.index')" :active="request()->routeIs('budget-admin.*')">
                     {{ __('Budget') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('budget-orders.index')" :active="request()->routeIs('budget-orders.*')">
-                    {{ __('Budgets') }}
-                </x-responsive-nav-link>
                 @endif
-                <x-responsive-nav-link :href="route('script-registrations.index')" :active="request()->routeIs('script-registrations.index') || request()->routeIs('script-registrations.show')">
-                    {{ __('Script Registrations') }}
-                </x-responsive-nav-link>
                 @if(auth()->user()?->isAdmin())
                 <x-responsive-nav-link :href="route('script-registrations.test')" :active="request()->routeIs('script-registrations.test')">
                     {{ __('Script Registration') }}
