@@ -170,6 +170,26 @@
         }
         .sr-reg__btn:hover { background: #0d9488; }
 
+        /* ── Logo + footer ── */
+        .sr-reg__logo-link { display: block; text-align: center; margin-bottom: 1rem; }
+        .sr-reg__logo {
+            max-width: 220px;
+            height: auto;
+            opacity: 0.85;
+            transition: opacity 0.15s;
+        }
+        .sr-reg__logo:hover { opacity: 1; }
+        .sr-reg__footer {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+        .sr-reg__footer a {
+            color: #0f766e;
+            text-decoration: none;
+        }
+        .sr-reg__footer a:hover { text-decoration: underline; }
+
         /* ── Registrations list ── */
         .sr-reg__list-table {
             width: 100%;
@@ -218,6 +238,9 @@
 <div class="sr-reg">
 
     <div class="sr-reg__page-header">
+        <a href="https://screenplayreaders.com/script-registration" class="sr-reg__logo-link">
+            <img src="https://screenplayreaders.com/wp-content/themes/generatepress_child/images/logo_login_640x168.png" alt="Screenplay Readers" class="sr-reg__logo">
+        </a>
         <h1>Register Your Script</h1>
         <p class="sr-reg__sub">Unlimited Registration for {{ $parent->customer_name }}</p>
     </div>
@@ -270,7 +293,7 @@
         @endif
     </section>
 
-    <form method="POST" action="{{ route('script-registration.public.submit', $token) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('script-registration.public.submit', $token) }}" enctype="multipart/form-data" class="sr-reg__form">
         @csrf
 
         {{-- Section 1: Script Details --}}
@@ -406,6 +429,10 @@
             <button type="submit" class="sr-reg__btn">Register Script</button>
         </section>
     </form>
+
+    <div class="sr-reg__footer">
+        <a href="https://screenplayreaders.com/script-registration">&larr; Back to Script Registration</a>
+    </div>
 
 </div>
 </body>
