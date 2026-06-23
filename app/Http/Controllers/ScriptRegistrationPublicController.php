@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-06-23 | Security hardening: MIME magic-byte verification on uploads, minimum
+//                      file size check, UUID-based safe filenames, strict extension matching
 // v1.0 — 2026-06-22 | Initial: public form for unlimited script registration token holders.
 //                      No auth required — token in URL identifies the unlimited purchase.
 
@@ -8,6 +10,7 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateRegistrationCertificate;
 use App\Models\ScriptRegistration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ScriptRegistrationPublicController extends Controller
 {
@@ -63,14 +66,27 @@ class ScriptRegistrationPublicController extends Controller
         $file = $request->file('sr_file');
         $ext = strtolower($file->getClientOriginalExtension());
 
-        if (! in_array($ext, self::ALLOWED_EXTENSIONS)) {
+        if (! in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
             return back()->withInput()->withErrors([
                 'sr_file' => 'File type not allowed. Accepted: ' . implode(', ', self::ALLOWED_EXTENSIONS),
             ]);
         }
 
+        if ($file->getSize() < 1024) {
+            return back()->withInput()->withErrors([
+                'sr_file' => 'File is too small to be a valid document.',
+            ]);
+        }
+
+        if (! $this->verifyMime($file->getRealPath(), $ext)) {
+            return back()->withInput()->withErrors([
+                'sr_file' => 'File contents do not match the expected type. Please upload a valid file.',
+            ]);
+        }
+
         $regId = ScriptRegistration::generateRegistrationId();
-        $storedPath = $file->storeAs('incoming-registrations/' . $regId, $file->getClientOriginalName());
+        $safeName = Str::uuid() . '.' . $ext;
+        $storedPath = $file->storeAs('incoming-registrations/' . $regId, $safeName);
 
         $registration = ScriptRegistration::create([
             'woo_order_id'          => 'UNLIMITED-' . $parent->woo_order_id . '-' . uniqid(),
@@ -116,5 +132,37 @@ class ScriptRegistrationPublicController extends Controller
         abort_if(! $parent->isUnlimited(), 404, 'Invalid registration token.');
 
         return $parent;
+    }
+
+    private const ALLOWED_MIMES = [
+        'pdf'      => ['application/pdf'],
+        'docx'     => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+        'fdx'      => ['application/xml', 'text/xml', 'text/plain'],
+        'fdr'      => ['application/zip', 'application/octet-stream'],
+        'fadein'   => ['application/zip'],
+        'fountain' => ['text/plain', 'application/octet-stream'],
+    ];
+
+    private function verifyMime(string $path, string $ext): bool
+    {
+        if (! isset(self::ALLOWED_MIMES[$ext])) {
+            return false;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if (! $finfo) {
+            return false;
+        }
+
+        $detected = finfo_file($finfo, $path);
+        finfo_close($finfo);
+
+        if ($detected === false) {
+            return false;
+        }
+
+        $detected = strtolower(trim(explode(';', $detected)[0]));
+
+        return in_array($detected, self::ALLOWED_MIMES[$ext], true);
     }
 }

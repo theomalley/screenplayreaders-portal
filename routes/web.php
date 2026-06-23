@@ -53,8 +53,12 @@ Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->nam
 Route::get('/ql/{token}', [\App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login');
 
 // Public unlimited script registration — no auth required
-Route::get('/register/{token}', [\App\Http\Controllers\ScriptRegistrationPublicController::class, 'show'])->name('script-registration.public');
-Route::post('/register/{token}', [\App\Http\Controllers\ScriptRegistrationPublicController::class, 'submit'])->name('script-registration.public.submit');
+Route::middleware('throttle:30,1')->get('/register/{token}', [\App\Http\Controllers\ScriptRegistrationPublicController::class, 'show'])
+    ->where('token', '[a-zA-Z0-9]+')
+    ->name('script-registration.public');
+Route::middleware('throttle:5,1')->post('/register/{token}', [\App\Http\Controllers\ScriptRegistrationPublicController::class, 'submit'])
+    ->where('token', '[a-zA-Z0-9]+')
+    ->name('script-registration.public.submit');
 
 Route::get('/', function () {
     return redirect()->route('login');

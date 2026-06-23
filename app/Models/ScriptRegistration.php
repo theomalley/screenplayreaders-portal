@@ -116,6 +116,6 @@ class ScriptRegistration extends Model
 
     public static function generateUnlimitedToken(): string
     {
-        return Str::random(16);
+        return Str::random(48);
     }
 }
