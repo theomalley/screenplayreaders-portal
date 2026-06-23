@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-06-23 | Backdate flat rate adjustment created_at into the period being paid
 // v1.7 — 2026-06-23 | Add updateFlatRate() and deleteFlatRate() for inline editing of flat rate line item
 // v1.6 — 2026-06-23 | Auto-create flat rate adjustment on markPaid() so it appears in payment history
 // v1.5 — 2026-06-11 | Add clearUnpaidBatch() — zero pending commissions + delete pending adjustments
@@ -14,6 +15,7 @@ use App\Models\EditorPayAdjustment;
 use App\Models\OrderRevenue;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\PayPeriod;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -33,14 +35,27 @@ class EditorPayController extends Controller
             $weeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
             $periodFlatRate = round($weeklyFlat * $weeks, 2);
 
-            EditorPayAdjustment::create([
-                'user_id'          => $editor->id,
-                'amount'           => $periodFlatRate,
-                'description'      => $weeks > 1
-                    ? "Weekly flat rate × {$weeks} weeks"
-                    : 'Weekly flat rate',
-                'added_by_user_id' => auth()->id(),
-            ]);
+            $paidPeriodDate = PayPeriod::current()[0]->copy()->subMinute();
+            [$paidStart, $paidEnd] = PayPeriod::bounds($paidPeriodDate);
+
+            $alreadyExists = EditorPayAdjustment::where('user_id', $editor->id)
+                ->where('created_at', '>=', $paidStart->copy()->utc())
+                ->where('created_at', '<=', $paidEnd->copy()->utc())
+                ->where('description', 'like', 'Weekly flat rate%')
+                ->exists();
+
+            if (! $alreadyExists) {
+                $adj = new EditorPayAdjustment([
+                    'user_id'          => $editor->id,
+                    'amount'           => $periodFlatRate,
+                    'description'      => $weeks > 1
+                        ? "Weekly flat rate × {$weeks} weeks"
+                        : 'Weekly flat rate',
+                    'added_by_user_id' => auth()->id(),
+                ]);
+                $adj->created_at = $paidPeriodDate;
+                $adj->save();
+            }
         }
 
         OrderRevenue::whereNull('editor_paid_at')
