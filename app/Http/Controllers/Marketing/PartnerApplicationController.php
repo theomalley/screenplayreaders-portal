@@ -1,6 +1,6 @@
 <?php
 
-// v1.0 — 2026-06-23 | Public partner application form (no auth required)
+// v1.1 — 2026-06-23 | All form text admin-configurable via partner form settings
 
 namespace App\Http\Controllers\Marketing;
 
@@ -15,8 +15,12 @@ class PartnerApplicationController extends Controller
 {
     public function show(): View
     {
+        $s = Setting::getPartnerFormSettings();
+        $percent = (int) $s['partner_form_discount_percent'];
+
         return view('marketing.partner-apply', [
-            'discountPercent' => self::discountPercent(),
+            'discountPercent' => $percent,
+            't'               => self::resolveText($s, $percent),
         ]);
     }
 
@@ -36,7 +40,7 @@ class PartnerApplicationController extends Controller
         ]);
 
         $code    = 'PRT_' . self::generateSuffix(8);
-        $percent = self::discountPercent();
+        $percent = (int) Setting::getValue('partner_form_discount_percent', 10);
 
         PartnerSite::create([
             'name'                   => $data['name'],
@@ -56,9 +60,29 @@ class PartnerApplicationController extends Controller
             ->with('coupon_code', $code);
     }
 
-    private static function discountPercent(): int
+    private static function resolveText(array $s, int $percent): array
     {
-        return (int) Setting::getValue('partner_coupon_default_percent', 10);
+        $replace = fn(string $v) => str_replace('{{percent}}', (string) $percent, $v);
+
+        return [
+            'heading'           => $replace($s['partner_form_heading']),
+            'subheading'        => $replace($s['partner_form_subheading']),
+            'copy_url'          => $s['partner_form_copy_url'],
+            'dofollow_note'     => $replace($s['partner_form_dofollow_note']),
+            'name_label'        => $s['partner_form_name_label'],
+            'name_placeholder'  => $s['partner_form_name_placeholder'],
+            'url_label'         => $s['partner_form_url_label'],
+            'url_placeholder'   => $s['partner_form_url_placeholder'],
+            'url_hint'          => $replace($s['partner_form_url_hint']),
+            'email_label'       => $s['partner_form_email_label'],
+            'email_placeholder' => $s['partner_form_email_placeholder'],
+            'notes_label'       => $s['partner_form_notes_label'],
+            'notes_placeholder' => $s['partner_form_notes_placeholder'],
+            'submit_button'     => $s['partner_form_submit_button'],
+            'success_heading'   => $replace($s['partner_form_success_heading']),
+            'success_body'      => $replace($s['partner_form_success_body']),
+            'success_coupon'    => $replace($s['partner_form_success_coupon']),
+        ];
     }
 
     private static function generateSuffix(int $length): string

@@ -218,20 +218,20 @@
             <img src="https://screenplayreaders.com/wp-content/themes/generatepress_child/images/logo_login_640x168.png"
                  alt="Screenplay Readers" class="sr-partner__logo">
         </a>
-        <h1>Link to Screenplay Readers...</h1>
-        <p>...and get a permanent private discount code for {{ $discountPercent }}% off.</p>
+        <h1>{{ $t['heading'] }}</h1>
+        <p>{{ $t['subheading'] }}</p>
     </div>
 
     @if(session('success'))
         <div class="sr-partner__flash sr-partner__flash--success">
-            <strong>You're all set!</strong> We'll verify your link and activate your coupon shortly.
+            <strong>{{ $t['success_heading'] }}</strong> {{ $t['success_body'] }}
             @if(session('coupon_code'))
                 <div class="sr-partner__coupon-box">
                     <div>Your coupon code:</div>
                     <div class="sr-partner__coupon-code">{{ session('coupon_code') }}</div>
                 </div>
                 <p style="margin-top:0.5rem;font-size:0.82rem;color:#6b7280;">
-                    This code will be good for {{ $discountPercent }}% off any order at screenplayreaders.com. Share it with your audience!
+                    {{ $t['success_coupon'] }}
                 </p>
             @endif
         </div>
@@ -249,13 +249,12 @@
         @endif
 
         <div class="sr-partner__copy-row">
-            <span class="sr-partner__copy-url" id="sr-url">https://screenplayreaders.com</span>
+            <span class="sr-partner__copy-url" id="sr-url">{{ $t['copy_url'] }}</span>
             <button type="button" class="sr-partner__copy-btn" id="sr-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('sr-url').textContent).then(function(){var b=document.getElementById('sr-copy-btn');b.textContent='Copied!';setTimeout(function(){b.textContent='Copy URL'},1500)})">Copy URL</button>
         </div>
 
         <div class="sr-partner__note">
-            Please make sure your link to screenplayreaders.com is a standard <strong>dofollow</strong> link.
-            Links with <code style="font-size:0.85em;">rel="nofollow"</code> or <code style="font-size:0.85em;">rel="sponsored"</code> aren't eligible for the partner program.
+            {!! $t['dofollow_note'] !!}
         </div>
 
         <div class="sr-partner__card">
@@ -268,42 +267,42 @@
                 </div>
 
                 <div class="sr-partner__field">
-                    <label class="sr-partner__label" for="name">Your name or company</label>
+                    <label class="sr-partner__label" for="name">{{ $t['name_label'] }}</label>
                     <input type="text" name="name" id="name" required maxlength="255"
                            value="{{ old('name') }}"
                            class="sr-partner__input"
-                           placeholder="e.g. ScriptWriters Weekly">
+                           placeholder="{{ $t['name_placeholder'] }}">
                     @error('name') <div class="sr-partner__error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="sr-partner__field">
-                    <label class="sr-partner__label" for="url">Page URL containing your link to Screenplay Readers</label>
+                    <label class="sr-partner__label" for="url">{{ $t['url_label'] }}</label>
                     <input type="url" name="url" id="url" required maxlength="500"
                            value="{{ old('url') }}"
                            class="sr-partner__input"
-                           placeholder="https://yoursite.com/resources">
-                    <div class="sr-partner__hint">The specific page where your link to screenplayreaders.com appears.</div>
+                           placeholder="{{ $t['url_placeholder'] }}">
+                    <div class="sr-partner__hint">{{ $t['url_hint'] }}</div>
                     @error('url') <div class="sr-partner__error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="sr-partner__field">
-                    <label class="sr-partner__label" for="email">Contact Email</label>
+                    <label class="sr-partner__label" for="email">{{ $t['email_label'] }}</label>
                     <input type="email" name="email" id="email" required maxlength="255"
                            value="{{ old('email') }}"
                            class="sr-partner__input"
-                           placeholder="you@yoursite.com">
+                           placeholder="{{ $t['email_placeholder'] }}">
                     @error('email') <div class="sr-partner__error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="sr-partner__field">
-                    <label class="sr-partner__label" for="notes">Notes <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>
+                    <label class="sr-partner__label" for="notes">{{ $t['notes_label'] }} <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>
                     <textarea name="notes" id="notes" maxlength="1000"
                               class="sr-partner__textarea"
-                              placeholder="Anything you'd like us to know — where the link is placed, your audience, etc.">{{ old('notes') }}</textarea>
+                              placeholder="{{ $t['notes_placeholder'] }}">{{ old('notes') }}</textarea>
                     @error('notes') <div class="sr-partner__error">{{ $message }}</div> @enderror
                 </div>
 
-                <button type="submit" class="sr-partner__submit">Get My Coupon Code</button>
+                <button type="submit" class="sr-partner__submit">{{ $t['submit_button'] }}</button>
             </form>
         </div>
 

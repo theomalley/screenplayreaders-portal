@@ -442,6 +442,39 @@ HTML;
         ];
     }
 
+    public const PARTNER_FORM_DEFAULTS = [
+        'partner_form_discount_percent' => '10',
+        'partner_form_heading'          => 'Link to Screenplay Readers...',
+        'partner_form_subheading'       => '...and get a permanent private discount code for {{percent}}% off.',
+        'partner_form_copy_url'         => 'https://screenplayreaders.com',
+        'partner_form_dofollow_note'    => 'Please make sure your link to screenplayreaders.com is a standard <strong>dofollow</strong> link. Links with <code>rel="nofollow"</code> or <code>rel="sponsored"</code> aren\'t eligible for the partner program.',
+        'partner_form_name_label'       => 'Your name or company',
+        'partner_form_name_placeholder' => 'e.g. ScriptWriters Weekly',
+        'partner_form_url_label'        => 'Page URL containing your link to Screenplay Readers',
+        'partner_form_url_placeholder'  => 'https://yoursite.com/resources',
+        'partner_form_url_hint'         => 'The specific page where your link to screenplayreaders.com appears.',
+        'partner_form_email_label'      => 'Contact Email',
+        'partner_form_email_placeholder'=> 'you@yoursite.com',
+        'partner_form_notes_label'      => 'Notes',
+        'partner_form_notes_placeholder'=> 'Anything you\'d like us to know — where the link is placed, your audience, etc.',
+        'partner_form_submit_button'    => 'Get My Coupon Code',
+        'partner_form_success_heading'  => 'You\'re all set!',
+        'partner_form_success_body'     => 'We\'ll verify your link and activate your coupon shortly.',
+        'partner_form_success_coupon'   => 'This code will be good for {{percent}}% off any order at screenplayreaders.com. Share it with your audience!',
+    ];
+
+    public static function getPartnerFormSettings(): array
+    {
+        $keys   = array_keys(self::PARTNER_FORM_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        $result = [];
+        foreach (self::PARTNER_FORM_DEFAULTS as $key => $default) {
+            $result[$key] = $stored[$key] ?? $default;
+        }
+        return $result;
+    }
+
     public static function getOrderLogEditorSettings(): array
     {
         return [

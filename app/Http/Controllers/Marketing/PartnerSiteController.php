@@ -62,7 +62,9 @@ class PartnerSiteController extends Controller
             ];
         })->keyBy(fn($v, $k) => $sites[$k]->id);
 
-        return view('marketing.partner-sites.index', compact('sites', 'stats', 'period', 'start', 'end'));
+        $partnerFormSettings = \App\Models\Setting::getPartnerFormSettings();
+
+        return view('marketing.partner-sites.index', compact('sites', 'stats', 'period', 'start', 'end', 'partnerFormSettings'));
     }
 
     // -------------------------------------------------------------------------
@@ -416,6 +418,35 @@ class PartnerSiteController extends Controller
             'coupon_amount'           => 'nullable|numeric|min:0',
             'coupon_uptime_threshold' => 'nullable|numeric|min:0|max:100',
         ]) + ['active' => $request->has('active') ? (bool) $request->input('active') : true];
+    }
+
+    // -------------------------------------------------------------------------
+    // Partner form settings
+    // -------------------------------------------------------------------------
+
+    public function updateFormSettings(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $keys = array_keys(\App\Models\Setting::PARTNER_FORM_DEFAULTS);
+
+        $data = $request->validate(
+            collect($keys)->mapWithKeys(fn($k) => [
+                $k => $k === 'partner_form_discount_percent'
+                    ? 'required|integer|min:1|max:100'
+                    : 'required|string|max:1000',
+            ])->all()
+        );
+
+        foreach ($keys as $key) {
+            \App\Models\Setting::setValue($key, $key === 'partner_form_discount_percent'
+                ? (int) $data[$key]
+                : trim($data[$key])
+            );
+        }
+
+        return redirect()->route('marketing.partner-sites.index')
+            ->with('success', 'Partner form settings saved.');
     }
 
     private function dateRange(string $period): array

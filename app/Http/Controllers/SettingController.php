@@ -673,19 +673,6 @@ class SettingController extends Controller
         return back()->with('success', 'Discount coupon settings saved.');
     }
 
-    public function updatePartnerCoupon(Request $request): RedirectResponse
-    {
-        abort_unless(auth()->user()->isAdmin(), 403);
-
-        $data = $request->validate([
-            'partner_coupon_default_percent' => 'required|integer|min:1|max:100',
-        ]);
-
-        Setting::setValue('partner_coupon_default_percent', (int) $data['partner_coupon_default_percent']);
-
-        return back()->with('success', 'Partner coupon default saved.');
-    }
-
     public function addCommissionProduct(Request $request): RedirectResponse
     {
         abort_unless(auth()->user()->isAdmin(), 403);

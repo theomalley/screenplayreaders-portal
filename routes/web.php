@@ -168,7 +168,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');
     Route::patch('/settings/order-log-editor', [SettingController::class, 'updateOrderLogEditor'])->name('settings.order-log-editor');
     Route::patch('/settings/discount-coupon', [SettingController::class, 'updateDiscountCoupon'])->name('settings.discount-coupon');
-    Route::patch('/settings/partner-coupon', [SettingController::class, 'updatePartnerCoupon'])->name('settings.partner-coupon');
+
     Route::post('/settings/commission-products/add', [SettingController::class, 'addCommissionProduct'])->name('settings.commission-products.add');
     Route::post('/settings/commission-products/remove', [SettingController::class, 'removeCommissionProduct'])->name('settings.commission-products.remove');
     Route::post('/settings/reset-last-seen-all', [SettingController::class, 'resetAllLastSeen'])->name('settings.reset-last-seen-all');
@@ -405,6 +405,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/partner-sites/{partnerSite}/check-now',      [PartnerSiteController::class, 'checkNow'])->name('partner-sites.check-now');
         Route::post('/partner-sites/{partnerSite}/toggle-active',  [PartnerSiteController::class, 'toggleActive'])->name('partner-sites.toggle-active');
         Route::get('/partner-sites/{partnerSite}/history',         [PartnerSiteController::class, 'history'])->name('partner-sites.history');
+        Route::patch('/partner-sites/form-settings',                  [PartnerSiteController::class, 'updateFormSettings'])->name('partner-sites.form-settings');
 
         // Base email template (structural layout editor)
         Route::get('/base-email-template',         [BaseEmailTemplateController::class, 'edit'])->name('base-email-template.edit');

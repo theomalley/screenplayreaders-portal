@@ -419,6 +419,162 @@
 
             @endif {{-- /sites.isEmpty --}}
 
+            {{-- Partner Form Settings --}}
+            <div class="mt-6" x-data="{ showFormSettings: false }">
+                <button type="button" @click="showFormSettings = !showFormSettings"
+                        class="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 mb-3">
+                    <svg class="w-4 h-4 transition-transform" :class="showFormSettings && 'rotate-90'" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    Partner Form Settings
+                    <span class="text-xs text-gray-400">— customize the public <a href="{{ route('partner-apply') }}" target="_blank" class="text-indigo-500 hover:underline">/partner</a> page</span>
+                </button>
+
+                <div x-show="showFormSettings" x-cloak x-transition>
+                    <form method="POST" action="{{ route('marketing.partner-sites.form-settings') }}"
+                          class="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Default Discount (%)</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" name="partner_form_discount_percent" min="1" max="100" step="1"
+                                           value="{{ old('partner_form_discount_percent', $partnerFormSettings['partner_form_discount_percent']) }}"
+                                           class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <span class="text-xs text-gray-400">% off — applied to new sign-ups. Use <code class="bg-gray-100 px-1 rounded">@{{percent}}</code> in text fields to insert this value.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-100 pt-4">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Page Text</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Heading</label>
+                                    <input type="text" name="partner_form_heading" maxlength="1000"
+                                           value="{{ old('partner_form_heading', $partnerFormSettings['partner_form_heading']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Subheading</label>
+                                    <input type="text" name="partner_form_subheading" maxlength="1000"
+                                           value="{{ old('partner_form_subheading', $partnerFormSettings['partner_form_subheading']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Copy URL</label>
+                                    <input type="text" name="partner_form_copy_url" maxlength="1000"
+                                           value="{{ old('partner_form_copy_url', $partnerFormSettings['partner_form_copy_url']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Dofollow Note</label>
+                                    <textarea name="partner_form_dofollow_note" rows="2" maxlength="1000"
+                                              class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('partner_form_dofollow_note', $partnerFormSettings['partner_form_dofollow_note']) }}</textarea>
+                                    <p class="mt-0.5 text-xs text-gray-400">HTML allowed (bold, code tags, etc.)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-100 pt-4">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Form Labels &amp; Placeholders</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Name — Label</label>
+                                    <input type="text" name="partner_form_name_label" maxlength="1000"
+                                           value="{{ old('partner_form_name_label', $partnerFormSettings['partner_form_name_label']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Name — Placeholder</label>
+                                    <input type="text" name="partner_form_name_placeholder" maxlength="1000"
+                                           value="{{ old('partner_form_name_placeholder', $partnerFormSettings['partner_form_name_placeholder']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">URL — Label</label>
+                                    <input type="text" name="partner_form_url_label" maxlength="1000"
+                                           value="{{ old('partner_form_url_label', $partnerFormSettings['partner_form_url_label']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">URL — Placeholder</label>
+                                    <input type="text" name="partner_form_url_placeholder" maxlength="1000"
+                                           value="{{ old('partner_form_url_placeholder', $partnerFormSettings['partner_form_url_placeholder']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">URL — Hint text</label>
+                                    <input type="text" name="partner_form_url_hint" maxlength="1000"
+                                           value="{{ old('partner_form_url_hint', $partnerFormSettings['partner_form_url_hint']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Email — Label</label>
+                                    <input type="text" name="partner_form_email_label" maxlength="1000"
+                                           value="{{ old('partner_form_email_label', $partnerFormSettings['partner_form_email_label']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Email — Placeholder</label>
+                                    <input type="text" name="partner_form_email_placeholder" maxlength="1000"
+                                           value="{{ old('partner_form_email_placeholder', $partnerFormSettings['partner_form_email_placeholder']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Notes — Label</label>
+                                    <input type="text" name="partner_form_notes_label" maxlength="1000"
+                                           value="{{ old('partner_form_notes_label', $partnerFormSettings['partner_form_notes_label']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Notes — Placeholder</label>
+                                    <input type="text" name="partner_form_notes_placeholder" maxlength="1000"
+                                           value="{{ old('partner_form_notes_placeholder', $partnerFormSettings['partner_form_notes_placeholder']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Submit Button Text</label>
+                                    <input type="text" name="partner_form_submit_button" maxlength="1000"
+                                           value="{{ old('partner_form_submit_button', $partnerFormSettings['partner_form_submit_button']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-100 pt-4">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Success Message</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Heading</label>
+                                    <input type="text" name="partner_form_success_heading" maxlength="1000"
+                                           value="{{ old('partner_form_success_heading', $partnerFormSettings['partner_form_success_heading']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Body</label>
+                                    <input type="text" name="partner_form_success_body" maxlength="1000"
+                                           value="{{ old('partner_form_success_body', $partnerFormSettings['partner_form_success_body']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Coupon Note</label>
+                                    <input type="text" name="partner_form_success_coupon" maxlength="1000"
+                                           value="{{ old('partner_form_success_coupon', $partnerFormSettings['partner_form_success_coupon']) }}"
+                                           class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-2">
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
+                                Save Form Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
 
         {{-- Add / Edit Modal --}}
