@@ -163,6 +163,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/email-notifications', [SettingController::class, 'updateEmailNotificationTexts'])->name('settings.email-notifications');
     Route::patch('/settings/followup-html', [SettingController::class, 'updateFollowupHtml'])->name('settings.followup-html');
     Route::patch('/settings/followup-response-draft', [SettingController::class, 'updateFollowupResponseDraft'])->name('settings.followup-response-draft');
+    Route::post('/settings/followup-response-draft/test', [SettingController::class, 'testFollowupResponseDraft'])->name('settings.followup-response-draft.test');
     Route::patch('/settings/completion-draft', [SettingController::class, 'updateCompletionDraft'])->name('settings.completion-draft');
     Route::post('/settings/completion-draft/test', [SettingController::class, 'testCompletionDraft'])->name('settings.completion-draft.test');
     Route::patch('/settings/word-counts', [SettingController::class, 'updateWordCounts'])->name('settings.word-counts');

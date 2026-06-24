@@ -241,9 +241,33 @@
                         </div>
                     </details>
 
-                    <div class="flex justify-end">
+                    <div class="flex items-center justify-end gap-3">
+                        <div x-data="{ loading: false, error: '' }" class="relative">
+                            <button type="button"
+                                    @click="
+                                        loading = true; error = '';
+                                        fetch('{{ route('settings.followup-response-draft.test') }}', {
+                                            method: 'POST',
+                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                        })
+                                        .then(r => r.json())
+                                        .then(d => { loading = false; if (d.url) window.open(d.url, '_blank'); else error = d.error ?? 'Unknown error'; })
+                                        .catch(e => { loading = false; error = e.message; })
+                                    "
+                                    :disabled="loading"
+                                    :class="loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300'"
+                                    class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-800 uppercase tracking-widest transition ease-in-out duration-150">
+                                <span x-text="loading ? 'Sending…' : 'Send Test Draft'"></span>
+                            </button>
+                            <p x-show="error" x-cloak x-text="error"
+                               class="absolute right-0 top-full mt-1 text-xs text-red-600 bg-white border border-red-200 rounded px-2 py-1 whitespace-nowrap shadow-sm z-10"></p>
+                        </div>
                         <x-primary-button>Save</x-primary-button>
                     </div>
+                    <p class="text-xs text-gray-400 -mt-2">
+                        "Send Test Draft" creates a draft using the saved template (with sample data) on the same HelpScout
+                        sandbox conversation configured in GoBack Email above — it does not contact a real customer.
+                    </p>
                 </form>
             </div>
             @endif

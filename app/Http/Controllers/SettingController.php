@@ -506,6 +506,29 @@ class SettingController extends Controller
         }
     }
 
+    public function testFollowupResponseDraft(): JsonResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        try {
+            $conversationId = Setting::getTestHelpscoutConversationId();
+
+            $body = Setting::getFollowupResponseDraftBody();
+            $body = str_replace('{{reader_initials}}', 'KD', $body);
+            $body = str_replace('{{script_title}}', 'Sample Script Title', $body);
+            $body = str_replace('{{reader_response}}', nl2br(e("Thank you for your questions. Here are my thoughts on your screenplay.\n\nThe pacing in Act 2 could benefit from tighter scene transitions, and the protagonist's motivation becomes clearer if you seed it earlier in Act 1.")), $body);
+
+            $helpScout = new HelpScoutService();
+            $body      = $helpScout->resolveBodyVariables($body, $conversationId);
+
+            $helpScout->createDraftReply($conversationId, $body);
+
+            return response()->json(['url' => 'https://secure.helpscout.net/conversation/' . $conversationId . '/']);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     /**
      * A small one-page PDF used to exercise the attachment-upload path when sending test drafts.
      */
