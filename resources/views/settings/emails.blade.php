@@ -87,7 +87,7 @@
             </div>
 
             {{-- GoBack Email --}}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div id="goback-email" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">GoBack Email</h3>
                 <p class="text-xs text-gray-500 mb-4">
                     HTML body for the HelpScout draft created when all readers on an order are approved. Accepts raw HTML.
@@ -213,7 +213,7 @@
 
             {{-- Followup Response Template --}}
             @if($followupResponseDraftBody !== null)
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div id="followup-response-email" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Followup Response Email</h3>
                 <p class="text-xs text-gray-500 mb-4">
                     HTML body for the HelpScout draft created when you mark a reader's followup response as complete. Accepts raw HTML.

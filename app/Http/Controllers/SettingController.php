@@ -444,7 +444,7 @@ class SettingController extends Controller
 
         Setting::setFollowupResponseDraftBody(trim($request->input('followup_response_draft_body')));
 
-        return back()->with('success', 'Followup response template saved.');
+        return redirect(route('settings.emails') . '#followup-response-email')->with('success', 'Followup response template saved.');
     }
 
     public function updateCompletionDraft(Request $request): RedirectResponse
@@ -459,7 +459,7 @@ class SettingController extends Controller
         Setting::setCompletionDraftBody(trim($request->input('completion_draft_body')));
         Setting::setTestHelpscoutConversationId(trim($request->input('test_helpscout_conversation_id')));
 
-        return back()->with('success', 'Completion draft email template saved.');
+        return redirect(route('settings.emails') . '#goback-email')->with('success', 'GoBack email template saved.');
     }
 
     /**
