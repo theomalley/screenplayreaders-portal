@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-06-24 | findConversationIdByTicketNumber: fall back to direct ID fetch when number search fails
 // v1.7 — 2026-06-15 | createDraftReply: reopen (set status active) closed conversations before drafting
 // v1.6 — 2026-06-02 | createDirectReaderDraft — new outgoing draft addressed to a single reader
 // v1.5 — 2026-05-31 | createReaderBroadcastDraft — new outgoing draft with BCC list for reader broadcasts
@@ -250,7 +251,24 @@ class HelpScoutService
             'total_results'   => $response->json('page.totalElements') ?? 'unknown',
         ]);
 
-        return $id ? (string) $id : null;
+        if ($id) {
+            return (string) $id;
+        }
+
+        // Value may already be a conversation ID rather than a ticket number.
+        if (is_numeric($ticketNumber) && (int) $ticketNumber >= 10_000_000) {
+            $check = Http::withToken($token)
+                ->get(self::API_BASE . "/conversations/{$ticketNumber}");
+
+            if ($check->ok()) {
+                Log::info('HelpScout: input was already a conversation ID', [
+                    'conversation_id' => $ticketNumber,
+                ]);
+                return $ticketNumber;
+            }
+        }
+
+        return null;
     }
 
     /**
