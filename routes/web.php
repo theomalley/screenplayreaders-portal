@@ -143,6 +143,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/manual', [ManualController::class, 'update'])->name('manual.update');
 
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::get('/settings/assignments', [SettingController::class, 'assignments'])->name('settings.assignments');
+    Route::get('/settings/emails', [SettingController::class, 'emails'])->name('settings.emails');
+    Route::get('/settings/orders', [SettingController::class, 'orders'])->name('settings.orders');
     Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo');
     Route::post('/settings/login-logo', [SettingController::class, 'uploadLoginLogo'])->name('settings.login-logo');
     Route::post('/settings/favicon', [SettingController::class, 'uploadFavicon'])->name('settings.favicon');

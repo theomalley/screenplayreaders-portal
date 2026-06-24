@@ -1,5 +1,7 @@
 <?php
 
+// v2.18 — 2026-06-24 | Split settings into 4 tabbed sub-pages: General, Assignments & Coverage,
+//                      Emails & Notifications, Orders & Payments. Each loads only its own data.
 // v2.17 — 2026-06-23 | Add discount coupon settings — admin-configurable type, amount, duration,
 //                      product restrictions, usage limits for post-coverage coupons.
 // v2.16 — 2026-06-16 | updateCapacityOverride() saves capacity_override_excludes_rush_requests;
@@ -58,67 +60,94 @@ class SettingController extends Controller
     {
         abort_unless(auth()->user()->canManageAssignments(), 403);
 
+        $isAdmin       = auth()->user()->isAdmin();
+        $portalTheme   = Setting::getValue('portal_theme', 'default');
+        $appTimezone   = Setting::getAppTimezone();
+        $sessionTimeout = (int) Setting::getValue('session_timeout_minutes', 120);
+
         $metaFile     = storage_path('app/portal-logo-path.txt');
         $logoUrl      = is_readable($metaFile) ? asset('storage/' . trim(file_get_contents($metaFile))) : null;
 
         $loginMetaFile = storage_path('app/portal-login-logo-path.txt');
         $loginLogoUrl  = is_readable($loginMetaFile) ? asset('storage/' . trim(file_get_contents($loginMetaFile))) : null;
 
-        $capacityOverride                     = (int) Setting::getValue('capacity_override', 0);
-        $capacityOverrideExcludesRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
-        $sessionTimeout                       = (int) Setting::getValue('session_timeout_minutes', 120);
-
         $faviconMetaFile = storage_path('app/portal-favicon-path.txt');
         $faviconUrl      = is_readable($faviconMetaFile) ? asset('storage/' . trim(file_get_contents($faviconMetaFile))) : null;
 
-        $isAdmin              = auth()->user()->isAdmin();
-        $permissionsGrid      = $isAdmin ? Permission::all() : null;
-        $filenameSuffixes     = $isAdmin ? FilenameGenerator::allSuffixes() : null;
-        $coverageSuccessHtml  = $isAdmin ? Setting::getValue('coverage_success_html', '') : null;
-        $srInvoiceAddress     = Setting::getValue('sr_invoice_address', '');
-        $invoiceEmailBody     = Setting::getValue('invoice_email_body', '');
-        $portalTheme          = Setting::getValue('portal_theme', 'default');
-        $ageThresholds        = Setting::getAgeThresholds();
-        $ageThresholdTypes    = Setting::AGE_THRESHOLD_TYPES;
-        $appTimezone          = Setting::getAppTimezone();
-        $devAutofill          = [
+        return view('settings.general', compact(
+            'isAdmin', 'portalTheme', 'appTimezone', 'sessionTimeout',
+            'logoUrl', 'loginLogoUrl', 'faviconUrl',
+        ));
+    }
+
+    public function assignments(): View
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $isAdmin = auth()->user()->isAdmin();
+
+        $capacityOverride                     = (int) Setting::getValue('capacity_override', 0);
+        $capacityOverrideExcludesRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
+        $ageThresholds     = Setting::getAgeThresholds();
+        $ageThresholdTypes = Setting::AGE_THRESHOLD_TYPES;
+        $watermarkSettings = $isAdmin ? Setting::getWatermarkSettings() : null;
+        $filenameSuffixes  = $isAdmin ? FilenameGenerator::allSuffixes() : null;
+        $qcSavedReplies    = Setting::getSavedReplies();
+        $coverageSuccessHtml = $isAdmin ? Setting::getValue('coverage_success_html', '') : null;
+        $devAutofill = [
             'admin'  => (bool) Setting::getValue('dev_autofill_admin',  false),
             'editor' => (bool) Setting::getValue('dev_autofill_editor', false),
             'reader' => (bool) Setting::getValue('dev_autofill_reader', false),
         ];
-        $watermarkSettings    = $isAdmin ? Setting::getWatermarkSettings() : null;
-        $qcSavedReplies       = Setting::getSavedReplies();
+        $wordCounts          = $isAdmin ? Setting::getWordCounts() : null;
+        $blockedReaderLimits = $isAdmin ? Setting::getBlockedReaderLimits() : null;
+
+        return view('settings.assignments', compact(
+            'isAdmin', 'capacityOverride', 'capacityOverrideExcludesRushRequests',
+            'ageThresholds', 'ageThresholdTypes', 'watermarkSettings', 'filenameSuffixes',
+            'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts', 'blockedReaderLimits',
+        ));
+    }
+
+    public function emails(): View
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $isAdmin              = auth()->user()->isAdmin();
         $emailNotifTexts      = Setting::getEmailNotificationTexts();
+        $completionDraftBody  = $isAdmin ? Setting::getCompletionDraftBody() : null;
+        $testHelpscoutConvId  = $isAdmin ? Setting::getTestHelpscoutConversationId() : null;
         $followupBeforeHtml   = Setting::getValue('followup_before_html', '');
         $followupAfterHtml    = Setting::getValue('followup_after_html', '');
         $followupHeading      = Setting::getValue('followup_heading', '');
-        $completionDraftBody  = $isAdmin ? Setting::getCompletionDraftBody() : null;
-        $testHelpscoutConvId  = $isAdmin ? Setting::getTestHelpscoutConversationId() : null;
-        $wordCounts           = $isAdmin ? Setting::getWordCounts() : null;
-        $blockedReaderLimits  = $isAdmin ? Setting::getBlockedReaderLimits() : null;
         $notificationHistoryRetentionDays = $isAdmin ? Setting::getNotificationHistoryRetentionDays() : null;
-        $payPeriod            = $isAdmin ? Setting::getPayPeriod()  : null;
-        $payoutSchedule       = $isAdmin ? Setting::getPayoutSchedule() : null;
-        $nextPayout           = $isAdmin ? PayPeriod::nextPayoutDate()  : null;
 
-        $adminProfile       = auth()->user()->editorProfile;
-        $adminPortalPhotoUrl = $adminProfile?->photo      ? asset('storage/' . $adminProfile->photo)       : null;
-        $adminAboutPhotoUrl  = $adminProfile?->about_photo ? asset('storage/' . $adminProfile->about_photo) : null;
+        return view('settings.emails', compact(
+            'isAdmin', 'emailNotifTexts', 'completionDraftBody', 'testHelpscoutConvId',
+            'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'notificationHistoryRetentionDays',
+        ));
+    }
 
+    public function orders(): View
+    {
+        abort_unless(auth()->user()->canManageAssignments(), 403);
+
+        $isAdmin         = auth()->user()->isAdmin();
+        $appTimezone     = Setting::getAppTimezone();
+        $payPeriod       = $isAdmin ? Setting::getPayPeriod() : null;
+        $payoutSchedule  = $isAdmin ? Setting::getPayoutSchedule() : null;
+        $nextPayout      = $isAdmin ? PayPeriod::nextPayoutDate() : null;
+        $srInvoiceAddress = Setting::getValue('sr_invoice_address', '');
+        $invoiceEmailBody = Setting::getValue('invoice_email_body', '');
+        $discountCoupon   = $isAdmin ? Setting::getDiscountCouponSettings() : null;
+        $permissionsGrid  = $isAdmin ? Permission::all() : null;
         $orderLogEditorSettings = $isAdmin ? Setting::getOrderLogEditorSettings() : null;
-        $orderLogColumns        = Setting::ORDER_LOG_COLUMNS;
-        $discountCoupon         = $isAdmin ? Setting::getDiscountCouponSettings() : null;
+        $orderLogColumns  = Setting::ORDER_LOG_COLUMNS;
 
-        return view('settings.index', compact(
-            'logoUrl', 'loginLogoUrl', 'faviconUrl',
-            'capacityOverride', 'capacityOverrideExcludesRushRequests', 'sessionTimeout',
-            'isAdmin', 'permissionsGrid', 'filenameSuffixes', 'coverageSuccessHtml',
-            'srInvoiceAddress', 'invoiceEmailBody', 'portalTheme',
-            'ageThresholds', 'ageThresholdTypes', 'appTimezone',
-            'devAutofill', 'watermarkSettings', 'qcSavedReplies', 'emailNotifTexts',
-            'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'completionDraftBody', 'testHelpscoutConvId',
-            'wordCounts', 'blockedReaderLimits', 'notificationHistoryRetentionDays', 'payPeriod', 'payoutSchedule', 'nextPayout', 'adminPortalPhotoUrl', 'adminAboutPhotoUrl',
-            'orderLogEditorSettings', 'orderLogColumns', 'discountCoupon',
+        return view('settings.orders', compact(
+            'isAdmin', 'appTimezone', 'payPeriod', 'payoutSchedule', 'nextPayout',
+            'srInvoiceAddress', 'invoiceEmailBody', 'discountCoupon',
+            'permissionsGrid', 'orderLogEditorSettings', 'orderLogColumns',
         ));
     }
 
@@ -204,7 +233,7 @@ class SettingController extends Controller
             $request->boolean('capacity_override_excludes_rush_requests') ? '1' : '0'
         );
 
-        return redirect()->route('settings.index')->with('success', $value > 0
+        return redirect()->route('settings.assignments')->with('success', $value > 0
             ? "Capacity override set to {$value} assignment" . ($value === 1 ? '' : 's') . ' for all readers.'
             : 'Capacity override cleared — individual reader limits apply.');
     }
