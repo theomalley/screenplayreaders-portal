@@ -1,12 +1,15 @@
 <?php
 
+// v1.2 — 2026-06-24 | Notify admins on new partner application
 // v1.1 — 2026-06-23 | All form text admin-configurable via partner form settings
 
 namespace App\Http\Controllers\Marketing;
 
 use App\Http\Controllers\Controller;
+use App\Models\NotificationHistory;
 use App\Models\PartnerSite;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -45,7 +48,7 @@ class PartnerApplicationController extends Controller
         $threshold = (int) $s['partner_form_uptime_threshold'];
         $interval  = (int) $s['partner_form_check_interval_minutes'];
 
-        PartnerSite::create([
+        $site = PartnerSite::create([
             'name'                    => $data['name'],
             'url'                     => $data['url'],
             'contact_email'           => $data['email'],
@@ -58,6 +61,16 @@ class PartnerApplicationController extends Controller
             'coupon_amount'           => $percent,
             'coupon_uptime_threshold' => $threshold > 0 ? $threshold : null,
         ]);
+
+        $adminIds = User::where('role', 'admin')->pluck('id');
+        foreach ($adminIds as $adminId) {
+            NotificationHistory::log(
+                $adminId,
+                "New partner application — {$data['name']}",
+                "{$data['url']}\n{$data['email']}",
+                route('marketing.partner-sites.index')
+            );
+        }
 
         return redirect()->route('partner-apply')
             ->with('success', true)
