@@ -1,6 +1,25 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">URL Builder</h2>
+        <div class="flex items-center gap-3" x-data="{ showHelp: false }">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">URL Builder</h2>
+            <div class="relative">
+                <button type="button" @click="showHelp = !showHelp"
+                        class="text-xs text-gray-400 hover:text-indigo-600 underline underline-offset-2">How it works</button>
+                <div x-show="showHelp" x-cloak @click.outside="showHelp = false" x-transition
+                     class="absolute left-0 top-full mt-2 w-[420px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 text-sm text-gray-600 p-5 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-2">How the URL Builder works</h3>
+                    <p class="font-medium text-gray-700">Script Coverage URL</p>
+                    <p>Builds a shareable link to the <strong>script coverage order form</strong> on screenplayreaders.com with pre-selected options.</p>
+                    <ul class="list-disc pl-5 space-y-1 text-xs text-gray-500">
+                        <li><strong>Readers + Page Count both set</strong> &mdash; the cart populates automatically when the customer opens the link. No button click needed.</li>
+                        <li><strong>Only some fields set</strong> &mdash; form dropdowns are pre-selected; the customer still clicks &ldquo;Add to cart.&rdquo;</li>
+                        <li><strong>Coupon</strong> &mdash; stashed in a 1-day session cookie and auto-applied at cart or checkout. Removing it manually won&rsquo;t re-apply, but clicking the link again will.</li>
+                    </ul>
+                    <p class="font-medium text-gray-700 mt-1">Upload URL</p>
+                    <p>Looks up a WooCommerce order by ID and generates the customer&rsquo;s script upload link (with the order key). Useful for resending upload instructions without digging through WP admin.</p>
+                </div>
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-8" x-data="urlBuilder()">

@@ -3,7 +3,7 @@
 <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
             <div class="flex items-center gap-3" x-data="{ showHelp: false }">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Assignments</h2>
-                @if(auth()->user()->isAdmin())
+                @if(auth()->user()->isAdminOrEditor())
                 <div class="relative">
                     <button type="button" @click="showHelp = !showHelp"
                             class="text-xs text-gray-400 hover:text-indigo-600 underline underline-offset-2">Capacity &amp; QC</button>
