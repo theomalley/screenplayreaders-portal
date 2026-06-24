@@ -1,8 +1,28 @@
 <x-app-layout>
     <x-slot name="header">
 <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3" x-data="{ showHelp: false }">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Assignments</h2>
+                @if(auth()->user()->isAdmin())
+                <div class="relative">
+                    <button type="button" @click="showHelp = !showHelp"
+                            class="text-xs text-gray-400 hover:text-indigo-600 underline underline-offset-2">Capacity &amp; QC</button>
+                    <div x-show="showHelp" x-cloak @click.outside="showHelp = false" x-transition
+                         class="absolute left-0 top-full mt-2 w-[420px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 text-sm text-gray-600 p-5 space-y-3">
+                        <h3 class="text-sm font-semibold text-gray-800 mb-2">Capacity &amp; QC Logic</h3>
+                        <p>A reader's <strong>max concurrent assignments</strong> only counts assignments with status <strong class="text-green-600">Assigned</strong>.</p>
+                        <p>Once a reader submits their coverage (status moves to <strong>QC</strong> or <strong>Completed</strong>), that slot is freed immediately &mdash; even if QC hasn't approved it yet.</p>
+                        <p class="font-medium text-gray-700 mt-1">Bypass rules</p>
+                        <ul class="list-disc pl-5 space-y-1 text-xs text-gray-500">
+                            <li><strong>Rush / Reader-request</strong> &mdash; bypass the cap entirely when <em>capacity_override_excludes_rush_requests</em> is on (default).</li>
+                            <li><strong>Per-reader "requests bypass"</strong> &mdash; reader-requested assignments bypass even when the global setting is off.</li>
+                            <li><strong>Exempt from capacity</strong> &mdash; individual assignments flagged exempt are excluded from the count.</li>
+                        </ul>
+                        <p class="font-medium text-gray-700 mt-1">In practice</p>
+                        <p class="text-xs text-gray-500">A reader with max&nbsp;=&nbsp;1 who has completed a script pending QC <strong>can</strong> accept another assignment. The QC queue does not block new work.</p>
+                    </div>
+                </div>
+                @endif
             </div>
             @can('create', \App\Models\Assignment::class)
                 <a href="{{ route('assignments.create') }}"
