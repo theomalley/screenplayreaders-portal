@@ -34,6 +34,7 @@ use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\UrlBuilderController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReadCreditController;
 use App\Http\Controllers\BudgetOrderController;
@@ -276,6 +277,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/order-log/{orderLog}', [OrderLogController::class, 'update'])->name('order-log.update');
     Route::delete('/order-log/{orderLog}', [OrderLogController::class, 'destroy'])->name('order-log.destroy');
     Route::post('/order-log/bulk-delete', [OrderLogController::class, 'bulkDestroy'])->name('order-log.bulk-destroy');
+
+    // URL Builder
+    Route::get('/url-builder', [UrlBuilderController::class, 'index'])->name('url-builder.index');
+    Route::post('/url-builder/upload-lookup', [UrlBuilderController::class, 'uploadLookup'])->name('url-builder.upload-lookup');
 
     // Clients + Invoicing
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');

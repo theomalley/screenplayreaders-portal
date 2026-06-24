@@ -67,7 +67,7 @@
                             </div>
                         </div>
                         {{-- Clients + Invoicing dropdown --}}
-                        @php $clientsActive = request()->routeIs('clients.*') || request()->routeIs('invoicing.*'); @endphp
+                        @php $clientsActive = request()->routeIs('clients.*') || request()->routeIs('invoicing.*') || request()->routeIs('url-builder.*'); @endphp
                         <div class="relative flex items-center"
                              x-data="{ clientsOpen: false }"
                              @mouseenter="clientsOpen = true"
@@ -92,6 +92,10 @@
                                 <a href="{{ route('invoicing.create') }}"
                                    class="block px-4 py-2 text-sm {{ request()->routeIs('invoicing.create') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Create Invoice
+                                </a>
+                                <a href="{{ route('url-builder.index') }}"
+                                   class="block px-4 py-2 text-sm {{ request()->routeIs('url-builder.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
+                                    URL Builder
                                 </a>
                             </div>
                         </div>
@@ -342,6 +346,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('invoicing.create')" :active="request()->routeIs('invoicing.create')">
                     {{ __('Create Invoice') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('url-builder.index')" :active="request()->routeIs('url-builder.*')">
+                    {{ __('URL Builder') }}
                 </x-responsive-nav-link>
                 @if(auth()->user()?->isAdmin())
                     <x-responsive-nav-link :href="route('revenue.index')" :active="request()->routeIs('revenue.*')">
