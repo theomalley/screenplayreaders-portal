@@ -329,6 +329,22 @@ class Setting extends Model
         static::updateOrCreate(['key' => 'test_helpscout_conversation_id'], ['value' => $conversationId]);
     }
 
+    /** Default body for the followup response draft sent to customers when a reader answers followup questions. */
+    public const FOLLOWUP_RESPONSE_DRAFT_DEFAULT = <<<'HTML'
+<p><strong>Your Reader {{reader_initials}} for {{script_title}} has responded to your followup questions:</strong></p>
+<blockquote style="border-left:3px solid #ccc;padding-left:1em;margin:1em 0;color:#555;">{{reader_response}}</blockquote>
+HTML;
+
+    public static function getFollowupResponseDraftBody(): string
+    {
+        return static::where('key', 'followup_response_draft_body')->value('value') ?: self::FOLLOWUP_RESPONSE_DRAFT_DEFAULT;
+    }
+
+    public static function setFollowupResponseDraftBody(string $body): void
+    {
+        static::updateOrCreate(['key' => 'followup_response_draft_body'], ['value' => $body]);
+    }
+
     /** Default body for the completion draft sent to customers when coverage is approved. */
     public const COMPLETION_DRAFT_DEFAULT = <<<'HTML'
 <p style="margin: 0 0 1em 0;">Hi {%customer.firstName,fallback= %} —</p>

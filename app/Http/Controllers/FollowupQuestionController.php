@@ -183,10 +183,10 @@ class FollowupQuestionController extends Controller
 
             $response = nl2br(e($followup->responseForCustomer() ?? ''));
 
-            $html = "<p><strong>Your Reader {$initials} for {$scriptTitle} has responded to your followup questions:</strong></p>"
-                  . "<blockquote style=\"border-left:3px solid #ccc;padding-left:1em;margin:1em 0;color:#555;\">"
-                  . $response
-                  . "</blockquote>";
+            $html = \App\Models\Setting::getFollowupResponseDraftBody();
+            $html = str_replace('{{reader_initials}}', e($initials), $html);
+            $html = str_replace('{{script_title}}', e($scriptTitle), $html);
+            $html = str_replace('{{reader_response}}', $response, $html);
 
             $service->createDraftReply($conversationId, $html);
             return true;

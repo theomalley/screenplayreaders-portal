@@ -117,6 +117,7 @@ class SettingController extends Controller
         $emailNotifTexts      = Setting::getEmailNotificationTexts();
         $completionDraftBody  = $isAdmin ? Setting::getCompletionDraftBody() : null;
         $testHelpscoutConvId  = $isAdmin ? Setting::getTestHelpscoutConversationId() : null;
+        $followupResponseDraftBody = $isAdmin ? Setting::getFollowupResponseDraftBody() : null;
         $followupBeforeHtml   = Setting::getValue('followup_before_html', '');
         $followupAfterHtml    = Setting::getValue('followup_after_html', '');
         $followupHeading      = Setting::getValue('followup_heading', '');
@@ -124,6 +125,7 @@ class SettingController extends Controller
 
         return view('settings.emails', compact(
             'isAdmin', 'emailNotifTexts', 'completionDraftBody', 'testHelpscoutConvId',
+            'followupResponseDraftBody',
             'followupBeforeHtml', 'followupAfterHtml', 'followupHeading', 'notificationHistoryRetentionDays',
         ));
     }
@@ -432,6 +434,17 @@ class SettingController extends Controller
         Setting::setValue('followup_after_html',  trim($request->input('followup_after_html', '')));
 
         return back()->with('success', 'Followup form HTML saved.');
+    }
+
+    public function updateFollowupResponseDraft(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $request->validate(['followup_response_draft_body' => 'required|string']);
+
+        Setting::setFollowupResponseDraftBody(trim($request->input('followup_response_draft_body')));
+
+        return back()->with('success', 'Followup response template saved.');
     }
 
     public function updateCompletionDraft(Request $request): RedirectResponse

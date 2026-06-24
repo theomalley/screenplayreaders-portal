@@ -86,9 +86,9 @@
                 </form>
             </div>
 
-            {{-- Completion Draft Email --}}
+            {{-- GoBack Email --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Completion Draft Email</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">GoBack Email</h3>
                 <p class="text-xs text-gray-500 mb-4">
                     HTML body for the HelpScout draft created when all readers on an order are approved. Accepts raw HTML.
                     Use <code class="text-xs bg-gray-100 px-1 rounded">{%customer.firstName,fallback=...%}</code> for HelpScout
@@ -210,6 +210,43 @@
                     </div>
                 </form>
             </div>
+
+            {{-- Followup Response Template --}}
+            @if($followupResponseDraftBody !== null)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Followup Response Email</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    HTML body for the HelpScout draft created when you mark a reader's followup response as complete. Accepts raw HTML.
+                    Use <code class="text-xs bg-gray-100 px-1 rounded">@{{reader_initials}}</code> for the reader's initials,
+                    <code class="text-xs bg-gray-100 px-1 rounded">@{{script_title}}</code> for the script title, and
+                    <code class="text-xs bg-gray-100 px-1 rounded">@{{reader_response}}</code> for the reader's response text (auto-escaped with line breaks preserved).
+                </p>
+
+                <form method="POST" action="{{ route('settings.followup-response-draft') }}" class="space-y-4">
+                    @csrf
+                    @method('PATCH')
+
+                    <textarea name="followup_response_draft_body" rows="10"
+                              class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">{{ old('followup_response_draft_body', $followupResponseDraftBody) }}</textarea>
+                    <x-input-error :messages="$errors->get('followup_response_draft_body')" class="mt-1" />
+
+                    <details>
+                        <summary class="text-xs text-gray-400 cursor-pointer select-none hover:text-gray-600">Preview</summary>
+                        <div class="mt-2 p-4 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 prose prose-sm max-w-none">
+                            {!! str_replace(
+                                ['{{reader_initials}}', '{{script_title}}', '{{reader_response}}'],
+                                ['KD', 'Sample Script Title', 'Thank you for your questions. Here are my thoughts on your screenplay...'],
+                                $followupResponseDraftBody
+                            ) !!}
+                        </div>
+                    </details>
+
+                    <div class="flex justify-end">
+                        <x-primary-button>Save</x-primary-button>
+                    </div>
+                </form>
+            </div>
+            @endif
 
             {{-- Notification History Retention --}}
             @if($notificationHistoryRetentionDays !== null)
