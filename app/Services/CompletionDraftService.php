@@ -66,7 +66,9 @@ class CompletionDraftService
             $a->loadMissing('assignedReader.readerProfile');
             $initials = $a->assignedReader?->readerProfile?->initials ?? null;
             $filename = FilenameGenerator::coveragePdf($a, $initials);
-            $bytes    = $drive->downloadContents($a->drive_coverage_pdf_id);
+            $bytes = $a->spaces_coverage_pdf_path
+                ? app(SpacesStorageService::class)->get($a->spaces_coverage_pdf_path)
+                : $drive->downloadContents($a->drive_coverage_pdf_id);
 
             $attachments[] = [
                 'fileName' => $filename,

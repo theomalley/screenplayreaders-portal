@@ -204,7 +204,7 @@ class GoogleDocsService
      * Copy the template, fill placeholders, export to PDF, save to a Drive folder, then
      * delete the temp Google Doc copy. Returns the Drive file ID of the saved PDF.
      */
-    public function generateCertificatePdf(string $templateId, array $placeholders, string $filename, string $outputFolderId): string
+    public function generateCertificatePdf(string $templateId, array $placeholders, string $filename, string $outputFolderId, ?string $spacesPath = null): array
     {
         $docId = $this->copyTemplate($templateId, 'temp-cert-' . uniqid(), null);
         try {
@@ -230,7 +230,16 @@ class GoogleDocsService
                 'filename' => $filename,
             ]);
 
-            return $file->id;
+            $storedSpacesPath = null;
+            if ($spacesPath) {
+                app(SpacesStorageService::class)->store($spacesPath, $bytes);
+                $storedSpacesPath = $spacesPath;
+            }
+
+            return [
+                'drive_id' => $file->id,
+                'spaces_path' => $storedSpacesPath,
+            ];
         } finally {
             try {
                 $this->drive->files->delete($docId, ['supportsAllDrives' => true]);

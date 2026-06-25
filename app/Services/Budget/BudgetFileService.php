@@ -8,6 +8,7 @@
 namespace App\Services\Budget;
 
 use App\Models\Budget\BudgetOrder;
+use App\Services\SpacesStorageService;
 use Google\Client;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
@@ -71,20 +72,33 @@ class BudgetFileService
 
         // Topsheet-only: extract just page 1 from the full PDF
         if ($order->topsheet_only) {
-            $topsheetBytes = $this->extractPage1($pdfBytes);
-            // Replace the full PDF with the topsheet-only version
+            $pdfBytes = $this->extractPage1($pdfBytes);
             $this->drive->files->update($pdfFileId, new DriveFile(), [
-                'data' => $topsheetBytes,
+                'data' => $pdfBytes,
                 'mimeType' => 'application/pdf',
                 'uploadType' => 'multipart',
                 'supportsAllDrives' => true,
             ]);
         }
 
+        // Store finalized files to DO Spaces
+        $spaces = app(SpacesStorageService::class);
+        $orderId = $order->woo_order_id;
+        $spacesPdfPath = "budgets/{$orderId}/{$orderId}-budget.pdf";
+        $spaces->store($spacesPdfPath, $pdfBytes);
+
+        $spacesXlsxPath = null;
+        if ($xlsxFileId) {
+            $spacesXlsxPath = "budgets/{$orderId}/{$orderId}-budget.xlsx";
+            $spaces->store($spacesXlsxPath, $xlsxBytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        }
+
         return [
             'spreadsheet_id' => $spreadsheetId,
             'pdf_id' => $pdfFileId,
             'xlsx_id' => $xlsxFileId,
+            'spaces_pdf_path' => $spacesPdfPath,
+            'spaces_xlsx_path' => $spacesXlsxPath,
             'pdf_url' => "https://drive.google.com/file/d/{$pdfFileId}/view",
             'xlsx_url' => $xlsxFileId ? "https://drive.google.com/file/d/{$xlsxFileId}/view" : null,
             'pdf_download_url' => "https://drive.google.com/uc?export=download&id={$pdfFileId}",

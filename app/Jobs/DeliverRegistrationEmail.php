@@ -8,6 +8,7 @@ namespace App\Jobs;
 use App\Mail\RegistrationCertificateMail;
 use App\Models\ScriptRegistration;
 use App\Services\GoogleDocsService;
+use App\Services\SpacesStorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,7 @@ class DeliverRegistrationEmail implements ShouldQueue
         public readonly int $registrationId,
     ) {}
 
-    public function handle(GoogleDocsService $docs): void
+    public function handle(GoogleDocsService $docs, SpacesStorageService $spaces): void
     {
         $reg = ScriptRegistration::findOrFail($this->registrationId);
 
@@ -38,7 +39,9 @@ class DeliverRegistrationEmail implements ShouldQueue
         $tempFiles = [];
 
         try {
-            $pdfBytes = $docs->downloadDriveFileBytes($reg->drive_certificate_pdf_id);
+            $pdfBytes = $reg->spaces_certificate_pdf_path
+                ? $spaces->get($reg->spaces_certificate_pdf_path)
+                : $docs->downloadDriveFileBytes($reg->drive_certificate_pdf_id);
             $pdfPath = tempnam(sys_get_temp_dir(), 'sr_reg_cert_') . '.pdf';
             file_put_contents($pdfPath, $pdfBytes);
             $tempFiles[] = $pdfPath;

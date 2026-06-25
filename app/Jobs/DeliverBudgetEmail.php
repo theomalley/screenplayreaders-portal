@@ -8,6 +8,7 @@ namespace App\Jobs;
 use App\Mail\BudgetDeliveryMail;
 use App\Models\Budget\BudgetOrder;
 use App\Services\Budget\BudgetFileService;
+use App\Services\SpacesStorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,7 @@ class DeliverBudgetEmail implements ShouldQueue
         public readonly array $fileUrls,
     ) {}
 
-    public function handle(BudgetFileService $fileService): void
+    public function handle(BudgetFileService $fileService, SpacesStorageService $spaces): void
     {
         $order = BudgetOrder::findOrFail($this->budgetOrderId);
 
@@ -37,9 +38,10 @@ class DeliverBudgetEmail implements ShouldQueue
         $tempFiles = [];
 
         try {
-            // Download PDF from Drive
             if ($order->drive_pdf_id) {
-                $pdfBytes = $fileService->downloadFileContents($order->drive_pdf_id);
+                $pdfBytes = $order->spaces_pdf_path
+                    ? $spaces->get($order->spaces_pdf_path)
+                    : $fileService->downloadFileContents($order->drive_pdf_id);
                 $pdfPath = tempnam(sys_get_temp_dir(), 'sr_budget_pdf_') . '.pdf';
                 file_put_contents($pdfPath, $pdfBytes);
                 $tempFiles[] = $pdfPath;
@@ -50,9 +52,10 @@ class DeliverBudgetEmail implements ShouldQueue
                 ];
             }
 
-            // Download XLSX from Drive (if not topsheet-only)
             if ($order->drive_xlsx_id && !$order->topsheet_only) {
-                $xlsxBytes = $fileService->downloadFileContents($order->drive_xlsx_id);
+                $xlsxBytes = $order->spaces_xlsx_path
+                    ? $spaces->get($order->spaces_xlsx_path)
+                    : $fileService->downloadFileContents($order->drive_xlsx_id);
                 $xlsxPath = tempnam(sys_get_temp_dir(), 'sr_budget_xlsx_') . '.xlsx';
                 file_put_contents($xlsxPath, $xlsxBytes);
                 $tempFiles[] = $xlsxPath;

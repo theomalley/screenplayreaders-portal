@@ -39,15 +39,18 @@ class GenerateRegistrationCertificate implements ShouldQueue
             $orderPrefix = $reg->woo_order_number ? $reg->woo_order_number . ' — ' : '';
             $filename = $orderPrefix . 'SR Registration Certificate — ' . $reg->script_title . ' — ' . $reg->registration_id;
 
-            $pdfId = $docs->generateCertificatePdf($templateId, $placeholders, $filename, $outputFolderId);
+            $spacesPath = "certificates/{$reg->registration_id}/{$reg->registration_id}-certificate.pdf";
+            $result = $docs->generateCertificatePdf($templateId, $placeholders, $filename, $outputFolderId, $spacesPath);
 
             $reg->update([
-                'drive_certificate_pdf_id' => $pdfId,
+                'drive_certificate_pdf_id' => $result['drive_id'],
+                'spaces_certificate_pdf_path' => $result['spaces_path'],
             ]);
 
             Log::info('GenerateRegistrationCertificate: PDF generated', [
                 'registration_id' => $reg->id,
-                'pdf_id' => $pdfId,
+                'pdf_id' => $result['drive_id'],
+                'spaces_path' => $result['spaces_path'],
             ]);
 
             DeliverRegistrationEmail::dispatch($reg->id);

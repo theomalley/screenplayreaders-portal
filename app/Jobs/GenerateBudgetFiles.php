@@ -42,6 +42,8 @@ class GenerateBudgetFiles implements ShouldQueue
                 'drive_spreadsheet_id' => $result['spreadsheet_id'],
                 'drive_pdf_id' => $result['pdf_id'],
                 'drive_xlsx_id' => $result['xlsx_id'],
+                'spaces_pdf_path' => $result['spaces_pdf_path'],
+                'spaces_xlsx_path' => $result['spaces_xlsx_path'],
             ]);
 
             Log::info('GenerateBudgetFiles: files generated', [

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateBudgetFiles;
 use App\Models\Budget\BudgetOrder;
 use App\Services\GoogleDocsService;
+use App\Services\SpacesStorageService;
 use Illuminate\Http\Request;
 
 class BudgetOrderController extends Controller
@@ -49,7 +50,7 @@ class BudgetOrderController extends Controller
         ]);
     }
 
-    public function downloadPdf(BudgetOrder $budgetOrder, GoogleDocsService $docs)
+    public function downloadPdf(BudgetOrder $budgetOrder, GoogleDocsService $docs, SpacesStorageService $spaces)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
@@ -57,7 +58,9 @@ class BudgetOrderController extends Controller
             return back()->withErrors(['download' => 'No PDF available. Try regenerating first.']);
         }
 
-        $bytes = $docs->downloadDriveFileBytes($budgetOrder->drive_pdf_id);
+        $bytes = $budgetOrder->spaces_pdf_path
+            ? $spaces->get($budgetOrder->spaces_pdf_path)
+            : $docs->downloadDriveFileBytes($budgetOrder->drive_pdf_id);
         $title = $budgetOrder->header_data['title'] ?? 'Budget';
         $safeTitle = preg_replace('/[^\w\s\-.]/', '', $title);
         $filename = "{$budgetOrder->woo_order_id} - SR Budget - {$safeTitle}.pdf";
@@ -69,7 +72,7 @@ class BudgetOrderController extends Controller
         ]);
     }
 
-    public function downloadXlsx(BudgetOrder $budgetOrder, GoogleDocsService $docs)
+    public function downloadXlsx(BudgetOrder $budgetOrder, GoogleDocsService $docs, SpacesStorageService $spaces)
     {
         abort_unless(auth()->user()?->isAdminOrEditor(), 403);
 
@@ -77,7 +80,9 @@ class BudgetOrderController extends Controller
             return back()->withErrors(['download' => 'No Excel file available. Try regenerating first.']);
         }
 
-        $bytes = $docs->downloadDriveFileBytes($budgetOrder->drive_xlsx_id);
+        $bytes = $budgetOrder->spaces_xlsx_path
+            ? $spaces->get($budgetOrder->spaces_xlsx_path)
+            : $docs->downloadDriveFileBytes($budgetOrder->drive_xlsx_id);
         $title = $budgetOrder->header_data['title'] ?? 'Budget';
         $safeTitle = preg_replace('/[^\w\s\-.]/', '', $title);
         $filename = "{$budgetOrder->woo_order_id} - SR Budget - {$safeTitle}.xlsx";

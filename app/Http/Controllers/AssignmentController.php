@@ -70,6 +70,7 @@ use App\Services\HelpScoutService;
 use App\Services\InvoiceService;
 use App\Services\GoogleDriveService;
 use App\Services\ReaderNotificationService;
+use App\Services\SpacesStorageService;
 use App\Support\FilenameGenerator;
 use App\Support\PayPeriod;
 use App\Support\Permission;
@@ -752,11 +753,12 @@ class AssignmentController extends Controller
 
         $filename = $assignment->drive_script_filename ?? 'script.pdf';
 
-        // Test assignments may use a locally-uploaded script instead of Google Drive
         if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
             $localPath = storage_path('app/test-script.pdf');
             abort_unless(file_exists($localPath), 404);
             $contents = file_get_contents($localPath);
+        } elseif ($assignment->spaces_script_path) {
+            $contents = app(SpacesStorageService::class)->get($assignment->spaces_script_path);
         } else {
             $contents = $drive->downloadContents($assignment->drive_script_file_id);
         }
@@ -796,6 +798,8 @@ class AssignmentController extends Controller
             $localPath = storage_path('app/test-script.pdf');
             abort_unless(file_exists($localPath), 404);
             $contents = file_get_contents($localPath);
+        } elseif ($assignment->spaces_script_path) {
+            $contents = app(SpacesStorageService::class)->get($assignment->spaces_script_path);
         } else {
             $contents = $drive->downloadContents($assignment->drive_script_file_id);
         }
@@ -827,6 +831,9 @@ class AssignmentController extends Controller
             abort_unless(file_exists($source), 404);
             $tmpSource = tempnam(sys_get_temp_dir(), 'sr_dl_') . '.pdf';
             copy($source, $tmpSource);
+        } elseif ($assignment->spaces_script_path) {
+            $tmpSource = tempnam(sys_get_temp_dir(), 'sr_dl_') . '.pdf';
+            file_put_contents($tmpSource, app(SpacesStorageService::class)->get($assignment->spaces_script_path));
         } else {
             $tmpSource = $drive->downloadToTemp($assignment->drive_script_file_id);
         }
@@ -867,7 +874,9 @@ class AssignmentController extends Controller
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
         abort_unless($assignment->drive_coverage_pdf_id, 404);
 
-        $contents = $drive->downloadContents($assignment->drive_coverage_pdf_id);
+        $contents = $assignment->spaces_coverage_pdf_path
+            ? app(SpacesStorageService::class)->get($assignment->spaces_coverage_pdf_path)
+            : $drive->downloadContents($assignment->drive_coverage_pdf_id);
 
         $assignment->loadMissing('assignedReader.readerProfile');
         $initials = $assignment->assignedReader?->readerProfile?->initials;

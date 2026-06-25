@@ -21,6 +21,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CopyFileToSpaces;
 use App\Models\Assignment;
 use App\Models\Setting;
 use App\Services\CompletionDraftService;
@@ -67,7 +68,10 @@ class QcController extends Controller
         try {
             $assignment->loadMissing('assignedReader.readerProfile');
             $pdfId = $this->generatePdfForAssignment($assignment, $assignment->drive_coverage_pdf_id);
-            $assignment->update(['drive_coverage_pdf_id' => $pdfId]);
+            $assignment->update([
+                'drive_coverage_pdf_id' => $pdfId,
+                'spaces_coverage_pdf_path' => null,
+            ]);
 
             return back()->with('success', 'PDF regenerated.');
         } catch (\Throwable $e) {
@@ -121,6 +125,24 @@ class QcController extends Controller
 
             // Reload so PDF IDs are fresh
             $siblings = Assignment::where('order_number', $assignment->order_number)->get();
+
+            // Queue finalized files for copy to DO Spaces
+            foreach ($siblings as $sibling) {
+                if ($sibling->drive_coverage_pdf_id && ! $sibling->spaces_coverage_pdf_path) {
+                    CopyFileToSpaces::dispatch(
+                        Assignment::class, $sibling->id,
+                        'drive_coverage_pdf_id', 'spaces_coverage_pdf_path',
+                        "coverage/{$sibling->order_number}/{$sibling->id}-coverage.pdf",
+                    );
+                }
+                if ($sibling->drive_script_file_id && ! $sibling->spaces_script_path) {
+                    CopyFileToSpaces::dispatch(
+                        Assignment::class, $sibling->id,
+                        'drive_script_file_id', 'spaces_script_path',
+                        "scripts/{$sibling->order_number}/{$sibling->id}-script.pdf",
+                    );
+                }
+            }
 
             try {
                 $hsUrl = app(CompletionDraftService::class)->buildDraft($siblings->all());

@@ -59,6 +59,7 @@ class ScriptRegistration extends Model
         'registered_at',
         'expires_at',
         'drive_certificate_pdf_id',
+        'spaces_certificate_pdf_path',
         'unlimited_token',
         'unlimited_token_parent_id',
         'status',
