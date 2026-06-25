@@ -60,7 +60,7 @@ class BudgetOrderController extends Controller
         $bytes = $docs->downloadDriveFileBytes($budgetOrder->drive_pdf_id);
         $title = $budgetOrder->header_data['title'] ?? 'Budget';
         $safeTitle = preg_replace('/[^\w\s\-.]/', '', $title);
-        $filename = "Budget - {$safeTitle} - {$budgetOrder->woo_order_id}.pdf";
+        $filename = "{$budgetOrder->woo_order_id} - SR Budget - {$safeTitle}.pdf";
 
         return response($bytes, 200, [
             'Content-Type'        => 'application/pdf',
@@ -80,7 +80,7 @@ class BudgetOrderController extends Controller
         $bytes = $docs->downloadDriveFileBytes($budgetOrder->drive_xlsx_id);
         $title = $budgetOrder->header_data['title'] ?? 'Budget';
         $safeTitle = preg_replace('/[^\w\s\-.]/', '', $title);
-        $filename = "Budget - {$safeTitle} - {$budgetOrder->woo_order_id}.xlsx";
+        $filename = "{$budgetOrder->woo_order_id} - SR Budget - {$safeTitle}.xlsx";
 
         return response($bytes, 200, [
             'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

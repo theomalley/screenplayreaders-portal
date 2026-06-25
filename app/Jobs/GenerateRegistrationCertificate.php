@@ -36,7 +36,8 @@ class GenerateRegistrationCertificate implements ShouldQueue
             $outputFolderId = config('services.google.registration_output_folder_id');
             $placeholders = $this->buildPlaceholders($reg);
 
-            $filename = 'SR Registration Certificate — ' . $reg->script_title . ' — ' . $reg->registration_id;
+            $orderPrefix = $reg->woo_order_number ? $reg->woo_order_number . ' — ' : '';
+            $filename = $orderPrefix . 'SR Registration Certificate — ' . $reg->script_title . ' — ' . $reg->registration_id;
 
             $pdfId = $docs->generateCertificatePdf($templateId, $placeholders, $filename, $outputFolderId);
 

@@ -109,6 +109,7 @@
                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                 </th>
                                 @endif
+                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Order #</th>
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Reg ID</th>
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Author</th>
@@ -130,6 +131,7 @@
                                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                     </td>
                                     @endif
+                                    <td class="px-4 py-2.5 font-mono text-xs text-gray-900">{{ $reg->woo_order_number ?? '—' }}</td>
                                     <td class="px-4 py-2.5 font-mono text-xs text-gray-900">
                                         {{ $reg->registration_id }}
                                         @if($reg->children_count > 0)
@@ -184,7 +186,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ $isAdmin ? 10 : 9 }}" class="px-4 py-8 text-center text-gray-400">No script registrations found.</td>
+                                    <td colspan="{{ $isAdmin ? 11 : 10 }}" class="px-4 py-8 text-center text-gray-400">No script registrations found.</td>
                                 </tr>
                             @endforelse
                         </tbody>

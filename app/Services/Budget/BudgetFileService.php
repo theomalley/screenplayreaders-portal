@@ -99,7 +99,7 @@ class BudgetFileService
         $safe = preg_replace('/[\\\\\\/:*?"<>|]+/', ' ', $title);
         $safe = preg_replace('/\s+/', ' ', trim($safe));
 
-        return 'SR Budget - ' . mb_substr($safe, 0, 140);
+        return $order->woo_order_id . ' - SR Budget - ' . mb_substr($safe, 0, 140);
     }
 
     private function copyTemplate(string $newName): string

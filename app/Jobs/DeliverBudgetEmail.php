@@ -45,7 +45,7 @@ class DeliverBudgetEmail implements ShouldQueue
                 $tempFiles[] = $pdfPath;
                 $attachments[] = [
                     'path' => $pdfPath,
-                    'as' => "SR Budget - {$safeTitle}.pdf",
+                    'as' => "{$order->woo_order_id} - SR Budget - {$safeTitle}.pdf",
                     'mime' => 'application/pdf',
                 ];
             }
@@ -58,7 +58,7 @@ class DeliverBudgetEmail implements ShouldQueue
                 $tempFiles[] = $xlsxPath;
                 $attachments[] = [
                     'path' => $xlsxPath,
-                    'as' => "SR Budget - {$safeTitle}.xlsx",
+                    'as' => "{$order->woo_order_id} - SR Budget - {$safeTitle}.xlsx",
                     'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 ];
             }

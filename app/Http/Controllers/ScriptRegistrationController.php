@@ -89,7 +89,8 @@ class ScriptRegistrationController extends Controller
 
         $bytes = $docs->downloadDriveFileBytes($script_registration->drive_certificate_pdf_id);
         $safeTitle = preg_replace('/[^\w\s\-.]/', '', $script_registration->script_title);
-        $filename = "SR Registration Certificate - {$safeTitle} - {$script_registration->registration_id}.pdf";
+        $orderPrefix = $script_registration->woo_order_number ? "{$script_registration->woo_order_number} - " : '';
+        $filename = "{$orderPrefix}SR Registration Certificate - {$safeTitle} - {$script_registration->registration_id}.pdf";
 
         return response($bytes, 200, [
             'Content-Type'        => 'application/pdf',
