@@ -193,12 +193,18 @@
                 </div>
             </div>
 
-            {{-- Certificate Actions --}}
+            {{-- Files --}}
             <div class="bg-white shadow-sm sm:rounded-lg">
                 <div class="px-6 py-4 border-b border-gray-100">
-                    <h3 class="text-base font-semibold text-gray-900">Certificate</h3>
+                    <h3 class="text-base font-semibold text-gray-900">Files</h3>
                 </div>
                 <div class="px-6 py-4 flex flex-wrap gap-3">
+                    @if($registration->spaces_script_file_path)
+                        <a href="{{ route('script-registrations.download-script', $registration) }}"
+                           class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 transition">
+                            Download Script
+                        </a>
+                    @endif
                     @if($registration->drive_certificate_pdf_id)
                         <a href="{{ route('script-registrations.download', $registration) }}"
                            class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition">

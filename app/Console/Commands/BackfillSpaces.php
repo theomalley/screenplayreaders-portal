@@ -9,6 +9,7 @@ use App\Services\GoogleDriveService;
 use App\Services\GoogleDocsService;
 use App\Services\SpacesStorageService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
 
 class BackfillSpaces extends Command
 {
@@ -26,7 +27,7 @@ class BackfillSpaces extends Command
         $dryRun = $this->option('dry-run');
 
         $types = $type === 'all'
-            ? ['budgets', 'certificates', 'coverage', 'scripts']
+            ? ['budgets', 'certificates', 'coverage', 'scripts', 'registration-scripts']
             : [$type];
 
         foreach ($types as $t) {
@@ -35,6 +36,7 @@ class BackfillSpaces extends Command
                 'certificates' => $this->backfillCertificates($spaces, $limit, $dryRun),
                 'coverage' => $this->backfillCoverage($spaces, $limit, $dryRun),
                 'scripts' => $this->backfillScripts($spaces, $limit, $dryRun),
+                'registration-scripts' => $this->backfillRegistrationScripts($spaces, $limit, $dryRun),
                 default => $this->error("Unknown type: {$t}"),
             };
         }
@@ -172,6 +174,41 @@ class BackfillSpaces extends Command
                 $this->line("  OK #{$a->order_number} (id:{$a->id})");
             } catch (\Throwable $e) {
                 $this->error("  FAIL #{$a->order_number} (id:{$a->id}): {$e->getMessage()}");
+            }
+        }
+    }
+
+    private function backfillRegistrationScripts(SpacesStorageService $spaces, int $limit, bool $dryRun): void
+    {
+        $regs = ScriptRegistration::whereNotNull('uploaded_file_url')
+            ->where('uploaded_file_url', '!=', '')
+            ->whereNull('spaces_script_file_path')
+            ->limit($limit)
+            ->get();
+
+        $this->info("Registration scripts: {$regs->count()} to backfill");
+
+        foreach ($regs as $reg) {
+            $ext = pathinfo($reg->uploaded_file_name ?? $reg->uploaded_file_url, PATHINFO_EXTENSION) ?: 'pdf';
+            $path = "registration-scripts/{$reg->registration_id}/{$reg->registration_id}.{$ext}";
+
+            if ($dryRun) {
+                $this->line("  [dry-run] {$reg->registration_id} → {$path}");
+                continue;
+            }
+
+            try {
+                $response = Http::timeout(60)->get($reg->uploaded_file_url);
+                if (! $response->successful()) {
+                    $this->error("  FAIL {$reg->registration_id}: HTTP {$response->status()} from {$reg->uploaded_file_url}");
+                    continue;
+                }
+
+                $spaces->store($path, $response->body());
+                $reg->update(['spaces_script_file_path' => $path]);
+                $this->line("  OK {$reg->registration_id}");
+            } catch (\Throwable $e) {
+                $this->error("  FAIL {$reg->registration_id}: {$e->getMessage()}");
             }
         }
     }

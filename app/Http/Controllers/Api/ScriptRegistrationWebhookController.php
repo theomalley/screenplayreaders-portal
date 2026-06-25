@@ -8,6 +8,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CopyRegistrationScriptToSpaces;
 use App\Jobs\GenerateRegistrationCertificate;
 use App\Models\ScriptRegistration;
 use Illuminate\Http\JsonResponse;
@@ -80,6 +81,11 @@ class ScriptRegistrationWebhookController extends Controller
             ]);
 
             GenerateRegistrationCertificate::dispatch($registration->id);
+
+            if ($registration->uploaded_file_url) {
+                CopyRegistrationScriptToSpaces::dispatch($registration->id);
+            }
+
             $created[] = $registration->id;
         }
 

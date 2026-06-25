@@ -102,6 +102,30 @@ class ScriptRegistrationController extends Controller
         ]);
     }
 
+    public function downloadScript(ScriptRegistration $script_registration, SpacesStorageService $spaces)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+
+        if (! $script_registration->spaces_script_file_path) {
+            return back()->withErrors(['download' => 'No script file available for this registration.']);
+        }
+
+        $bytes = $spaces->get($script_registration->spaces_script_file_path);
+        $ext = pathinfo($script_registration->spaces_script_file_path, PATHINFO_EXTENSION) ?: 'pdf';
+        $safeTitle = preg_replace('/[^\w\s\-.]/', '', $script_registration->script_title);
+        $filename = "{$safeTitle} - {$script_registration->registration_id}.{$ext}";
+
+        return response($bytes, 200, [
+            'Content-Type'        => match ($ext) {
+                'pdf' => 'application/pdf',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                default => 'application/octet-stream',
+            },
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Length'      => strlen($bytes),
+        ]);
+    }
+
     public function regenerateToken(ScriptRegistration $script_registration)
     {
         abort_unless(auth()->user()?->isAdmin(), 403);

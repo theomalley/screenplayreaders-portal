@@ -334,6 +334,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/script-registrations/{script_registration}', [ScriptRegistrationController::class, 'show'])->name('script-registrations.show');
     Route::post('/script-registrations/{script_registration}/regenerate', [ScriptRegistrationController::class, 'regenerateCertificate'])->name('script-registrations.regenerate');
     Route::get('/script-registrations/{script_registration}/download', [ScriptRegistrationController::class, 'downloadCertificate'])->name('script-registrations.download');
+    Route::get('/script-registrations/{script_registration}/download-script', [ScriptRegistrationController::class, 'downloadScript'])->name('script-registrations.download-script');
     Route::post('/script-registrations/{script_registration}/regenerate-token', [ScriptRegistrationController::class, 'regenerateToken'])->name('script-registrations.regenerate-token');
     Route::delete('/script-registrations/{script_registration}', [ScriptRegistrationController::class, 'destroy'])->name('script-registrations.destroy');
     Route::post('/script-registrations/bulk-delete', [ScriptRegistrationController::class, 'bulkDestroy'])->name('script-registrations.bulk-destroy');

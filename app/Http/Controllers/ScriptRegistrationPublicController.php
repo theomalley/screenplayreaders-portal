@@ -9,6 +9,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\GenerateRegistrationCertificate;
 use App\Models\ScriptRegistration;
+use App\Services\SpacesStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -97,8 +98,12 @@ class ScriptRegistrationPublicController extends Controller
         }
 
         $regId = ScriptRegistration::generateRegistrationId();
-        $safeName = Str::uuid() . '.' . $ext;
-        $storedPath = $file->storeAs('incoming-registrations/' . $regId, $safeName);
+        $spacesPath = "registration-scripts/{$regId}/{$regId}.{$ext}";
+        app(SpacesStorageService::class)->store($spacesPath, file_get_contents($file->getRealPath()), match ($ext) {
+            'pdf' => 'application/pdf',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            default => 'application/octet-stream',
+        });
 
         $registration = ScriptRegistration::create([
             'woo_order_id'          => 'UNLIMITED-' . $parent->woo_order_id . '-' . uniqid(),
@@ -122,8 +127,9 @@ class ScriptRegistrationPublicController extends Controller
             'phone'                 => $data['sr_phone'],
             'unique_id'             => $data['sr_unique_id'] ?: null,
             'email'                 => $data['sr_email'],
-            'uploaded_file_url'     => $storedPath,
+            'uploaded_file_url'     => null,
             'uploaded_file_name'    => $file->getClientOriginalName(),
+            'spaces_script_file_path' => $spacesPath,
             'authcode'              => bin2hex(random_bytes(16)),
             'registered_at'         => now(),
             'expires_at'            => null,

@@ -55,6 +55,7 @@ class ScriptRegistration extends Model
         'email',
         'uploaded_file_url',
         'uploaded_file_name',
+        'spaces_script_file_path',
         'authcode',
         'registered_at',
         'expires_at',
