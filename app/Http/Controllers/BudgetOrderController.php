@@ -22,7 +22,8 @@ class BudgetOrderController extends Controller
             $query->where(function ($sub) use ($q) {
                 $sub->where('customer_email', 'like', "%{$q}%")
                     ->orWhere('customer_name', 'like', "%{$q}%")
-                    ->orWhere('woo_order_id', 'like', "%{$q}%");
+                    ->orWhere('woo_order_id', 'like', "%{$q}%")
+                    ->orWhere('header_data->title', 'like', "%{$q}%");
             });
         }
 

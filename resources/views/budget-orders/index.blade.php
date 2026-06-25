@@ -8,7 +8,7 @@
                     <x-text-input
                         name="q"
                         value="{{ $q }}"
-                        placeholder="Email, name, order ID…"
+                        placeholder="Email, name, order ID, project…"
                         class="text-sm h-9 py-1.5 w-64"
                     />
                     <x-primary-button class="h-9 py-1.5 text-sm">Search</x-primary-button>
@@ -97,6 +97,7 @@
                                 </th>
                                 @endif
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-36">Order ID</th>
+                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Project</th>
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
                                 <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
                                 <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Budget</th>
@@ -118,6 +119,7 @@
                                     </td>
                                     @endif
                                     <td class="px-4 py-2.5 font-mono text-xs text-gray-900">{{ $order->woo_order_id }}</td>
+                                    <td class="px-4 py-2.5 text-gray-900">{{ $order->header_data['title'] ?? '—' }}</td>
                                     <td class="px-4 py-2.5 text-gray-900">{{ $order->customer_name }}</td>
                                     <td class="px-4 py-2.5 text-gray-500">{{ $order->customer_email }}</td>
                                     <td class="px-4 py-2.5 text-right font-mono text-gray-900">${{ number_format($order->budget_amount, 0) }}</td>
@@ -149,7 +151,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ $isAdmin ? 10 : 9 }}" class="px-4 py-8 text-center text-gray-400">No budget orders found.</td>
+                                    <td colspan="{{ $isAdmin ? 11 : 10 }}" class="px-4 py-8 text-center text-gray-400">No budget orders found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
