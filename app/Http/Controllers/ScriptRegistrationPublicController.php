@@ -41,9 +41,21 @@ class ScriptRegistrationPublicController extends Controller
         ]);
     }
 
+    private const DAILY_SUBMISSION_LIMIT = 10;
+
     public function submit(Request $request, string $token)
     {
         $parent = $this->findParent($token);
+
+        $todayCount = ScriptRegistration::where('unlimited_token_parent_id', $parent->id)
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        if ($todayCount >= self::DAILY_SUBMISSION_LIMIT) {
+            return back()->withInput()->withErrors([
+                'sr_title' => 'Daily registration limit reached. Please try again tomorrow.',
+            ]);
+        }
 
         $data = $request->validate([
             'sr_title'              => 'required|string|max:255',
