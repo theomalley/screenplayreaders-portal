@@ -16,6 +16,7 @@
                         <ul class="list-disc pl-5 space-y-1 text-xs text-gray-500">
                             <li><strong>With an uptime threshold</strong> &mdash; coupon stays active while rolling uptime (last 20 checks) is at or above the threshold; paused when it drops below.</li>
                             <li><strong>Without a threshold</strong> &mdash; coupon is toggled on each individual check (active when up, paused when down).</li>
+                            <li><strong>7-day probation</strong> &mdash; new coupons must meet the threshold continuously for 7 days before activating. If uptime drops below the threshold during probation, the timer resets.</li>
                         </ul>
                         <p class="text-xs text-gray-400 pt-1">Checks run via <code class="bg-gray-100 px-1 rounded">marketing:check-partner-links</code> every 5 min; only sites past their next-check time are processed.</p>
                     </div>
@@ -296,10 +297,16 @@
                                         @php
                                             $uptime   = $siteStat['uptime'] ?? 0;
                                             $thresh   = $site->coupon_uptime_threshold;
-                                            $isActive = $uptime >= $thresh;
+                                            $meetsThreshold = $uptime >= $thresh;
+                                            $probationDays = \App\Http\Controllers\Marketing\PartnerSiteController::COUPON_PROBATION_DAYS;
+                                            $eligible = $site->coupon_eligible_at;
+                                            $probationPassed = $eligible && $eligible->addDays($probationDays)->isPast();
                                         @endphp
-                                        @if($isActive)
+                                        @if($meetsThreshold && $probationPassed)
                                             <span class="block mt-0.5 text-green-600 font-medium">active</span>
+                                        @elseif($meetsThreshold && $eligible)
+                                            <span class="block mt-0.5 text-amber-500 font-medium">probation</span>
+                                            <span class="text-gray-400">activates {{ $eligible->addDays($probationDays)->format('M j') }}</span>
                                         @else
                                             <span class="block mt-0.5 text-red-400 font-medium">paused</span>
                                         @endif

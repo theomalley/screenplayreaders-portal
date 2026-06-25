@@ -245,12 +245,18 @@ class PartnerSiteController extends Controller
     // WooCommerce coupon sync
     // -------------------------------------------------------------------------
 
+    public const COUPON_PROBATION_DAYS = 7;
+
     /**
      * Enable or disable the partner's WooCommerce coupon after each check.
      *
      * If coupon_uptime_threshold is set, the decision uses rolling uptime over the
      * last 20 checks: enabled when uptime% >= threshold, disabled when below.
      * If null, the decision is per-check: enabled only when this check found a backlink.
+     *
+     * New coupons must meet the threshold continuously for 7 days before activating.
+     * coupon_eligible_at tracks when the threshold was first met; it resets if the
+     * threshold drops below. The coupon only enables once the probation period passes.
      */
     private static function syncCouponStatus(PartnerSite $site, bool $isUp): void
     {
@@ -260,13 +266,24 @@ class PartnerSiteController extends Controller
         $threshold = $site->coupon_uptime_threshold; // float|null
 
         if ($threshold !== null) {
-            // Rolling uptime over the last 20 checks (includes the one just recorded).
             $recent  = $site->checks()->orderByDesc('checked_at')->limit(20)->pluck('is_up');
             $total   = $recent->count();
             $uptime  = $total > 0 ? ($recent->filter()->count() / $total) * 100 : 0.0;
-            $enable  = $uptime >= $threshold;
+            $meetsThreshold = $uptime >= $threshold;
         } else {
-            $enable = $isUp;
+            $meetsThreshold = $isUp;
+        }
+
+        if ($meetsThreshold) {
+            if (! $site->coupon_eligible_at) {
+                $site->update(['coupon_eligible_at' => now()]);
+            }
+            $enable = $site->coupon_eligible_at->addDays(self::COUPON_PROBATION_DAYS)->isPast();
+        } else {
+            if ($site->coupon_eligible_at) {
+                $site->update(['coupon_eligible_at' => null]);
+            }
+            $enable = false;
         }
 
         [$storeUrl, $ck, $cs] = self::wcConfig();

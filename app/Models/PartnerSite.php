@@ -12,13 +12,14 @@ class PartnerSite extends Model
 {
     protected $fillable = [
         'name', 'url', 'check_interval_minutes', 'active', 'notes',
-        'coupon_code', 'coupon_uptime_threshold', 'coupon_discount_type', 'coupon_amount',
+        'coupon_code', 'coupon_uptime_threshold', 'coupon_eligible_at', 'coupon_discount_type', 'coupon_amount',
         'next_check_at', 'source', 'contact_email',
     ];
 
     protected $casts = [
         'active'                  => 'boolean',
         'coupon_uptime_threshold' => 'float',
+        'coupon_eligible_at'      => 'datetime',
         'coupon_amount'           => 'float',
         'next_check_at'           => 'datetime',
     ];
