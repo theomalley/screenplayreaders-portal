@@ -45,7 +45,7 @@ class BudgetDeliveryMail extends Mailable
                     [
                         'email' => $this->order->customer_email,
                         'data' => [
-                            'customer_name' => $nameFirst,
+                            'firstname' => $nameFirst,
                             'budget_title' => $title,
                             'pdf_url' => $this->fileUrls['pdf_download_url'] ?? '',
                             'xlsx_url' => $this->fileUrls['xlsx_download_url'] ?? '',
