@@ -39,7 +39,7 @@ class GenerateRegistrationCertificate implements ShouldQueue
             $orderPrefix = $reg->woo_order_number ? $reg->woo_order_number . ' — ' : '';
             $filename = $orderPrefix . 'SR Registration Certificate — ' . $reg->script_title . ' — ' . $reg->registration_id;
 
-            $spacesPath = "certificates/{$reg->registration_id}/{$reg->registration_id}-certificate.pdf";
+            $spacesPath = "registrations/{$reg->registration_id}/{$reg->registration_id}-certificate.pdf";
             $result = $docs->generateCertificatePdf($templateId, $placeholders, $filename, $outputFolderId, $spacesPath);
 
             $reg->update([

@@ -98,7 +98,7 @@ class ScriptRegistrationPublicController extends Controller
         }
 
         $regId = ScriptRegistration::generateRegistrationId();
-        $spacesPath = "registration-scripts/{$regId}/{$regId}.{$ext}";
+        $spacesPath = "registrations/{$regId}/{$regId}.{$ext}";
         app(SpacesStorageService::class)->store($spacesPath, file_get_contents($file->getRealPath()), match ($ext) {
             'pdf' => 'application/pdf',
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

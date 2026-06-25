@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Http;
 class BackfillSpaces extends Command
 {
     protected $signature = 'spaces:backfill
-        {--type=all : budgets, certificates, coverage, scripts, or all}
+        {--type=all : budgets, certificates, coverage, scripts, registration-scripts, or all}
         {--limit=100 : Max records to process per type}
         {--dry-run : Show what would be copied without copying}';
 
@@ -97,7 +97,7 @@ class BackfillSpaces extends Command
         $docs = new GoogleDocsService();
 
         foreach ($regs as $reg) {
-            $path = "certificates/{$reg->registration_id}/{$reg->registration_id}-certificate.pdf";
+            $path = "registrations/{$reg->registration_id}/{$reg->registration_id}-certificate.pdf";
 
             if ($dryRun) {
                 $this->line("  [dry-run] {$reg->registration_id} → {$path}");
@@ -190,7 +190,7 @@ class BackfillSpaces extends Command
 
         foreach ($regs as $reg) {
             $ext = pathinfo($reg->uploaded_file_name ?? $reg->uploaded_file_url, PATHINFO_EXTENSION) ?: 'pdf';
-            $path = "registration-scripts/{$reg->registration_id}/{$reg->registration_id}.{$ext}";
+            $path = "registrations/{$reg->registration_id}/{$reg->registration_id}.{$ext}";
 
             if ($dryRun) {
                 $this->line("  [dry-run] {$reg->registration_id} → {$path}");

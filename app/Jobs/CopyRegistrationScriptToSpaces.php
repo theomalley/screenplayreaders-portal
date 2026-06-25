@@ -45,7 +45,7 @@ class CopyRegistrationScriptToSpaces implements ShouldQueue
         }
 
         $ext = pathinfo($reg->uploaded_file_name ?? $reg->uploaded_file_url, PATHINFO_EXTENSION) ?: 'pdf';
-        $path = "registration-scripts/{$reg->registration_id}/{$reg->registration_id}.{$ext}";
+        $path = "registrations/{$reg->registration_id}/{$reg->registration_id}.{$ext}";
 
         $spaces->store($path, $response->body(), match ($ext) {
             'pdf' => 'application/pdf',
