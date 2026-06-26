@@ -50,6 +50,7 @@ return [
         // Script Registration certificate generation
         'registration_template_id'       => env('GOOGLE_REGISTRATION_TEMPLATE_ID', '1qgeRv6I4HaMP6xozm_0bjyxuJ7kayXk3ZJsd5azNN7Q'),
         'registration_output_folder_id'  => env('GOOGLE_REGISTRATION_OUTPUT_FOLDER_ID', '15Ny6X-HNWMLWW5UUrlC8IFYfBjeM8Zv2'),
+        'order_log_sheet_id'             => env('GOOGLE_ORDER_LOG_SHEET_ID', '1n3e9F-3dITPVDC_CNqg06aJDm1HdUhIY0b6WZ7JRmNE'),
     ],
 
     'portal' => [

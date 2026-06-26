@@ -9,6 +9,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\AppendOrderToSheet;
 use App\Models\EditorProductCommission;
 use App\Models\OrderRevenue;
 use App\Models\User;
@@ -125,6 +126,8 @@ class OrderRevenueController extends Controller
                 $data
             );
             Log::info('OrderRevenue sync OK', ['order_number' => $data['order_number']]);
+
+            AppendOrderToSheet::dispatch($data);
         } catch (\Throwable $e) {
             Log::error('OrderRevenue sync DB error', [
                 'order_number' => $data['order_number'],
