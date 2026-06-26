@@ -158,6 +158,7 @@ class ReaderProfileController extends Controller
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
             'bio'                        => ['nullable', 'string', 'max:5000'],
+            'custom_message'             => ['nullable', 'string', 'max:200'],
         ]);
 
         if ($request->hasFile('photo')) {

@@ -506,6 +506,23 @@
                     </div>
                 </div>
 
+                {{-- Logline (admin override) --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Logline</h2>
+                        <p class="text-sm text-gray-600 -mt-2">A short status line shown when teammates click their staff icon. Clear the field to remove it.</p>
+                        <textarea name="custom_message" rows="2"
+                                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none"
+                                  maxlength="200"
+                                  placeholder="e.g. On holiday until Jan 15">{{ old('custom_message', $profile?->custom_message) }}</textarea>
+                        <p class="text-xs text-gray-400 -mt-2">Plain text only · Max 200 characters</p>
+                        <x-input-error :messages="$errors->get('custom_message')" class="mt-1" />
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Logline</x-primary-button>
+                        </div>
+                    </div>
+                </div>
+
                 @if (!$isEditingReader)
                 {{-- Timezone (editors/admins) --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
