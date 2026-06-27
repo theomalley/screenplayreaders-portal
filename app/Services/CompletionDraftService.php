@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-06-27 | Auto-heal stale conversation IDs: verify stored ID against API before
+//                     drafting; on 404, search by order number and update the record.
 // v1.0 — 2026-06-19 | Extracted from QcController + ArchiveController — shared HelpScout
 //                     completion draft builder with optional manual ticket fallback.
 
@@ -84,6 +86,31 @@ class CompletionDraftService
 
         $conversationId = $record->helpscout_conversation_id;
         $helpScout      = new HelpScoutService();
+
+        // Verify the stored conversation ID still exists — it may have been
+        // deleted or merged in HelpScout since Zapier stored it.
+        if (! $helpScout->conversationExists($conversationId)) {
+            Log::warning('HelpScout stored conversation ID is stale, searching by order number', [
+                'order_number'       => $orderNumber,
+                'stale_id'           => $conversationId,
+            ]);
+
+            $resolved = $helpScout->findConversationIdByOrderNumber($orderNumber);
+            if (! $resolved) {
+                throw new \RuntimeException(
+                    "Stored HelpScout conversation #{$conversationId} no longer exists and no replacement was found for order #{$orderNumber}."
+                );
+            }
+
+            $record->update(['helpscout_conversation_id' => $resolved]);
+            $conversationId = $resolved;
+
+            Log::info('HelpScout conversation ID auto-healed', [
+                'order_number' => $orderNumber,
+                'old_id'       => $record->getOriginal('helpscout_conversation_id'),
+                'new_id'       => $conversationId,
+            ]);
+        }
 
         try {
             $discountCode = $assignments[0]->woo_discount_code

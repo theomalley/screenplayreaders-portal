@@ -1,5 +1,6 @@
 <?php
 
+// v1.9 — 2026-06-27 | findConversationIdByOrderNumber: subject-line search fallback for stale/deleted conversation IDs
 // v1.8 — 2026-06-24 | findConversationIdByTicketNumber: fall back to direct ID fetch when number search fails
 // v1.7 — 2026-06-15 | createDraftReply: reopen (set status active) closed conversations before drafting
 // v1.6 — 2026-06-02 | createDirectReaderDraft — new outgoing draft addressed to a single reader
@@ -272,6 +273,44 @@ class HelpScoutService
     }
 
     /**
+     * Search HelpScout conversations by order number in the subject line.
+     * Returns the conversation ID if exactly one match is found, null otherwise.
+     */
+    public function findConversationIdByOrderNumber(string $orderNumber): ?string
+    {
+        $token    = $this->getToken();
+        $response = Http::withToken($token)
+            ->get(self::API_BASE . '/conversations', [
+                'query'  => $orderNumber,
+                'status' => 'all',
+            ]);
+
+        if (! $response->ok()) {
+            Log::warning('HelpScout order number search failed', [
+                'order_number' => $orderNumber,
+                'status'       => $response->status(),
+            ]);
+            return null;
+        }
+
+        $conversations = $response->json('_embedded.conversations') ?? [];
+
+        foreach ($conversations as $conv) {
+            $subject = $conv['subject'] ?? '';
+            if (str_contains($subject, $orderNumber)) {
+                Log::info('HelpScout: found conversation by order number search', [
+                    'order_number'    => $orderNumber,
+                    'conversation_id' => $conv['id'],
+                    'subject'         => $subject,
+                ]);
+                return (string) $conv['id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Substitute HelpScout template variables ({%customer.firstName,fallback=X%} etc.)
      * using live customer data from the conversation.
      */
@@ -316,6 +355,15 @@ class HelpScoutService
         }
 
         return $response->json() ?? [];
+    }
+
+    public function conversationExists(string $conversationId): bool
+    {
+        $token    = $this->getToken();
+        $response = Http::withToken($token)
+            ->get(self::API_BASE . "/conversations/{$conversationId}");
+
+        return $response->ok();
     }
 
     private function fetchConversation(string $conversationId, string $token): array
