@@ -45,7 +45,7 @@ class PayrollController extends Controller
 
         $schedule   = Setting::getPayoutSchedule();
         $nextPayout = PayPeriod::nextPayoutDate();
-        $periodEnd  = PayPeriod::current()[1];
+        $periodEnd  = PayPeriod::bounds(PayPeriod::current()[0]->copy()->subDay())[1];
 
         [$byReader, $readerPay1099, $readerPayNon1099] = $this->unpaidReaderSummary();
         [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed] = $this->unpaidEditorSummary();
