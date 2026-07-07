@@ -307,8 +307,9 @@
                         </div>
                     </div>
 
-                    {{-- Invoice (only show if no invoice already exists for this assignment) --}}
-                    @if(\App\Models\Client::count() > 0 && $assignment->invoices->isEmpty())
+                    {{-- Invoice (only show if no non-voided invoice already exists for this assignment) --}}
+                    @php $activeInvoices = $assignment->invoices->where('status', '!=', 'void'); @endphp
+                    @if(\App\Models\Client::count() > 0 && $activeInvoices->isEmpty())
                     <div class="pb-4 border-b border-gray-100">
                         <div class="flex items-center gap-3">
                             <input type="hidden" name="create_invoice" value="0">
@@ -350,9 +351,9 @@
                             </p>
                         </div>
                     </div>
-                    @elseif($assignment->invoices->isNotEmpty())
+                    @elseif($activeInvoices->isNotEmpty())
                     <div class="pb-4 border-b border-gray-100 text-xs text-gray-400">
-                        Invoice #{{ $assignment->invoices->first()->invoice_number }} already generated for this assignment.
+                        Invoice #{{ $activeInvoices->first()->invoice_number }} already generated for this assignment.
                     </div>
                     @endif
 
