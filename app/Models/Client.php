@@ -25,6 +25,13 @@ class Client extends Model
         'stripe_customer_id',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'batch_invoicing' => 'boolean',
+        ];
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class)->orderByDesc('created_at');

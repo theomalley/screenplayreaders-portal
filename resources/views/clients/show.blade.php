@@ -9,7 +9,9 @@
                 </a>
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $client->name }}</h2>
                 <span class="font-mono text-xs text-gray-400">{{ $client->code }}</span>
-                @if($client->invoice_type === 'stripe')
+                @if($client->batch_invoicing)
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Batch (PDF)</span>
+                @elseif($client->invoice_type === 'stripe')
                     <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Stripe</span>
                 @else
                     <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">PDF</span>

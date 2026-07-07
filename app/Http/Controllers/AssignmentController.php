@@ -1393,10 +1393,15 @@ class AssignmentController extends Controller
         // Link client to assignment
         $assignment->update(['client_id' => $clientId]);
         $assignment->refresh();
-        $assignment->load('invoices');
 
-        // Don't double-invoice
-        if ($assignment->invoices->isNotEmpty()) {
+        // Don't double-invoice — check line items directly, since a batch client's
+        // invoice never carries the assignment_id at the top level (only its line items do).
+        // Voided invoices are ignored so a corrected invoice can be regenerated.
+        $alreadyInvoiced = \App\Models\InvoiceLineItem::where('assignment_id', $assignment->id)
+            ->whereHas('invoice', fn ($q) => $q->where('status', '!=', 'void'))
+            ->exists();
+
+        if ($alreadyInvoiced) {
             return '';
         }
 
