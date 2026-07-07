@@ -1,5 +1,7 @@
 <?php
 
+// v2.2 — 2026-07-07 | Restore batch invoicing — clients flagged batch_invoicing accumulate
+//                      line items on an open draft (always PDF, never Stripe) until sent manually
 // v2.1 — 2026-06-02 | PDF invoices stored in portal_invoices Drive folder; MailerSend delivery for standalone PDF invoices
 // v2.0 — 2026-06-02 | Remove batch invoicing; all invoices now take array of line items and send immediately
 // v1.6 — 2026-05-26 | Add generateForCustomer(): direct Stripe + optional HelpScout draft for ad-hoc customer invoices
@@ -30,10 +32,13 @@ class InvoiceService
     ) {}
 
     /**
-     * Generate and immediately send an invoice for a client.
+     * Generate an invoice for a client, optionally tied to an assignment.
      *
      * $lineItems — array of ['description' => string, 'amount' => float], up to 8 items.
-     * The invoice is sent straight away (Stripe or PDF) regardless of client settings.
+     *
+     * Batch clients (client->batch_invoicing): line items are appended to an open
+     * draft invoice instead — nothing is sent until sendBatch() is called manually.
+     * Standard clients: the invoice is sent straight away (Stripe or PDF).
      */
     public function generate(
         Client      $client,
@@ -44,6 +49,10 @@ class InvoiceService
     ): Invoice {
         if (empty($lineItems)) {
             throw new RuntimeException('At least one line item is required.');
+        }
+
+        if ($client->batch_invoicing) {
+            return $this->addToBatchInvoice($client, $lineItems, $assignment, $notes, $dueDate);
         }
 
         $client->increment('last_invoice_number');
@@ -168,6 +177,80 @@ class InvoiceService
         }
 
         return $invoice->fresh();
+    }
+
+    // -------------------------------------------------------------------------
+    // Batch invoicing
+    // -------------------------------------------------------------------------
+
+    /**
+     * Append line items to the client's open batch draft, creating one if none
+     * exists. Batch invoices are always PDF — they never touch Stripe.
+     */
+    private function addToBatchInvoice(
+        Client      $client,
+        array       $lineItems,
+        ?Assignment $assignment,
+        ?string     $notes,
+        ?string     $dueDate,
+    ): Invoice {
+        $invoice = Invoice::where('client_id', $client->id)
+            ->where('status', 'draft')
+            ->first();
+
+        if (! $invoice) {
+            $client->increment('last_invoice_number');
+            $client->refresh();
+
+            $invoice = Invoice::create([
+                'client_id'      => $client->id,
+                'invoice_number' => (string) $client->last_invoice_number,
+                'description'    => 'Batch invoice',
+                'amount'         => 0,
+                'status'         => 'draft',
+                'invoice_type'   => 'pdf',
+                'notes'          => $notes,
+                'due_date'       => $dueDate,
+                'issued_at'      => now(),
+            ]);
+        }
+
+        foreach ($lineItems as $item) {
+            InvoiceLineItem::create([
+                'invoice_id'    => $invoice->id,
+                'assignment_id' => $assignment?->id,
+                'description'   => $item['description'],
+                'amount'        => $item['amount'],
+            ]);
+        }
+
+        $invoice->update(['amount' => $invoice->lineItems()->sum('amount')]);
+
+        return $invoice->fresh();
+    }
+
+    /**
+     * Manually send an accumulated batch draft invoice. Always PDF — batch
+     * clients never get a Stripe invoice.
+     */
+    public function sendBatch(Invoice $invoice): void
+    {
+        $client    = $invoice->client;
+        $lineItems = $invoice->lineItems()->with('assignment')->get();
+
+        if ($lineItems->isEmpty()) {
+            throw new RuntimeException('Cannot send an invoice with no line items.');
+        }
+
+        $lineItemsData = $lineItems->map(fn ($item) => [
+            'description' => $item->description,
+            'amount'      => (float) $item->amount,
+        ])->all();
+
+        // Use the first line item's assignment for the Help Scout draft, if available.
+        $primaryAssignment = $lineItems->first()?->assignment;
+
+        $this->sendPdf($invoice, $client, $lineItemsData, $primaryAssignment);
     }
 
     // -------------------------------------------------------------------------

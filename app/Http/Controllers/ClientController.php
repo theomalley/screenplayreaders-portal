@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-07-07 | Restore batch_invoicing field to validate()
 // v1.2 — 2026-06-02 | Remove batch invoicing — clean up show() and validate()
 // v1.0 — 2026-05-26 | Client management — CRUD for invoicing clients
 
@@ -100,6 +101,7 @@ class ClientController extends Controller
             'notes'               => 'nullable|string',
             'last_invoice_number' => 'required|integer|min:0',
             'invoice_type'        => 'required|in:pdf,stripe',
+            'batch_invoicing'     => 'boolean',
         ]);
     }
 }

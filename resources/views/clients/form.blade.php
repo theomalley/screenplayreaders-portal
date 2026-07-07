@@ -123,8 +123,21 @@
                 </div>
 
                 {{-- INVOICING SETTINGS --}}
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4 mt-4">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4 mt-4"
+                     x-data="{ batch: {{ old('batch_invoicing', $client?->batch_invoicing) ? 'true' : 'false' }} }">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoicing Settings</p>
+
+                    <div class="flex items-start gap-2">
+                        <input type="hidden" name="batch_invoicing" value="0">
+                        <input type="checkbox" id="batch_invoicing" name="batch_invoicing" value="1"
+                               x-model="batch"
+                               {{ old('batch_invoicing', $client?->batch_invoicing) ? 'checked' : '' }}
+                               class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        <div>
+                            <label for="batch_invoicing" class="text-sm font-medium text-gray-700 cursor-pointer">Batch invoicing</label>
+                            <p class="text-xs text-gray-400">Invoices for this client accumulate as a draft (PDF only, never Stripe) until sent manually from the Invoicing tab.</p>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -134,6 +147,7 @@
                                 <option value="stripe" {{ old('invoice_type', $client?->invoice_type ?? 'stripe') === 'stripe' ? 'selected' : '' }}>Stripe (email invoice)</option>
                                 <option value="pdf"    {{ old('invoice_type', $client?->invoice_type) === 'pdf'    ? 'selected' : '' }}>PDF (Google Docs → Help Scout draft)</option>
                             </select>
+                            <p class="mt-1 text-xs text-gray-400" x-show="batch">Batch clients always invoice via PDF.</p>
                             <x-input-error :messages="$errors->get('invoice_type')" class="mt-1" />
                         </div>
                         <div>

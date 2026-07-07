@@ -40,7 +40,9 @@
                                 <td class="px-4 py-3 font-mono text-gray-600 text-xs">{{ $client->code }}</td>
                                 <td class="px-4 py-3 text-gray-600">{{ $client->email ?? '—' }}</td>
                                 <td class="px-4 py-3 text-center">
-                                    @if($client->invoice_type === 'stripe')
+                                    @if($client->batch_invoicing)
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Batch (PDF)</span>
+                                    @elseif($client->invoice_type === 'stripe')
                                         <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Stripe</span>
                                     @else
                                         <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">PDF</span>

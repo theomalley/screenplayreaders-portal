@@ -1,5 +1,6 @@
 <?php
 
+// v2.3 — 2026-07-07 | Add send() — manually send an accumulated batch draft invoice
 // v2.2 — 2026-06-03 | Add markOutstanding() — revert a paid PDF invoice back to sent/outstanding
 // v2.1 — 2026-06-02 | Add edit(), update(), downloadPdf() — edit/regenerate and download for PDF invoices
 // v2.0 — 2026-06-02 | Remove batch invoicing; store() accepts up to 8 line items and sends immediately
@@ -163,6 +164,24 @@ class InvoiceController extends Controller
             lineItems:  [['description' => $description, 'amount' => $amount]],
             assignment: $assignment,
         );
+    }
+
+    /**
+     * Manually send an accumulated batch draft invoice (PDF only).
+     */
+    public function send(Invoice $invoice)
+    {
+        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        abort_unless($invoice->status === 'draft', 403);
+
+        try {
+            $this->invoiceService->sendBatch($invoice->fresh());
+        } catch (\Throwable $e) {
+            return back()->withErrors(['invoice' => 'Send failed: ' . $e->getMessage()]);
+        }
+
+        return redirect()->route('invoicing.index')
+            ->with('success', "Invoice #{$invoice->invoice_number} sent.");
     }
 
     /**
