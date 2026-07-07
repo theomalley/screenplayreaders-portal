@@ -1403,8 +1403,7 @@ class AssignmentController extends Controller
         try {
             $invoice = app(InvoiceService::class)->generate(
                 client:     $client,
-                description: $this->buildInvoiceDescription($assignment),
-                amount:     $amount,
+                lineItems:  [['description' => $this->buildInvoiceDescription($assignment), 'amount' => $amount]],
                 assignment: $assignment,
             );
             return " Invoice #{$invoice->invoice_number} generated.";
