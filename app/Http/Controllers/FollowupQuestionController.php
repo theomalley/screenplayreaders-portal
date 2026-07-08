@@ -65,6 +65,24 @@ class FollowupQuestionController extends Controller
         return back()->with('success', $message);
     }
 
+    /** Admin/editor: regenerate the HelpScout draft for an already-answered followup. */
+    public function regenerateDraft(FollowupQuestion $followup): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless((bool) $followup->reader_response, 422);
+
+        $drafted = $this->createHelpScoutDraft($followup);
+
+        $message = match(true) {
+            $drafted === true        => 'HelpScout draft regenerated.',
+            $drafted === 'no_ticket' => 'No HelpScout ticket number on this assignment.',
+            $drafted === 'not_found' => 'HelpScout ticket not found — check the ticket number.',
+            default                  => 'HelpScout draft regeneration failed: ' . $drafted,
+        };
+
+        return back()->with($drafted === true ? 'success' : 'error', $message);
+    }
+
     /** Admin only: delete an entire followup round (token + all its questions). */
     public function destroyToken(FollowupToken $followupToken): RedirectResponse
     {

@@ -210,6 +210,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/followups/{followup}',          [FollowupQuestionController::class, 'update'])->name('followups.update');
     Route::delete('/followups/{followup}',         [FollowupQuestionController::class, 'destroy'])->name('followups.destroy');
     Route::post('/followups/{followup}/complete',  [FollowupQuestionController::class, 'complete'])->name('followups.complete');
+    Route::post('/followups/{followup}/regenerate-draft', [FollowupQuestionController::class, 'regenerateDraft'])->name('followups.regenerate-draft');
     // Reader response
     Route::post('/followups/{followup}/respond',   [FollowupQuestionController::class, 'respond'])->name('followups.respond');
 

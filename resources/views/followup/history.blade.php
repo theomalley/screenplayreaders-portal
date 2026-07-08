@@ -21,6 +21,17 @@
     <div class="py-6">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
+            @if (session('success'))
+                <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded px-4 py-2">
+                    {{ session('success') }}
+                </div>
+            @endif
+            @if (session('error'))
+                <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-2">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             @foreach ($tokens as $round => $token)
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
 
@@ -127,6 +138,12 @@
                                                 <div class="text-sm text-gray-700 whitespace-pre-wrap bg-green-50 border border-green-200 rounded px-3 py-2">{{ $fq->edited_response }}</div>
                                             </div>
                                         @endif
+                                        <form method="POST" action="{{ route('followups.regenerate-draft', $fq) }}" class="mt-2">
+                                            @csrf
+                                            <button type="submit" class="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                                                Regenerate HelpScout Draft
+                                            </button>
+                                        </form>
                                     </div>
                                 @endif
 
