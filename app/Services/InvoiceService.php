@@ -1,5 +1,13 @@
 <?php
 
+// v2.3 — 2026-07-08 | BUG FIX: HelpScout delivery only ever checked the manual
+//                      helpscout_ticket_number field, which is never auto-populated —
+//                      so invoices for normally-created assignments always skipped
+//                      HelpScout and went straight to MailerSend. Added
+//                      resolveConversationId() which checks the auto-populated
+//                      helpscoutConversation relation first (mirrors
+//                      CompletionDraftService::buildDraft()), falling back to the
+//                      manual ticket field, before ever falling back to MailerSend.
 // v2.2 — 2026-07-07 | Restore batch invoicing — clients flagged batch_invoicing accumulate
 //                      line items on an open draft (always PDF, never Stripe) until sent manually
 // v2.1 — 2026-06-02 | PDF invoices stored in portal_invoices Drive folder; MailerSend delivery for standalone PDF invoices
@@ -283,24 +291,38 @@ class InvoiceService
             'stripe_invoice_url' => $result['hosted_invoice_url'],
         ]);
 
-        if ($assignment?->helpscout_ticket_number) {
-            $this->postStripeHelpScoutReply($invoice, $assignment, $result['hosted_invoice_url']);
+        $conversationId = $this->resolveConversationId($assignment);
+        if ($conversationId) {
+            $this->postStripeHelpScoutReply($invoice, $conversationId, $result['hosted_invoice_url']);
         }
     }
 
-    private function postStripeHelpScoutReply(Invoice $invoice, Assignment $assignment, string $invoiceUrl): void
+    /**
+     * Resolve a HelpScout conversation ID for an assignment. Checks the
+     * auto-populated helpscoutConversation relation (stamped by Zapier via
+     * order_number when the ticket was first created) before falling back to
+     * the manual helpscout_ticket_number field an admin may have typed in.
+     * Mirrors the resolution order in CompletionDraftService::buildDraft().
+     */
+    private function resolveConversationId(?Assignment $assignment): ?string
     {
-        $conversationId = $this->helpscout->findConversationIdByTicketNumber(
-            (string) $assignment->helpscout_ticket_number
-        );
-
-        if (! $conversationId) {
-            Log::warning('InvoiceService: Help Scout conversation not found', [
-                'ticket' => $assignment->helpscout_ticket_number,
-            ]);
-            return;
+        if (! $assignment) {
+            return null;
         }
 
+        $conversationId = $assignment->helpscoutConversation?->helpscout_conversation_id;
+
+        if (! $conversationId && $assignment->helpscout_ticket_number) {
+            $conversationId = $this->helpscout->findConversationIdByTicketNumber(
+                (string) $assignment->helpscout_ticket_number
+            );
+        }
+
+        return $conversationId;
+    }
+
+    private function postStripeHelpScoutReply(Invoice $invoice, string $conversationId, string $invoiceUrl): void
+    {
         $invoice->update(['helpscout_conversation_id' => $conversationId]);
 
         $html = '<p>Hi,</p>'
@@ -330,11 +352,12 @@ class InvoiceService
 
         $pdfBytes = $this->docs->exportDocToPdfBytes($docId);
 
-        // Deliver via HelpScout if there's an associated assignment ticket
-        if ($assignment?->helpscout_ticket_number) {
-            $this->postPdfHelpScoutDraft($invoice, $assignment, $pdfBytes, $filename, $emailBody);
+        // Deliver via HelpScout if a conversation can be resolved for the assignment
+        $conversationId = $this->resolveConversationId($assignment);
+        if ($conversationId) {
+            $this->postPdfHelpScoutDraft($invoice, $conversationId, $pdfBytes, $filename, $emailBody);
         } elseif ($client->email) {
-            // Standalone invoice — deliver via MailerSend
+            // No HelpScout conversation on record — deliver via MailerSend
             $this->sendPdfByMailerSend($invoice, $client, $pdfBytes, $filename);
         }
 
@@ -483,23 +506,12 @@ class InvoiceService
     }
 
     private function postPdfHelpScoutDraft(
-        Invoice    $invoice,
-        Assignment $assignment,
-        string     $pdfBytes,
-        string     $filename,
-        string     $emailBody
+        Invoice $invoice,
+        string  $conversationId,
+        string  $pdfBytes,
+        string  $filename,
+        string  $emailBody
     ): void {
-        $conversationId = $this->helpscout->findConversationIdByTicketNumber(
-            (string) $assignment->helpscout_ticket_number
-        );
-
-        if (! $conversationId) {
-            Log::warning('InvoiceService: Help Scout conversation not found', [
-                'ticket' => $assignment->helpscout_ticket_number,
-            ]);
-            return;
-        }
-
         $invoice->update(['helpscout_conversation_id' => $conversationId]);
 
         $html = $emailBody ?: '<p>Please find your invoice attached.</p>';
