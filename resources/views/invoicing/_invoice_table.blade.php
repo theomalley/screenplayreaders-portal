@@ -58,25 +58,31 @@ $statusColors = [
                     <div class="flex items-center justify-end gap-3">
                     @if($invoice->status === 'paid')
                         @if($invoice->invoice_type === 'pdf' && $invoice->google_doc_id)
-                            <div class="relative" x-data="{ open: false }">
-                                <button type="button" @click="open = !open" @click.outside="open = false"
+                            <div x-data="{ open: false, top: 0, left: 0 }">
+                                <button type="button" x-ref="pdfBtn"
+                                        @click="const r = $refs.pdfBtn.getBoundingClientRect(); top = r.bottom + 4; left = r.right - 144; open = !open"
                                         class="text-indigo-600 hover:underline flex items-center gap-0.5">
                                     PDF <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
-                                <div x-show="open" x-cloak
-                                     class="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-10 py-1 text-left">
-                                    <a href="{{ route('invoices.edit', $invoice) }}"
-                                       class="block px-3 py-1.5 text-indigo-600 hover:bg-gray-50">Edit</a>
-                                    <a href="{{ route('invoices.pdf', $invoice) }}?view=1" target="_blank"
-                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">View PDF</a>
-                                    <a href="{{ route('invoices.pdf', $invoice) }}"
-                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">Download</a>
-                                    <form method="POST" action="{{ route('invoices.resend', $invoice) }}"
-                                          onsubmit="return confirm('Resend to {{ $invoice->client?->email }}?')">
-                                        @csrf
-                                        <button type="submit" class="w-full text-left px-3 py-1.5 text-amber-600 hover:bg-gray-50">Resend</button>
-                                    </form>
-                                </div>
+                                {{-- Teleported to <body> so the menu isn't clipped by the table's overflow-x-auto wrapper --}}
+                                <template x-teleport="body">
+                                    <div x-show="open" x-cloak
+                                         @click.outside="if (!$refs.pdfBtn.contains($event.target)) open = false"
+                                         :style="`position: fixed; top: ${top}px; left: ${left}px;`"
+                                         class="w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-left">
+                                        <a href="{{ route('invoices.edit', $invoice) }}"
+                                           class="block px-3 py-1.5 text-indigo-600 hover:bg-gray-50">Edit</a>
+                                        <a href="{{ route('invoices.pdf', $invoice) }}?view=1" target="_blank"
+                                           class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">View PDF</a>
+                                        <a href="{{ route('invoices.pdf', $invoice) }}"
+                                           class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">Download</a>
+                                        <form method="POST" action="{{ route('invoices.resend', $invoice) }}"
+                                              onsubmit="return confirm('Resend to {{ $invoice->client?->email }}?')">
+                                            @csrf
+                                            <button type="submit" class="w-full text-left px-3 py-1.5 text-amber-600 hover:bg-gray-50">Resend</button>
+                                        </form>
+                                    </div>
+                                </template>
                             </div>
                         @endif
                         <form method="POST" action="{{ route('invoices.destroy', $invoice) }}"
@@ -99,25 +105,31 @@ $statusColors = [
                     @elseif($invoice->status !== 'void')
                         @if($invoice->invoice_type === 'pdf' && $invoice->google_doc_id)
                             {{-- PDF actions in a small dropdown --}}
-                            <div class="relative" x-data="{ open: false }">
-                                <button type="button" @click="open = !open" @click.outside="open = false"
+                            <div x-data="{ open: false, top: 0, left: 0 }">
+                                <button type="button" x-ref="pdfBtn"
+                                        @click="const r = $refs.pdfBtn.getBoundingClientRect(); top = r.bottom + 4; left = r.right - 144; open = !open"
                                         class="text-indigo-600 hover:underline flex items-center gap-0.5">
                                     PDF <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                                 </button>
-                                <div x-show="open" x-cloak
-                                     class="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded shadow-lg z-10 py-1 text-left">
-                                    <a href="{{ route('invoices.edit', $invoice) }}"
-                                       class="block px-3 py-1.5 text-indigo-600 hover:bg-gray-50">Edit</a>
-                                    <a href="{{ route('invoices.pdf', $invoice) }}?view=1" target="_blank"
-                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">View PDF</a>
-                                    <a href="{{ route('invoices.pdf', $invoice) }}"
-                                       class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">Download</a>
-                                    <form method="POST" action="{{ route('invoices.resend', $invoice) }}"
-                                          onsubmit="return confirm('Resend to {{ $invoice->client?->email }}?')">
-                                        @csrf
-                                        <button type="submit" class="w-full text-left px-3 py-1.5 text-amber-600 hover:bg-gray-50">Resend</button>
-                                    </form>
-                                </div>
+                                {{-- Teleported to <body> so the menu isn't clipped by the table's overflow-x-auto wrapper --}}
+                                <template x-teleport="body">
+                                    <div x-show="open" x-cloak
+                                         @click.outside="if (!$refs.pdfBtn.contains($event.target)) open = false"
+                                         :style="`position: fixed; top: ${top}px; left: ${left}px;`"
+                                         class="w-36 bg-white border border-gray-200 rounded shadow-lg z-50 py-1 text-left">
+                                        <a href="{{ route('invoices.edit', $invoice) }}"
+                                           class="block px-3 py-1.5 text-indigo-600 hover:bg-gray-50">Edit</a>
+                                        <a href="{{ route('invoices.pdf', $invoice) }}?view=1" target="_blank"
+                                           class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">View PDF</a>
+                                        <a href="{{ route('invoices.pdf', $invoice) }}"
+                                           class="block px-3 py-1.5 text-gray-600 hover:bg-gray-50">Download</a>
+                                        <form method="POST" action="{{ route('invoices.resend', $invoice) }}"
+                                              onsubmit="return confirm('Resend to {{ $invoice->client?->email }}?')">
+                                            @csrf
+                                            <button type="submit" class="w-full text-left px-3 py-1.5 text-amber-600 hover:bg-gray-50">Resend</button>
+                                        </form>
+                                    </div>
+                                </template>
                             </div>
                         @endif
                         <form method="POST" action="{{ route('invoices.mark-paid', $invoice) }}">
