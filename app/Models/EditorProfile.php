@@ -1,5 +1,6 @@
 <?php
 
+// v1.10 — 2026-07-08 | Add is_1099 to fillable/casts
 // v1.9 — 2026-06-05 | Add about_photo_pending and about_photo_rejection_note fields
 // v1.8 — 2026-06-04 | Add about_photo for main website About page
 // v1.7 — 2026-06-03 | Add custom_message to fillable
@@ -33,6 +34,7 @@ class EditorProfile extends Model
         'photo_pending',
         'photo_rejection_note',
         'paypal_email',
+        'is_1099',
         'availability',
         'availability_message',
         'upload_warning',
@@ -47,6 +49,7 @@ class EditorProfile extends Model
     protected $casts = [
         'editor_commission'  => 'float',
         'editor_weekly_flat' => 'float',
+        'is_1099'            => 'boolean',
     ];
 
     public function user(): BelongsTo

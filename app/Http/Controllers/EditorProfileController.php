@@ -1,5 +1,6 @@
 <?php
 
+// v1.13 — 2026-07-08 | Save is_1099 flag when admin edits editor profile
 // v1.12 — 2026-06-23 | Save is_test flag on user when admin edits editor profile
 // v1.11 — 2026-06-23 | Role change (editor→reader) preserves all shared profile data; removed duplicate role-change block
 // v1.10 — 2026-06-12 | Sanitize bio on save: HTML allowlist for admins, plain text for everyone else
@@ -190,6 +191,8 @@ class EditorProfileController extends Controller
             $userUpdate['is_test'] = (bool) $request->input('is_test');
         }
         $user->update($userUpdate);
+
+        $data['is_1099'] = $request->boolean('is_1099');
 
         $user->editorProfile()->updateOrCreate(
             ['user_id' => $user->id],

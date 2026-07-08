@@ -15,6 +15,9 @@
                     @endif
                 </a>
                 <span class="font-semibold text-gray-800">{{ $rd['reader_name'] }}</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold {{ $rd['is_1099'] ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500' }}">
+                    {{ $rd['is_1099'] ? '1099' : 'Non-1099' }}
+                </span>
                 @php $paymentId = strtoupper($rd['initials']) . $periodEnd->format('Ymd'); @endphp
                 <span x-data="{ copied: false }"
                       class="inline-flex items-center gap-1 cursor-pointer select-all"

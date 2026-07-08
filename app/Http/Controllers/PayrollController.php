@@ -1,5 +1,6 @@
 <?php
 
+// v2.3 — 2026-07-08 | Fold editor pay into the 1099/non-1099 totals based on editor's own is_1099 flag
 // v2.2 — 2026-06-23 | Auto-include editor flat rate as line item at end of pay period
 // v2.1 — 2026-06-11 | Pass periodEnd (last day of current pay period) for PayPal payment ID
 // v2.0 — 2026-06-11 | Consolidate Reader Pay + Editor Pay into Payroll: owed-so-far summary, unified searchable/sortable payment history
@@ -48,13 +49,12 @@ class PayrollController extends Controller
         $periodEnd  = PayPeriod::bounds(PayPeriod::current()[0]->copy()->subDay())[1];
 
         [$byReader, $readerPay1099, $readerPayNon1099] = $this->unpaidReaderSummary();
-        [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed] = $this->unpaidEditorSummary();
+        [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed, $editorIs1099] = $this->unpaidEditorSummary();
 
         $currentPeriod = [
             'label'        => PayPeriod::label(PayPeriod::current()[0]),
-            'pay_1099'     => $readerPay1099,
-            'pay_non_1099' => $readerPayNon1099,
-            'editor_pay'   => $totalOwed,
+            'pay_1099'     => $readerPay1099 + ($editorIs1099 ? $totalOwed : 0),
+            'pay_non_1099' => $readerPayNon1099 + ($editorIs1099 ? 0 : $totalOwed),
             'total'        => $readerPay1099 + $readerPayNon1099 + $totalOwed,
         ];
 
@@ -215,8 +215,9 @@ class PayrollController extends Controller
         $periodFlatRate = round($weeklyFlat * $periodWeeks, 2);
 
         $totalOwed = round($orderTotal + $adjustmentTotal + $periodFlatRate, 2);
+        $editorIs1099 = (bool) ($editor?->editorProfile?->is_1099 ?? false);
 
-        return [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed];
+        return [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed, $editorIs1099];
     }
 
     private function buildPaidLineItems(): array

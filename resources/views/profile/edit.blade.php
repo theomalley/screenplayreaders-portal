@@ -673,6 +673,12 @@
                             <x-text-input id="paypal_email" name="paypal_email" type="email" class="mt-1 block w-full"
                                 value="{{ old('paypal_email', $profile?->paypal_email) }}" placeholder="optional" />
                             <x-input-error :messages="$errors->get('paypal_email')" class="mt-1" />
+                            <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                <input type="checkbox" name="is_1099" value="1"
+                                    {{ old('is_1099', $profile?->is_1099) ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                <span class="text-sm text-gray-600">1099 contractor</span>
+                            </label>
                         </div>
                         <div class="flex justify-end">
                             <x-primary-button>Save Pay</x-primary-button>

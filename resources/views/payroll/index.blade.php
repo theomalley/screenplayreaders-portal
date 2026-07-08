@@ -27,9 +27,8 @@
                 <div>
                     <div class="text-xs font-semibold uppercase tracking-wide opacity-75">Current Pay Period — {{ $currentPeriod['label'] }}</div>
                     <div class="mt-1 flex flex-wrap items-center gap-4 text-sm opacity-90">
-                        <span>Reader Pay (1099): <strong>${{ number_format($currentPeriod['pay_1099'], 2) }}</strong></span>
-                        <span>Reader Pay (Non-1099): <strong>${{ number_format($currentPeriod['pay_non_1099'], 2) }}</strong></span>
-                        <span>Editor Pay: <strong>${{ number_format($currentPeriod['editor_pay'], 2) }}</strong></span>
+                        <span>1099 Pay: <strong>${{ number_format($currentPeriod['pay_1099'], 2) }}</strong></span>
+                        <span>Non-1099 Pay: <strong>${{ number_format($currentPeriod['pay_non_1099'], 2) }}</strong></span>
                     </div>
                     <div class="mt-1 text-xs opacity-75">
                         Next payout: {{ $nextPayout->format('D M j') }} at {{ $nextPayout->format('g:i A') }} PT
