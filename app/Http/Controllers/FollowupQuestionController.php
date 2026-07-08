@@ -187,6 +187,7 @@ class FollowupQuestionController extends Controller
             $html = str_replace('{{reader_initials}}', e($initials), $html);
             $html = str_replace('{{script_title}}', e($scriptTitle), $html);
             $html = str_replace('{{reader_response}}', $response, $html);
+            $html = $service->resolveBodyVariables($html, $conversationId);
 
             $service->createDraftReply($conversationId, $html);
             return true;
