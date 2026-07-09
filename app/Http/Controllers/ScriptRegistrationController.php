@@ -47,11 +47,21 @@ class ScriptRegistrationController extends Controller
 
         $registrations = $query->paginate(25)->withQueryString();
 
+        // Built from variations that actually occur, not the legacy hardcoded 4-ID map —
+        // so a variation added via the theme's SR Registration Form Config tool shows up
+        // here as soon as an order using it has come through.
+        $variationOptions = ScriptRegistration::query()
+            ->select('variation_id', 'variation_label')
+            ->distinct()
+            ->orderBy('variation_label')
+            ->get();
+
         return view('script-registrations.index', [
-            'registrations' => $registrations,
-            'q'             => $q,
-            'status'        => $status,
-            'variation'     => $variation,
+            'registrations'    => $registrations,
+            'q'                => $q,
+            'status'           => $status,
+            'variation'        => $variation,
+            'variationOptions' => $variationOptions,
         ]);
     }
 

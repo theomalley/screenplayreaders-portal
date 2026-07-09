@@ -39,8 +39,8 @@
                     <select name="variation" onchange="document.getElementById('variation-form').submit()"
                         class="h-9 rounded-md border-gray-300 shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="all" @selected($variation === 'all')>All Variations</option>
-                        @foreach(\App\Models\ScriptRegistration::VARIATION_LABELS as $id => $label)
-                            <option value="{{ $id }}" @selected($variation == $id)>{{ $label }}</option>
+                        @foreach($variationOptions as $opt)
+                            <option value="{{ $opt->variation_id }}" @selected($variation == $opt->variation_id)>{{ $opt->variation_label }}</option>
                         @endforeach
                     </select>
                 </form>

@@ -1,5 +1,12 @@
 <?php
 
+// v1.1 — 2026-07-09 | variation_label and "never expires" now prefer the theme's
+//                      sr_registration_variation_label / sr_registration_never_expires
+//                      payload fields (set from its admin-configurable term length),
+//                      falling back to the legacy hardcoded VAR_* map only for older
+//                      payloads. Lets registrations using a new WooCommerce variation
+//                      (added via the theme's SR Registration Form Config tool) show a
+//                      real label/expiry instead of "Unknown" / a wrong 90-day fallback.
 // v1.0 — 2026-06-22 | Initial: receives script registration webhook from WooCommerce,
 //                      creates ScriptRegistration records, dispatches certificate generation.
 //                      PORTAL INTEGRATION: endpoint called by woo_scriptregistration.php
@@ -45,7 +52,19 @@ class ScriptRegistrationWebhookController extends Controller
 
         foreach ($data['payloads'] as $payload) {
             $variationId = (int) ($payload['sr_registration_variation_id'] ?? 0);
-            $variationLabel = ScriptRegistration::VARIATION_LABELS[$variationId] ?? 'Unknown';
+
+            // Prefer the label the theme computed from its admin-configured term (works for
+            // any variation, not just the original 4). Fall back to the legacy hardcoded map
+            // for payloads from a theme deploy that predates this field.
+            $variationLabel = $payload['sr_registration_variation_label']
+                ?? ScriptRegistration::VARIATION_LABELS[$variationId]
+                ?? 'Unknown';
+            $variationLabel = \Illuminate\Support\Str::limit($variationLabel, 20, '');
+
+            // Same story for "never expires" — prefer the explicit flag over the hardcoded ID check.
+            $neverExpires = array_key_exists('sr_registration_never_expires', $payload)
+                ? $payload['sr_registration_never_expires'] === '1'
+                : $variationId === ScriptRegistration::VAR_LIFETIME;
 
             $registration = ScriptRegistration::create([
                 'woo_order_id'      => $data['order_id'],
@@ -73,8 +92,8 @@ class ScriptRegistrationWebhookController extends Controller
                 'uploaded_file_name' => $payload['sr_uploaded_file_original_name'] ?? null,
                 'authcode'          => $payload['sr_authcode'] ?? bin2hex(random_bytes(16)),
                 'registered_at'     => now(),
-                'expires_at'        => $this->parseExpiry($payload['sr_registration_expires'] ?? null, $variationId),
-                'unlimited_token'   => $variationId === ScriptRegistration::VAR_LIFETIME
+                'expires_at'        => $this->parseExpiry($payload['sr_registration_expires'] ?? null, $variationId, $neverExpires),
+                'unlimited_token'   => $neverExpires
                     ? ScriptRegistration::generateUnlimitedToken()
                     : null,
                 'status'            => ScriptRegistration::STATUS_PENDING,
@@ -102,13 +121,13 @@ class ScriptRegistrationWebhookController extends Controller
         return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 
-    private function parseExpiry(?string $expiryString, int $variationId): ?\DateTimeInterface
+    private function parseExpiry(?string $expiryString, int $variationId, bool $neverExpires = false): ?\DateTimeInterface
     {
-        if ($variationId === ScriptRegistration::VAR_LIFETIME) {
+        if ($neverExpires) {
             return null;
         }
 
-        if ($expiryString) {
+        if ($expiryString && $expiryString !== 'Never Expires') {
             try {
                 return \Carbon\Carbon::parse($expiryString);
             } catch (\Throwable) {

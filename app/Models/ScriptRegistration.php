@@ -87,9 +87,15 @@ class ScriptRegistration extends Model
         return $this->hasMany(self::class, 'unlimited_token_parent_id');
     }
 
+    /**
+     * "Unlimited" means the registration never expires. Keyed off expires_at rather than the
+     * legacy VAR_LIFETIME ID so it stays correct for any admin-added lifetime-type variation
+     * (see the theme's SR Registration Form Config tool) — expires_at is only ever null for
+     * a registration explicitly flagged as never-expiring, never as a parse-failure fallback.
+     */
     public function isUnlimited(): bool
     {
-        return $this->variation_id === self::VAR_LIFETIME;
+        return $this->expires_at === null;
     }
 
     public function isExpired(): bool

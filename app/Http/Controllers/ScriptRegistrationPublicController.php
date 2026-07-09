@@ -110,8 +110,10 @@ class ScriptRegistrationPublicController extends Controller
             'woo_order_number'      => null,
             'customer_name'         => trim($data['sr_author_first'] . ' ' . $data['sr_author_last']),
             'customer_email'        => $data['sr_email'],
-            'variation_id'          => ScriptRegistration::VAR_LIFETIME,
-            'variation_label'       => 'Unlimited',
+            // Inherit the parent's own variation identity rather than hardcoding the legacy
+            // lifetime ID — correct regardless of which lifetime-type variation the parent used.
+            'variation_id'          => $parent->variation_id,
+            'variation_label'       => $parent->variation_label,
             'registration_id'       => $regId,
             'script_title'          => $data['sr_title'],
             'page_count'            => (int) $data['sr_page_count'],
