@@ -1,5 +1,9 @@
 <?php
 
+// v1.2 — 2026-07-10 | Fix: general pool notification no longer fires at all when the
+//                      assignment has a requested_reader_id — it was previously only
+//                      excluding the requested reader themselves, so every other opted-in
+//                      reader still got emailed about a request meant for someone else.
 // v1.1 — 2026-06-13 | Skip readers who opted into notify_only_if_under_capacity and are
 //                      currently at their assignment capacity.
 // v1.0 — 2026-05-30 | Initial: email readers of new unassigned assignments per their profile prefs
@@ -39,7 +43,14 @@ class ReaderNotificationService
             }
         }
 
-        // General pool: all readers who opted in, excluding the requested reader (already handled above)
+        // General pool: only for assignments open to anyone. Assignments with a
+        // requested_reader_id are targeted at that one reader (handled above) — they
+        // must not also blast the whole opted-in pool, even excluding that reader,
+        // since this is a "request", not a general "available" notification.
+        if ($assignment->requested_reader_id) {
+            return;
+        }
+
         $readers = User::with('readerProfile')
             ->whereHas('readerProfile', function ($q) use ($assignment) {
                 $q->where('email_notifications', true);
@@ -53,9 +64,6 @@ class ReaderNotificationService
                     $q->where('email_notify_any', true);
                 }
             })
-            ->when($assignment->requested_reader_id, fn ($q) =>
-                $q->where('id', '!=', $assignment->requested_reader_id)
-            )
             ->get();
 
         $context = $assignment->rush ? 'rush' : 'any';

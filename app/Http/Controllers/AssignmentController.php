@@ -1,5 +1,10 @@
 <?php
 
+// v2.25 — 2026-07-10 | Fix: update() now notifies the requested reader when an admin adds/changes
+//                      requested_reader_id on an assignment that was already sitting in
+//                      Available/unassigned — previously notifyNewAssignment() only fired on a
+//                      status transition *into* unassigned, so a request added without a status
+//                      change silently sent no email.
 // v2.24 — 2026-06-17 | dismissCancelled(): per-user dismissal of cancelled assignments from board.
 //                      Admin index(): filter out personally-dismissed cancelled rows.
 //                      Reader index(): surface undismissed cancelled assignments in available view.
@@ -992,6 +997,12 @@ class AssignmentController extends Controller
         $transitioningToUnassigned = $data['status'] === Assignment::STATUS_UNASSIGNED
             && $assignment->status !== Assignment::STATUS_UNASSIGNED;
 
+        // A request can also be added/changed on an assignment that's already
+        // sitting in Available/unassigned, with no status transition to key off of.
+        $requestedReaderAdded = $data['status'] === Assignment::STATUS_UNASSIGNED
+            && !empty($data['requested_reader_id'])
+            && $data['requested_reader_id'] != $assignment->requested_reader_id;
+
         if ($transitioningToUnassigned) {
             $data['unassigned_at'] = now();
         }
@@ -1049,7 +1060,7 @@ class AssignmentController extends Controller
                 ->update(['blocked_reader_ids' => json_encode($data['blocked_reader_ids'])]);
         }
 
-        if ($transitioningToUnassigned) {
+        if ($transitioningToUnassigned || $requestedReaderAdded) {
             app(ReaderNotificationService::class)->notifyNewAssignment($assignment->fresh());
         }
 
