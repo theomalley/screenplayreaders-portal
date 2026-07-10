@@ -613,6 +613,8 @@
                                 $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                                 $rOnline   = $reader->isOnline();
                                 $rStats    = $readerWeekStats[$reader->id] ?? null;
+                                $rAvail    = $rProfile?->availability ?? 'available';
+                                $rAvailMsg = $rProfile?->availability_message ? trim($rProfile->availability_message) : null;
                             @endphp
                             <div x-show="activeStaff === 'r{{ $reader->id }}'" x-cloak
                                  x-transition:enter="transition ease-out duration-150"
@@ -656,6 +658,14 @@
                                         @endif
                                         @if ($rProfile?->custom_message)
                                             <p class="mt-1.5 text-xs font-semibold text-indigo-600 leading-relaxed" style="white-space:pre-line">{{ $rProfile->custom_message }}</p>
+                                        @endif
+
+                                        <div class="text-xs mt-1 flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full {{ $rAvail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
+                                            <span class="{{ $rAvail === 'available' ? 'text-green-700' : 'text-red-700' }} font-medium">{{ ucfirst($rAvail) }}</span>
+                                        </div>
+                                        @if ($rAvailMsg)
+                                            <p class="mt-0.5 text-xs text-gray-500 leading-relaxed" style="white-space:pre-line">{{ $rAvailMsg }}</p>
                                         @endif
 
                                         {{-- Weekly pay stats --}}
