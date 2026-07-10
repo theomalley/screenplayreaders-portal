@@ -9,6 +9,8 @@
     $max       = $profile?->max_concurrent_assignments ?? 0;
     $bgClass    = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
     $customMsg  = $profile?->custom_message ? trim($profile->custom_message) : null;
+    $avail      = $profile?->availability ?? 'available';
+    $availMsg   = $profile?->availability_message ? trim($profile->availability_message) : null;
 @endphp
 
 <div class="flex items-start gap-3">
@@ -63,6 +65,14 @@
         <div class="text-xs text-gray-500 mt-1">
             {{ $active }}{{ $max ? '/' . $max : '' }} active assignment{{ $active !== 1 ? 's' : '' }}
         </div>
+
+        <div class="text-xs mt-1 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full {{ $avail === 'available' ? 'bg-green-500' : 'bg-red-500' }}"></span>
+            <span class="{{ $avail === 'available' ? 'text-green-700' : 'text-red-700' }} font-medium">{{ ucfirst($avail) }}</span>
+        </div>
+        @if ($availMsg)
+            <p class="mt-0.5 text-xs text-gray-500 leading-relaxed" style="white-space:pre-line">{{ $availMsg }}</p>
+        @endif
 
         @if ($weekStats)
             <div class="mt-2 space-y-0.5">
