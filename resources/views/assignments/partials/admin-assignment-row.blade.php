@@ -166,7 +166,7 @@
         </div>
         <div class="flex items-center gap-1">
             @if($assignment->editorNotes->isNotEmpty())
-                <div class="inline-block shrink-0"
+                <div class="inline-block shrink-0 md:hidden"
                      @mouseenter="hoverInternal = true; const r = $el.getBoundingClientRect(); tipXInternal = r.left + r.width / 2; tipYInternal = r.top"
                      @mouseleave="hoverInternal = false">
                     <a href="{{ route('assignments.edit', $assignment) }}#internal-notes"
@@ -217,7 +217,7 @@
             </div>
         @endif
         @if($assignment->notes)
-        <div class="flex items-start gap-1.5 mt-1.5">
+        <div class="flex items-start gap-1.5 mt-1.5 md:hidden">
             <button @click="notesOpen = !notesOpen" type="button"
                     class="text-amber-500 hover:text-amber-600 transition shrink-0 mt-px">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
@@ -278,6 +278,36 @@
                 </div>
             </form>
         </div>
+
+        {{-- Desktop only: notes shown inline instead of hover-only icons --}}
+        @if($assignment->editorNotes->isNotEmpty())
+            <div class="hidden md:flex items-start gap-1.5 mt-1.5 max-w-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5">
+                    <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+                </svg>
+                <div class="text-xs text-slate-600 leading-snug space-y-0.5">
+                    @foreach($assignment->editorNotes->sortByDesc('created_at')->take(3) as $eNote)
+                        <p class="whitespace-pre-wrap">
+                            <span class="text-slate-500 font-semibold">{{ $eNote->author?->editorProfile?->initials ?? '??' }}:</span>
+                            {{ \Illuminate\Support\Str::limit($eNote->body, 160) }}
+                        </p>
+                    @endforeach
+                    <a href="{{ route('assignments.edit', $assignment) }}#internal-notes" class="text-slate-400 hover:text-slate-600 underline text-[10px]">Internal notes (admin/editor only)</a>
+                </div>
+            </div>
+        @endif
+
+        @if($assignment->notes)
+            <div class="hidden md:flex items-start gap-1.5 mt-1.5 max-w-xs">
+                <button @click="notesOpen = !notesOpen" type="button"
+                        class="text-amber-500 hover:text-amber-600 transition shrink-0 mt-px">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+                <span class="text-xs text-gray-600 leading-snug whitespace-pre-line" x-text="note"></span>
+            </div>
+        @endif
 
         {{-- Notes edit panel --}}
         <div x-show="notesOpen" x-cloak class="mt-1.5 w-56">
