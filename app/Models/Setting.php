@@ -1,5 +1,7 @@
 <?php
 
+// v1.15 — 2026-07-11 | Add RATE_LABELS and rateLabelsForForms()/setRateLabel() — admin-editable
+//                      label text for the 14 core rate rows, alongside their existing values.
 // v1.14 — 2026-06-23 | Add DISCOUNT_COUPON_DEFAULTS and getDiscountCouponSettings() — admin-configurable
 //                      post-coverage discount coupon: type, amount, duration, product restrictions,
 //                      usage limits, and description.
@@ -67,6 +69,46 @@ class Setting extends Model
         }
 
         return $rates;
+    }
+
+    /** Default label text for each core rate row, keyed by the same DB key as RATE_DEFAULTS. */
+    public const RATE_LABELS = [
+        'rate_sr_script_coverage'   => 'Script Coverage',
+        'rate_sr_notes_only'        => 'Notes-Only Coverage',
+        'rate_sr_short'             => 'Short Coverage',
+        'rate_sr_deep_dive'         => 'Deep-Dive Development Notes',
+        'rate_sr_budget'            => 'Budget Script Coverage',
+        'rate_sr_oversized_121_160' => 'Oversized (121–160 pages)',
+        'rate_sr_rush'              => 'Rush (24h turnaround)',
+        'rate_sr_request'           => 'Reader Request',
+        'rate_sr_proofreading'      => 'Proofreading',
+        'rate_wd_coverage'          => 'Coverage',
+        'rate_wd_development_notes' => 'Development Notes',
+        'rate_wd_oversized_121_160' => 'Oversized (121–160 pages)',
+        'rate_wd_rush'              => 'Rush (24h turnaround)',
+        'rate_wd_request'           => 'Reader Request',
+    ];
+
+    /**
+     * Returns label text for all core rate rows, keyed by their DB key.
+     * Falls back to RATE_LABELS for any missing row.
+     */
+    public static function rateLabelsForForms(): array
+    {
+        $stored = static::whereIn('key', array_map(fn ($k) => "rate_label_{$k}", array_keys(self::RATE_LABELS)))
+            ->pluck('value', 'key');
+
+        $labels = [];
+        foreach (self::RATE_LABELS as $key => $default) {
+            $labels[$key] = $stored["rate_label_{$key}"] ?? $default;
+        }
+
+        return $labels;
+    }
+
+    public static function setRateLabel(string $key, string $label): void
+    {
+        static::updateOrCreate(['key' => "rate_label_{$key}"], ['value' => $label]);
     }
 
     /** Assignment types that have configurable age-colour thresholds. */

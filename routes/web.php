@@ -244,6 +244,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/ratebook', [RatebookController::class, 'index'])->name('ratebook.index');
     Route::patch('/ratebook', [RatebookController::class, 'update'])->name('ratebook.update');
+    Route::post('/ratebook/items', [RatebookController::class, 'storeItem'])->name('ratebook.items.store');
+    Route::patch('/ratebook/items/{rateItem}', [RatebookController::class, 'updateItem'])->name('ratebook.items.update');
+    Route::delete('/ratebook/items/{rateItem}', [RatebookController::class, 'destroyItem'])->name('ratebook.items.destroy');
 
     // Budget admin
     Route::get('/budget-admin', [\App\Http\Controllers\BudgetAdminController::class, 'index'])->name('budget-admin.index');
