@@ -49,7 +49,7 @@
                                 $srRows = [
                                     ['key' => 'sr_script_coverage',  'label' => 'Script Coverage',  'model' => 'sr_script_coverage'],
                                     ['key' => 'sr_notes_only',       'label' => 'Notes Only',        'model' => 'sr_notes_only'],
-                                    ['key' => 'sr_deep_dive',        'label' => 'Deep Dive',         'model' => 'sr_deep_dive'],
+                                    ['key' => 'sr_deep_dive',        'label' => 'Advanced Script Coverage', 'model' => 'sr_deep_dive'],
                                     ['key' => 'sr_book',             'label' => 'Book Coverage',     'model' => 'sr_book'],
                                     ['key' => 'sr_budget',           'label' => 'Budget Coverage',   'model' => 'sr_budget'],
                                     ['key' => 'sr_short',            'label' => 'Short Coverage',    'model' => 'sr_short'],

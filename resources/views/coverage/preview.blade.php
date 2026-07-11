@@ -27,7 +27,7 @@
             'script_coverage'   => 'Script Coverage',
             'notes_only'        => 'Notes-Only Coverage',
             'short'             => 'Short Coverage',
-            'deep_dive'         => 'Deep-Dive Development Notes',
+            'deep_dive'         => 'Advanced Script Coverage',
             'budget'            => 'Budget Script Coverage',
             'book'              => 'Book Coverage',
             'coverage'          => 'Coverage',

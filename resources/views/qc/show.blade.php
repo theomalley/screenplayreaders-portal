@@ -76,7 +76,7 @@
                 $typeLabels = [
                     'script_coverage'   => 'Script Coverage',
                     'notes_only'        => 'Notes-Only Coverage',
-                    'deep_dive'         => 'Deep-Dive Dev Notes',
+                    'deep_dive'         => 'Advanced Script Coverage',
                     'short'             => 'Short Coverage',
                     'budget'            => 'Budget Coverage',
                     'book'              => 'Book Coverage',

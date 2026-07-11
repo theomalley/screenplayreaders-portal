@@ -34,7 +34,7 @@
                                 'rate_sr_script_coverage' => 'Script Coverage',
                                 'rate_sr_notes_only'      => 'Notes-Only Coverage',
                                 'rate_sr_short'           => 'Short Coverage',
-                                'rate_sr_deep_dive'       => 'Deep-Dive Development Notes',
+                                'rate_sr_deep_dive'       => 'Advanced Script Coverage',
                                 'rate_sr_budget'          => 'Budget Script Coverage',
                             ];
                             @endphp

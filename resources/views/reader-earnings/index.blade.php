@@ -70,7 +70,7 @@
                                             $typeLabel = match($a->assignment_type) {
                                                 'script_coverage'   => 'Script Coverage',
                                                 'notes_only'        => 'Notes-Only',
-                                                'deep_dive'         => 'Deep-Dive',
+                                                'deep_dive'         => 'Advanced Script Coverage',
                                                 'short'             => 'Short',
                                                 'budget'            => 'Budget Coverage',
                                                 'book'              => 'Book',
@@ -160,7 +160,7 @@
                                                 $typeLabel = match($a->assignment_type) {
                                                     'script_coverage'   => 'Script Coverage',
                                                     'notes_only'        => 'Notes-Only',
-                                                    'deep_dive'         => 'Deep-Dive',
+                                                    'deep_dive'         => 'Advanced Script Coverage',
                                                     'short'             => 'Short',
                                                     'budget'            => 'Budget Coverage',
                                                     'book'              => 'Book',

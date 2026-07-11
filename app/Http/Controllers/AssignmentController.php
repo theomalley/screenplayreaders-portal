@@ -508,7 +508,7 @@ class AssignmentController extends Controller
             $total += (float) ($vendor === 'sr' ? $rates['rate_sr_rush'] : $rates['rate_wd_rush']);
         }
 
-        // Deep-Dive Dev Notes includes a free reader request — never add the fee
+        // Advanced Script Coverage (deep_dive) includes a free reader request — never add the fee
         if ($requestedReaderId && $type !== 'deep_dive') {
             $total += (float) ($vendor === 'sr' ? $rates['rate_sr_request'] : $rates['rate_wd_request']);
         }
@@ -1436,7 +1436,7 @@ class AssignmentController extends Controller
     {
         $typeLabel = match ($assignment->assignment_type ?? '') {
             'notes_only' => 'Notes-Only Coverage',
-            'deep_dive'  => 'Development Notes',
+            'deep_dive'  => 'Advanced Script Coverage',
             'budget'     => 'Budget Coverage',
             'short'      => 'Short Coverage',
             default      => 'Script Coverage',

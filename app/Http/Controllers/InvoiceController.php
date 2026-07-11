@@ -147,7 +147,7 @@ class InvoiceController extends Controller
 
         $typeLabel = match ($assignment->assignment_type ?? '') {
             'notes_only' => 'Notes-Only Coverage',
-            'deep_dive'  => 'Development Notes',
+            'deep_dive'  => 'Advanced Script Coverage',
             'budget'     => 'Budget Coverage',
             'short'      => 'Short Coverage',
             default      => 'Script Coverage',

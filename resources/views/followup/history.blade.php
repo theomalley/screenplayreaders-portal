@@ -67,7 +67,7 @@
                             $typeLabel  = match($assignment?->assignment_type) {
                                 'script_coverage'   => 'Script Coverage',
                                 'notes_only'        => 'Notes-Only',
-                                'deep_dive'         => 'Deep-Dive Dev Notes',
+                                'deep_dive'         => 'Advanced Script Coverage',
                                 'short'             => 'Short Script Coverage',
                                 default             => ucwords(str_replace('_', ' ', $assignment?->assignment_type ?? '')),
                             };

@@ -76,7 +76,7 @@ class Setting extends Model
         'rate_sr_script_coverage'   => 'Script Coverage',
         'rate_sr_notes_only'        => 'Notes-Only Coverage',
         'rate_sr_short'             => 'Short Coverage',
-        'rate_sr_deep_dive'         => 'Deep-Dive Development Notes',
+        'rate_sr_deep_dive'         => 'Advanced Script Coverage',
         'rate_sr_budget'            => 'Budget Script Coverage',
         'rate_sr_oversized_121_160' => 'Oversized (121–160 pages)',
         'rate_sr_rush'              => 'Rush (24h turnaround)',
@@ -115,7 +115,7 @@ class Setting extends Model
     public const AGE_THRESHOLD_TYPES = [
         'script_coverage' => 'Script Coverage',
         'notes_only'      => 'Notes-Only',
-        'deep_dive'       => 'Deep-Dive',
+        'deep_dive'       => 'Advanced Script Coverage',
         'short'           => 'Short',
         'budget'          => 'Budget',
         'formatting'      => 'Formatting',

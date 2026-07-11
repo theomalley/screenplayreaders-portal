@@ -30,7 +30,7 @@ class EditorProductCommission extends Model
         54945 => ['label' => 'Request 2 Readers',  'commission' => true],
         54946 => ['label' => 'Request 3 Readers',  'commission' => true],
         53161 => ['label' => 'Vaulting',           'commission' => true],
-        5868  => ['label' => 'Deep-Dive Notes',    'commission' => true],
+        5868  => ['label' => 'Advanced Script Coverage', 'commission' => true],
         5871  => ['label' => 'Short Coverage',     'commission' => true],
         23425 => ['label' => 'Proofreading',       'commission' => false],
         5872  => ['label' => 'Formatting',         'commission' => false],

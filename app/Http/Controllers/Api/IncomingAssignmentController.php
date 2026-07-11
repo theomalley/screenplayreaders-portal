@@ -184,7 +184,7 @@ class IncomingAssignmentController extends Controller
             $total += (float) $rates['rate_sr_rush'];
         }
 
-        // Deep-Dive Dev Notes includes a free reader request — never add the fee
+        // Advanced Script Coverage (deep_dive) includes a free reader request — never add the fee
         if ($requestedReaderId && $type !== 'deep_dive') {
             $total += (float) $rates['rate_sr_request'];
         }

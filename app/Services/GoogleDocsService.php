@@ -322,7 +322,7 @@ class GoogleDocsService
         $typeLabel = [
             'script_coverage' => 'Script Coverage',
             'notes_only'      => 'Notes-Only Coverage',
-            'deep_dive'       => 'Development Notes',
+            'deep_dive'       => 'Advanced Script Coverage',
             'short'           => 'Short Coverage',
             'book'            => 'Book Coverage',
             'budget'          => 'Budget Coverage',
@@ -339,7 +339,7 @@ class GoogleDocsService
         $replacements = [
             '{{sr_HEADERlogline}}'  => $showLogline  ? 'Logline'   : '',
             '{{sr_HEADERsynopsis}}' => $showSynopsis ? 'Synopsis'  : '',
-            '{{sr_HEADERnotes}}'    => $type === 'deep_dive' ? 'Development Notes' : 'Notes',
+            '{{sr_HEADERnotes}}'    => $type === 'deep_dive' ? 'Advanced Script Coverage' : 'Notes',
             '{{sr_assignmenttype}}' => $typeLabel,
             '{{sr_title}}'          => $assignment->script_title,
             '{{sr_writer}}'         => $sub->writer_name ?? $assignment->writer_name,

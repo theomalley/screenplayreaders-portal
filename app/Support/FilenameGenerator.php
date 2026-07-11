@@ -12,7 +12,7 @@ class FilenameGenerator
     public const SR_TYPES = [
         'script_coverage' => 'Script Coverage (SR)',
         'notes_only'      => 'Notes Only (SR)',
-        'deep_dive'       => 'Deep Dive (SR)',
+        'deep_dive'       => 'Advanced Script Coverage (SR)',
         'book'            => 'Book Coverage (SR)',
         'budget'          => 'Budget Coverage (SR)',
         'short'           => 'Short Coverage (SR)',

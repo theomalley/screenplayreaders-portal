@@ -225,7 +225,7 @@
                             @foreach([
                                 ['key' => 'sr_script_coverage', 'label' => 'Script Coverage'],
                                 ['key' => 'sr_notes_only',      'label' => 'Notes Only'],
-                                ['key' => 'sr_deep_dive',       'label' => 'Deep Dive'],
+                                ['key' => 'sr_deep_dive',       'label' => 'Advanced Script Coverage'],
                                 ['key' => 'sr_book',            'label' => 'Book Coverage'],
                                 ['key' => 'sr_budget',          'label' => 'Budget Coverage'],
                                 ['key' => 'sr_short',           'label' => 'Short Coverage'],
@@ -457,7 +457,7 @@
                                     'wc_sr_notes_script_coverage' => 'Script Coverage',
                                     'wc_sr_notes_notes_only'      => 'Notes-Only',
                                     'wc_sr_notes_short'           => 'Short',
-                                    'wc_sr_notes_deep_dive'       => 'Deep-Dive',
+                                    'wc_sr_notes_deep_dive'       => 'Advanced Script Coverage',
                                     'wc_sr_notes_budget'          => 'Budget',
                                     'wc_sr_notes_book'            => 'Book',
                                 ] as $key => $label)

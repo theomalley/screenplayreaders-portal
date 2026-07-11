@@ -97,7 +97,7 @@
                               const typeLabels = {
                                   script_coverage:   'Script Coverage',
                                   notes_only:        'Notes-Only',
-                                  deep_dive:         'Deep-Dive Dev Notes',
+                                  deep_dive:         'Advanced Script Coverage',
                                   short:             'Short Coverage',
                                   budget:            'Budget Coverage',
                                   coverage:          'WD Coverage',
@@ -397,7 +397,7 @@
                             <option value="">— Select type —</option>
                             <option value="script_coverage"  {{ $v('assignment_type', $assignment->assignment_type) === 'script_coverage'  ? 'selected' : '' }}>Script Coverage</option>
                             <option value="notes_only"       {{ $v('assignment_type', $assignment->assignment_type) === 'notes_only'       ? 'selected' : '' }}>Notes-Only</option>
-                            <option value="deep_dive"        {{ $v('assignment_type', $assignment->assignment_type) === 'deep_dive'        ? 'selected' : '' }}>Deep-Dive Dev Notes</option>
+                            <option value="deep_dive"        {{ $v('assignment_type', $assignment->assignment_type) === 'deep_dive'        ? 'selected' : '' }}>Advanced Script Coverage</option>
                             <option value="short"            {{ $v('assignment_type', $assignment->assignment_type) === 'short'            ? 'selected' : '' }}>Short Coverage</option>
                             <option value="budget"           {{ $v('assignment_type', $assignment->assignment_type) === 'budget'           ? 'selected' : '' }}>Budget Coverage</option>
                             <option value="book"             {{ $v('assignment_type', $assignment->assignment_type) === 'book'             ? 'selected' : '' }}>Book Coverage</option>

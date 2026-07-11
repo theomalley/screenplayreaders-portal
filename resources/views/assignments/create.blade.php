@@ -43,7 +43,7 @@
                               const typeLabels = {
                                   script_coverage:   'Script Coverage',
                                   notes_only:        'Notes-Only',
-                                  deep_dive:         'Deep-Dive Dev Notes',
+                                  deep_dive:         'Advanced Script Coverage',
                                   short:             'Short Coverage',
                                   budget:            'Budget Coverage',
                                   coverage:          'WD Coverage',
@@ -101,7 +101,7 @@
                                   sharedMod += parseFloat({ sr: r.rate_sr_rush, wd: r.rate_wd_rush }[this.vendor] || 0);
 
                               // Reader request modifier — per slot, since each reader may or may not be requested
-                              // Deep-Dive Dev Notes includes a free reader request — never add the fee
+                              // Advanced Script Coverage (deep_dive) includes a free reader request — never add the fee
                               const isDeepDive1R = this.numReaders === '1' && this.assignmentType === 'deep_dive';
                               const modFor  = (i) => (this.requestedReaders[i] && !isDeepDive1R) ? reqRate : 0;
 
@@ -323,7 +323,7 @@
                             <option value="">— Select type —</option>
                             <option value="script_coverage"  {{ old('assignment_type') === 'script_coverage'  ? 'selected' : '' }}>Script Coverage</option>
                             <option value="notes_only"       {{ old('assignment_type') === 'notes_only'       ? 'selected' : '' }}>Notes-Only</option>
-                            <option value="deep_dive"        {{ old('assignment_type') === 'deep_dive'        ? 'selected' : '' }}>Deep-Dive Dev Notes</option>
+                            <option value="deep_dive"        {{ old('assignment_type') === 'deep_dive'        ? 'selected' : '' }}>Advanced Script Coverage</option>
                             <option value="short"            {{ old('assignment_type') === 'short'            ? 'selected' : '' }}>Short Coverage</option>
                             <option value="budget"           {{ old('assignment_type') === 'budget'           ? 'selected' : '' }}>Budget Coverage</option>
                             <option value="book"             {{ old('assignment_type') === 'book'             ? 'selected' : '' }}>Book Coverage</option>
