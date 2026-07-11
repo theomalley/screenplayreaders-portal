@@ -168,6 +168,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/completion-draft/test', [SettingController::class, 'testCompletionDraft'])->name('settings.completion-draft.test');
     Route::patch('/settings/word-counts', [SettingController::class, 'updateWordCounts'])->name('settings.word-counts');
     Route::patch('/settings/blocked-reader-limits', [SettingController::class, 'updateBlockedReaderLimits'])->name('settings.blocked-reader-limits');
+    Route::patch('/settings/tier2-release-hours', [SettingController::class, 'updateTier2ReleaseHours'])->name('settings.tier2-release-hours');
     Route::patch('/settings/notification-history-retention', [SettingController::class, 'updateNotificationHistoryRetention'])->name('settings.notification-history-retention');
     Route::patch('/settings/pay-period',  [SettingController::class, 'updatePayPeriod'])->name('settings.pay-period');
     Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');

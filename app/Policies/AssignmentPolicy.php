@@ -1,5 +1,8 @@
 <?php
 
+// v1.6 — 2026-07-11 | accept: tier-2 readers may also accept a tier-1 assignment once
+//                     Assignment::isOpenToTier2() is true (sat unaccepted past the admin-configured
+//                     release window) — mirrors Assignment::scopeAvailable()'s visibility rule.
 // v1.5 — 2026-07-11 | accept: enforce reader tier match (assignment.tier must be in the
 //                     reader's ReaderProfile::tiers()) — previously tier was only enforced
 //                     by which assignments were queried into view, not at authorization time.
@@ -66,11 +69,15 @@ class AssignmentPolicy
     {
         $readerTiers = $user->readerProfile?->tiers() ?? [1];
 
+        $tierMatch = $user->canManageAssignments()
+            || in_array($assignment->tier, $readerTiers, true)
+            || (in_array(2, $readerTiers, true) && $assignment->isOpenToTier2());
+
         return $assignment->isAvailable()
             && ($user->isReader() || $user->canManageAssignments())
             && ! $assignment->isReaderBlocked($user->id)
             && (! $assignment->requested_reader_id || $assignment->requested_reader_id === $user->id)
-            && ($user->canManageAssignments() || in_array($assignment->tier, $readerTiers, true));
+            && $tierMatch;
     }
 
     /** Reader cancelling their own accepted assignment */

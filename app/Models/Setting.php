@@ -1,5 +1,7 @@
 <?php
 
+// v1.16 — 2026-07-11 | Add TIER2_RELEASE_HOURS_DEFAULT and getTier2ReleaseHours() — admin-configurable
+//                      hours before an unaccepted tier-1 assignment also opens to tier-2 readers.
 // v1.15 — 2026-07-11 | Add RATE_LABELS and rateLabelsForForms()/setRateLabel() — admin-editable
 //                      label text for the 14 core rate rows, alongside their existing values.
 // v1.14 — 2026-06-23 | Add DISCOUNT_COUPON_DEFAULTS and getDiscountCouponSettings() — admin-configurable
@@ -165,6 +167,14 @@ class Setting extends Model
     public static function setValue(string $key, mixed $value): void
     {
         static::updateOrCreate(['key' => $key], ['value' => (string) $value]);
+    }
+
+    /** Hours a tier-1 assignment must sit unaccepted before it also opens up to tier-2 readers. */
+    public const TIER2_RELEASE_HOURS_DEFAULT = 24;
+
+    public static function getTier2ReleaseHours(): int
+    {
+        return (int) self::getValue('tier2_release_hours', self::TIER2_RELEASE_HOURS_DEFAULT);
     }
 
     /** Default QC saved replies seeded from the 23 reader rules. */

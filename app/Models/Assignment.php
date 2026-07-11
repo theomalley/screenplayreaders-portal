@@ -1,5 +1,8 @@
 <?php
 
+// v1.26 — 2026-07-11 | Add isOpenToTier2() — a tier-1 assignment also opens to tier-2 readers
+//                      once it's sat unaccepted past Setting::getTier2ReleaseHours(); scopeAvailable()
+//                      includes those for tier-2 readers, AssignmentPolicy::accept() authorizes them.
 // v1.25 — 2026-07-11 | Add ensureSandboxAssignment() — idempotent get-or-create for the
 //                      single shared tier-0 onboarding sandbox assignment (order_number
 //                      SANDBOX-ONBOARDING, tier 0, is_test true).
@@ -265,6 +268,14 @@ class Assignment extends Model
             ->all();
     }
 
+    /** True once a tier-1 assignment has sat unaccepted long enough to also open up to tier-2 readers. */
+    public function isOpenToTier2(): bool
+    {
+        return (int) $this->tier === 1
+            && $this->unassigned_at !== null
+            && $this->unassigned_at->lte(now()->subHours(Setting::getTier2ReleaseHours()));
+    }
+
     /** Whether the "goback ready at HelpScout" notice for this order has been dismissed (shared across admins/editors). */
     public function isHelpscoutDraftDismissed(): bool
     {
@@ -376,14 +387,32 @@ class Assignment extends Model
      * Includes assignments requested for other readers (visible but not acceptble).
      * Assignments that block this reader are still included (so the reader can see why an
      * order is unavailable to them) — AssignmentPolicy::accept() prevents them from accepting.
+     *
+     * A reader with tier 2 (but not tier 1) also sees tier-1 assignments once they've sat
+     * unaccepted past Setting::getTier2ReleaseHours() — mirrors Assignment::isOpenToTier2().
      */
     public function scopeAvailable($query, int $userId, array $tiers = [1])
     {
         if (empty($tiers)) {
             return $query->whereRaw('1 = 0');
         }
-        return $query->where('status', self::STATUS_UNASSIGNED)
-            ->whereIn('tier', $tiers);
+
+        $query->where('status', self::STATUS_UNASSIGNED);
+
+        if (in_array(2, $tiers, true) && ! in_array(1, $tiers, true)) {
+            $releasedAt = now()->subHours(Setting::getTier2ReleaseHours());
+
+            return $query->where(function ($q) use ($tiers, $releasedAt) {
+                $q->whereIn('tier', $tiers)
+                    ->orWhere(function ($q2) use ($releasedAt) {
+                        $q2->where('tier', 1)
+                            ->whereNotNull('unassigned_at')
+                            ->where('unassigned_at', '<=', $releasedAt);
+                    });
+            });
+        }
+
+        return $query->whereIn('tier', $tiers);
     }
 
     /**
