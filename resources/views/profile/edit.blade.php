@@ -664,7 +664,7 @@
                                 Tier 2
                             </label>
                         </div>
-                        <p class="text-xs text-gray-400 -mt-1">Tier 0 is exclusive of Tier 1/2 — checking either of those on save clears Tier 0. Tier-0 readers can browse all assignments read-only and can only accept the onboarding sandbox assignment.</p>
+                        <p class="text-xs text-gray-400 -mt-1">Tier 0 is exclusive of Tier 1/2 — checking either of those on save clears Tier 0. Tier-0 readers can only accept the onboarding sandbox assignment.</p>
                         <div class="flex justify-end">
                             <x-primary-button>Save Capacity &amp; Pay</x-primary-button>
                         </div>

@@ -1602,13 +1602,6 @@
                                 <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">{{ $needsAttentionCount }}</span>
                             </button>
                         @endif
-                        @if($isTierZero)
-                            <button @click="tab = 'browse'"
-                                    :class="tab === 'browse' ? 'border-b-2 border-amber-600 text-amber-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
-                                    class="px-4 py-2 text-sm transition">
-                                Browse All Assignments
-                            </button>
-                        @endif
                     </div>
 
                     {{-- ---- Available Assignments tab ---- --}}
@@ -1978,81 +1971,6 @@
                             </div>
                         @endif
                     </div>
-
-                    {{-- ---- Browse All Assignments tab (tier 0 onboarding — read-only) ---- --}}
-                    @if($isTierZero)
-                    <div x-show="tab === 'browse'">
-                        <div class="mb-3 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                            Read-only view of every published assignment across all tiers, for orientation. You can only accept the Sandbox assignment above until you're promoted to Tier 1 or 2.
-                        </div>
-                        @if($allNonPendingAssignments->isEmpty())
-                            <div class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-400 text-sm">
-                                No assignments to show.
-                            </div>
-                        @else
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                <div class="overflow-x-auto">
-                                <table class="w-full min-w-[520px] divide-y divide-gray-200 text-sm">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Writer</th>
-                                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pages</th>
-                                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Rush</th>
-                                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="bg-white divide-y divide-gray-100">
-                                        @foreach($allNonPendingAssignments as $bAssignment)
-                                            @php
-                                                $bTypeLabel = match($bAssignment->assignment_type) {
-                                                    'script_coverage'   => 'Script Coverage',
-                                                    'notes_only'        => 'Notes-Only',
-                                                    'deep_dive'         => 'Advanced Script Coverage',
-                                                    'short'             => 'Short',
-                                                    'budget'            => 'Budget Coverage',
-                                                    'book'              => 'Book',
-                                                    'coverage'          => 'Coverage',
-                                                    'development_notes' => 'Dev Notes',
-                                                    default             => $bAssignment->assignment_type ?? '—',
-                                                };
-                                                if ($bAssignment->vendor === 'wd') {
-                                                    $bTypeLabel = 'WD ' . $bTypeLabel;
-                                                }
-                                                $bStatusLabel = match($bAssignment->status) {
-                                                    'unassigned'        => 'Available',
-                                                    'assigned'          => 'In Progress',
-                                                    'qc'                => 'In QC',
-                                                    'completed'         => 'Completed',
-                                                    'cancelled'         => 'Cancelled',
-                                                    'on_hold_customer'  => 'On Hold (Customer)',
-                                                    'on_hold_sr'        => 'On Hold',
-                                                    'needs_attention'   => 'Needs Attention',
-                                                    default             => ucfirst($bAssignment->status ?? '—'),
-                                                };
-                                            @endphp
-                                            <tr class="hover:bg-gray-50">
-                                                <td class="px-3 py-3 text-gray-600 whitespace-nowrap">{{ $bTypeLabel }}</td>
-                                                <td class="px-3 py-3 text-gray-700">{{ $bAssignment->script_title }}</td>
-                                                <td class="px-3 py-3 text-gray-600">{{ $bAssignment->writer_name }}</td>
-                                                <td class="px-3 py-3 text-center text-gray-600">{{ $bAssignment->page_count ?? '—' }}</td>
-                                                <td class="px-3 py-3 text-center">
-                                                    @if($bAssignment->rush)
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Rush</span>
-                                                    @endif
-                                                </td>
-                                                <td class="px-3 py-3 text-center text-gray-600 whitespace-nowrap">{{ $bStatusLabel }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                </div>{{-- /overflow-x-auto --}}
-                            </div>
-                            <div class="mt-4">{{ $allNonPendingAssignments->links() }}</div>
-                        @endif
-                    </div>
-                    @endif
 
                     {{-- ---- My Assignments tab ---- --}}
                     <div x-show="tab === 'mine'">

@@ -1,7 +1,9 @@
 <?php
 
-// v2.26 — 2026-07-11 | Tier-0 onboarding: reader branch gains isTierZero + a read-only
-//                      browse-all-assignments list + self-healing sandbox provisioning.
+// v2.27 — 2026-07-11 | Removed the tier-0 "Browse All Assignments" read-only tab/query per
+//                      request — tier-0 readers keep the self-healing sandbox provisioning
+//                      but no longer see an unfiltered assignment list.
+// v2.26 — 2026-07-11 | Tier-0 onboarding: reader branch gains self-healing sandbox provisioning.
 //                      Admin branch: tier2Assignments is now explicit (tier == 2, was != 1,
 //                      which silently swallowed tier-0 rows) plus a new sandboxAssignments bucket.
 // v2.25 — 2026-07-10 | Fix: update() now notifies the requested reader when an admin adds/changes
@@ -238,18 +240,9 @@ class AssignmentController extends Controller
         $profile      = $user->readerProfile;
         $readerTiers  = $profile ? $profile->tiers() : [1];
 
-        // Tier 0 (onboarding): read-only visibility into every real, published assignment
-        // (regardless of tier), plus a self-healing check that the shared sandbox exists.
-        $isTierZero = in_array(0, $readerTiers, true);
-
-        $allNonPendingAssignments = null;
-        if ($isTierZero) {
+        // Tier 0 (onboarding): self-healing check that the shared sandbox assignment exists.
+        if (in_array(0, $readerTiers, true)) {
             Assignment::ensureSandboxAssignment();
-
-            $allNonPendingAssignments = Assignment::where('status', '!=', Assignment::STATUS_INCOMING)
-                ->where('is_test', false)
-                ->orderByDesc('created_at')
-                ->paginate(50);
         }
 
         $available = Assignment::available($user->id, $readerTiers)
@@ -339,8 +332,6 @@ class AssignmentController extends Controller
             'canManage'              => false,
             'available'              => $available,
             'mine'                   => $mine,
-            'isTierZero'             => $isTierZero,
-            'allNonPendingAssignments' => $allNonPendingAssignments,
             'readerMax'              => $readerMax,
             'capacityOverrideExcludesRushRequests' => $capacityOverrideExcludesRushRequests,
             'periodStart'            => $periodStart,
