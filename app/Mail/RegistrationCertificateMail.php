@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-07-11 | Add is_unlimited boolean personalization var so the MailerSend
+//                      template can gate the "your personalized upload link" text on a
+//                      real conditional instead of comparing unlimited_url to 'N/A';
+//                      unlimited_url now empty string (not 'N/A') when not applicable.
 // v1.0 — 2026-06-22 | Initial: delivers script registration certificate PDF to customer
 //                      via MailerSend template. For unlimited registrations, includes
 //                      the tokenized personal URL in personalization data.
@@ -45,9 +49,10 @@ class RegistrationCertificateMail extends Mailable
                     ? $reg->expires_at->format('F j, Y')
                     : 'Unlimited',
                 'variation_label'      => $reg->variation_label,
+                'is_unlimited'         => $reg->isUnlimited() && $reg->unlimited_token,
                 'unlimited_url'        => ($reg->isUnlimited() && $reg->unlimited_token)
                     ? $reg->publicRegistrationUrl()
-                    : 'N/A',
+                    : '',
             ];
 
             $this->mailersend(
