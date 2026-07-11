@@ -180,10 +180,7 @@
                          :style="`position:fixed;left:${tipXInternal}px;top:${tipYInternal}px;transform:translate(-50%,calc(-100% - 8px))`"
                          class="z-50 w-64 bg-gray-800 text-white text-xs rounded-md px-2.5 py-2 shadow-lg pointer-events-none space-y-1">
                         @foreach($assignment->editorNotes->sortByDesc('created_at')->take(3) as $eNote)
-                            <p class="whitespace-pre-wrap">
-                                <span class="text-amber-300 font-semibold">{{ $eNote->author?->editorProfile?->initials ?? '??' }}:</span>
-                                {{ \Illuminate\Support\Str::limit($eNote->body, 120) }}
-                            </p>
+                            <p class="whitespace-pre-wrap"><span class="text-amber-300 font-semibold">{{ $eNote->author?->editorProfile?->initials ?? '??' }}:</span> {{ \Illuminate\Support\Str::limit($eNote->body, 120) }}</p>
                         @endforeach
                         <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent border-t-4 border-t-gray-800"></div>
                     </div>
@@ -287,10 +284,7 @@
                 </svg>
                 <div class="text-xs text-slate-600 leading-snug space-y-0.5">
                     @foreach($assignment->editorNotes->sortByDesc('created_at')->take(3) as $eNote)
-                        <p class="whitespace-pre-wrap">
-                            <span class="text-slate-500 font-semibold">{{ $eNote->author?->editorProfile?->initials ?? '??' }}:</span>
-                            {{ \Illuminate\Support\Str::limit($eNote->body, 160) }}
-                        </p>
+                        <p class="whitespace-pre-wrap"><span class="text-slate-500 font-semibold">{{ $eNote->author?->editorProfile?->initials ?? '??' }}:</span> {{ \Illuminate\Support\Str::limit($eNote->body, 160) }}</p>
                     @endforeach
                     <a href="{{ route('assignments.edit', $assignment) }}#internal-notes" class="text-slate-400 hover:text-slate-600 underline text-[10px]">Internal notes (admin/editor only)</a>
                 </div>
