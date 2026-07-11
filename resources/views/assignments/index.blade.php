@@ -506,7 +506,7 @@
                                             {{ $rInitials }}
                                         @endif
                                         @if ($rActive > 0)
-                                            <span class="absolute -top-0.5 -right-1.5 min-w-[1rem] h-4 px-0.5 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 whitespace-nowrap
+                                            <span class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 min-w-[1.1rem] h-3.5 px-1 rounded-full text-[8px] leading-none flex items-center justify-center font-bold z-10 whitespace-nowrap shadow-sm
                                                 {{ $rFull ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white' }}">
                                                 {{ $rActive }}{{ $rHasSelfRequest ? '*' : '' }}/{{ $rMax ?: '?' }}
                                             </span>
@@ -1475,7 +1475,7 @@
                                     {{ $rInitials }}
                                 @endif
                                 @if ($rActive > 0 && $rIsSelf)
-                                    <span class="absolute -top-0.5 -right-1.5 min-w-[1rem] h-4 px-0.5 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 whitespace-nowrap
+                                    <span class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 min-w-[1.1rem] h-3.5 px-1 rounded-full text-[8px] leading-none flex items-center justify-center font-bold z-10 whitespace-nowrap shadow-sm
                                         {{ $rFull ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white' }}">
                                         {{ $rActive }}{{ $rHasSelfRequest ? '*' : '' }}/{{ $rMax ?: '?' }}
                                     </span>
