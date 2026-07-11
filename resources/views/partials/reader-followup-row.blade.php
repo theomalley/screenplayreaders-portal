@@ -38,6 +38,13 @@
             <div class="text-sm text-gray-800 whitespace-pre-wrap bg-white border border-gray-200 rounded px-3 py-2">{{ $fq->questionsForReader() }}</div>
         </div>
 
+        @if ($fq->admin_note)
+            <div>
+                <p class="text-xs font-medium text-gray-600 mb-1">Note from the team:</p>
+                <div class="text-sm text-indigo-900 whitespace-pre-wrap bg-indigo-50 border border-indigo-200 rounded px-3 py-2">{{ $fq->admin_note }}</div>
+            </div>
+        @endif
+
         @if ($fq->status === 'unanswered')
             <div>
                 <p class="text-xs font-medium text-gray-600 mb-1">Your response:</p>

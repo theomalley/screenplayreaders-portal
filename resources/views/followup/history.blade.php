@@ -112,6 +112,14 @@
                                     @endif
                                 </div>
 
+                                {{-- Admin note to reader --}}
+                                @if ($fq->admin_note)
+                                    <div>
+                                        <p class="text-xs font-semibold text-gray-600 mb-1">Note to reader</p>
+                                        <div class="text-sm text-indigo-900 whitespace-pre-wrap bg-indigo-50 border border-indigo-200 rounded px-3 py-2">{{ $fq->admin_note }}</div>
+                                    </div>
+                                @endif
+
                                 {{-- Sent to reader --}}
                                 @if ($fq->unanswered_at)
                                     <div class="flex items-center gap-2 text-xs text-amber-700">

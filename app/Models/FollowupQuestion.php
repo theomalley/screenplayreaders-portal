@@ -20,6 +20,7 @@ class FollowupQuestion extends Model
         'order_number',
         'customer_questions',
         'edited_questions',
+        'admin_note',
         'reader_response',
         'edited_response',
         'status',

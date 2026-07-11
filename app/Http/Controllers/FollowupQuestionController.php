@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-07-11 | Admin/editor note to reader on followup questions
 // v1.1 — 2026-06-15 | Log deleted followup questions to Notification History
 // v1.0 — 2026-05-30 | Admin/editor management + reader response for followup questions
 
@@ -25,6 +26,7 @@ class FollowupQuestionController extends Controller
 
         $data = $request->validate([
             'edited_questions' => 'nullable|string|max:5000',
+            'admin_note'       => 'nullable|string|max:5000',
             'edited_response'  => 'nullable|string|max:5000',
             'status'           => 'nullable|in:pending,unanswered,answered,complete',
         ]);

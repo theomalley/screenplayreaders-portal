@@ -381,6 +381,13 @@
                                                       class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
                                         </div>
 
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Note to reader <span class="font-normal text-gray-400">(private — not shown to customer)</span></label>
+                                            <textarea name="admin_note" rows="2"
+                                                      placeholder="e.g. extra context or guidance for the reader"
+                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">{{ old('admin_note', $fq->admin_note) }}</textarea>
+                                        </div>
+
                                         @if ($fqStatus === 'answered')
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 mb-1">Reader's response</label>
@@ -1162,6 +1169,13 @@
                                             <textarea x-show="editingQuestions" x-cloak x-ref="editedQuestions" name="edited_questions"
                                                       @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                                                       class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Note to reader <span class="font-normal text-gray-400">(private — not shown to customer)</span></label>
+                                            <textarea name="admin_note" rows="2"
+                                                      placeholder="e.g. extra context or guidance for the reader"
+                                                      class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400">{{ old('admin_note', $fq->admin_note) }}</textarea>
                                         </div>
 
                                         @if ($fqStatus === 'answered')
