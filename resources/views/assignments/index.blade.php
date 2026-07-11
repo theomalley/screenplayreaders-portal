@@ -484,6 +484,7 @@
                                     $rActive   = $reader->assignments->count();
                                     $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
                                     $rFull     = $rMax > 0 && $rActive >= $rMax;
+                                    $rHasSelfRequest = $reader->assignments->contains(fn($a) => $a->requested_reader_id === $reader->id);
                                     $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                                     $rOnline      = $reader->isOnline();
                                     $rUnavailable = $rProfile?->availability === 'unavailable';
@@ -495,7 +496,7 @@
                                         class="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer
                                             {{ $rFull ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}
                                             {{ $rUnavailable ? 'outline outline-2 outline-dashed outline-red-400 outline-offset-1' : '' }}"
-                                        title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rProfile?->title ? ' · ' . $rProfile->title : '' }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active"
+                                        title="{{ $rProfile?->displayName() ?? $reader->name }}{{ $rProfile?->title ? ' · ' . $rProfile->title : '' }}{{ $rOnline ? ' · Online' : '' }} — {{ $rActive }}/{{ $rMax ?: '?' }} active{{ $rHasSelfRequest ? ' (includes a Request for them)' : '' }}"
                                     >
                                         @if ($rPhotoUrl)
                                             <span class="absolute inset-0 rounded-full overflow-hidden">
@@ -505,9 +506,9 @@
                                             {{ $rInitials }}
                                         @endif
                                         @if ($rActive > 0)
-                                            <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
+                                            <span class="absolute -top-0.5 -right-1.5 min-w-[1rem] h-4 px-0.5 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 whitespace-nowrap
                                                 {{ $rFull ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white' }}">
-                                                {{ $rActive }}
+                                                {{ $rActive }}{{ $rHasSelfRequest ? '*' : '' }}/{{ $rMax ?: '?' }}
                                             </span>
                                         @endif
                                         @if ($rOnline)
@@ -526,7 +527,7 @@
                             <div class="mt-2 text-sm text-gray-500">
                                 <span class="font-medium text-gray-700">Max. concurrent assignments:</span> {{ $capacityOverride }}
                                 @if($adminExcludesRushRequests)
-                                    <span class="text-xs text-gray-400 ml-1">Reader Requests and Rush orders do not apply to this cap.</span>
+                                    <span class="text-xs text-gray-400 ml-1">Reader Requests and Rush orders do not apply to this cap. (* on a badge = includes a Reader Request.)</span>
                                 @endif
                             </div>
                         @endif
@@ -1450,6 +1451,7 @@
                             $rActive      = $reader->assignments->count();
                             $rMax         = $rProfile?->max_concurrent_assignments ?? 0;
                             $rFull        = $rMax > 0 && $rActive >= $rMax;
+                            $rHasSelfRequest = $reader->assignments->contains(fn($a) => $a->requested_reader_id === $reader->id);
                             $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                             $rUnavailable = $rProfile?->availability === 'unavailable';
                             $rOnline      = $reader->isOnline();
@@ -1473,9 +1475,9 @@
                                     {{ $rInitials }}
                                 @endif
                                 @if ($rActive > 0 && $rIsSelf)
-                                    <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10
+                                    <span class="absolute -top-0.5 -right-1.5 min-w-[1rem] h-4 px-0.5 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 whitespace-nowrap
                                         {{ $rFull ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white' }}">
-                                        {{ $rActive }}
+                                        {{ $rActive }}{{ $rHasSelfRequest ? '*' : '' }}/{{ $rMax ?: '?' }}
                                     </span>
                                 @endif
                                 @if ($rOnline)
@@ -1500,9 +1502,9 @@
                         @if($showRushRequestNote)
                             <span class="text-xs text-gray-400 ml-1">
                                 @if($capacityOverride > 0 && $capacityOverrideExcludesRushRequests)
-                                    Reader Requests and Rush orders do not apply to this cap.
+                                    Reader Requests and Rush orders do not apply to this cap. (* on your badge = includes a Reader Request.)
                                 @else
-                                    Reader Requests do not count toward your limit.
+                                    Reader Requests do not count toward your limit. (* on your badge = includes a Reader Request.)
                                 @endif
                             </span>
                         @endif
