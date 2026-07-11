@@ -11,6 +11,9 @@
                 @if($assignment->rush)
                     <span class="ml-2 text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
                 @endif
+                @if($assignment->is_test)
+                    <span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-amber-200 text-amber-800 tracking-wide">TEST</span>
+                @endif
             </h2>
         </div>
     </x-slot>

@@ -91,7 +91,7 @@
                                         @endif
                                         <div class="text-gray-400 text-xs">{{ $assignment->writer_name }}</div>
                                     </td>
-                                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}</td>
+                                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}@if($assignment->is_test) <span class="inline-flex items-center px-1 py-px rounded text-[9px] font-bold bg-amber-200 text-amber-800 tracking-wide">TEST</span>@endif</td>
                                     <td class="px-4 py-3 whitespace-nowrap">
                                         @if ($assignment->assignedReader)
                                             <x-staff-icon :user="$assignment->assignedReader" size="sm" />

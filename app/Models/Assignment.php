@@ -1,5 +1,8 @@
 <?php
 
+// v1.25 — 2026-07-11 | Add ensureSandboxAssignment() — idempotent get-or-create for the
+//                      single shared tier-0 onboarding sandbox assignment (order_number
+//                      SANDBOX-ONBOARDING, tier 0, is_test true).
 // v1.24 — 2026-06-16 | Add exempt_from_capacity boolean — assignments marked exempt do not
 //                      count toward any reader's concurrent assignment cap.
 // v1.23 — 2026-06-15 | helpscout_draft_dismissed_by is now a shared dismissal — any
@@ -200,6 +203,33 @@ class Assignment extends Model
                     ->delay(now()->addHours(4));
             }
         });
+    }
+
+    /**
+     * Ensures the single shared onboarding sandbox assignment exists. Idempotent — safe to
+     * call on every tier-0 page load; self-heals if the row is ever deleted (e.g. via
+     * Tools → Test Data → Delete All Test Data). Matches solely on order_number so it never
+     * clobbers fields on an existing sandbox row (including after ResetTestAssignment resets it).
+     */
+    public static function ensureSandboxAssignment(): self
+    {
+        return static::firstOrCreate(
+            ['order_number' => 'SANDBOX-ONBOARDING'],
+            [
+                'vendor'               => 'sr',
+                'assignment_type'      => 'script_coverage',
+                'script_title'         => 'The Sandbox Script',
+                'writer_name'          => 'Training Writer',
+                'page_count'           => 100,
+                'rush'                 => false,
+                'pay_rate'             => 0,
+                'notes'                => 'Onboarding sandbox assignment — resets automatically after completion so new tier-0 readers can practice the full workflow.',
+                'status'               => self::STATUS_UNASSIGNED,
+                'drive_script_file_id' => '__LOCAL_TEST__',
+                'is_test'              => true,
+                'tier'                 => 0,
+            ]
+        );
     }
 
     // --- Status helpers ---

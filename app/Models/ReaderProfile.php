@@ -1,5 +1,7 @@
 <?php
 
+// v1.15 — 2026-07-11 | Add tier_0 (onboarding tier) — mutually exclusive with tier_1/tier_2,
+//                      set/cleared by ReaderProfileController::update(). tiers() now includes 0.
 // v1.14 — 2026-06-16 | isAtCapacity() accepts $isRushAssignment param; excludes exempt_from_capacity
 //                      assignments from count; capacity_override_excludes_rush_requests applies to
 //                      all caps (override and individual) — rush + reader-request assignments
@@ -63,6 +65,7 @@ class ReaderProfile extends Model
         'sms_notify_followup',
         'email_notify_qc_fail',
         'sms_notify_qc_fail',
+        'tier_0',
         'tier_1',
         'tier_2',
         'availability',
@@ -87,6 +90,7 @@ class ReaderProfile extends Model
         'sms_notify_followup'   => 'boolean',
         'email_notify_qc_fail'  => 'boolean',
         'sms_notify_qc_fail'    => 'boolean',
+        'tier_0'                => 'boolean',
         'tier_1'                => 'boolean',
         'tier_2'                => 'boolean',
     ];
@@ -137,10 +141,11 @@ class ReaderProfile extends Model
         return $query->count() >= $max;
     }
 
-    /** Returns the tier numbers (1 and/or 2) this reader belongs to. */
+    /** Returns the tier numbers (0 = onboarding sandbox-only, and/or 1, 2) this reader belongs to. */
     public function tiers(): array
     {
         $t = [];
+        if ($this->tier_0) $t[] = 0;
         if ($this->tier_1) $t[] = 1;
         if ($this->tier_2) $t[] = 2;
         return $t;

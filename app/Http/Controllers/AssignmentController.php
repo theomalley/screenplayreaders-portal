@@ -1,5 +1,9 @@
 <?php
 
+// v2.26 — 2026-07-11 | Tier-0 onboarding: reader branch gains isTierZero + a read-only
+//                      browse-all-assignments list + self-healing sandbox provisioning.
+//                      Admin branch: tier2Assignments is now explicit (tier == 2, was != 1,
+//                      which silently swallowed tier-0 rows) plus a new sandboxAssignments bucket.
 // v2.25 — 2026-07-10 | Fix: update() now notifies the requested reader when an admin adds/changes
 //                      requested_reader_id on an assignment that was already sitting in
 //                      Available/unassigned — previously notifyNewAssignment() only fired on a
@@ -102,8 +106,9 @@ class AssignmentController extends Controller
                 ->filter(fn($a) => $a->status !== Assignment::STATUS_CANCELLED || ! $a->isCancelledDismissedBy($user->id))
                 ->values();
 
-            $tier1Assignments = $allAssignments->where('tier', 1)->values();
-            $tier2Assignments = $allAssignments->where('tier', '!=', 1)->values();
+            $tier1Assignments   = $allAssignments->where('tier', 1)->values();
+            $tier2Assignments   = $allAssignments->where('tier', 2)->values();
+            $sandboxAssignments = $allAssignments->where('tier', 0)->values();
 
             $formatting = Assignment::with(['helpscoutConversation', 'assignedReader.readerProfile', 'assignedReader.editorProfile'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
@@ -211,6 +216,7 @@ class AssignmentController extends Controller
                 'canManage'        => true,
                 'tier1Assignments' => $tier1Assignments,
                 'tier2Assignments' => $tier2Assignments,
+                'sandboxAssignments' => $sandboxAssignments,
                 'formatting'       => $formatting,
                 'editors'          => $editors,
                 'readers'          => $readers,
@@ -231,6 +237,20 @@ class AssignmentController extends Controller
         // Reader: available pool (rush first, oldest first) + their own active assignments
         $profile      = $user->readerProfile;
         $readerTiers  = $profile ? $profile->tiers() : [1];
+
+        // Tier 0 (onboarding): read-only visibility into every real, published assignment
+        // (regardless of tier), plus a self-healing check that the shared sandbox exists.
+        $isTierZero = in_array(0, $readerTiers, true);
+
+        $allNonPendingAssignments = null;
+        if ($isTierZero) {
+            Assignment::ensureSandboxAssignment();
+
+            $allNonPendingAssignments = Assignment::where('status', '!=', Assignment::STATUS_INCOMING)
+                ->where('is_test', false)
+                ->orderByDesc('created_at')
+                ->paginate(50);
+        }
 
         $available = Assignment::available($user->id, $readerTiers)
             ->with(['requestedReader.readerProfile'])
@@ -319,6 +339,8 @@ class AssignmentController extends Controller
             'canManage'              => false,
             'available'              => $available,
             'mine'                   => $mine,
+            'isTierZero'             => $isTierZero,
+            'allNonPendingAssignments' => $allNonPendingAssignments,
             'readerMax'              => $readerMax,
             'capacityOverrideExcludesRushRequests' => $capacityOverrideExcludesRushRequests,
             'periodStart'            => $periodStart,

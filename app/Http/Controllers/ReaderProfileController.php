@@ -1,5 +1,7 @@
 <?php
 
+// v1.11 — 2026-07-11 | Add tier_0 (onboarding) — mutually exclusive with tier_1/tier_2;
+//                      checking either of those clears tier_0.
 // v1.10 — 2026-06-23 | Save is_test flag on user when admin edits reader profile
 // v1.9 — 2026-06-23 | Role change (reader→editor) preserves all shared profile data; removed duplicate role-change block
 // v1.8 — 2026-06-12 | Sanitize bio on save: HTML allowlist for admins, plain text for everyone else
@@ -201,6 +203,7 @@ class ReaderProfileController extends Controller
         $data['is_1099']                  = $request->boolean('is_1099');
         $data['tier_1']                   = $request->boolean('tier_1');
         $data['tier_2']                   = $request->boolean('tier_2');
+        $data['tier_0']                   = $request->boolean('tier_0') && ! $data['tier_1'] && ! $data['tier_2'];
 
         $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],
