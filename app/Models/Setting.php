@@ -1,5 +1,7 @@
 <?php
 
+// v1.17 — 2026-07-12 | Add rateShortcodesForForms()/setRateShortcode() — admin-editable [[shortcode]]
+//                      token names for the 14 core rate rows, decoupled from their stable DB keys.
 // v1.16 — 2026-07-11 | Add TIER2_RELEASE_HOURS_DEFAULT and getTier2ReleaseHours() — admin-configurable
 //                      hours before an unaccepted tier-1 assignment also opens to tier-2 readers.
 // v1.15 — 2026-07-11 | Add RATE_LABELS and rateLabelsForForms()/setRateLabel() — admin-editable
@@ -111,6 +113,30 @@ class Setting extends Model
     public static function setRateLabel(string $key, string $label): void
     {
         static::updateOrCreate(['key' => "rate_label_{$key}"], ['value' => $label]);
+    }
+
+    /**
+     * Returns the [[shortcode]] token name used in the Reader Manual for each core rate row,
+     * keyed by their DB key. Defaults to the key itself (matching legacy behavior) until an
+     * admin renames it via the Ratebook page — kept separate from the DB key so renaming a
+     * shortcode never touches the stable key used everywhere else (pay computation, storage).
+     */
+    public static function rateShortcodesForForms(): array
+    {
+        $stored = static::whereIn('key', array_map(fn ($k) => "rate_shortcode_{$k}", array_keys(self::RATE_DEFAULTS)))
+            ->pluck('value', 'key');
+
+        $shortcodes = [];
+        foreach (array_keys(self::RATE_DEFAULTS) as $key) {
+            $shortcodes[$key] = $stored["rate_shortcode_{$key}"] ?? $key;
+        }
+
+        return $shortcodes;
+    }
+
+    public static function setRateShortcode(string $key, string $shortcode): void
+    {
+        static::updateOrCreate(['key' => "rate_shortcode_{$key}"], ['value' => $shortcode]);
     }
 
     /** Assignment types that have configurable age-colour thresholds. */

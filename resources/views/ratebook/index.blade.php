@@ -18,6 +18,12 @@
                 $isReader  = auth()->user()->isReader();
             @endphp
 
+            @if ($errors->has('shortcodes'))
+                <div class="px-4 py-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
+                    {{ $errors->first('shortcodes') }}
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('ratebook.update') }}">
                 @csrf
                 @method('PATCH')
@@ -45,6 +51,13 @@
                                             <input type="text" name="label_{{ $key }}" value="{{ old('label_'.$key, $labels[$key]) }}"
                                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                                             <x-input-error :messages="$errors->get('label_'.$key)" class="mt-1" />
+                                            <div class="mt-1 flex items-center gap-1 text-xs text-gray-400 font-mono">
+                                                <span>[[</span>
+                                                <input type="text" name="shortcode_{{ $key }}" value="{{ old('shortcode_'.$key, $shortcodes[$key]) }}"
+                                                    class="flex-1 min-w-0 border-gray-200 rounded text-xs font-mono px-1.5 py-0.5 focus:ring-indigo-500 focus:border-indigo-500" />
+                                                <span>]]</span>
+                                            </div>
+                                            <x-input-error :messages="$errors->get('shortcode_'.$key)" class="mt-1" />
                                         @else
                                             {{ $labels[$key] }}
                                         @endif
@@ -94,6 +107,13 @@
                                             <input type="text" name="label_{{ $key }}" value="{{ old('label_'.$key, $labels[$key]) }}"
                                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                                             <x-input-error :messages="$errors->get('label_'.$key)" class="mt-1" />
+                                            <div class="mt-1 flex items-center gap-1 text-xs text-gray-400 font-mono">
+                                                <span>[[</span>
+                                                <input type="text" name="shortcode_{{ $key }}" value="{{ old('shortcode_'.$key, $shortcodes[$key]) }}"
+                                                    class="flex-1 min-w-0 border-gray-200 rounded text-xs font-mono px-1.5 py-0.5 focus:ring-indigo-500 focus:border-indigo-500" />
+                                                <span>]]</span>
+                                            </div>
+                                            <x-input-error :messages="$errors->get('shortcode_'.$key)" class="mt-1" />
                                         @else
                                             {{ $labels[$key] }}
                                         @endif
@@ -141,6 +161,13 @@
                                             <input type="text" name="label_{{ $key }}" value="{{ old('label_'.$key, $labels[$key]) }}"
                                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                                             <x-input-error :messages="$errors->get('label_'.$key)" class="mt-1" />
+                                            <div class="mt-1 flex items-center gap-1 text-xs text-gray-400 font-mono">
+                                                <span>[[</span>
+                                                <input type="text" name="shortcode_{{ $key }}" value="{{ old('shortcode_'.$key, $shortcodes[$key]) }}"
+                                                    class="flex-1 min-w-0 border-gray-200 rounded text-xs font-mono px-1.5 py-0.5 focus:ring-indigo-500 focus:border-indigo-500" />
+                                                <span>]]</span>
+                                            </div>
+                                            <x-input-error :messages="$errors->get('shortcode_'.$key)" class="mt-1" />
                                         @else
                                             {{ $labels[$key] }}
                                         @endif
@@ -185,6 +212,13 @@
                                             <input type="text" name="label_{{ $key }}" value="{{ old('label_'.$key, $labels[$key]) }}"
                                                 class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                                             <x-input-error :messages="$errors->get('label_'.$key)" class="mt-1" />
+                                            <div class="mt-1 flex items-center gap-1 text-xs text-gray-400 font-mono">
+                                                <span>[[</span>
+                                                <input type="text" name="shortcode_{{ $key }}" value="{{ old('shortcode_'.$key, $shortcodes[$key]) }}"
+                                                    class="flex-1 min-w-0 border-gray-200 rounded text-xs font-mono px-1.5 py-0.5 focus:ring-indigo-500 focus:border-indigo-500" />
+                                                <span>]]</span>
+                                            </div>
+                                            <x-input-error :messages="$errors->get('shortcode_'.$key)" class="mt-1" />
                                         @else
                                             {{ $labels[$key] }}
                                         @endif

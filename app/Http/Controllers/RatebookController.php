@@ -1,5 +1,7 @@
 <?php
 
+// v1.5 — 2026-07-12 | Editable [[shortcode]] token per rate row; auto-migrates existing
+//                      [[old_name]] tokens in the saved Reader Manual content on rename.
 // v1.4 — 2026-07-11 | Editable label text for core rates; add/edit/delete for custom rate items
 // v1.3 — 2026-05-28 | Per-editor rates only; remove global rate fallback
 // v1.1 — 2026-05-22 | Permission::check for access; editor commission/weekly flat rates added
@@ -21,6 +23,7 @@ class RatebookController extends Controller
         $user  = auth()->user();
         $rates = Setting::ratesForForms();
         $labels = Setting::rateLabelsForForms();
+        $shortcodes = Setting::rateShortcodesForForms();
         $customItems = RateItem::orderBy('sort_order')->orderBy('id')->get();
 
         $editorRates   = null;  // admin: all editors with their effective rates
@@ -48,7 +51,7 @@ class RatebookController extends Controller
             ];
         }
 
-        return view('ratebook.index', compact('rates', 'labels', 'editorRates', 'myEditorRates', 'customItems'));
+        return view('ratebook.index', compact('rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems'));
     }
 
     public function update(Request $request)
@@ -63,13 +66,42 @@ class RatebookController extends Controller
 
         foreach ($keys as $key) {
             $rules["label_{$key}"] = ['required', 'string', 'max:255'];
+            $rules["shortcode_{$key}"] = ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_]*$/'];
         }
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'shortcode_*.regex' => 'Shortcode must start with a letter and contain only lowercase letters, numbers, and underscores.',
+        ]);
+
+        $newShortcodes = collect($keys)->mapWithKeys(fn ($key) => [$key => $validated["shortcode_{$key}"]]);
+        $dupes = $newShortcodes->duplicates();
+        if ($dupes->isNotEmpty()) {
+            return back()->withErrors(['shortcodes' => 'Shortcode names must be unique — duplicated: ' . $dupes->unique()->implode(', ')])->withInput();
+        }
+
+        $oldShortcodes = Setting::rateShortcodesForForms();
+        $manualContent = Setting::getValue('reader_manual_content', '');
+        $manualChanged = false;
 
         foreach ($keys as $key) {
             Setting::setValue($key, $validated[$key]);
             Setting::setRateLabel($key, $validated["label_{$key}"]);
+
+            $newShortcode = $newShortcodes[$key];
+            $oldShortcode = $oldShortcodes[$key];
+            if ($newShortcode !== $oldShortcode) {
+                Setting::setRateShortcode($key, $newShortcode);
+                // Rewrite any existing [[old_name]] tokens already saved in the Reader Manual
+                // so the rename doesn't silently break previously-published content.
+                $manualContent = str_replace('[[' . $oldShortcode . ']]', '[[' . $newShortcode . ']]', $manualContent, $count);
+                if ($count) {
+                    $manualChanged = true;
+                }
+            }
+        }
+
+        if ($manualChanged) {
+            Setting::setValue('reader_manual_content', $manualContent);
         }
 
         return back()->with('success', 'Rates saved.');

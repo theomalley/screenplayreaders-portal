@@ -34,10 +34,14 @@
                         </p>
                         <details class="mb-3 text-xs">
                             <summary class="cursor-pointer text-indigo-600 hover:text-indigo-800 font-medium select-none">Ratebook placeholders</summary>
+                            <p class="mt-2 text-gray-400">
+                                Token names are editable on the <a href="{{ route('ratebook.index') }}" class="text-indigo-600 hover:underline">Rates</a> page.
+                            </p>
+                            @php $manualShortcodes = \App\Models\Setting::rateShortcodesForForms(); @endphp
                             <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded font-mono text-gray-600 grid grid-cols-2 gap-x-6 gap-y-1">
                                 @foreach(\App\Models\Setting::ratesForForms() as $key => $value)
                                     <div class="flex items-center justify-between gap-2">
-                                        <span class="text-indigo-700">[[{{ $key }}]]</span>
+                                        <span class="text-indigo-700">[[{{ $manualShortcodes[$key] }}]]</span>
                                         <span class="text-gray-400">${{ number_format($value, 2) }}</span>
                                     </div>
                                 @endforeach

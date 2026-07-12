@@ -1,5 +1,7 @@
 <?php
 
+// v1.2 — 2026-07-12 | Resolve rate placeholders by their admin-editable shortcode name
+//                      (Setting::rateShortcodesForForms()), not the raw rate_* DB key.
 // v1.1 — 2026-05-21 | Full page source parsing; iframe rendering with WP styles
 
 namespace App\Http\Controllers;
@@ -30,8 +32,9 @@ class ManualController extends Controller
 
     private function resolvePlaceholders(string $content): string
     {
+        $shortcodes = Setting::rateShortcodesForForms();
         foreach (Setting::ratesForForms() as $key => $value) {
-            $content = str_replace('[[' . $key . ']]', '$' . number_format($value, 2), $content);
+            $content = str_replace('[[' . $shortcodes[$key] . ']]', '$' . number_format($value, 2), $content);
         }
         return $content;
     }
