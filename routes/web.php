@@ -40,9 +40,6 @@ use App\Http\Controllers\ReadCreditController;
 use App\Http\Controllers\BudgetOrderController;
 use App\Http\Controllers\ScriptRegistrationController;
 use App\Http\Controllers\WooOrderController;
-use App\Http\Controllers\Marketing\BaseEmailTemplateController;
-use App\Http\Controllers\Marketing\EmailCampaignController;
-use App\Http\Controllers\Marketing\EmailTemplateController;
 use App\Http\Controllers\Marketing\PartnerApplicationController;
 use App\Http\Controllers\Marketing\PartnerSiteController;
 use Illuminate\Support\Facades\Route;
@@ -423,36 +420,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/partner-sites/{partnerSite}/check-now',      [PartnerSiteController::class, 'checkNow'])->name('partner-sites.check-now');
         Route::post('/partner-sites/{partnerSite}/toggle-active',  [PartnerSiteController::class, 'toggleActive'])->name('partner-sites.toggle-active');
         Route::get('/partner-sites/{partnerSite}/history',         [PartnerSiteController::class, 'history'])->name('partner-sites.history');
-
-        // Base email template (structural layout editor)
-        Route::get('/base-email-template',         [BaseEmailTemplateController::class, 'edit'])->name('base-email-template.edit');
-        Route::post('/base-email-template',        [BaseEmailTemplateController::class, 'update'])->name('base-email-template.update');
-        Route::post('/base-email-template/preview',[BaseEmailTemplateController::class, 'preview'])->name('base-email-template.preview');
-        Route::post('/base-email-template/reset',  [BaseEmailTemplateController::class, 'reset'])->name('base-email-template.reset');
-
-        // Email Templates
-        Route::get('/email-templates',                          [EmailTemplateController::class, 'index'])->name('email-templates.index');
-        Route::post('/email-templates',                         [EmailTemplateController::class, 'store'])->name('email-templates.store');
-        Route::get('/email-templates/{emailTemplate}',          [EmailTemplateController::class, 'show'])->name('email-templates.show');
-        Route::patch('/email-templates/{emailTemplate}',        [EmailTemplateController::class, 'update'])->name('email-templates.update');
-        Route::delete('/email-templates/{emailTemplate}',       [EmailTemplateController::class, 'destroy'])->name('email-templates.destroy');
-
-        // Static endpoints must come before {emailCampaign} to avoid route conflicts
-        Route::post('/email-campaigns/preview',      [EmailCampaignController::class, 'preview'])->name('email-campaigns.preview');
-        Route::post('/email-campaigns/upload-image', [EmailCampaignController::class, 'uploadImage'])->name('email-campaigns.upload-image');
-        Route::patch('/email-campaigns/reorder',     [EmailCampaignController::class, 'reorder'])->name('email-campaigns.reorder');
-
-        Route::get('/email-campaigns',                    [EmailCampaignController::class, 'index'])->name('email-campaigns.index');
-        Route::get('/email-campaigns/create',             [EmailCampaignController::class, 'create'])->name('email-campaigns.create');
-        Route::post('/email-campaigns',                   [EmailCampaignController::class, 'store'])->name('email-campaigns.store');
-        Route::get('/email-campaigns/{emailCampaign}/edit',    [EmailCampaignController::class, 'edit'])->name('email-campaigns.edit');
-        Route::patch('/email-campaigns/{emailCampaign}',       [EmailCampaignController::class, 'update'])->name('email-campaigns.update');
-        Route::delete('/email-campaigns/{emailCampaign}',      [EmailCampaignController::class, 'destroy'])->name('email-campaigns.destroy');
-
-        Route::post('/email-campaigns/{emailCampaign}/duplicate',  [EmailCampaignController::class, 'duplicate'])->name('email-campaigns.duplicate');
-        Route::post('/email-campaigns/{emailCampaign}/send-test',  [EmailCampaignController::class, 'sendTest'])->name('email-campaigns.send-test');
-        Route::post('/email-campaigns/{emailCampaign}/send-live',  [EmailCampaignController::class, 'sendLive'])->name('email-campaigns.send-live');
-        Route::post('/email-campaigns/{emailCampaign}/status',     [EmailCampaignController::class, 'updateStatus'])->name('email-campaigns.status');
     });
 });
 
