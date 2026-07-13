@@ -1,5 +1,6 @@
 <?php
 
+// v1.14 — 2026-07-13 | Fix: custom_message (Logline) was missing from update() validation, so admin-edit saves silently dropped it
 // v1.13 — 2026-07-08 | Save is_1099 flag when admin edits editor profile
 // v1.12 — 2026-06-23 | Save is_test flag on user when admin edits editor profile
 // v1.11 — 2026-06-23 | Role change (editor→reader) preserves all shared profile data; removed duplicate role-change block
@@ -163,6 +164,7 @@ class EditorProfileController extends Controller
             'availability_message' => ['nullable', 'string', 'max:500'],
             'upload_warning'       => ['nullable', 'string', 'max:1000'],
             'bio'                  => ['nullable', 'string', 'max:5000'],
+            'custom_message'       => ['nullable', 'string', 'max:200'],
             'timezone'             => ['nullable', 'timezone'],
         ]);
 
