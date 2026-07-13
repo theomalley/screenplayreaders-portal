@@ -228,7 +228,11 @@ class PartnerSiteController extends Controller
             'error_message'    => $errorMessage,
         ]);
 
-        $site->update(['next_check_at' => now()->addMinutes($site->check_interval_minutes)]);
+        // Jitter the next check by up to +/-15% so the interval doesn't lock onto a
+        // predictable wall-clock time a partner could work around.
+        $jitterMinutes = (int) round($site->check_interval_minutes * random_int(-15, 15) / 100);
+        $nextInterval  = max(1, $site->check_interval_minutes + $jitterMinutes);
+        $site->update(['next_check_at' => now()->addMinutes($nextInterval)]);
 
         self::syncCouponStatus($site, $isUp);
 
