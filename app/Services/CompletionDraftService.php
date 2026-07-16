@@ -87,12 +87,16 @@ class CompletionDraftService
         $conversationId = $record->helpscout_conversation_id;
         $helpScout      = new HelpScoutService();
 
-        // Verify the stored conversation ID still exists — it may have been
-        // deleted or merged in HelpScout since Zapier stored it.
-        if (! $helpScout->conversationExists($conversationId)) {
-            Log::warning('HelpScout stored conversation ID is stale, searching by order number', [
-                'order_number'       => $orderNumber,
-                'stale_id'           => $conversationId,
+        // Verify the stored conversation ID still resolves — it may have been deleted
+        // outright, or merged into another conversation, since Zapier stored it. HelpScout
+        // returns 200 (not 404) for a merged-away ID on GET, so a plain existence check
+        // isn't enough — resolveConversationId() surfaces the canonical ID from the body.
+        $resolvedId = $helpScout->resolveConversationId($conversationId);
+
+        if ($resolvedId === null) {
+            Log::warning('HelpScout stored conversation ID no longer exists, searching by order number', [
+                'order_number' => $orderNumber,
+                'stale_id'     => $conversationId,
             ]);
 
             $resolved = $helpScout->findConversationIdByOrderNumber($orderNumber);
@@ -105,11 +109,20 @@ class CompletionDraftService
             $record->update(['helpscout_conversation_id' => $resolved]);
             $conversationId = $resolved;
 
-            Log::info('HelpScout conversation ID auto-healed', [
+            Log::info('HelpScout conversation ID auto-healed (404)', [
                 'order_number' => $orderNumber,
                 'old_id'       => $record->getOriginal('helpscout_conversation_id'),
                 'new_id'       => $conversationId,
             ]);
+        } elseif ($resolvedId !== $conversationId) {
+            Log::warning('HelpScout stored conversation ID was merged into another conversation, auto-healing', [
+                'order_number' => $orderNumber,
+                'old_id'       => $conversationId,
+                'new_id'       => $resolvedId,
+            ]);
+
+            $record->update(['helpscout_conversation_id' => $resolvedId]);
+            $conversationId = $resolvedId;
         }
 
         try {

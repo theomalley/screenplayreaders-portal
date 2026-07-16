@@ -1,5 +1,9 @@
 <?php
 
+// v1.10 — 2026-07-16 | conversationExists() replaced by resolveConversationId(): HelpScout
+//                      200s a GET for a merged-away conversation ID but the reply/write
+//                      endpoints 404 on it — createDraftReply now detects the canonical
+//                      "id" in the fetched body and uses it for the reply/attachment calls.
 // v1.9 — 2026-06-27 | findConversationIdByOrderNumber: subject-line search fallback for stale/deleted conversation IDs
 // v1.8 — 2026-06-24 | findConversationIdByTicketNumber: fall back to direct ID fetch when number search fails
 // v1.7 — 2026-06-15 | createDraftReply: reopen (set status active) closed conversations before drafting
@@ -50,6 +54,19 @@ class HelpScoutService
     {
         $token        = $this->getToken();
         $conversation = $this->fetchConversation($conversationId, $token);
+
+        // HelpScout returns 200 on a GET for a conversation ID that has since been merged
+        // into another one, but the response body's own "id" reflects the surviving
+        // conversation — write endpoints like /reply 404 if called with the old ID.
+        $canonicalId = (string) ($conversation['id'] ?? $conversationId);
+        if ($canonicalId !== $conversationId) {
+            Log::warning('HelpScout conversation ID redirected to canonical ID (merge)', [
+                'requested_id' => $conversationId,
+                'canonical_id' => $canonicalId,
+            ]);
+            $conversationId = $canonicalId;
+        }
+
         $customerId   = $this->extractCustomerId($conversation, $conversationId);
         $convStatus   = $conversation['status'] ?? 'unknown';
 
@@ -357,13 +374,24 @@ class HelpScoutService
         return $response->json() ?? [];
     }
 
-    public function conversationExists(string $conversationId): bool
+    /**
+     * Resolve a possibly-stale conversation ID to its canonical current ID.
+     * HelpScout returns 200 for a merged/redirected conversation ID on GET, but the
+     * response body's own "id" field reflects the surviving conversation — write
+     * endpoints like /reply 404 if called with the old ID. Returns null if the ID
+     * doesn't resolve to any conversation at all (e.g. deleted outright).
+     */
+    public function resolveConversationId(string $conversationId): ?string
     {
         $token    = $this->getToken();
         $response = Http::withToken($token)
             ->get(self::API_BASE . "/conversations/{$conversationId}");
 
-        return $response->ok();
+        if (! $response->ok()) {
+            return null;
+        }
+
+        return (string) ($response->json('id') ?? $conversationId);
     }
 
     private function fetchConversation(string $conversationId, string $token): array

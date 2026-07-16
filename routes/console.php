@@ -23,3 +23,8 @@ Schedule::command('editor-pay:add-weekly-flat')->hourly()->withoutOverlapping();
 // Delete Notification History rows older than the admin-configured retention period (0 = never expire).
 Schedule::command('notifications:prune-history')->daily()->withoutOverlapping();
 // 2026-06-15
+
+// Detect HelpScout conversation IDs merged into a new ID since being stored, and auto-heal
+// the record before a draft attempt hits the stale ID and 404s.
+Schedule::command('helpscout:reconcile-conversation-ids')->daily()->withoutOverlapping();
+// 2026-07-16
