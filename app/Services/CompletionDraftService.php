@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-07-17 | WD assignments attach a DOCX export instead of the PDF.
 // v1.1 — 2026-06-27 | Auto-heal stale conversation IDs: verify stored ID against API before
 //                     drafting; on 404, search by order number and update the record.
 // v1.0 — 2026-06-19 | Extracted from QcController + ArchiveController — shared HelpScout
@@ -67,6 +68,20 @@ class CompletionDraftService
 
             $a->loadMissing('assignedReader.readerProfile');
             $initials = $a->assignedReader?->readerProfile?->initials ?? null;
+
+            // WD assignments attach the coverage as a Word doc instead of a PDF.
+            if ($a->vendor === 'wd') {
+                $filename = FilenameGenerator::coverageDocx($a, $initials);
+                $bytes    = app(GoogleDocsService::class)->exportDocToDocxBytes($a->drive_coverage_doc_id);
+
+                $attachments[] = [
+                    'fileName' => $filename,
+                    'mimeType' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'data'     => base64_encode($bytes),
+                ];
+                continue;
+            }
+
             $filename = FilenameGenerator::coveragePdf($a, $initials);
             $bytes = $a->spaces_coverage_pdf_path
                 ? app(SpacesStorageService::class)->get($a->spaces_coverage_pdf_path)

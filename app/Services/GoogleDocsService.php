@@ -1,5 +1,6 @@
 <?php
 
+// v1.6 — 2026-07-17 | Add exportDocToDocxBytes() — DOCX export for WD Help Scout draft attachments
 // v1.5 — 2026-06-22 | Add downloadDriveFileBytes() for downloading Drive files via impersonated client
 // v1.4 — 2026-06-22 | Add generateCertificatePdf() for script registration certificates (copy → fill → export → save to Drive → cleanup)
 // v1.3 — 2026-06-19 | exportToPdf: update existing PDF in place when existingPdfId is provided (prevents Drive orphans)
@@ -163,6 +164,20 @@ class GoogleDocsService
     public function exportDocToPdfBytes(string $docId): string
     {
         $response = $this->drive->files->export($docId, 'application/pdf', ['alt' => 'media']);
+        return $response->getBody()->getContents();
+    }
+
+    /**
+     * Export a Google Doc to DOCX and return the raw bytes (without saving to Drive).
+     * Used by CompletionDraftService to attach a Word doc to WD Help Scout drafts.
+     */
+    public function exportDocToDocxBytes(string $docId): string
+    {
+        $response = $this->drive->files->export(
+            $docId,
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ['alt' => 'media']
+        );
         return $response->getBody()->getContents();
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-07-17 | Add coverageDocx() for WD Help Scout draft attachments
 // v1.0 — 2026-05-22 | Structured filename generation for scripts and coverage docs/PDFs
 
 namespace App\Support;
@@ -55,6 +56,12 @@ class FilenameGenerator
     public static function coveragePdf(Assignment $assignment, ?string $readerInitials = null): string
     {
         return self::coverageDoc($assignment, $readerInitials) . '.pdf';
+    }
+
+    /** Coverage DOCX filename: coverageDoc + .docx */
+    public static function coverageDocx(Assignment $assignment, ?string $readerInitials = null): string
+    {
+        return self::coverageDoc($assignment, $readerInitials) . '.docx';
     }
 
     /** Base segment: {prefix}_{YYYYMMDD}_{slug-title}_{writerCode} */
