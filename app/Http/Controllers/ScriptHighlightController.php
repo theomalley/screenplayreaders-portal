@@ -13,6 +13,8 @@ class ScriptHighlightController extends Controller
 {
     public function index(Assignment $assignment): JsonResponse
     {
+        $this->authorize('view', $assignment);
+
         $highlights = ScriptHighlight::where('assignment_id', $assignment->id)
             ->where('user_id', auth()->id())
             ->orderBy('page_number')
@@ -30,6 +32,8 @@ class ScriptHighlightController extends Controller
 
     public function store(Request $request, Assignment $assignment): JsonResponse
     {
+        $this->authorize('view', $assignment);
+
         $data = $request->validate([
             'page_number'         => ['required', 'integer', 'min:1'],
             'text'                => ['nullable', 'string', 'max:5000'],

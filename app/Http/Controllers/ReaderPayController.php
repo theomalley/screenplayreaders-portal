@@ -102,11 +102,13 @@ class ReaderPayController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
 
-        // Hard-delete all unpaid completed assignments for this reader + all pending adjustments
+        // Hard-delete unpaid completed TEST assignments for this reader + all pending adjustments
+        // (real, non-test assignments must never be hard-deleted here — see removeHistoryBatch())
         $deleted = Assignment::where('assigned_reader_id', $reader->id)
             ->where('vendor', 'sr')
             ->where('status', Assignment::STATUS_COMPLETED)
             ->whereNull('reader_paid_at')
+            ->where('is_test', true)
             ->delete();
 
         ReaderPayAdjustment::where('user_id', $reader->id)

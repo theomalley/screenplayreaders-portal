@@ -15,6 +15,8 @@ class ReaderScriptNoteController extends Controller
 {
     public function index(Assignment $assignment): JsonResponse
     {
+        $this->authorize('view', $assignment);
+
         $notes = ReaderScriptNote::where('assignment_id', $assignment->id)
             ->where('user_id', auth()->id())
             ->orderBy('created_at')
@@ -30,6 +32,8 @@ class ReaderScriptNoteController extends Controller
 
     public function store(Request $request, Assignment $assignment): JsonResponse
     {
+        $this->authorize('view', $assignment);
+
         $data = $request->validate([
             'body'        => ['required', 'string', 'max:2000'],
             'page_number' => ['nullable', 'integer', 'min:1'],

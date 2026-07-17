@@ -450,8 +450,10 @@ class GoogleDriveService
      */
     private function ensureFolder(string $parentId, string $name): string
     {
+        $escapedName = str_replace(['\\', "'"], ['\\\\', "\\'"], $name);
+
         $results = $this->drive->files->listFiles([
-            'q'                         => "name='{$name}' and '{$parentId}' in parents"
+            'q'                         => "name='{$escapedName}' and '{$parentId}' in parents"
                                          . " and mimeType='application/vnd.google-apps.folder' and trashed=false",
             'fields'                    => 'files(id)',
             'includeItemsFromAllDrives' => true,

@@ -61,7 +61,7 @@ class IncomingAssignmentController extends Controller
             'reader_request_2' => 'nullable|string|max:20',
             'reader_request_3' => 'nullable|string|max:20',
             'block_initials'   => 'nullable|string|max:255',
-            'script'           => 'required|file|max:5120',
+            'script'           => 'required|file|mimes:pdf,docx|max:5120',
         ]);
 
         Log::info('IncomingAssignment: received', [
