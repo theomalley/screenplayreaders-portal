@@ -76,7 +76,7 @@ class RatebookController extends Controller
         }
 
         foreach ($keys as $key) {
-            $rules["retail_price_{$key}"] = ['nullable', 'numeric', 'min:0', 'max:9999.99'];
+            $rules["retail_price_{$key}"] = ['nullable', 'string', 'max:255'];
         }
 
         $validated = $request->validate($rules, [

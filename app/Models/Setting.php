@@ -143,8 +143,9 @@ class Setting extends Model
 
     /**
      * Returns the admin-entered retail price (what customers are charged) for each of the 14
-     * core rate rows, keyed by the same DB key as RATE_DEFAULTS. Null (not 0.00) for any row
-     * never set, so the form shows blank rather than a misleading default.
+     * core rate rows, keyed by the same DB key as RATE_DEFAULTS. Free text, not a number — e.g.
+     * "159" or "97/149/197" for a row priced by reader count. Null for any row never set, so
+     * the form shows blank rather than a misleading default.
      */
     public static function retailPricesForForms(): array
     {
@@ -155,7 +156,7 @@ class Setting extends Model
         $prices = [];
         foreach ($keys as $key) {
             $value = $stored["retail_price_{$key}"] ?? null;
-            $prices[$key] = ($value !== null && $value !== '') ? (float) $value : null;
+            $prices[$key] = ($value !== null && $value !== '') ? $value : null;
         }
 
         return $prices;
