@@ -1,28 +1,24 @@
-{{-- Editor Pay — unpaid commissions/adjustments for the single editor --}}
+{{-- Editor Pay card — unpaid commissions/adjustments for one editor --}}
+@php $editorId = $ed['editor_id']; $editor = $ed['editor']; @endphp
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="{ adjOpen: false }">
 
     {{-- Header --}}
     <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-blue-200 bg-blue-50">
         <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
             <div class="flex items-center gap-2">
-                @php $editorInitials = $editor?->editorProfile?->initials ?? '??'; @endphp
-                @if($editor)
-                <a href="{{ route('admin.editors.edit', $editor) }}" title="Edit {{ $editor?->editorProfile?->displayName() ?? $editor->name }}">
-                    @if($editor->editorProfile?->photo)
-                        <img src="{{ asset('storage/' . $editor->editorProfile->photo) }}" alt="{{ $editorInitials }}"
+                <a href="{{ route('admin.editors.edit', $editor) }}" title="Edit {{ $ed['editor_name'] }}">
+                    @if($ed['photo_url'])
+                        <img src="{{ $ed['photo_url'] }}" alt="{{ $ed['initials'] }}"
                              class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">
                     @else
-                        <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-semibold ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">{{ $editorInitials }}</div>
+                        <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-semibold ring-1 ring-gray-300 hover:ring-indigo-400 transition-shadow">{{ $ed['initials'] }}</div>
                     @endif
                 </a>
-                @endif
-                <span class="font-semibold text-gray-800">
-                    {{ $editor?->editorProfile?->displayName() ?? $editor?->name ?? 'Editor' }}
+                <span class="font-semibold text-gray-800">{{ $ed['editor_name'] }}</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold {{ $ed['is_1099'] ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500' }}">
+                    {{ $ed['is_1099'] ? '1099' : 'Non-1099' }}
                 </span>
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold {{ $editor?->editorProfile?->is_1099 ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500' }}">
-                    {{ $editor?->editorProfile?->is_1099 ? '1099' : 'Non-1099' }}
-                </span>
-                @php $paymentId = strtoupper($editorInitials) . $periodEnd->format('Ymd'); @endphp
+                @php $paymentId = strtoupper($ed['initials']) . $periodEnd->format('Ymd'); @endphp
                 <span x-data="{ copied: false }"
                       class="inline-flex items-center gap-1 cursor-pointer select-all"
                       @click="navigator.clipboard.writeText('{{ $paymentId }}'); copied = true; setTimeout(() => copied = false, 1500)"
@@ -32,18 +28,18 @@
                     <span x-show="copied" x-cloak class="text-[10px] text-green-600 font-medium">✓ copied</span>
                 </span>
             </div>
-            @if($editor?->editorProfile?->paypal_email)
-                <span class="text-sm text-gray-500">· PayPal: <span class="font-mono text-xs">{{ $editor->editorProfile->paypal_email }}</span></span>
+            @if($ed['paypal_email'])
+                <span class="text-sm text-gray-500">· PayPal: <span class="font-mono text-xs">{{ $ed['paypal_email'] }}</span></span>
             @endif
-            <span class="text-sm font-semibold {{ $totalOwed >= 0 ? 'text-blue-700' : 'text-red-600' }}">
-                · {{ $unpaidOrders->count() }} commission(s) + {{ $unpaidAdjustments->count() }} adjustment(s)@if($periodFlatRate > 0) + flat rate @endif
-                &nbsp;·&nbsp; ${{ number_format($totalOwed, 2) }} owed
+            <span class="text-sm font-semibold {{ $ed['total_owed'] >= 0 ? 'text-blue-700' : 'text-red-600' }}">
+                · {{ $ed['unpaid_orders']->count() }} commission(s) + {{ $ed['unpaid_adjustments']->count() }} adjustment(s)@if($ed['period_flat_rate'] > 0) + flat rate @endif
+                &nbsp;·&nbsp; ${{ number_format($ed['total_owed'], 2) }} owed
             </span>
         </div>
         @if(auth()->user()->isAdmin())
         <div class="flex items-center gap-2">
-            <form method="POST" action="{{ route('editor-pay.clear-unpaid') }}"
-                onsubmit="return confirm('Clear all pending editor commissions and adjustments? This sets commissions to $0 and removes pending adjustments.')">
+            <form method="POST" action="{{ route('editor-pay.clear-unpaid', $editorId) }}"
+                onsubmit="return confirm('Clear all pending commissions and adjustments for {{ $ed['editor_name'] }}? This sets commissions to $0 and removes pending adjustments.')">
                 @csrf
                 <button type="submit"
                     class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-300 hover:bg-red-50 rounded-md transition-colors">
@@ -54,8 +50,8 @@
                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 hover:bg-indigo-50 rounded-md transition-colors">
                 + Adjustment
             </button>
-            <form method="POST" action="{{ route('editor-pay.mark-paid') }}"
-                onsubmit="return confirm('Mark all pending editor pay as paid (${{ number_format($totalOwed, 2) }})?')">
+            <form method="POST" action="{{ route('editor-pay.mark-paid', $editorId) }}"
+                onsubmit="return confirm('Mark all pending pay for {{ $ed['editor_name'] }} as paid (${{ number_format($ed['total_owed'], 2) }})?')">
                 @csrf
                 <button type="submit"
                     class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
@@ -69,7 +65,7 @@
     {{-- Adjustment form --}}
     @if(auth()->user()->isAdmin())
     <div x-show="adjOpen" x-cloak class="px-5 py-4 bg-indigo-50 border-b border-indigo-100">
-        <form method="POST" action="{{ route('editor-pay.add-adjustment') }}" class="flex flex-wrap items-end gap-3">
+        <form method="POST" action="{{ route('editor-pay.add-adjustment', $editorId) }}" class="flex flex-wrap items-end gap-3">
             @csrf
             <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Amount (negative to deduct)</label>
@@ -84,9 +80,9 @@
                     required maxlength="255">
             </div>
             <button type="button"
-                onclick="this.closest('form').querySelector('[name=amount]').value = '{{ number_format($weeklyFlat, 2) }}'; this.closest('form').querySelector('[name=description]').value = 'Weekly flat rate';"
+                onclick="this.closest('form').querySelector('[name=amount]').value = '{{ number_format($ed['weekly_flat'], 2) }}'; this.closest('form').querySelector('[name=description]').value = 'Weekly flat rate';"
                 class="px-3 py-2 text-xs font-medium text-indigo-600 bg-white border border-indigo-200 hover:bg-indigo-50 rounded-md transition-colors">
-                Fill Weekly Flat (${{ number_format($weeklyFlat, 2) }})
+                Fill Weekly Flat (${{ number_format($ed['weekly_flat'], 2) }})
             </button>
             <button type="submit"
                 class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors">
@@ -101,8 +97,8 @@
     @endif
 
     {{-- Commissions table --}}
-    @if($unpaidOrders->isEmpty() && $unpaidAdjustments->isEmpty() && $periodFlatRate <= 0)
-        <div class="px-6 py-10 text-center text-gray-400 text-sm">No pending editor pay.</div>
+    @if($ed['unpaid_orders']->isEmpty() && $ed['unpaid_adjustments']->isEmpty() && $ed['period_flat_rate'] <= 0)
+        <div class="px-6 py-10 text-center text-gray-400 text-sm">No pending pay.</div>
     @else
         <table class="min-w-full table-fixed divide-y divide-gray-100 text-sm">
             <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -116,7 +112,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-                @foreach($unpaidOrders as $order)
+                @foreach($ed['unpaid_orders'] as $order)
                 @php
                     $commissionRate = $order->cog_precommission != 0
                         ? ($order->cog_commission / $order->cog_precommission) * 100
@@ -177,7 +173,7 @@
                     </td>
                 </tr>
                 @endforeach
-                @foreach($unpaidAdjustments as $adj)
+                @foreach($ed['unpaid_adjustments'] as $adj)
                 <tr class="hover:bg-indigo-50">
                     <td class="px-4 py-2 text-indigo-600 text-xs uppercase font-medium">Adjustment</td>
                     <td class="px-4 py-2">
@@ -202,11 +198,11 @@
                     @endif
                 </tr>
                 @endforeach
-                @if($periodFlatRate > 0)
+                @if($ed['period_flat_rate'] > 0)
                 <tr class="bg-blue-50/50 hover:bg-blue-50 border-t border-blue-100" x-data="{ editingFlat: false }">
                     <td class="px-4 py-2 text-blue-600 text-xs uppercase font-medium">Flat Rate</td>
                     <td class="px-4 py-2">
-                        <div class="text-gray-700">Weekly flat rate{{ $periodWeeks > 1 ? " &times; {$periodWeeks} weeks" : '' }}</div>
+                        <div class="text-gray-700">Weekly flat rate{{ $ed['period_weeks'] > 1 ? " &times; {$ed['period_weeks']} weeks" : '' }}</div>
                         <div class="text-xs text-gray-400">Auto-included at end of pay period</div>
                     </td>
                     <td class="px-4 py-2 text-gray-500 text-xs">{{ $periodEnd->format('M j, Y') }}</td>
@@ -215,27 +211,27 @@
                         @if(auth()->user()->isAdmin())
                             <span x-show="!editingFlat" @click="editingFlat = true"
                                   class="cursor-pointer hover:underline" title="Click to edit">
-                                +${{ number_format($periodFlatRate, 2) }}
+                                +${{ number_format($ed['period_flat_rate'], 2) }}
                             </span>
                             <form x-show="editingFlat" x-cloak method="POST"
-                                  action="{{ route('editor-pay.update-flat-rate') }}"
+                                  action="{{ route('editor-pay.update-flat-rate', $editorId) }}"
                                   class="flex items-center justify-end gap-1">
                                 @csrf @method('PATCH')
                                 <span class="text-gray-400">$</span>
                                 <input type="number" name="period_flat_rate" step="0.01" min="0"
-                                       value="{{ number_format($periodFlatRate, 2, '.', '') }}"
+                                       value="{{ number_format($ed['period_flat_rate'], 2, '.', '') }}"
                                        class="w-20 text-right text-xs border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
                                 <button type="submit" class="text-xs text-indigo-600 hover:text-indigo-800">Save</button>
                                 <button type="button" @click="editingFlat = false" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
                             </form>
                         @else
-                            +${{ number_format($periodFlatRate, 2) }}
+                            +${{ number_format($ed['period_flat_rate'], 2) }}
                         @endif
                     </td>
                     <td class="px-4 py-2 text-right">
                         @if(auth()->user()->isAdmin())
-                        <form method="POST" action="{{ route('editor-pay.delete-flat-rate') }}"
-                            onsubmit="return confirm('Remove the flat rate? This sets the editor\'s weekly flat to $0.')">
+                        <form method="POST" action="{{ route('editor-pay.delete-flat-rate', $editorId) }}"
+                            onsubmit="return confirm('Remove the flat rate? This sets {{ $ed['editor_name'] }}\'s weekly flat to $0.')">
                             @csrf @method('DELETE')
                             <button type="submit" class="text-xs text-red-400 hover:text-red-600">Remove</button>
                         </form>
@@ -247,7 +243,7 @@
             <tfoot class="bg-blue-50 border-t-2 border-blue-200 text-sm font-semibold">
                 <tr>
                     <td colspan="4" class="px-4 py-3 text-blue-700">Total owed</td>
-                    <td class="px-4 py-3 text-right {{ $totalOwed >= 0 ? 'text-blue-700' : 'text-red-600' }}">${{ number_format($totalOwed, 2) }}</td>
+                    <td class="px-4 py-3 text-right {{ $ed['total_owed'] >= 0 ? 'text-blue-700' : 'text-red-600' }}">${{ number_format($ed['total_owed'], 2) }}</td>
                     <td></td>
                 </tr>
             </tfoot>

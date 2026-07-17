@@ -1,5 +1,9 @@
 <?php
 
+// v2.0 — 2026-07-17 | Scope every action to a specific $editor (route-bound) instead of "the"
+//                     editor — commission/adjustments/flat-rate no longer commingle once more
+//                     than one editor exists. markUnpaid() now also restricts non-admin editors
+//                     to their own pay (previously any editor could revert any editor's payment).
 // v1.8 — 2026-06-23 | Backdate flat rate adjustment created_at into the period being paid
 // v1.7 — 2026-06-23 | Add updateFlatRate() and deleteFlatRate() for inline editing of flat rate line item
 // v1.6 — 2026-06-23 | Auto-create flat rate adjustment on markPaid() so it appears in payment history
@@ -21,16 +25,16 @@ use Illuminate\Http\Request;
 
 class EditorPayController extends Controller
 {
-    public function markPaid()
+    public function markPaid(User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($editor->isEditor(), 404);
 
         $now = Carbon::now();
 
-        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->first();
-        $weeklyFlat = (float) ($editor?->editorProfile?->editor_weekly_flat ?? 0.0);
+        $weeklyFlat = (float) ($editor->editorProfile?->editor_weekly_flat ?? 0.0);
 
-        if ($weeklyFlat > 0 && $editor) {
+        if ($weeklyFlat > 0) {
             $schedule = Setting::getPayoutSchedule();
             $weeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
             $periodFlatRate = round($weeklyFlat * $weeks, 2);
@@ -58,57 +62,66 @@ class EditorPayController extends Controller
             }
         }
 
-        OrderRevenue::whereNull('editor_paid_at')
+        OrderRevenue::where('editor_id', $editor->id)
+            ->whereNull('editor_paid_at')
             ->where('skip_commission', false)
             ->where('cog_commission', '>', 0)
             ->update(['editor_paid_at' => $now]);
 
-        EditorPayAdjustment::whereNull('editor_paid_at')
+        EditorPayAdjustment::where('user_id', $editor->id)
+            ->whereNull('editor_paid_at')
             ->update(['editor_paid_at' => $now]);
 
         return redirect()->route('payroll.index')
-            ->with('success', 'All pending editor pay marked as paid.');
+            ->with('success', 'All pending pay for ' . ($editor->editorProfile?->displayName() ?? $editor->name) . ' marked as paid.');
     }
 
-    public function clearUnpaidBatch()
+    public function clearUnpaidBatch(User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($editor->isEditor(), 404);
 
-        OrderRevenue::whereNull('editor_paid_at')
+        OrderRevenue::where('editor_id', $editor->id)
+            ->whereNull('editor_paid_at')
             ->where('skip_commission', false)
             ->where('cog_commission', '>', 0)
             ->update(['cog_commission' => 0]);
 
-        EditorPayAdjustment::whereNull('editor_paid_at')->delete();
+        EditorPayAdjustment::where('user_id', $editor->id)
+            ->whereNull('editor_paid_at')
+            ->delete();
 
         return redirect()->route('payroll.index')
-            ->with('success', 'Cleared all pending editor commissions and adjustments.');
+            ->with('success', 'Cleared pending commissions and adjustments for ' . ($editor->editorProfile?->displayName() ?? $editor->name) . '.');
     }
 
-    public function markUnpaid(Request $request)
+    public function markUnpaid(Request $request, User $editor)
     {
         abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        abort_unless($editor->isEditor(), 404);
+        abort_unless(auth()->user()->isAdmin() || auth()->id() === $editor->id, 403);
 
         $validated = $request->validate(['paid_at' => 'required|date']);
         $date = Carbon::parse($validated['paid_at'])->toDateString();
 
-        $orderCount = OrderRevenue::whereNotNull('editor_paid_at')
+        $orderCount = OrderRevenue::where('editor_id', $editor->id)
+            ->whereNotNull('editor_paid_at')
             ->whereDate('editor_paid_at', $date)
             ->update(['editor_paid_at' => null]);
 
-        $adjustmentCount = EditorPayAdjustment::whereNotNull('editor_paid_at')
+        $adjustmentCount = EditorPayAdjustment::where('user_id', $editor->id)
+            ->whereNotNull('editor_paid_at')
             ->whereDate('editor_paid_at', $date)
             ->update(['editor_paid_at' => null]);
 
         return redirect()->route('payroll.index')
-            ->with('success', "Reverted editor's {$date} payment to unpaid ({$orderCount} commission(s), {$adjustmentCount} adjustment(s)).");
+            ->with('success', "Reverted {$date} payment to unpaid ({$orderCount} commission(s), {$adjustmentCount} adjustment(s)).");
     }
 
-    public function addAdjustment(Request $request)
+    public function addAdjustment(Request $request, User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
-
-        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->firstOrFail();
+        abort_unless($editor->isEditor(), 404);
 
         $validated = $request->validate([
             'amount'      => 'required|numeric|not_in:0',
@@ -154,19 +167,22 @@ class EditorPayController extends Controller
             ->with('success', "Commission for order {$order->order_number} removed.");
     }
 
-    public function deleteHistoryBatch(string $date)
+    public function deleteHistoryBatch(User $editor, string $date)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($editor->isEditor(), 404);
 
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             abort(404);
         }
 
-        OrderRevenue::whereNotNull('editor_paid_at')
+        OrderRevenue::where('editor_id', $editor->id)
+            ->whereNotNull('editor_paid_at')
             ->whereDate('editor_paid_at', $date)
             ->update(['cog_commission' => 0, 'editor_paid_at' => null]);
 
-        EditorPayAdjustment::whereNotNull('editor_paid_at')
+        EditorPayAdjustment::where('user_id', $editor->id)
+            ->whereNotNull('editor_paid_at')
             ->whereDate('editor_paid_at', $date)
             ->delete();
 
@@ -174,18 +190,22 @@ class EditorPayController extends Controller
             ->with('success', "Payment history for {$date} permanently deleted.");
     }
 
-    public function deleteAllHistory()
+    public function deleteAllHistory(User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($editor->isEditor(), 404);
 
-        OrderRevenue::whereNotNull('editor_paid_at')
+        OrderRevenue::where('editor_id', $editor->id)
+            ->whereNotNull('editor_paid_at')
             ->where('cog_commission', '>', 0)
             ->update(['cog_commission' => 0, 'editor_paid_at' => null]);
 
-        EditorPayAdjustment::whereNotNull('editor_paid_at')->delete();
+        EditorPayAdjustment::where('user_id', $editor->id)
+            ->whereNotNull('editor_paid_at')
+            ->delete();
 
         return redirect()->route('payroll.index')
-            ->with('success', 'All editor payment history permanently deleted.');
+            ->with('success', 'All payment history permanently deleted for ' . ($editor->editorProfile?->displayName() ?? $editor->name) . '.');
     }
 
     public function deleteAdjustment(EditorPayAdjustment $adjustment)
@@ -199,32 +219,31 @@ class EditorPayController extends Controller
             ->with('success', 'Adjustment removed.');
     }
 
-    public function updateFlatRate(Request $request)
+    public function updateFlatRate(Request $request, User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($editor->isEditor(), 404);
 
         $validated = $request->validate([
             'period_flat_rate' => 'required|numeric|min:0',
         ]);
 
-        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->firstOrFail();
-
         $schedule = Setting::getPayoutSchedule();
         $weeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
         $weeklyFlat = round((float) $validated['period_flat_rate'] / $weeks, 2);
 
-        $editor->editorProfile->update(['editor_weekly_flat' => $weeklyFlat]);
+        $editor->editorProfile()->updateOrCreate(['user_id' => $editor->id], ['editor_weekly_flat' => $weeklyFlat]);
 
         return redirect()->route('payroll.index')
             ->with('success', 'Flat rate updated to $' . number_format((float) $validated['period_flat_rate'], 2) . '/period ($' . number_format($weeklyFlat, 2) . '/week).');
     }
 
-    public function deleteFlatRate()
+    public function deleteFlatRate(User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless($editor->isEditor(), 404);
 
-        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->firstOrFail();
-        $editor->editorProfile->update(['editor_weekly_flat' => 0]);
+        $editor->editorProfile?->update(['editor_weekly_flat' => 0]);
 
         return redirect()->route('payroll.index')
             ->with('success', 'Flat rate removed.');

@@ -10,9 +10,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\AppendOrderToSheet;
-use App\Models\EditorProductCommission;
 use App\Models\OrderRevenue;
 use App\Models\User;
+use App\Services\EditorCommissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Validator;
 
 class OrderRevenueController extends Controller
 {
+    public function __construct(private EditorCommissionService $commissionService)
+    {
+    }
+
     public function store(Request $request): JsonResponse
     {
         if (! $this->authorised($request)) {
@@ -98,9 +102,19 @@ class OrderRevenueController extends Controller
             }
         }
 
-        // Recalculate editor commission using portal's per-product config (if line_items available)
-        if (! $data['skip_commission'] && ! empty($data['line_items_json'])) {
-            $recalculated = $this->recalculateCommission(
+        $existing = OrderRevenue::where('order_number', $data['order_number'])->first();
+
+        // Attribute the order to an editor: preserve any existing/manually-assigned editor
+        // (e.g. reassigned via the Order Log) rather than re-resolving it on every re-sync.
+        $editor = $existing?->editor_id
+            ? User::find($existing->editor_id)
+            : $this->commissionService->resolveDefaultEditor();
+        $data['editor_id'] = $editor?->id;
+
+        // Recalculate editor commission using the resolved editor's portal config (if available)
+        if (! $data['skip_commission'] && ! empty($data['line_items_json']) && $editor?->editorProfile) {
+            $recalculated = $this->commissionService->calculate(
+                $editor->editorProfile,
                 $data['line_items_json'],
                 (float) $data['cog_precommission']
             );
@@ -112,7 +126,6 @@ class OrderRevenueController extends Controller
             }
         }
 
-        $existing = OrderRevenue::where('order_number', $data['order_number'])->first();
         Log::info('OrderRevenue sync', [
             'order_number' => $data['order_number'],
             'ordered_at'   => $data['ordered_at'],
@@ -137,81 +150,6 @@ class OrderRevenueController extends Controller
         }
 
         return response()->json(['status' => 'ok'], 200);
-    }
-
-    /**
-     * Compute editor commission from portal config.
-     * Returns null if no editor profile/config found (falls back to theme value).
-     */
-    private function recalculateCommission(string $lineItemsJson, float $precommission): ?float
-    {
-        $lineItems = json_decode($lineItemsJson, true);
-        if (! is_array($lineItems) || empty($lineItems)) {
-            return null;
-        }
-
-        // Find the active editor (first editor user with a profile)
-        $editor = User::where('role', 'editor')
-            ->where('is_test', false)
-            ->whereHas('editorProfile')
-            ->first();
-
-        if (! $editor) {
-            return null;
-        }
-
-        $editorProfile = $editor->editorProfile;
-        $commissionConfig = $editorProfile->productCommissionsKeyed();
-        $globalRate = (float) ($editorProfile->editor_commission ?? 10.0) / 100.0;
-
-        // If no per-product config has been set up yet, fall back to theme value
-        if ($commissionConfig->isEmpty()) {
-            return null;
-        }
-
-        $totalCommission   = 0.0;
-        $eligibleLineTotal = 0.0;
-        $totalLineTotal    = 0.0;
-        $anyEligible       = false;
-
-        foreach ($lineItems as $item) {
-            $productId   = (int) ($item['product_id'] ?? 0);
-            $lineTotal   = (float) ($item['line_total'] ?? 0);
-            $defaultElig = (bool) ($item['commission_eligible'] ?? false);
-            $totalLineTotal += $lineTotal;
-
-            // Look up portal config for this product
-            $config = $commissionConfig->get($productId);
-
-            if ($config) {
-                $enabled = $config->commission_enabled;
-            } else {
-                $enabled = $defaultElig;
-            }
-
-            if (! $enabled) continue;
-
-            $anyEligible = true;
-
-            // Custom flat amount: add directly
-            if ($config && $config->custom_amount !== null) {
-                $totalCommission += (float) $config->custom_amount;
-            } else {
-                $eligibleLineTotal += $lineTotal;
-            }
-        }
-
-        if (! $anyEligible) {
-            return 0.0;
-        }
-
-        // For non-custom products, apply global rate to their share of precommission
-        if ($eligibleLineTotal > 0 && $totalLineTotal > 0 && $precommission > 0) {
-            $eligibleShare = $eligibleLineTotal / $totalLineTotal;
-            $totalCommission += round($precommission * $eligibleShare * $globalRate, 2);
-        }
-
-        return round($totalCommission, 2);
     }
 
     private function authorised(Request $request): bool

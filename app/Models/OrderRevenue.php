@@ -1,5 +1,7 @@
 <?php
 
+// v1.3 — 2026-07-17 | Add editor_id — attributes each order to a specific editor so
+//                     commission/earnings no longer commingle across multiple editors
 // v1.2 — 2026-05-25 | Add customer/order detail columns for Order Log
 // v1.1 — 2026-05-25 | Add editor_paid_at and line_items_json
 // v1.0 — 2026-05-25 | Initial — WooCommerce order financials synced from theme via webhook
@@ -7,12 +9,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderRevenue extends Model
 {
     protected $fillable = [
         'order_number',
         'woocommerce_order_id',
+        'editor_id',
         'ordered_at',
         'order_total',
         'discount_amount',
@@ -56,5 +60,10 @@ class OrderRevenue extends Model
             'editor_paid_at'    => 'datetime',
             'line_items_json'   => 'array',
         ];
+    }
+
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'editor_id');
     }
 }

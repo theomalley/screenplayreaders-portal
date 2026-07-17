@@ -122,6 +122,7 @@
                                 @if($show('cog_processing')) <th class="px-3 py-2 text-right">COG Proc.</th>  @endif
                                 @if($show('cog_precommission'))<th class="px-3 py-2 text-right">Pre-Comm.</th>@endif
                                 @if($show('cog_commission')) <th class="px-3 py-2 text-right">Commission</th> @endif
+                                @if($show('editor'))         <th class="px-3 py-2 text-left">Editor</th>      @endif
                                 @if($show('cog_total'))      <th class="px-3 py-2 text-right">COG Total</th>  @endif
                                 @if($show('net_revenue'))    <th class="px-3 py-2 text-right">Net Rev.</th>   @endif
                                 @if($show('payment_method')) <th class="px-3 py-2 text-left">Payment</th>     @endif
@@ -195,6 +196,7 @@
                                 @if($show('cog_processing')) <td class="px-3 py-2 text-right text-gray-600">${{ number_format($o->cog_processing, 2) }}</td> @endif
                                 @if($show('cog_precommission'))<td class="px-3 py-2 text-right text-gray-600">${{ number_format($o->cog_precommission, 2) }}</td> @endif
                                 @if($show('cog_commission')) <td class="px-3 py-2 text-right text-gray-600">${{ number_format($o->cog_commission, 2) }}</td> @endif
+                                @if($show('editor'))         <td class="px-3 py-2 text-gray-600">{{ $o->editor?->editorProfile?->displayName() ?? $o->editor?->name ?? '—' }}</td> @endif
                                 @if($show('cog_total'))      <td class="px-3 py-2 text-right text-gray-700 font-medium">${{ number_format($o->cog_total, 2) }}</td> @endif
                                 @if($show('net_revenue'))    <td class="px-3 py-2 text-right font-semibold {{ (float)$o->net_revenue >= 0 ? 'text-green-700' : 'text-red-600' }}">${{ number_format($o->net_revenue, 2) }}</td> @endif
                                 @if($show('payment_method')) <td class="px-3 py-2 text-gray-500 capitalize">{{ $o->payment_method ?: '—' }}</td> @endif

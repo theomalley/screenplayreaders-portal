@@ -149,11 +149,14 @@ class SettingController extends Controller
         $permissionsGrid  = $isAdmin ? Permission::all() : null;
         $orderLogEditorSettings = $isAdmin ? Setting::getOrderLogEditorSettings() : null;
         $orderLogColumns  = Setting::ORDER_LOG_COLUMNS;
+        $editors          = $isAdmin ? User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get() : null;
+        $defaultEditorId  = $isAdmin ? Setting::getValue('default_editor_id') : null;
 
         return view('settings.orders', compact(
             'isAdmin', 'appTimezone', 'payPeriod', 'payoutSchedule', 'nextPayout',
             'srInvoiceAddress', 'invoiceEmailBody', 'discountCoupon',
             'permissionsGrid', 'orderLogEditorSettings', 'orderLogColumns',
+            'editors', 'defaultEditorId',
         ));
     }
 
@@ -696,6 +699,23 @@ class SettingController extends Controller
         auth()->user()->update(['last_seen_at' => null]);
 
         return back()->with('success', 'Your last-seen time cleared.');
+    }
+
+    public function updateDefaultEditor(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
+        $data = $request->validate([
+            'editor_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'editor')],
+        ]);
+
+        if (empty($data['editor_id'])) {
+            Setting::where('key', 'default_editor_id')->delete();
+        } else {
+            Setting::setValue('default_editor_id', $data['editor_id']);
+        }
+
+        return back()->with('success', 'Default editor updated.');
     }
 
     public function updateOrderLogEditor(Request $request): RedirectResponse

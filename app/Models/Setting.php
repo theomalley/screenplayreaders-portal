@@ -1,5 +1,7 @@
 <?php
 
+// v1.19 — 2026-07-17 | Add 'editor' to ORDER_LOG_COLUMNS and default_editor_id setting for
+//                      multi-editor commission attribution.
 // v1.18 — 2026-07-17 | Add retailPricesForForms()/setRetailPrice() — admin-editable retail price
 //                      (what customers are charged) alongside each of the 14 core rate rows.
 // v1.17 — 2026-07-12 | Add rateShortcodesForForms()/setRateShortcode() — admin-editable [[shortcode]]
@@ -525,6 +527,7 @@ HTML;
         'cog_processing'    => 'COG Processing',
         'cog_precommission' => 'Pre-Commission',
         'cog_commission'    => 'Commission',
+        'editor'            => 'Editor',
         'cog_total'         => 'COG Total',
         'net_revenue'       => 'Net Revenue',
         'payment_method'    => 'Payment',

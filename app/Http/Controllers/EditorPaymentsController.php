@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-07-17 | Scope $unpaidOrders/$paidOrders by editor_id = $user->id — previously
+//                     showed every editor's commissions to whichever editor viewed the page.
 // v1.0 — 2026-05-25 | Editor-facing payments view — pending commissions, adjustments, history
 
 namespace App\Http\Controllers;
@@ -19,7 +21,8 @@ class EditorPaymentsController extends Controller
         [$currentStart, $currentEnd] = PayPeriod::current();
 
         // Unpaid commissions grouped by pay period
-        $unpaidOrders = OrderRevenue::whereNull('editor_paid_at')
+        $unpaidOrders = OrderRevenue::where('editor_id', $user->id)
+            ->whereNull('editor_paid_at')
             ->where('skip_commission', false)
             ->where('cog_commission', '>', 0)
             ->orderBy('ordered_at')
@@ -44,7 +47,8 @@ class EditorPaymentsController extends Controller
         }
 
         // Paid history
-        $paidOrders = OrderRevenue::whereNotNull('editor_paid_at')
+        $paidOrders = OrderRevenue::where('editor_id', $user->id)
+            ->whereNotNull('editor_paid_at')
             ->where('cog_commission', '>', 0)
             ->orderByDesc('editor_paid_at')
             ->get();

@@ -171,6 +171,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');
     Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');
     Route::patch('/settings/order-log-editor', [SettingController::class, 'updateOrderLogEditor'])->name('settings.order-log-editor');
+    Route::patch('/settings/default-editor', [SettingController::class, 'updateDefaultEditor'])->name('settings.default-editor');
     Route::patch('/settings/discount-coupon', [SettingController::class, 'updateDiscountCoupon'])->name('settings.discount-coupon');
 
     Route::post('/settings/commission-products/add', [SettingController::class, 'addCommissionProduct'])->name('settings.commission-products.add');
@@ -372,17 +373,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/admin/editors/{user}/commissions', [EditorProfileController::class, 'saveCommissions'])->name('admin.editors.commissions');
     Route::delete('/admin/editors/{user}', [EditorProfileController::class, 'destroy'])->name('admin.editors.destroy');
 
-    Route::post('/editor-pay/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');
-    Route::post('/editor-pay/clear-unpaid', [EditorPayController::class, 'clearUnpaidBatch'])->name('editor-pay.clear-unpaid');
-    Route::post('/editor-pay/mark-unpaid', [EditorPayController::class, 'markUnpaid'])->name('editor-pay.mark-unpaid');
-    Route::post('/editor-pay/adjustment', [EditorPayController::class, 'addAdjustment'])->name('editor-pay.add-adjustment');
+    Route::post('/editor-pay/{editor}/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');
+    Route::post('/editor-pay/{editor}/clear-unpaid', [EditorPayController::class, 'clearUnpaidBatch'])->name('editor-pay.clear-unpaid');
+    Route::post('/editor-pay/{editor}/mark-unpaid', [EditorPayController::class, 'markUnpaid'])->name('editor-pay.mark-unpaid');
+    Route::post('/editor-pay/{editor}/adjustment', [EditorPayController::class, 'addAdjustment'])->name('editor-pay.add-adjustment');
     Route::delete('/editor-pay/adjustment/{adjustment}', [EditorPayController::class, 'deleteAdjustment'])->name('editor-pay.delete-adjustment');
     Route::patch('/editor-pay/order/{order}/commission', [EditorPayController::class, 'updateCommission'])->name('editor-pay.update-commission');
     Route::delete('/editor-pay/order/{order}/commission', [EditorPayController::class, 'deleteCommission'])->name('editor-pay.delete-commission');
-    Route::delete('/editor-pay/history/{date}', [EditorPayController::class, 'deleteHistoryBatch'])->name('editor-pay.delete-history-batch');
-    Route::delete('/editor-pay/history', [EditorPayController::class, 'deleteAllHistory'])->name('editor-pay.delete-all-history');
-    Route::patch('/editor-pay/flat-rate', [EditorPayController::class, 'updateFlatRate'])->name('editor-pay.update-flat-rate');
-    Route::delete('/editor-pay/flat-rate', [EditorPayController::class, 'deleteFlatRate'])->name('editor-pay.delete-flat-rate');
+    Route::delete('/editor-pay/{editor}/history/{date}', [EditorPayController::class, 'deleteHistoryBatch'])->name('editor-pay.delete-history-batch');
+    Route::delete('/editor-pay/{editor}/history', [EditorPayController::class, 'deleteAllHistory'])->name('editor-pay.delete-all-history');
+    Route::patch('/editor-pay/{editor}/flat-rate', [EditorPayController::class, 'updateFlatRate'])->name('editor-pay.update-flat-rate');
+    Route::delete('/editor-pay/{editor}/flat-rate', [EditorPayController::class, 'deleteFlatRate'])->name('editor-pay.delete-flat-rate');
 
     Route::get('/editor-payments', [EditorPaymentsController::class, 'index'])->name('editor-payments.index');
 

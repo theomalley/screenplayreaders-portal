@@ -1,5 +1,9 @@
 <?php
 
+// v2.4 — 2026-07-17 | unpaidEditorSummary() -> unpaidEditorsSummary(): per-editor breakdown
+//                     (byEditor, mirroring byReader) instead of a single global editor — and
+//                     buildPaidLineItems() attributes each paid commission/adjustment to its
+//                     own editor instead of "the" editor. Needed once more than one editor exists.
 // v2.3 — 2026-07-08 | Fold editor pay into the 1099/non-1099 totals based on editor's own is_1099 flag
 // v2.2 — 2026-06-23 | Auto-include editor flat rate as line item at end of pay period
 // v2.1 — 2026-06-11 | Pass periodEnd (last day of current pay period) for PayPal payment ID
@@ -49,13 +53,13 @@ class PayrollController extends Controller
         $periodEnd  = PayPeriod::bounds(PayPeriod::current()[0]->copy()->subDay())[1];
 
         [$byReader, $readerPay1099, $readerPayNon1099] = $this->unpaidReaderSummary();
-        [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed, $editorIs1099] = $this->unpaidEditorSummary();
+        [$byEditor, $editorPay1099, $editorPayNon1099] = $this->unpaidEditorsSummary();
 
         $currentPeriod = [
             'label'        => PayPeriod::label(PayPeriod::current()[0]),
-            'pay_1099'     => $readerPay1099 + ($editorIs1099 ? $totalOwed : 0),
-            'pay_non_1099' => $readerPayNon1099 + ($editorIs1099 ? 0 : $totalOwed),
-            'total'        => $readerPay1099 + $readerPayNon1099 + $totalOwed,
+            'pay_1099'     => $readerPay1099 + $editorPay1099,
+            'pay_non_1099' => $readerPayNon1099 + $editorPayNon1099,
+            'total'        => $readerPay1099 + $readerPayNon1099 + $editorPay1099 + $editorPayNon1099,
         ];
 
         $items   = $this->buildPaidLineItems();
@@ -63,7 +67,7 @@ class PayrollController extends Controller
 
         return view('payroll.index', array_merge(compact(
             'period', 'schedule', 'nextPayout', 'periodEnd', 'currentPeriod',
-            'byReader', 'unpaidOrders', 'unpaidAdjustments', 'editor', 'weeklyFlat', 'periodFlatRate', 'periodWeeks', 'totalOwed'
+            'byReader', 'byEditor'
         ), $history));
     }
 
@@ -191,33 +195,63 @@ class PayrollController extends Controller
         return [$byReader, $pay1099, $payNon1099];
     }
 
-    private function unpaidEditorSummary(): array
+    private function unpaidEditorsSummary(): array
     {
-        $unpaidOrders = OrderRevenue::whereNull('editor_paid_at')
-            ->where('skip_commission', false)
-            ->where('cog_commission', '>', 0)
-            ->orderBy('ordered_at')
-            ->get();
+        $editors = User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get();
 
-        $unpaidAdjustments = EditorPayAdjustment::with('addedBy')
-            ->whereNull('editor_paid_at')
-            ->orderBy('created_at')
-            ->get();
+        $schedule    = Setting::getPayoutSchedule();
+        $periodWeeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
 
-        $orderTotal      = $unpaidOrders->sum(fn($o) => (float) $o->cog_commission);
-        $adjustmentTotal = $unpaidAdjustments->sum(fn($a) => (float) $a->amount);
+        $byEditor = $editors->map(function ($editor) use ($periodWeeks) {
+            $unpaidOrders = OrderRevenue::where('editor_id', $editor->id)
+                ->whereNull('editor_paid_at')
+                ->where('skip_commission', false)
+                ->where('cog_commission', '>', 0)
+                ->orderBy('ordered_at')
+                ->get();
 
-        $editor = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->first();
-        $weeklyFlat = (float) ($editor?->editorProfile?->editor_weekly_flat ?? 0.0);
+            $unpaidAdjustments = EditorPayAdjustment::with('addedBy')
+                ->where('user_id', $editor->id)
+                ->whereNull('editor_paid_at')
+                ->orderBy('created_at')
+                ->get();
 
-        $schedule      = Setting::getPayoutSchedule();
-        $periodWeeks   = $schedule['frequency'] === 'biweekly' ? 2 : 1;
-        $periodFlatRate = round($weeklyFlat * $periodWeeks, 2);
+            $orderTotal      = $unpaidOrders->sum(fn($o) => (float) $o->cog_commission);
+            $adjustmentTotal = $unpaidAdjustments->sum(fn($a) => (float) $a->amount);
 
-        $totalOwed = round($orderTotal + $adjustmentTotal + $periodFlatRate, 2);
-        $editorIs1099 = (bool) ($editor?->editorProfile?->is_1099 ?? false);
+            $weeklyFlat     = (float) ($editor->editorProfile?->editor_weekly_flat ?? 0.0);
+            $periodFlatRate = round($weeklyFlat * $periodWeeks, 2);
 
-        return [$unpaidOrders, $unpaidAdjustments, $editor, $weeklyFlat, $periodFlatRate, $periodWeeks, $totalOwed, $editorIs1099];
+            $totalOwed = round($orderTotal + $adjustmentTotal + $periodFlatRate, 2);
+
+            return [
+                'editor'             => $editor,
+                'editor_id'          => $editor->id,
+                'editor_name'        => $editor->editorProfile?->displayName() ?? $editor->name,
+                'initials'           => $editor->editorProfile?->initials ?? '??',
+                'photo_url'          => $editor->editorProfile?->photo ? asset('storage/' . $editor->editorProfile->photo) : null,
+                'paypal_email'       => $editor->editorProfile?->paypal_email,
+                'is_1099'            => (bool) ($editor->editorProfile?->is_1099 ?? false),
+                'unpaid_orders'      => $unpaidOrders,
+                'unpaid_adjustments' => $unpaidAdjustments,
+                'weekly_flat'        => $weeklyFlat,
+                'period_flat_rate'   => $periodFlatRate,
+                'period_weeks'       => $periodWeeks,
+                'total_owed'         => $totalOwed,
+            ];
+        })->values();
+
+        $pay1099    = 0.0;
+        $payNon1099 = 0.0;
+        foreach ($byEditor as $ed) {
+            if ($ed['is_1099']) {
+                $pay1099 += $ed['total_owed'];
+            } else {
+                $payNon1099 += $ed['total_owed'];
+            }
+        }
+
+        return [$byEditor, $pay1099, $payNon1099];
     }
 
     private function buildPaidLineItems(): array
@@ -272,26 +306,22 @@ class PayrollController extends Controller
             ];
         }
 
-        $editor          = User::where('role', 'editor')->where('is_test', false)->whereHas('editorProfile')->first();
-        $editorProfile   = $editor?->editorProfile;
-        $editorName      = $editorProfile?->displayName() ?? $editor?->name ?? 'Editor';
-        $editorInitials  = $editorProfile?->initials ?? '?';
-        $editorPhoto     = $editorProfile?->photo ? asset('storage/' . $editorProfile->photo) : null;
-
-        $paidOrders = OrderRevenue::whereNotNull('editor_paid_at')
+        $paidOrders = OrderRevenue::with('editor.editorProfile')
+            ->whereNotNull('editor_paid_at')
             ->where('cog_commission', '>', 0)
             ->get();
 
         foreach ($paidOrders as $o) {
+            $editorProfile = $o->editor?->editorProfile;
             $items[] = [
                 'type'            => 'editor_commission',
                 'type_label'      => 'Commission',
                 'paid_at'         => $o->editor_paid_at,
-                'person_id'       => $editor?->id,
+                'person_id'       => $o->editor_id,
                 'person_type'     => 'editor',
-                'person_name'     => $editorName,
-                'person_initials' => $editorInitials,
-                'photo_url'       => $editorPhoto,
+                'person_name'     => $editorProfile?->displayName() ?? $o->editor?->name ?? 'Unassigned Editor',
+                'person_initials' => $editorProfile?->initials ?? '?',
+                'photo_url'       => $editorProfile?->photo ? asset('storage/' . $editorProfile->photo) : null,
                 'order_number'    => $o->order_number,
                 'detail'          => $o->services_purchased,
                 'writer'          => null,
@@ -299,17 +329,18 @@ class PayrollController extends Controller
             ];
         }
 
-        $paidEditorAdj = EditorPayAdjustment::whereNotNull('editor_paid_at')->get();
+        $paidEditorAdj = EditorPayAdjustment::with('editor.editorProfile')->whereNotNull('editor_paid_at')->get();
         foreach ($paidEditorAdj as $adj) {
+            $editorProfile = $adj->editor?->editorProfile;
             $items[] = [
                 'type'            => 'editor_adjustment',
                 'type_label'      => 'Adjustment',
                 'paid_at'         => $adj->editor_paid_at,
-                'person_id'       => $editor?->id,
+                'person_id'       => $adj->user_id,
                 'person_type'     => 'editor',
-                'person_name'     => $editorName,
-                'person_initials' => $editorInitials,
-                'photo_url'       => $editorPhoto,
+                'person_name'     => $editorProfile?->displayName() ?? $adj->editor?->name ?? 'Unknown',
+                'person_initials' => $editorProfile?->initials ?? '?',
+                'photo_url'       => $editorProfile?->photo ? asset('storage/' . $editorProfile->photo) : null,
                 'order_number'    => null,
                 'detail'          => $adj->description,
                 'writer'          => null,

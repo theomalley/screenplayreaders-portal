@@ -12,6 +12,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OrderRevenue;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\GoogleDocsService;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
@@ -47,7 +48,7 @@ class OrderLogController extends Controller
 
         $q = trim((string) $request->input('q', ''));
 
-        $query = OrderRevenue::query()->orderByDesc('ordered_at');
+        $query = OrderRevenue::query()->with('editor.editorProfile')->orderByDesc('ordered_at');
 
         // Admins see everything; editors get admin-configured filters.
         $editorSettings  = null;
@@ -114,7 +115,7 @@ class OrderLogController extends Controller
     public function create()
     {
         abort_unless(auth()->user()?->isAdmin(), 403);
-        return view('order-log.form', ['order' => null]);
+        return view('order-log.form', ['order' => null, 'editors' => $this->editorOptions()]);
     }
 
     public function store(Request $request)
@@ -132,7 +133,12 @@ class OrderLogController extends Controller
     public function edit(OrderRevenue $orderLog)
     {
         abort_unless(auth()->user()?->isAdmin(), 403);
-        return view('order-log.form', ['order' => $orderLog]);
+        return view('order-log.form', ['order' => $orderLog, 'editors' => $this->editorOptions()]);
+    }
+
+    private function editorOptions()
+    {
+        return User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get();
     }
 
     public function update(Request $request, OrderRevenue $orderLog)
@@ -244,6 +250,7 @@ class OrderLogController extends Controller
             'payment_method'   => ['nullable', 'string', 'max:64'],
             'coupon_code'      => ['nullable', 'string', 'max:128'],
             'staff_member'     => ['nullable', 'string', 'max:128'],
+            'editor_id'        => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'editor')],
             'skip_commission'  => ['boolean'],
         ]);
 

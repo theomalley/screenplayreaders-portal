@@ -44,7 +44,15 @@
             </div>
 
             {{-- Editor Pay --}}
-            @include('payroll._editor-pay-card')
+            @if($byEditor->isEmpty())
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-12 text-center text-gray-400 text-sm">
+                    No editors configured.
+                </div>
+            @else
+                @foreach($byEditor as $ed)
+                    @include('payroll._editor-pay-card', ['ed' => $ed])
+                @endforeach
+            @endif
 
             {{-- Reader Pay --}}
             @if($byReader->isEmpty())

@@ -154,9 +154,9 @@
                                             </button>
                                         </form>
                                         @endif
-                                    @else
+                                    @elseif($personId)
                                         <form method="POST"
-                                              action="{{ route('editor-pay.mark-unpaid') }}"
+                                              action="{{ route('editor-pay.mark-unpaid', $personId) }}"
                                               onsubmit="return confirm('Revert this payment to unpaid?')">
                                             @csrf
                                             <input type="hidden" name="paid_at" value="{{ $batchDate }}">
@@ -167,7 +167,7 @@
                                         </form>
                                         @if(auth()->user()->isAdmin())
                                         <form method="POST"
-                                              action="{{ route('editor-pay.delete-history-batch', $batchDate) }}"
+                                              action="{{ route('editor-pay.delete-history-batch', [$personId, $batchDate]) }}"
                                               onsubmit="return confirm('Permanently delete this payment batch ({{ $batch['paid_at']->format('M j, Y') }})? This cannot be undone.')">
                                             @csrf @method('DELETE')
                                             <button type="submit"
@@ -176,6 +176,8 @@
                                             </button>
                                         </form>
                                         @endif
+                                    @else
+                                        <span class="text-xs text-gray-400 italic">Editor deleted — no actions available</span>
                                     @endif
                                 </div>
                             </div>

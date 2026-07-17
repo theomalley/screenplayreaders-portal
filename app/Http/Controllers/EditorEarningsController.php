@@ -1,5 +1,7 @@
 <?php
 
+// v2.4 — 2026-07-17 | Scope $orders by editor_id = $user->id — previously showed every
+//                     editor's commission orders to whichever editor viewed the page.
 // v2.3 — 2026-06-23 | Add virtual flat rate as pending line item in current period
 // v2.2 — 2026-06-11 | Pass periodEnd so the PayPal payment ID reflects the pay period's last day
 // v2.1 — 2026-06-11 | Pass profile header data (photo, initials, PayPal) for "My Earnings" card
@@ -21,7 +23,8 @@ class EditorEarningsController extends Controller
         $user = auth()->user();
         abort_unless($user->isAdminOrEditor(), 403);
 
-        $orders = OrderRevenue::where('cog_commission', '>', 0)
+        $orders = OrderRevenue::where('editor_id', $user->id)
+            ->where('cog_commission', '>', 0)
             ->whereNotNull('ordered_at')
             ->orderByDesc('ordered_at')
             ->get();

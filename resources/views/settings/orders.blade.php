@@ -332,6 +332,36 @@
                 </form>
             </div>
 
+            {{-- Default Editor for New Orders --}}
+            @if($editors)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Default Editor for New Orders</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    New WooCommerce orders are attributed to this editor (their commission rates apply) unless
+                    reassigned in the Order Log. Leave unset to require manual assignment for every new order —
+                    recommended once more than one editor is active.
+                </p>
+
+                <form method="POST" action="{{ route('settings.default-editor') }}" class="flex items-end gap-3">
+                    @csrf
+                    @method('PATCH')
+                    <div class="flex-1 max-w-xs">
+                        <x-input-label for="default_editor_id" value="Default Editor" />
+                        <select id="default_editor_id" name="editor_id"
+                            class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Not set (manual assignment required)</option>
+                            @foreach($editors as $ed)
+                                <option value="{{ $ed->id }}" @selected((string) $defaultEditorId === (string) $ed->id)>
+                                    {{ $ed->editorProfile?->displayName() ?? $ed->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <x-primary-button>Save</x-primary-button>
+                </form>
+            </div>
+            @endif
+
             {{-- Order Log — Editor Visibility --}}
             @if($orderLogEditorSettings)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

@@ -226,7 +226,7 @@
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4 mt-4">
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment</p>
 
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <x-input-label for="payment_method" value="Payment Method" />
                             <x-text-input id="payment_method" name="payment_method" type="text"
@@ -241,12 +241,29 @@
                                 value="{{ old('coupon_code', $order?->coupon_code) }}" />
                             <x-input-error :messages="$errors->get('coupon_code')" class="mt-1" />
                         </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <x-input-label for="staff_member" value="Staff Member" />
                             <x-text-input id="staff_member" name="staff_member" type="text"
                                 class="mt-1 block w-full"
                                 value="{{ old('staff_member', $order?->staff_member) }}" />
                             <x-input-error :messages="$errors->get('staff_member')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="editor_id" value="Editor (commission attribution)" />
+                            <select id="editor_id" name="editor_id"
+                                class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Unassigned</option>
+                                @foreach($editors as $ed)
+                                    <option value="{{ $ed->id }}" @selected((string) old('editor_id', $order?->editor_id) === (string) $ed->id)>
+                                        {{ $ed->editorProfile?->displayName() ?? $ed->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-gray-400">Whose Editor Earnings / Editor Pay this order's commission counts toward.</p>
+                            <x-input-error :messages="$errors->get('editor_id')" class="mt-1" />
                         </div>
                     </div>
 
