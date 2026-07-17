@@ -1,5 +1,8 @@
 <?php
 
+// v1.6 — 2026-07-17 | Add Retail Price column: live WooCommerce prices (RetailPriceService)
+//                      for rows with a product, manual entry (Setting::RETAIL_MANUAL_KEYS) for
+//                      rows without one, plus a refreshRetail() action for the admin refresh button.
 // v1.5 — 2026-07-12 | Editable [[shortcode]] token per rate row; auto-migrates existing
 //                      [[old_name]] tokens in the saved Reader Manual content on rename.
 // v1.4 — 2026-07-11 | Editable label text for core rates; add/edit/delete for custom rate items
@@ -11,8 +14,11 @@ namespace App\Http\Controllers;
 use App\Models\RateItem;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\RetailPriceService;
 use App\Support\Permission;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class RatebookController extends Controller
 {
@@ -25,6 +31,10 @@ class RatebookController extends Controller
         $labels = Setting::rateLabelsForForms();
         $shortcodes = Setting::rateShortcodesForForms();
         $customItems = RateItem::orderBy('sort_order')->orderBy('id')->get();
+
+        $retailPrices = RetailPriceService::cached();
+        $retailManual = Setting::retailManualPricesForForms();
+        $retailSyncedAt = RetailPriceService::lastSyncedAt();
 
         $editorRates   = null;  // admin: all editors with their effective rates
         $myEditorRates = null;  // editor: own effective rates
@@ -51,7 +61,10 @@ class RatebookController extends Controller
             ];
         }
 
-        return view('ratebook.index', compact('rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems'));
+        return view('ratebook.index', compact(
+            'rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems',
+            'retailPrices', 'retailManual', 'retailSyncedAt'
+        ));
     }
 
     public function update(Request $request)
@@ -67,6 +80,10 @@ class RatebookController extends Controller
         foreach ($keys as $key) {
             $rules["label_{$key}"] = ['required', 'string', 'max:255'];
             $rules["shortcode_{$key}"] = ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_]*$/'];
+        }
+
+        foreach (Setting::RETAIL_MANUAL_KEYS as $key) {
+            $rules["retail_manual_{$key}"] = ['nullable', 'numeric', 'min:0', 'max:9999.99'];
         }
 
         $validated = $request->validate($rules, [
@@ -104,7 +121,24 @@ class RatebookController extends Controller
             Setting::setValue('reader_manual_content', $manualContent);
         }
 
+        foreach (Setting::RETAIL_MANUAL_KEYS as $key) {
+            Setting::setRetailManualPrice($key, $validated["retail_manual_{$key}"] ?? null);
+        }
+
         return back()->with('success', 'Rates saved.');
+    }
+
+    public function refreshRetail()
+    {
+        abort_unless(Permission::check('ratebook.edit'), 403);
+
+        try {
+            RetailPriceService::refresh();
+        } catch (RuntimeException|ConnectionException $e) {
+            return back()->with('error', 'Could not refresh retail prices from WooCommerce: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Retail prices refreshed from WooCommerce.');
     }
 
     public function storeItem(Request $request)

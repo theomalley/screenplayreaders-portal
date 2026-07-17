@@ -28,3 +28,7 @@ Schedule::command('notifications:prune-history')->daily()->withoutOverlapping();
 // the record before a draft attempt hits the stale ID and 404s.
 Schedule::command('helpscout:reconcile-conversation-ids')->daily()->withoutOverlapping();
 // 2026-07-16
+
+// Refresh the Ratebook page's cached WooCommerce retail prices.
+Schedule::command('retail-prices:sync')->hourly()->withoutOverlapping();
+// 2026-07-17

@@ -1,5 +1,9 @@
 <?php
 
+// v1.18 — 2026-07-17 | Add RETAIL_MANUAL_KEYS and retailManualPricesForForms()/setRetailManualPrice()
+//                      — admin-editable retail price for the rate rows with no WooCommerce product
+//                      (rate_sr_notes_only, rate_sr_budget, all rate_wd_*). See RetailPriceService
+//                      for the rows whose retail price is instead read live from WooCommerce.
 // v1.17 — 2026-07-12 | Add rateShortcodesForForms()/setRateShortcode() — admin-editable [[shortcode]]
 //                      token names for the 14 core rate rows, decoupled from their stable DB keys.
 // v1.16 — 2026-07-11 | Add TIER2_RELEASE_HOURS_DEFAULT and getTier2ReleaseHours() — admin-configurable
@@ -137,6 +141,45 @@ class Setting extends Model
     public static function setRateShortcode(string $key, string $shortcode): void
     {
         static::updateOrCreate(['key' => "rate_shortcode_{$key}"], ['value' => $shortcode]);
+    }
+
+    /**
+     * Rate rows with no corresponding WooCommerce product, so their retail price can't be
+     * read live (see RetailPriceService::PRODUCT_MAP for the rows that can). Admin enters
+     * these by hand on the Ratebook page.
+     */
+    public const RETAIL_MANUAL_KEYS = [
+        'rate_sr_notes_only',
+        'rate_sr_budget',
+        'rate_wd_coverage',
+        'rate_wd_development_notes',
+        'rate_wd_oversized_121_160',
+        'rate_wd_rush',
+        'rate_wd_request',
+    ];
+
+    /**
+     * Returns manually-entered retail prices for RETAIL_MANUAL_KEYS, keyed by the same DB key
+     * as RATE_DEFAULTS. Null (not 0.00) for any row never set, so the form shows blank rather
+     * than a misleading default.
+     */
+    public static function retailManualPricesForForms(): array
+    {
+        $stored = static::whereIn('key', array_map(fn ($k) => "retail_manual_{$k}", self::RETAIL_MANUAL_KEYS))
+            ->pluck('value', 'key');
+
+        $prices = [];
+        foreach (self::RETAIL_MANUAL_KEYS as $key) {
+            $value = $stored["retail_manual_{$key}"] ?? null;
+            $prices[$key] = ($value !== null && $value !== '') ? (float) $value : null;
+        }
+
+        return $prices;
+    }
+
+    public static function setRetailManualPrice(string $key, ?string $value): void
+    {
+        static::updateOrCreate(['key' => "retail_manual_{$key}"], ['value' => $value ?? '']);
     }
 
     /** Assignment types that have configurable age-colour thresholds. */
