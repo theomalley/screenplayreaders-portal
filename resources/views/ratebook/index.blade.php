@@ -12,57 +12,15 @@
                 </div>
             @endif
 
-            @if (session('error'))
-                <div class="px-4 py-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
-
             @php
                 $canEdit   = auth()->user()->isAdmin();
                 $isEditor  = auth()->user()->isEditor();
                 $isReader  = auth()->user()->isReader();
-
-                // Which retail-price mode applies to each rate key — 'multi' (1R/2R/3R read
-                // live from WooCommerce), 'single' (one product read live), or 'manual'
-                // (no WooCommerce product; admin-entered). See RetailPriceService::PRODUCT_MAP
-                // and Setting::RETAIL_MANUAL_KEYS.
-                $retailModes = [
-                    'rate_sr_script_coverage'   => 'multi',
-                    'rate_sr_notes_only'        => 'manual',
-                    'rate_sr_short'             => 'single',
-                    'rate_sr_deep_dive'         => 'single',
-                    'rate_sr_budget'            => 'manual',
-                    'rate_sr_oversized_121_160' => 'multi',
-                    'rate_sr_rush'              => 'multi',
-                    'rate_sr_request'           => 'multi',
-                    'rate_sr_proofreading'      => 'single',
-                    'rate_wd_coverage'          => 'manual',
-                    'rate_wd_development_notes' => 'manual',
-                    'rate_wd_oversized_121_160' => 'manual',
-                    'rate_wd_rush'              => 'manual',
-                    'rate_wd_request'           => 'manual',
-                ];
             @endphp
 
             @if ($errors->has('shortcodes'))
                 <div class="px-4 py-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
                     {{ $errors->first('shortcodes') }}
-                </div>
-            @endif
-
-            @if ($canEdit)
-                <div class="flex items-center justify-between px-4 py-3 bg-white rounded-lg shadow-sm border border-gray-200 text-sm">
-                    <span class="text-gray-500">
-                        Retail prices last synced from WooCommerce:
-                        <span class="font-medium text-gray-700">{{ $retailSyncedAt?->diffForHumans() ?? 'never' }}</span>
-                    </span>
-                    <form method="POST" action="{{ route('ratebook.retail.refresh') }}">
-                        @csrf
-                        <button type="submit" class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline whitespace-nowrap">
-                            Refresh from WooCommerce
-                        </button>
-                    </form>
                 </div>
             @endif
 
@@ -80,7 +38,9 @@
                             <tr>
                                 <th class="px-5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Service</th>
                                 <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Reader Pay</th>
-                                <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @unless ($isReader)
+                                    <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @endunless
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -124,15 +84,19 @@
                                             <span class="font-mono text-gray-800">${{ number_format($rates[$key], 2) }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3 text-right">
-                                        @include('ratebook.partials.retail-cell', ['key' => $key])
-                                    </td>
+                                    @unless ($isReader)
+                                        <td class="px-5 py-3 text-right">
+                                            @include('ratebook.partials.retail-cell', ['key' => $key])
+                                        </td>
+                                    @endunless
                                 </tr>
                             @endforeach
                             <tr class="bg-gray-50">
                                 <td class="px-5 py-3 text-gray-500 italic">Book Coverage</td>
                                 <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom per assignment</td>
-                                <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
+                                @unless ($isReader)
+                                    <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
+                                @endunless
                             </tr>
                         </tbody>
                     </table></div>
@@ -148,7 +112,9 @@
                             <tr>
                                 <th class="px-5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Service</th>
                                 <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Reader Pay</th>
-                                <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @unless ($isReader)
+                                    <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @endunless
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -191,15 +157,19 @@
                                             <span class="font-mono text-gray-800">+${{ number_format($rates[$key], 2) }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3 text-right">
-                                        @include('ratebook.partials.retail-cell', ['key' => $key])
-                                    </td>
+                                    @unless ($isReader)
+                                        <td class="px-5 py-3 text-right">
+                                            @include('ratebook.partials.retail-cell', ['key' => $key])
+                                        </td>
+                                    @endunless
                                 </tr>
                             @endforeach
                             <tr class="bg-gray-50">
                                 <td class="px-5 py-3 text-gray-500 italic">Oversized (161+ pages)</td>
                                 <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom per assignment</td>
-                                <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
+                                @unless ($isReader)
+                                    <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
+                                @endunless
                             </tr>
                         </tbody>
                     </table></div>
@@ -215,7 +185,9 @@
                             <tr>
                                 <th class="px-5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Service</th>
                                 <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Reader Pay</th>
-                                <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @unless ($isReader)
+                                    <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @endunless
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -256,9 +228,11 @@
                                             <span class="font-mono text-gray-800">${{ number_format($rates[$key], 2) }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3 text-right">
-                                        @include('ratebook.partials.retail-cell', ['key' => $key])
-                                    </td>
+                                    @unless ($isReader)
+                                        <td class="px-5 py-3 text-right">
+                                            @include('ratebook.partials.retail-cell', ['key' => $key])
+                                        </td>
+                                    @endunless
                                 </tr>
                             @endforeach
                         </tbody>
@@ -275,7 +249,9 @@
                             <tr>
                                 <th class="px-5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Service</th>
                                 <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Reader Pay</th>
-                                <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @unless ($isReader)
+                                    <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
+                                @endunless
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -317,15 +293,19 @@
                                             <span class="font-mono text-gray-800">+${{ number_format($rates[$key], 2) }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3 text-right">
-                                        @include('ratebook.partials.retail-cell', ['key' => $key])
-                                    </td>
+                                    @unless ($isReader)
+                                        <td class="px-5 py-3 text-right">
+                                            @include('ratebook.partials.retail-cell', ['key' => $key])
+                                        </td>
+                                    @endunless
                                 </tr>
                             @endforeach
                             <tr class="bg-gray-50">
                                 <td class="px-5 py-3 text-gray-500 italic">Oversized (161+ pages)</td>
                                 <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom per assignment</td>
-                                <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
+                                @unless ($isReader)
+                                    <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
+                                @endunless
                             </tr>
                         </tbody>
                     </table></div>

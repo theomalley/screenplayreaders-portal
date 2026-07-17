@@ -1,7 +1,5 @@
 <?php
 
-// v1.3 — 2026-07-17 | Add getProduct()/getProductVariations() — used by RetailPriceService to
-//                     pull live retail prices for the Ratebook page's Retail Price column.
 // v1.2 — 2026-06-23 | createOrderDiscountCoupon() now reads from admin-configurable settings
 //                     (Settings → Discount Coupon) instead of hardcoded $10/30-day values.
 // v1.1 — 2026-06-12 | Add createOrderDiscountCoupon() — $10 single-use post-coverage discount,
@@ -146,44 +144,6 @@ class WooCommerceService
             'price' => $p['price'] ?? '',
             'type'  => $p['type'] ?? 'simple',
         ], $response->json() ?? []);
-    }
-
-    /**
-     * Fetch a single product's live price — used by RetailPriceService for the
-     * simple-product rows (Short Coverage, Advanced Script Coverage, Proofreading).
-     */
-    public function getProduct(int $id): array
-    {
-        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
-            ->get($this->baseUrl . "/wp-json/wc/v3/products/{$id}");
-
-        if ($response->status() === 404) {
-            throw new ModelNotFoundException("Product {$id} not found.");
-        }
-
-        if ($response->failed()) {
-            throw new RuntimeException('WooCommerce API error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown error'));
-        }
-
-        $product = $response->json();
-
-        return ['id' => $product['id'], 'price' => $product['price'] ?? ''];
-    }
-
-    /**
-     * Fetch live prices for all variations of a variable product — used by RetailPriceService
-     * for the 1R/2R/3R-priced rows (Script Coverage, Oversized, Rush, Request).
-     */
-    public function getProductVariations(int $parentId): array
-    {
-        $response = Http::withBasicAuth($this->consumerKey, $this->consumerSecret)
-            ->get($this->baseUrl . "/wp-json/wc/v3/products/{$parentId}/variations", ['per_page' => 100]);
-
-        if ($response->failed()) {
-            throw new RuntimeException('WooCommerce API error (' . $response->status() . '): ' . ($response->json('message') ?? 'Unknown error'));
-        }
-
-        return array_map(fn($v) => ['id' => $v['id'], 'price' => $v['price'] ?? ''], $response->json() ?? []);
     }
 
     /**
