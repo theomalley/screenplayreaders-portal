@@ -1,5 +1,12 @@
 <?php
 
+// v2.5 — 2026-07-18 | unpaidEditorsSummary() now splits each editor's unpaid items into a
+//                     past-due card (anything dated before the current pay period) and a
+//                     current-period card, instead of one card mixing both — fixes two "Weekly
+//                     flat rate" adjustments (last period's + the new period's auto row) showing
+//                     together. Also drops the synthesized period_flat_rate projection row, which
+//                     double-counted the flat rate on top of the real ledger adjustment once the
+//                     hourly cron had already created it.
 // v2.4 — 2026-07-17 | unpaidEditorSummary() -> unpaidEditorsSummary(): per-editor breakdown
 //                     (byEditor, mirroring byReader) instead of a single global editor — and
 //                     buildPaidLineItems() attributes each paid commission/adjustment to its
@@ -199,10 +206,13 @@ class PayrollController extends Controller
     {
         $editors = User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get();
 
-        $schedule    = Setting::getPayoutSchedule();
-        $periodWeeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
+        [$currentStart, $currentEnd] = PayPeriod::current();
 
-        $byEditor = $editors->map(function ($editor) use ($periodWeeks) {
+        $byEditor   = collect();
+        $pay1099    = 0.0;
+        $payNon1099 = 0.0;
+
+        foreach ($editors as $editor) {
             $unpaidOrders = OrderRevenue::where('editor_id', $editor->id)
                 ->whereNull('editor_paid_at')
                 ->where('skip_commission', false)
@@ -216,42 +226,65 @@ class PayrollController extends Controller
                 ->orderBy('created_at')
                 ->get();
 
-            $orderTotal      = $unpaidOrders->sum(fn($o) => (float) $o->cog_commission);
-            $adjustmentTotal = $unpaidAdjustments->sum(fn($a) => (float) $a->amount);
+            $pastOrders      = $unpaidOrders->filter(fn ($o) => $o->ordered_at->lt($currentStart))->values();
+            $pastAdjustments = $unpaidAdjustments->filter(fn ($a) => $a->created_at->lt($currentStart))->values();
+            $curOrders       = $unpaidOrders->filter(fn ($o) => $o->ordered_at->gte($currentStart))->values();
+            $curAdjustments  = $unpaidAdjustments->filter(fn ($a) => $a->created_at->gte($currentStart))->values();
 
-            $weeklyFlat     = (float) ($editor->editorProfile?->editor_weekly_flat ?? 0.0);
-            $periodFlatRate = round($weeklyFlat * $periodWeeks, 2);
+            $pastTotal = round(
+                $pastOrders->sum(fn ($o) => (float) $o->cog_commission) + $pastAdjustments->sum(fn ($a) => (float) $a->amount),
+                2
+            );
+            $curTotal = round(
+                $curOrders->sum(fn ($o) => (float) $o->cog_commission) + $curAdjustments->sum(fn ($a) => (float) $a->amount),
+                2
+            );
 
-            $totalOwed = round($orderTotal + $adjustmentTotal + $periodFlatRate, 2);
-
-            return [
-                'editor'             => $editor,
-                'editor_id'          => $editor->id,
-                'editor_name'        => $editor->editorProfile?->displayName() ?? $editor->name,
-                'initials'           => $editor->editorProfile?->initials ?? '??',
-                'photo_url'          => $editor->editorProfile?->photo ? asset('storage/' . $editor->editorProfile->photo) : null,
-                'paypal_email'       => $editor->editorProfile?->paypal_email,
-                'is_1099'            => (bool) ($editor->editorProfile?->is_1099 ?? false),
-                'unpaid_orders'      => $unpaidOrders,
-                'unpaid_adjustments' => $unpaidAdjustments,
-                'weekly_flat'        => $weeklyFlat,
-                'period_flat_rate'   => $periodFlatRate,
-                'period_weeks'       => $periodWeeks,
-                'total_owed'         => $totalOwed,
+            $base = [
+                'editor'       => $editor,
+                'editor_id'    => $editor->id,
+                'editor_name'  => $editor->editorProfile?->displayName() ?? $editor->name,
+                'initials'     => $editor->editorProfile?->initials ?? '??',
+                'photo_url'    => $editor->editorProfile?->photo ? asset('storage/' . $editor->editorProfile->photo) : null,
+                'paypal_email' => $editor->editorProfile?->paypal_email,
+                'is_1099'      => (bool) ($editor->editorProfile?->is_1099 ?? false),
+                'weekly_flat'  => (float) ($editor->editorProfile?->editor_weekly_flat ?? 0.0),
             ];
-        })->values();
 
-        $pay1099    = 0.0;
-        $payNon1099 = 0.0;
-        foreach ($byEditor as $ed) {
-            if ($ed['is_1099']) {
-                $pay1099 += $ed['total_owed'];
+            // Past-due card only appears when the editor is behind — anything still
+            // unpaid from a pay period that's already closed. Collapses any number of
+            // overdue periods into a single card rather than one per period.
+            if ($pastOrders->isNotEmpty() || $pastAdjustments->isNotEmpty()) {
+                $byEditor->push(array_merge($base, [
+                    'scope'              => 'past',
+                    'period_label'       => 'Overdue',
+                    'period_end'         => PayPeriod::bounds($currentStart->copy()->subDay())[1],
+                    'unpaid_orders'      => $pastOrders,
+                    'unpaid_adjustments' => $pastAdjustments,
+                    'total_owed'         => $pastTotal,
+                ]));
+            }
+
+            // Current-period card always renders, even when empty, so the editor still
+            // has a card to add adjustments to.
+            $byEditor->push(array_merge($base, [
+                'scope'              => 'current',
+                'period_label'       => PayPeriod::label($currentStart),
+                'period_end'         => $currentEnd,
+                'unpaid_orders'      => $curOrders,
+                'unpaid_adjustments' => $curAdjustments,
+                'total_owed'         => $curTotal,
+            ]));
+
+            $editorTotal = round($pastTotal + $curTotal, 2);
+            if ($base['is_1099']) {
+                $pay1099 += $editorTotal;
             } else {
-                $payNon1099 += $ed['total_owed'];
+                $payNon1099 += $editorTotal;
             }
         }
 
-        return [$byEditor, $pay1099, $payNon1099];
+        return [$byEditor->values(), $pay1099, $payNon1099];
     }
 
     private function buildPaidLineItems(): array

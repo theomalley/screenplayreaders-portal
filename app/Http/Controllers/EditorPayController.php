@@ -1,5 +1,13 @@
 <?php
 
+// v2.1 — 2026-07-18 | markPaid()/clearUnpaidBatch() now take a required "scope" ('past'|'current')
+//                     since the payroll card is split into a past-due card and a current-period
+//                     card per editor — each card's button only acts on its own bucket, scoped by
+//                     PayPeriod::current() rather than marking every unpaid item for the editor at
+//                     once. Removed updateFlatRate()/deleteFlatRate() — the payroll page's synthetic
+//                     "Flat Rate" row they edited was deleted (it double-counted against the real
+//                     ledger adjustment); the editor's weekly flat is now only edited from their
+//                     profile page (already reachable from this same card via the name/photo link).
 // v2.0 — 2026-07-17 | Scope every action to a specific $editor (route-bound) instead of "the"
 //                     editor — commission/adjustments/flat-rate no longer commingle once more
 //                     than one editor exists. markUnpaid() now also restricts non-admin editors
@@ -25,12 +33,16 @@ use Illuminate\Http\Request;
 
 class EditorPayController extends Controller
 {
-    public function markPaid(User $editor)
+    public function markPaid(Request $request, User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
         abort_unless($editor->isEditor(), 404);
 
-        $now = Carbon::now();
+        $validated = $request->validate(['scope' => 'required|in:past,current']);
+        $scope     = $validated['scope'];
+        $now       = Carbon::now();
+
+        $currentPeriodStart = PayPeriod::current()[0];
 
         $weeklyFlat = (float) ($editor->editorProfile?->editor_weekly_flat ?? 0.0);
 
@@ -39,7 +51,11 @@ class EditorPayController extends Controller
             $weeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
             $periodFlatRate = round($weeklyFlat * $weeks, 2);
 
-            $paidPeriodDate = PayPeriod::current()[0]->copy()->subMinute();
+            // The period being paid: the one that just closed (for "past"), or the
+            // still-open current one (for "current", i.e. paying early).
+            $paidPeriodDate = $scope === 'past'
+                ? $currentPeriodStart->copy()->subMinute()
+                : $currentPeriodStart->copy();
             [$paidStart, $paidEnd] = PayPeriod::bounds($paidPeriodDate);
 
             $alreadyExists = EditorPayAdjustment::where('user_id', $editor->id)
@@ -62,34 +78,55 @@ class EditorPayController extends Controller
             }
         }
 
-        OrderRevenue::where('editor_id', $editor->id)
+        $ordersQuery = OrderRevenue::where('editor_id', $editor->id)
             ->whereNull('editor_paid_at')
             ->where('skip_commission', false)
-            ->where('cog_commission', '>', 0)
-            ->update(['editor_paid_at' => $now]);
+            ->where('cog_commission', '>', 0);
 
-        EditorPayAdjustment::where('user_id', $editor->id)
-            ->whereNull('editor_paid_at')
-            ->update(['editor_paid_at' => $now]);
+        $adjustmentsQuery = EditorPayAdjustment::where('user_id', $editor->id)
+            ->whereNull('editor_paid_at');
+
+        if ($scope === 'past') {
+            $ordersQuery->where('ordered_at', '<', $currentPeriodStart);
+            $adjustmentsQuery->where('created_at', '<', $currentPeriodStart);
+        } else {
+            $ordersQuery->where('ordered_at', '>=', $currentPeriodStart);
+            $adjustmentsQuery->where('created_at', '>=', $currentPeriodStart);
+        }
+
+        $ordersQuery->update(['editor_paid_at' => $now]);
+        $adjustmentsQuery->update(['editor_paid_at' => $now]);
 
         return redirect()->route('payroll.index')
-            ->with('success', 'All pending pay for ' . ($editor->editorProfile?->displayName() ?? $editor->name) . ' marked as paid.');
+            ->with('success', 'Pending pay for ' . ($editor->editorProfile?->displayName() ?? $editor->name) . ' marked as paid.');
     }
 
-    public function clearUnpaidBatch(User $editor)
+    public function clearUnpaidBatch(Request $request, User $editor)
     {
         abort_unless(auth()->user()->isAdmin(), 403);
         abort_unless($editor->isEditor(), 404);
 
-        OrderRevenue::where('editor_id', $editor->id)
+        $validated = $request->validate(['scope' => 'required|in:past,current']);
+        $currentPeriodStart = PayPeriod::current()[0];
+
+        $ordersQuery = OrderRevenue::where('editor_id', $editor->id)
             ->whereNull('editor_paid_at')
             ->where('skip_commission', false)
-            ->where('cog_commission', '>', 0)
-            ->update(['cog_commission' => 0]);
+            ->where('cog_commission', '>', 0);
 
-        EditorPayAdjustment::where('user_id', $editor->id)
-            ->whereNull('editor_paid_at')
-            ->delete();
+        $adjustmentsQuery = EditorPayAdjustment::where('user_id', $editor->id)
+            ->whereNull('editor_paid_at');
+
+        if ($validated['scope'] === 'past') {
+            $ordersQuery->where('ordered_at', '<', $currentPeriodStart);
+            $adjustmentsQuery->where('created_at', '<', $currentPeriodStart);
+        } else {
+            $ordersQuery->where('ordered_at', '>=', $currentPeriodStart);
+            $adjustmentsQuery->where('created_at', '>=', $currentPeriodStart);
+        }
+
+        $ordersQuery->update(['cog_commission' => 0]);
+        $adjustmentsQuery->delete();
 
         return redirect()->route('payroll.index')
             ->with('success', 'Cleared pending commissions and adjustments for ' . ($editor->editorProfile?->displayName() ?? $editor->name) . '.');
@@ -217,35 +254,5 @@ class EditorPayController extends Controller
 
         return redirect()->route('payroll.index')
             ->with('success', 'Adjustment removed.');
-    }
-
-    public function updateFlatRate(Request $request, User $editor)
-    {
-        abort_unless(auth()->user()->isAdmin(), 403);
-        abort_unless($editor->isEditor(), 404);
-
-        $validated = $request->validate([
-            'period_flat_rate' => 'required|numeric|min:0',
-        ]);
-
-        $schedule = Setting::getPayoutSchedule();
-        $weeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
-        $weeklyFlat = round((float) $validated['period_flat_rate'] / $weeks, 2);
-
-        $editor->editorProfile()->updateOrCreate(['user_id' => $editor->id], ['editor_weekly_flat' => $weeklyFlat]);
-
-        return redirect()->route('payroll.index')
-            ->with('success', 'Flat rate updated to $' . number_format((float) $validated['period_flat_rate'], 2) . '/period ($' . number_format($weeklyFlat, 2) . '/week).');
-    }
-
-    public function deleteFlatRate(User $editor)
-    {
-        abort_unless(auth()->user()->isAdmin(), 403);
-        abort_unless($editor->isEditor(), 404);
-
-        $editor->editorProfile?->update(['editor_weekly_flat' => 0]);
-
-        return redirect()->route('payroll.index')
-            ->with('success', 'Flat rate removed.');
     }
 }
