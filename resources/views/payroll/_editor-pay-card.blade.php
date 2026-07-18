@@ -44,7 +44,7 @@
         @if(auth()->user()->isAdmin())
         <div class="flex items-center gap-2">
             <form method="POST" action="{{ route('editor-pay.clear-unpaid', $editorId) }}"
-                onsubmit="return confirm('Clear {{ $ed['scope'] === 'past' ? 'overdue' : \"this period's\" }} pending commissions and adjustments for {{ $ed['editor_name'] }}? This sets commissions to $0 and removes pending adjustments.')">
+                onsubmit="return confirm('Clear {{ $ed['scope'] === 'past' ? 'overdue' : "this period's" }} pending commissions and adjustments for {{ $ed['editor_name'] }}? This sets commissions to $0 and removes pending adjustments.')">
                 @csrf
                 <input type="hidden" name="scope" value="{{ $ed['scope'] }}">
                 <button type="submit"
@@ -57,7 +57,7 @@
                 + Adjustment
             </button>
             <form method="POST" action="{{ route('editor-pay.mark-paid', $editorId) }}"
-                onsubmit="return confirm('Mark {{ $ed['scope'] === 'past' ? 'overdue' : \"this period's\" }} pending pay for {{ $ed['editor_name'] }} as paid (${{ number_format($ed['total_owed'], 2) }})?')">
+                onsubmit="return confirm('Mark {{ $ed['scope'] === 'past' ? 'overdue' : "this period's" }} pending pay for {{ $ed['editor_name'] }} as paid (${{ number_format($ed['total_owed'], 2) }})?')">
                 @csrf
                 <input type="hidden" name="scope" value="{{ $ed['scope'] }}">
                 <button type="submit"
