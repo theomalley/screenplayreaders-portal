@@ -1,5 +1,9 @@
 <?php
 
+// v1.6 — 2026-07-18 | Removed where('vendor', 'sr') from markPaid()/markUnpaid()/clearUnpaidBatch()/
+//                      removeHistoryBatch() — it silently skipped wd (Writers Digest) assignments
+//                      when marking pay, so even after fixing the Payroll page's own unpaid-list
+//                      query, this controller's "Mark Paid" button would have kept excluding them.
 // v1.5 — 2026-06-13 | deleteAssignmentPay() now also sets reader_paid_at so the line item
 //                      is actually dropped from the unpaid batch, not just zeroed
 // v1.4 — 2026-06-11 | Add deleteAssignmentPay() — zero an individual unpaid assignment's pay_rate
@@ -24,9 +28,9 @@ class ReaderPayController extends Controller
 
         $now = Carbon::now();
 
+        // Both sr and wd assignments share pay_rate/reader_paid_at — never filter by vendor here.
         $assignmentCount = Assignment::where('assigned_reader_id', $reader->id)
             ->where('status', Assignment::STATUS_COMPLETED)
-            ->where('vendor', 'sr')
             ->whereNull('reader_paid_at')
             ->update(['reader_paid_at' => $now]);
 
@@ -48,7 +52,6 @@ class ReaderPayController extends Controller
         $date = Carbon::parse($validated['paid_at'])->toDateString();
 
         $assignmentCount = Assignment::where('assigned_reader_id', $reader->id)
-            ->where('vendor', 'sr')
             ->whereDate('reader_paid_at', $date)
             ->update(['reader_paid_at' => null]);
 
@@ -105,7 +108,6 @@ class ReaderPayController extends Controller
         // Hard-delete unpaid completed TEST assignments for this reader + all pending adjustments
         // (real, non-test assignments must never be hard-deleted here — see removeHistoryBatch())
         $deleted = Assignment::where('assigned_reader_id', $reader->id)
-            ->where('vendor', 'sr')
             ->where('status', Assignment::STATUS_COMPLETED)
             ->whereNull('reader_paid_at')
             ->where('is_test', true)
@@ -130,13 +132,11 @@ class ReaderPayController extends Controller
 
         // Test assignments: delete entirely. Non-test: revert to unpaid (safer for production data).
         Assignment::where('assigned_reader_id', $reader->id)
-            ->where('vendor', 'sr')
             ->whereDate('reader_paid_at', $date)
             ->where('is_test', true)
             ->delete();
 
         Assignment::where('assigned_reader_id', $reader->id)
-            ->where('vendor', 'sr')
             ->whereDate('reader_paid_at', $date)
             ->where('is_test', false)
             ->update(['reader_paid_at' => null]);

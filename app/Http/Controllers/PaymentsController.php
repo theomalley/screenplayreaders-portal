@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-07-18 | Removed where('vendor', 'sr') — it silently excluded wd (Writers Digest)
+//                     assignments from this reader-facing view, same bug as PayrollController.
 // v1.0 — 2026-05-25 | Reader-facing payments view — current period, prior unpaid, paginated history
 
 namespace App\Http\Controllers;
@@ -19,10 +21,9 @@ class PaymentsController extends Controller
 
         [$currentStart, $currentEnd] = PayPeriod::current();
 
-        // All unpaid completed SR assignments for this reader
+        // All unpaid completed assignments for this reader (both sr and wd — they share pay_rate/reader_paid_at)
         $unpaidAssignments = Assignment::where('assigned_reader_id', $user->id)
             ->where('status', Assignment::STATUS_COMPLETED)
-            ->where('vendor', 'sr')
             ->whereNull('reader_paid_at')
             ->orderBy('completed_at')
             ->get();
@@ -50,7 +51,6 @@ class PaymentsController extends Controller
         // Paginated history (paid batches for this reader)
         $paidAssignments = Assignment::where('assigned_reader_id', $user->id)
             ->where('status', Assignment::STATUS_COMPLETED)
-            ->where('vendor', 'sr')
             ->whereNotNull('reader_paid_at')
             ->orderByDesc('reader_paid_at')
             ->get();

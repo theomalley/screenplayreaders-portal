@@ -1,5 +1,10 @@
 <?php
 
+// v2.6 — 2026-07-18 | Removed the hardcoded where('vendor', 'sr') from export1099(),
+//                     unpaidReaderSummary(), and buildPaidLineItems() — it silently excluded every
+//                     completed wd (Writers Digest) assignment from the reader payroll page, 1099
+//                     export, and paid history, so any reader who did WD work was never shown as
+//                     owed and had to be paid manually/incorrectly outside the system.
 // v2.5 — 2026-07-18 | unpaidEditorsSummary() now splits each editor's unpaid items into a
 //                     past-due card (anything dated before the current pay period) and a
 //                     current-period card, instead of one card mixing both — fixes two "Weekly
@@ -89,9 +94,9 @@ class PayrollController extends Controller
 
         [$start, $end] = $this->dateRange($period);
 
+        // Both sr and wd assignments share pay_rate/reader_paid_at — never filter by vendor here.
         $assignments = Assignment::with(['assignedReader.readerProfile'])
             ->where('status', Assignment::STATUS_COMPLETED)
-            ->where('vendor', 'sr')
             ->where('is_test', false)
             ->whereNotNull('reader_paid_at')
             ->whereHas('assignedReader.readerProfile', fn ($q) => $q->where('is_1099', true))
@@ -145,9 +150,9 @@ class PayrollController extends Controller
 
     private function unpaidReaderSummary(): array
     {
+        // Both sr and wd assignments share pay_rate/reader_paid_at — never filter by vendor here.
         $unpaidAssignments = Assignment::with(['assignedReader.readerProfile'])
             ->where('status', Assignment::STATUS_COMPLETED)
-            ->where('vendor', 'sr')
             ->where('is_test', false)
             ->whereNull('reader_paid_at')
             ->whereNotNull('assigned_reader_id')
@@ -291,9 +296,9 @@ class PayrollController extends Controller
     {
         $items = [];
 
+        // Both sr and wd assignments share pay_rate/reader_paid_at — never filter by vendor here.
         $paidAssignments = Assignment::with(['assignedReader.readerProfile'])
             ->where('status', Assignment::STATUS_COMPLETED)
-            ->where('vendor', 'sr')
             ->where('is_test', false)
             ->whereNotNull('reader_paid_at')
             ->whereNotNull('assigned_reader_id')
