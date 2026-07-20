@@ -75,7 +75,7 @@
                                     class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
                             </div>
                             <div>
-                                <x-input-label for="escalates_to_tier_id_{{ $tier->id }}" value="Escalates to" />
+                                <x-input-label for="escalates_to_tier_id_{{ $tier->id }}" value="Move to what tier after timeout" />
                                 <select id="escalates_to_tier_id_{{ $tier->id }}" name="escalates_to_tier_id"
                                         class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
                                     <option value="">— None —</option>
@@ -88,7 +88,7 @@
                         </div>
 
                         <div>
-                            <x-input-label value="Assignment types this tier can see &amp; accept" />
+                            <x-input-label value="Assignment types this tier can see and accept" />
                             <p class="text-xs text-gray-400 mb-1">Leave all unchecked for no restriction (this tier sees every type).</p>
                             <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-1">
                                 @foreach ($assignmentTypes as $value => $label)
