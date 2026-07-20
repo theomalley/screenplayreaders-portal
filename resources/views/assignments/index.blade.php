@@ -107,6 +107,21 @@
                 }
             }));
 
+            // Persists each tier section's expanded/collapsed state per browser via localStorage —
+            // keyed by tier id (or 'unassigned') so it survives reloads/new sessions for that admin/editor.
+            Alpine.data('collapsibleSection', (key) => ({
+                open: true,
+                storageKey: 'sr_tier_section_open_' + key,
+                init() {
+                    const stored = localStorage.getItem(this.storageKey);
+                    if (stored !== null) this.open = stored === '1';
+                },
+                toggle() {
+                    this.open = !this.open;
+                    localStorage.setItem(this.storageKey, this.open ? '1' : '0');
+                }
+            }));
+
             Alpine.data('rushCountdown', (dueAt, dueLabel = '') => ({
                 display: '',
                 overdue: false,
@@ -764,6 +779,7 @@
                             'sectionTitle'       => $section['tier']->name . ' Assignments',
                             'sectionAssignments' => $section['assignments'],
                             'isOnboarding'       => $section['tier']->is_onboarding,
+                            'sectionKey'         => $section['tier']->id,
                         ])
                     @endforeach
 
@@ -772,6 +788,7 @@
                             'sectionTitle'       => 'No Tier Assigned',
                             'sectionAssignments' => $unassignedTierAssignments,
                             'isOnboarding'       => false,
+                            'sectionKey'         => 'unassigned',
                         ])
                     @endif
                 @endif

@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-07-20 | scopeOrdered(): onboarding tier always sorts last regardless of its
+//                     position value — non-onboarding tiers sort 1, 2, 3... by position.
 // v1.0 — 2026-07-20 | Dynamic reader tiers — replaces the hardcoded tier_0/tier_1/tier_2
 // concept. See App\Support\TierAccess for the cross-visibility/escalation access logic and
 // App\Console\Commands\EscalateTierTimeouts for the timeout->escalates_to_tier_id job.
@@ -59,9 +61,10 @@ class Tier extends Model
         return $this->hasMany(TierCrossVisibility::class, 'to_tier_id');
     }
 
+    /** Non-onboarding tiers first (by position, e.g. 1, 2, 3, ...), onboarding always last. */
     public function scopeOrdered($query)
     {
-        return $query->orderBy('position')->orderBy('id');
+        return $query->orderBy('is_onboarding')->orderBy('position')->orderBy('id');
     }
 
     /** True if this tier has no assignment-type restriction, or $type is in its allowlist. */
