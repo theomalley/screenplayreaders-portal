@@ -548,28 +548,16 @@
             </div>
             @endif
 
-            {{-- Tier-2 Release Window --}}
+            {{-- Tier configuration (timeouts, escalation, cross-visibility, type restrictions) --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-sm font-semibold text-gray-800 mb-1">Tier-2 Release Window</h3>
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Tiers</h3>
                 <p class="text-xs text-gray-500 mb-4">
-                    If a Tier 1 assignment sits unaccepted for this many hours, it also becomes available to Tier 2 readers (in addition to Tier 1).
+                    Manage reader tiers, timeouts/escalation, cross-tier visibility, and per-tier assignment-type restrictions.
                 </p>
-
-                <form method="POST" action="{{ route('settings.tier2-release-hours') }}">
-                    @csrf
-                    @method('PATCH')
-                    <div class="flex items-end gap-3 flex-wrap">
-                        <div>
-                            <x-input-label for="tier2_release_hours" value="Hours before Tier 2 release" />
-                            <input type="number" id="tier2_release_hours" name="tier2_release_hours"
-                                   min="1" max="720" step="1" required
-                                   value="{{ old('tier2_release_hours', $tier2ReleaseHours) }}"
-                                   class="mt-1 block w-28 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                            <x-input-error class="mt-1" :messages="$errors->get('tier2_release_hours')" />
-                        </div>
-                        <x-primary-button>Save</x-primary-button>
-                    </div>
-                </form>
+                <a href="{{ route('settings.tiers') }}"
+                   class="inline-flex items-center px-3 py-1.5 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150">
+                    Manage Tiers
+                </a>
             </div>
 
             @endif

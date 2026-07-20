@@ -74,11 +74,7 @@
                                   ? this.availableAtDate + 'T' + this.availableAtTime
                                   : '';
                           },
-                          tier: '{{ $v('tier', (string)($assignment->tier ?? 1)) }}',
                           statusVal: '{{ $v('status', $assignment->status) }}',
-                          init() {
-                              this.$watch('assignmentType', val => { if (val === 'budget') this.tier = '2'; });
-                          },
                           updatePayDisplay() {
                               const r = window._srRates;
                               const map = {
@@ -474,15 +470,21 @@
                         <p id="pay_rate_breakdown" class="mt-1.5 text-xs text-gray-400 leading-snug"></p>
                     </div>
 
-                    {{-- Tier --}}
+                    {{-- Tiers --}}
                     <div>
-                        <x-input-label for="tier" value="Tier" />
-                        <select id="tier" name="tier" x-model="tier"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">
-                            <option value="1">Tier 1</option>
-                            <option value="2">Tier 2 (Budget Coverage)</option>
-                        </select>
-                        <p class="mt-1 text-xs text-gray-400">Budget Coverage auto-sets to Tier 2.</p>
+                        <x-input-label value="Tiers" />
+                        <p class="mt-0.5 text-xs text-gray-400 mb-1">Which reader tier(s) can see &amp; accept this assignment. Check none to hide it from every reader until a tier is assigned.</p>
+                        @php $selectedTierIds = $v('tiers', $assignment->tiers->pluck('id')->all()) ?? []; @endphp
+                        <div class="flex flex-wrap gap-4 mt-1">
+                            @foreach (\App\Models\Tier::ordered()->get() as $tierOption)
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="tiers[]" value="{{ $tierOption->id }}"
+                                           {{ in_array($tierOption->id, $selectedTierIds) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    {{ $tierOption->name }}
+                                </label>
+                            @endforeach
+                        </div>
                     </div>
 
                     {{-- Reader Request(s) --}}

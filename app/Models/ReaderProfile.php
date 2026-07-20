@@ -1,5 +1,8 @@
 <?php
 
+// v1.16 — 2026-07-20 | Replace tier_0/tier_1/tier_2 booleans with a tiers() belongsToMany
+//                      relation (reader_profile_tier pivot) against the new dynamic Tier model —
+//                      see App\Support\TierAccess for how tier membership now gates visibility.
 // v1.15 — 2026-07-11 | Add tier_0 (onboarding tier) — mutually exclusive with tier_1/tier_2,
 //                      set/cleared by ReaderProfileController::update(). tiers() now includes 0.
 // v1.14 — 2026-06-16 | isAtCapacity() accepts $isRushAssignment param; excludes exempt_from_capacity
@@ -26,6 +29,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Setting;
 
@@ -65,9 +69,6 @@ class ReaderProfile extends Model
         'sms_notify_followup',
         'email_notify_qc_fail',
         'sms_notify_qc_fail',
-        'tier_0',
-        'tier_1',
-        'tier_2',
         'availability',
         'availability_message',
         'upload_warning',
@@ -90,9 +91,6 @@ class ReaderProfile extends Model
         'sms_notify_followup'   => 'boolean',
         'email_notify_qc_fail'  => 'boolean',
         'sms_notify_qc_fail'    => 'boolean',
-        'tier_0'                => 'boolean',
-        'tier_1'                => 'boolean',
-        'tier_2'                => 'boolean',
     ];
 
     public function user(): BelongsTo
@@ -141,14 +139,10 @@ class ReaderProfile extends Model
         return $query->count() >= $max;
     }
 
-    /** Returns the tier numbers (0 = onboarding sandbox-only, and/or 1, 2) this reader belongs to. */
-    public function tiers(): array
+    /** The dynamic tiers (0 or more) this reader belongs to — see App\Support\TierAccess. */
+    public function tiers(): BelongsToMany
     {
-        $t = [];
-        if ($this->tier_0) $t[] = 0;
-        if ($this->tier_1) $t[] = 1;
-        if ($this->tier_2) $t[] = 2;
-        return $t;
+        return $this->belongsToMany(Tier::class, 'reader_profile_tier')->withTimestamps();
     }
 
     public function displayName(): string

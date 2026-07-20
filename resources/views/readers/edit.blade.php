@@ -308,20 +308,16 @@
                     {{-- Tier Membership --}}
                     <div>
                         <x-input-label value="Tier Membership" />
-                        <p class="mt-0.5 text-xs text-gray-500 mb-2">Which assignment pools this reader can see and accept from.</p>
-                        <div class="flex gap-5">
-                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="tier_1" value="1" form="update-form"
-                                       {{ ($profile?->tier_1 ?? true) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                Tier 1
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="checkbox" name="tier_2" value="1" form="update-form"
-                                       {{ $profile?->tier_2 ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                Tier 2
-                            </label>
+                        <p class="mt-0.5 text-xs text-gray-500 mb-2">Which assignment pools this reader can see and accept from. Manage tiers themselves under Settings &gt; Tiers.</p>
+                        <div class="flex flex-wrap gap-5">
+                            @foreach (\App\Models\Tier::ordered()->get() as $tier)
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="tiers[]" value="{{ $tier->id }}" form="update-form"
+                                           {{ $profile?->tiers->contains('id', $tier->id) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    {{ $tier->name }}
+                                </label>
+                            @endforeach
                         </div>
                     </div>
 

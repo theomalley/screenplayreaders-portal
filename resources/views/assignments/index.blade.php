@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
 <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-            <div class="flex items-center gap-3" x-data="{ showHelp: false }">
+            <div class="flex items-center gap-3" x-data="{ showHelp: false, showTierHelp: false }">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Assignments</h2>
                 @if(auth()->user()->isAdminOrEditor())
                 <div class="relative">
@@ -20,6 +20,21 @@
                         </ul>
                         <p class="font-medium text-gray-700 mt-1">In practice</p>
                         <p class="text-xs text-gray-500">A reader with max&nbsp;=&nbsp;1 who has completed a script pending QC <strong>can</strong> accept another assignment. The QC queue does not block new work.</p>
+                    </div>
+                </div>
+                <div class="relative">
+                    <button type="button" @click="showTierHelp = !showTierHelp"
+                            class="text-xs text-gray-400 hover:text-indigo-600 underline underline-offset-2">Tiers</button>
+                    <div x-show="showTierHelp" x-cloak @click.outside="showTierHelp = false" x-transition
+                         class="absolute left-0 top-full mt-2 w-[420px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 text-sm text-gray-600 p-5 space-y-3">
+                        <h3 class="text-sm font-semibold text-gray-800 mb-2">How Tiers Work</h3>
+                        <p>Tiers are admin-configurable (Settings &gt; Tiers) — any number can exist, and each can be renamed.</p>
+                        <p>An assignment can belong to <strong>multiple tiers, one, or none</strong>. No tier means it's invisible to every reader until an admin assigns one.</p>
+                        <p>The <strong class="text-amber-600">Onboarding</strong> tier is sandbox-only — those readers can optionally be granted <em>view-only</em> access into other tiers' pools, but can never accept anything outside their sandbox assignment.</p>
+                        <p>For every other tier pair, an admin can independently enable "see &amp; accept" cross-visibility — e.g. letting Tier 2 readers also work Tier 1's pool.</p>
+                        <p>If nobody in a tier accepts within its configured timeout, the assignment automatically transfers to that tier's configured "escalates to" tier.</p>
+                        <p>Each tier can also be restricted to specific assignment types (e.g. only Budget Coverage).</p>
+                        <p class="font-medium text-gray-700 mt-1">Readers can never see what tier they — or anyone else — are in.</p>
                     </div>
                 </div>
                 @endif
@@ -735,107 +750,31 @@
                 </div>
 
                 @php
-                    $hasTier1 = $tier1Assignments->isNotEmpty();
-                    $hasTier2 = $tier2Assignments->isNotEmpty();
+                    $hasAnyTierSection = $tierSections->contains(fn ($s) => $s['assignments']->isNotEmpty())
+                        || $unassignedTierAssignments->isNotEmpty();
                 @endphp
-                @if (!$hasTier1 && !$hasTier2)
+                @if (!$hasAnyTierSection)
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-gray-500">
                         No assignments yet.
                     </div>
                 @else
-                    @if ($hasTier1)
-                    <div class="{{ $hasTier2 ? 'mb-6' : '' }}">
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Tier 1 Assignments</h3>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="tableSort()">
-                            <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-gray-50 border-b border-gray-200">
-                                <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mr-1">Sort:</span>
-                            @foreach (['date' => 'Date', 'age' => 'Age', 'rush' => 'Rush', 'type' => 'Type', 'rate' => 'Rate', 'status' => 'Status', 'acceptedby' => 'Accepted by'] as $sf => $sl)
-                                <button type="button" @click="setSort('{{ $sf }}')"
-                                        :class="sortBy === '{{ $sf }}' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'"
-                                        class="inline-flex items-center px-2 py-0.5 rounded border text-[11px] transition-colors whitespace-nowrap">
-                                    {{ $sl }}<span x-show="sortBy === '{{ $sf }}'" x-text="sortDir === 'asc' ? ' ↑' : ' ↓'" class="ml-0.5"></span>
-                                </button>
-                            @endforeach
-                            </div>
-                            <div class="overflow-x-auto">
-                            <table class="w-full min-w-[600px] divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-44">Accepted by</th>
-                                </tr>
-                            </thead>
-                                <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
-                                    @foreach ($tier1Assignments as $assignment)
-                                        @include('assignments.partials.admin-assignment-row')
-                                    @endforeach
-                                </tbody>
-                            </table>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
+                    @foreach ($tierSections as $section)
+                        @continue($section['assignments']->isEmpty())
+                        @include('assignments.partials.tier-section', [
+                            'sectionTitle'       => $section['tier']->name . ' Assignments',
+                            'sectionAssignments' => $section['assignments'],
+                            'isOnboarding'       => $section['tier']->is_onboarding,
+                        ])
+                    @endforeach
 
-                    @if ($hasTier2)
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Tier 2 Assignments</h3>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="tableSort()">
-                            <div class="flex flex-wrap items-center gap-1.5 px-4 py-2 bg-gray-50 border-b border-gray-200">
-                                <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mr-1">Sort:</span>
-                            @foreach (['date' => 'Date', 'age' => 'Age', 'rush' => 'Rush', 'type' => 'Type', 'rate' => 'Rate', 'status' => 'Status', 'acceptedby' => 'Accepted by'] as $sf => $sl)
-                                <button type="button" @click="setSort('{{ $sf }}')"
-                                        :class="sortBy === '{{ $sf }}' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'"
-                                        class="inline-flex items-center px-2 py-0.5 rounded border text-[11px] transition-colors whitespace-nowrap">
-                                    {{ $sl }}<span x-show="sortBy === '{{ $sf }}'" x-text="sortDir === 'asc' ? ' ↑' : ' ↓'" class="ml-0.5"></span>
-                                </button>
-                            @endforeach
-                            </div>
-                            <div class="overflow-x-auto">
-                            <table class="w-full min-w-[600px] divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-44">Accepted by</th>
-                                </tr>
-                            </thead>
-                                <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
-                                    @foreach ($tier2Assignments as $assignment)
-                                        @include('assignments.partials.admin-assignment-row')
-                                    @endforeach
-                                </tbody>
-                            </table>
-                            </div>
-                        </div>
-                    </div>
+                    @if ($unassignedTierAssignments->isNotEmpty())
+                        @include('assignments.partials.tier-section', [
+                            'sectionTitle'       => 'No Tier Assigned',
+                            'sectionAssignments' => $unassignedTierAssignments,
+                            'isOnboarding'       => false,
+                        ])
                     @endif
                 @endif
-
-            {{-- ===== SANDBOX / ONBOARDING SECTION (admin only) ===== --}}
-            @if ($sandboxAssignments->isNotEmpty())
-                <div class="mt-6">
-                    <h3 class="text-xs font-semibold text-amber-500 uppercase tracking-wider mb-2 px-1">Sandbox (Onboarding)</h3>
-                    <div class="bg-white rounded-lg shadow-sm border border-amber-200 overflow-hidden" x-data="tableSort()">
-                        <div class="overflow-x-auto">
-                        <table class="w-full min-w-[600px] divide-y divide-gray-200 text-sm">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-52">Order Details</th>
-                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-44">Accepted by</th>
-                                </tr>
-                            </thead>
-                                <tbody class="bg-white divide-y divide-gray-100" x-ref="sortTbody">
-                                    @foreach ($sandboxAssignments as $assignment)
-                                        @include('assignments.partials.admin-assignment-row')
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            @endif
 
             {{-- ===== FORMATTING / PROOFREADING SECTION (admin only) ===== --}}
             @if ($formatting->isNotEmpty())

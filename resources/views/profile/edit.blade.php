@@ -645,26 +645,16 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
                             <span class="text-sm font-medium text-gray-700">Tier Membership</span>
-                            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                                <input type="checkbox" name="tier_0" value="1"
-                                       {{ old('tier_0', $profile?->tier_0 ?? false) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-amber-600 shadow-sm focus:ring-amber-500" />
-                                Tier 0 (Onboarding)
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                                <input type="checkbox" name="tier_1" value="1"
-                                       {{ old('tier_1', $profile?->tier_1 ?? true) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                Tier 1
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                                <input type="checkbox" name="tier_2" value="1"
-                                       {{ old('tier_2', $profile?->tier_2 ?? false) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                Tier 2
-                            </label>
+                            @foreach (\App\Models\Tier::ordered()->get() as $tierOption)
+                                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                    <input type="checkbox" name="tiers[]" value="{{ $tierOption->id }}"
+                                           {{ $profile?->tiers->contains('id', $tierOption->id) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 {{ $tierOption->is_onboarding ? 'text-amber-600 focus:ring-amber-500' : 'text-indigo-600 focus:ring-indigo-500' }} shadow-sm" />
+                                    {{ $tierOption->name }}{{ $tierOption->is_onboarding ? ' (Onboarding)' : '' }}
+                                </label>
+                            @endforeach
                         </div>
-                        <p class="text-xs text-gray-400 -mt-1">Tier 0 is exclusive of Tier 1/2 — checking either of those on save clears Tier 0. Tier-0 readers can only accept the onboarding sandbox assignment.</p>
+                        <p class="text-xs text-gray-400 -mt-1">Manage tiers themselves under Settings &gt; Tiers. Onboarding readers can only accept the onboarding sandbox assignment.</p>
                         <div class="flex justify-end">
                             <x-primary-button>Save Capacity &amp; Pay</x-primary-button>
                         </div>

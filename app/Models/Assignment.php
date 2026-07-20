@@ -43,9 +43,16 @@ namespace App\Models;
 use App\Services\WooCommerceService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+// v1.27 — 2026-07-20 | Replace the tier tinyint with a tiers() belongsToMany (assignment_tier
+//                      pivot) — an assignment can now belong to any number of dynamic tiers, or
+//                      none. scopeAvailable()/scopeAcceptedRequests() delegate cross-visibility
+//                      and type-restriction filtering to App\Support\TierAccess. Removed
+//                      isOpenToTier2() — escalation is now a real tier transfer performed by
+//                      App\Console\Commands\EscalateTierTimeouts, not a query-time visibility trick.
 class Assignment extends Model
 {
     // Status constants — use these everywhere instead of raw strings
@@ -99,7 +106,6 @@ class Assignment extends Model
         'available_at',
         'exempt_from_word_counts',
         'is_test',
-        'tier',
         'oversized_fee_included',
         'manual_page_flag',
         'exempt_from_capacity',
@@ -124,7 +130,6 @@ class Assignment extends Model
             'available_at'              => 'datetime',
             'exempt_from_word_counts'   => 'boolean',
             'is_test'                   => 'boolean',
-            'tier'                      => 'integer',
             'proofreading'              => 'boolean',
             'oversized_fee_included'    => 'boolean',
             'exempt_from_capacity'      => 'boolean',
@@ -216,7 +221,7 @@ class Assignment extends Model
      */
     public static function ensureSandboxAssignment(): self
     {
-        return static::firstOrCreate(
+        $assignment = static::firstOrCreate(
             ['order_number' => 'SANDBOX-ONBOARDING'],
             [
                 'vendor'               => 'sr',
@@ -230,9 +235,14 @@ class Assignment extends Model
                 'status'               => self::STATUS_UNASSIGNED,
                 'drive_script_file_id' => '__LOCAL_TEST__',
                 'is_test'              => true,
-                'tier'                 => 0,
             ]
         );
+
+        if ($onboardingTier = Tier::onboarding()) {
+            $assignment->tiers()->syncWithoutDetaching([$onboardingTier->id]);
+        }
+
+        return $assignment;
     }
 
     // --- Status helpers ---
@@ -266,14 +276,6 @@ class Assignment extends Model
             ->get()
             ->map(fn (User $u) => $u->readerProfile?->initials ?? $u->name)
             ->all();
-    }
-
-    /** True once a tier-1 assignment has sat unaccepted long enough to also open up to tier-2 readers. */
-    public function isOpenToTier2(): bool
-    {
-        return (int) $this->tier === 1
-            && $this->unassigned_at !== null
-            && $this->unassigned_at->lte(now()->subHours(Setting::getTier2ReleaseHours()));
     }
 
     /** Whether the "goback ready at HelpScout" notice for this order has been dismissed (shared across admins/editors). */
@@ -380,52 +382,53 @@ class Assignment extends Model
         return $this->hasMany(ScriptDownload::class);
     }
 
-    // --- Scopes ---
-
-    /**
-     * Assignments visible to a specific reader in the available list, filtered to their tiers.
-     * Includes assignments requested for other readers (visible but not acceptble).
-     * Assignments that block this reader are still included (so the reader can see why an
-     * order is unavailable to them) — AssignmentPolicy::accept() prevents them from accepting.
-     *
-     * A reader with tier 2 (but not tier 1) also sees tier-1 assignments once they've sat
-     * unaccepted past Setting::getTier2ReleaseHours() — mirrors Assignment::isOpenToTier2().
-     */
-    public function scopeAvailable($query, int $userId, array $tiers = [1])
+    public function tiers(): BelongsToMany
     {
-        if (empty($tiers)) {
+        return $this->belongsToMany(Tier::class, 'assignment_tier')->withTimestamps();
+    }
+
+    /** Applies a reader's App\Support\TierAccess groups as an OR'd set of whereHas/type filters. */
+    public function scopeMatchingTierGroups($query, array $tierGroups)
+    {
+        if (empty($tierGroups)) {
             return $query->whereRaw('1 = 0');
         }
 
-        $query->where('status', self::STATUS_UNASSIGNED);
+        return $query->where(function ($outer) use ($tierGroups) {
+            foreach ($tierGroups as $group) {
+                $outer->orWhere(function ($inner) use ($group) {
+                    $inner->whereHas('tiers', fn ($q) => $q->whereIn('tiers.id', $group['tierIds']));
+                    if ($group['allowedTypes'] !== null) {
+                        $inner->whereIn('assignment_type', $group['allowedTypes']);
+                    }
+                });
+            }
+        });
+    }
 
-        if (in_array(2, $tiers, true) && ! in_array(1, $tiers, true)) {
-            $releasedAt = now()->subHours(Setting::getTier2ReleaseHours());
+    // --- Scopes ---
 
-            return $query->where(function ($q) use ($tiers, $releasedAt) {
-                $q->whereIn('tier', $tiers)
-                    ->orWhere(function ($q2) use ($releasedAt) {
-                        $q2->where('tier', 1)
-                            ->whereNotNull('unassigned_at')
-                            ->where('unassigned_at', '<=', $releasedAt);
-                    });
-            });
-        }
-
-        return $query->whereIn('tier', $tiers);
+    /**
+     * Assignments visible to a specific reader in the available list, filtered to the tiers
+     * they can reach (own tiers plus any cross-visibility grants, see App\Support\TierAccess).
+     * Includes assignments requested for other readers (visible but not acceptable).
+     * Assignments that block this reader are still included (so the reader can see why an
+     * order is unavailable to them) — AssignmentPolicy::accept() prevents them from accepting.
+     */
+    public function scopeAvailable($query, int $userId, array $tierGroups)
+    {
+        return $query->where('status', self::STATUS_UNASSIGNED)
+            ->matchingTierGroups($tierGroups);
     }
 
     /**
      * Requested assignments accepted by other readers — visible to all readers
      * so they can see the request was fulfilled.
      */
-    public function scopeAcceptedRequests($query, int $userId, array $tiers = [1])
+    public function scopeAcceptedRequests($query, int $userId, array $tierGroups)
     {
-        if (empty($tiers)) {
-            return $query->whereRaw('1 = 0');
-        }
         return $query->where('status', self::STATUS_ASSIGNED)
-            ->whereIn('tier', $tiers)
+            ->matchingTierGroups($tierGroups)
             ->whereNotNull('requested_reader_id')
             ->where('requested_reader_id', '!=', $userId);
     }

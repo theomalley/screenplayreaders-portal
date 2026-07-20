@@ -1,5 +1,10 @@
 <?php
 
+// v1.7 — 2026-07-20 | view/accept: tier match now goes through App\Support\TierAccess —
+//                     generalizes the old hardcoded tier-2-into-tier-1 special case into
+//                     admin-configurable cross-visibility/accept per tier pair, for any number
+//                     of dynamic tiers. Onboarding-tier readers still never accept outside
+//                     their own tier (TierAccess enforces this independent of stored config).
 // v1.6 — 2026-07-11 | accept: tier-2 readers may also accept a tier-1 assignment once
 //                     Assignment::isOpenToTier2() is true (sat unaccepted past the admin-configured
 //                     release window) — mirrors Assignment::scopeAvailable()'s visibility rule.
@@ -18,6 +23,7 @@ namespace App\Policies;
 
 use App\Models\Assignment;
 use App\Models\User;
+use App\Support\TierAccess;
 
 class AssignmentPolicy
 {
@@ -34,13 +40,29 @@ class AssignmentPolicy
         }
 
         if ($user->isReader()) {
+            $tierMatch = $this->tierMatch($user, $assignment, forAccept: false);
+
             $openToMe = $assignment->isAvailable()
-                && (is_null($assignment->requested_reader_id) || $assignment->requested_reader_id === $user->id);
+                && (is_null($assignment->requested_reader_id) || $assignment->requested_reader_id === $user->id)
+                && $tierMatch;
 
             return $openToMe || $assignment->assigned_reader_id === $user->id;
         }
 
         return false;
+    }
+
+    /** True if $assignment belongs to at least one tier the reader can reach (own tiers or cross-visibility grants). */
+    protected function tierMatch(User $user, Assignment $assignment, bool $forAccept): bool
+    {
+        $profile = $user->readerProfile;
+        if (! $profile) {
+            return false;
+        }
+
+        $reachableIds = TierAccess::reachableTierIds($profile, $forAccept, $assignment->assignment_type);
+
+        return $assignment->tiers->pluck('id')->intersect($reachableIds)->isNotEmpty();
     }
 
     public function create(User $user): bool
@@ -67,11 +89,7 @@ class AssignmentPolicy
     /** Reader, editor, or admin self-assigning an unassigned assignment */
     public function accept(User $user, Assignment $assignment): bool
     {
-        $readerTiers = $user->readerProfile?->tiers() ?? [1];
-
-        $tierMatch = $user->canManageAssignments()
-            || in_array($assignment->tier, $readerTiers, true)
-            || (in_array(2, $readerTiers, true) && $assignment->isOpenToTier2());
+        $tierMatch = $user->canManageAssignments() || $this->tierMatch($user, $assignment, forAccept: true);
 
         return $assignment->isAvailable()
             && ($user->isReader() || $user->canManageAssignments())

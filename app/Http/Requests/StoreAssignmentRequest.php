@@ -38,7 +38,8 @@ class StoreAssignmentRequest extends FormRequest
             'exempt_from_word_counts' => ['nullable', 'boolean'],
             'oversized_fee_included'  => ['nullable', 'boolean'],
             'manual_page_flag'        => ['nullable', 'in:over_120,over_160'],
-            'tier'                 => ['nullable', 'integer', 'in:1,2'],
+            'tiers'                => ['nullable', 'array'],
+            'tiers.*'              => ['integer', 'exists:tiers,id'],
             'script'               => ['nullable', 'file', 'mimes:pdf', 'max:51200'],
             'status'               => ['required', 'in:' . implode(',', [
                                           Assignment::STATUS_INCOMING,

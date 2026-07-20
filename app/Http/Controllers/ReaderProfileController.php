@@ -1,5 +1,9 @@
 <?php
 
+// v1.12 — 2026-07-20 | Replace tier_0/tier_1/tier_2 checkbox handling with
+//                      $readerProfile->tiers()->sync() against the dynamic Tier model — also
+//                      fixes the old bug where tier_0 was silently cleared on every save because
+//                      the form never submitted it.
 // v1.11 — 2026-07-11 | Add tier_0 (onboarding) — mutually exclusive with tier_1/tier_2;
 //                      checking either of those clears tier_0.
 // v1.10 — 2026-06-23 | Save is_test flag on user when admin edits reader profile
@@ -201,14 +205,13 @@ class ReaderProfileController extends Controller
 
         $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
         $data['is_1099']                  = $request->boolean('is_1099');
-        $data['tier_1']                   = $request->boolean('tier_1');
-        $data['tier_2']                   = $request->boolean('tier_2');
-        $data['tier_0']                   = $request->boolean('tier_0') && ! $data['tier_1'] && ! $data['tier_2'];
 
-        $user->readerProfile()->updateOrCreate(
+        $readerProfile = $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],
             collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
         );
+
+        $readerProfile->tiers()->sync($request->input('tiers', []));
 
         return redirect()->route('readers.edit', $user)->with('success', 'Reader profile updated.');
     }

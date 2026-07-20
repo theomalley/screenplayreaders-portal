@@ -17,7 +17,6 @@
     $active    = $user->relationLoaded('assignments') ? $user->assignments->count() : null;
     $max       = $profile?->max_concurrent_assignments ?? 0;
     $bgClass   = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
-    $isTier2   = $isReader && ($user->readerProfile?->tier_2 ?? false);
     $sizeClass = match ($size) {
         'sm'    => 'w-7 h-7 text-xs',
         'lg'    => 'w-10 h-10 text-sm',
@@ -41,9 +40,6 @@
         </span>
     @else
         {{ $initials }}
-    @endif
-    @if ($isTier2)
-        <span class="absolute -top-0.5 -left-0.5 w-3.5 h-3.5 rounded-full text-[8px] leading-none flex items-center justify-center font-bold z-10 bg-violet-600 text-white">2</span>
     @endif
     @if ($showCount && $active > 0)
         <span class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] leading-none flex items-center justify-center font-bold z-10 bg-gray-500 text-white">

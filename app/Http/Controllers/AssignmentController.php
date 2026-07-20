@@ -1,5 +1,10 @@
 <?php
 
+// v2.28 — 2026-07-20 | Dynamic tiers: store()/update() now sync assignment_tier (multiple tiers
+//                      or none) instead of a scalar tier column; index() admin branch groups
+//                      into $tierSections (one per Tier row, ordered) + $unassignedTierAssignments
+//                      instead of hardcoded tier1Assignments/tier2Assignments/sandboxAssignments;
+//                      reader branch resolves visibility via App\Support\TierAccess.
 // v2.27 — 2026-07-11 | Removed the tier-0 "Browse All Assignments" read-only tab/query per
 //                      request — tier-0 readers keep the self-healing sandbox provisioning
 //                      but no longer see an unfiltered assignment list.
@@ -100,7 +105,7 @@ class AssignmentController extends Controller
         if ($user->canManageAssignments()) {
             $formattingTypes = ['formatting', 'proofreading'];
 
-            $allAssignments = Assignment::with(['assignedReader.readerProfile', 'assignedReader.editorProfile', 'requestedReader.readerProfile', 'helpscoutConversation', 'editorNotes'])
+            $allAssignments = Assignment::with(['assignedReader.readerProfile', 'assignedReader.editorProfile', 'requestedReader.readerProfile', 'helpscoutConversation', 'editorNotes', 'tiers'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
                 ->whereNotIn('assignment_type', $formattingTypes)
                 ->orderBy('created_at', 'asc')
@@ -108,9 +113,11 @@ class AssignmentController extends Controller
                 ->filter(fn($a) => $a->status !== Assignment::STATUS_CANCELLED || ! $a->isCancelledDismissedBy($user->id))
                 ->values();
 
-            $tier1Assignments   = $allAssignments->where('tier', 1)->values();
-            $tier2Assignments   = $allAssignments->where('tier', 2)->values();
-            $sandboxAssignments = $allAssignments->where('tier', 0)->values();
+            $tierSections = \App\Models\Tier::ordered()->get()->map(fn ($tier) => [
+                'tier'        => $tier,
+                'assignments' => $allAssignments->filter(fn ($a) => $a->tiers->contains('id', $tier->id))->values(),
+            ]);
+            $unassignedTierAssignments = $allAssignments->filter(fn ($a) => $a->tiers->isEmpty())->values();
 
             $formatting = Assignment::with(['helpscoutConversation', 'assignedReader.readerProfile', 'assignedReader.editorProfile'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
@@ -216,9 +223,8 @@ class AssignmentController extends Controller
 
             return view('assignments.index', [
                 'canManage'        => true,
-                'tier1Assignments' => $tier1Assignments,
-                'tier2Assignments' => $tier2Assignments,
-                'sandboxAssignments' => $sandboxAssignments,
+                'tierSections'     => $tierSections,
+                'unassignedTierAssignments' => $unassignedTierAssignments,
                 'formatting'       => $formatting,
                 'editors'          => $editors,
                 'readers'          => $readers,
@@ -237,21 +243,21 @@ class AssignmentController extends Controller
         }
 
         // Reader: available pool (rush first, oldest first) + their own active assignments
-        $profile      = $user->readerProfile;
-        $readerTiers  = $profile ? $profile->tiers() : [1];
+        $profile          = $user->readerProfile;
+        $viewableGroups   = $profile ? \App\Support\TierAccess::reachableTierGroups($profile, forAccept: false) : [];
 
         // Tier 0 (onboarding): self-healing check that the shared sandbox assignment exists.
-        if (in_array(0, $readerTiers, true)) {
+        if ($profile && $profile->tiers->contains('is_onboarding', true)) {
             Assignment::ensureSandboxAssignment();
         }
 
-        $available = Assignment::available($user->id, $readerTiers)
+        $available = Assignment::available($user->id, $viewableGroups)
             ->with(['requestedReader.readerProfile'])
             ->orderByRaw('rush DESC')
             ->orderBy('unassigned_at', 'asc')
             ->get();
 
-        $acceptedRequests = Assignment::acceptedRequests($user->id, $readerTiers)
+        $acceptedRequests = Assignment::acceptedRequests($user->id, $viewableGroups)
             ->with(['requestedReader.readerProfile', 'assignedReader.readerProfile'])
             ->get();
 
@@ -373,7 +379,8 @@ class AssignmentController extends Controller
         $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['exempt_from_capacity']    = $request->boolean('exempt_from_capacity');
-        $data['tier'] = (int) ($data['tier'] ?? 1) ?: 1;
+        $tierIds = $data['tiers'] ?? [];
+        unset($data['tiers']);
         $data['blocked_reader_ids'] = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
             : null;
@@ -451,6 +458,10 @@ class AssignmentController extends Controller
                 }
                 $createdAssignments[] = $created;
             }
+        }
+
+        foreach ($createdAssignments as $assignment) {
+            $assignment->tiers()->sync($tierIds);
         }
 
         if ($newCreatedAt) {
@@ -979,7 +990,8 @@ class AssignmentController extends Controller
         $data['exempt_from_word_counts'] = $request->boolean('exempt_from_word_counts');
         $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');
         $data['exempt_from_capacity']    = $request->boolean('exempt_from_capacity');
-        $data['tier']                   = (int) ($data['tier'] ?? 1) ?: 1;
+        $tierIds = $data['tiers'] ?? [];
+        unset($data['tiers']);
         $data['blocked_reader_ids']     = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
             : null;
@@ -1064,6 +1076,7 @@ class AssignmentController extends Controller
         }
 
         $assignment->update($data);
+        $assignment->tiers()->sync($tierIds);
 
         // Blocked readers apply to the whole order, not just this slot — keep
         // every sibling assignment for this order_number in sync.

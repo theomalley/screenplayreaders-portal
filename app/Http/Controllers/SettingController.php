@@ -1,5 +1,8 @@
 <?php
 
+// v2.20 — 2026-07-20 | Remove updateTier2ReleaseHours() — superseded by the new dynamic Tiers
+//                      settings page (Tools > Settings > Tiers, App\Http\Controllers\TierController),
+//                      where per-tier timeout_hours/escalates_to_tier_id now live.
 // v2.19 — 2026-07-11 | Add updateTier2ReleaseHours() — admin-configurable hours before an
 //                      unaccepted tier-1 assignment also opens to tier-2 readers.
 // v2.18 — 2026-06-24 | Split settings into 4 tabbed sub-pages: General, Assignments & Coverage,
@@ -103,13 +106,11 @@ class SettingController extends Controller
         ];
         $wordCounts          = $isAdmin ? Setting::getWordCounts() : null;
         $blockedReaderLimits = $isAdmin ? Setting::getBlockedReaderLimits() : null;
-        $tier2ReleaseHours   = $isAdmin ? Setting::getTier2ReleaseHours() : null;
 
         return view('settings.assignments', compact(
             'isAdmin', 'capacityOverride', 'capacityOverrideExcludesRushRequests',
             'ageThresholds', 'ageThresholdTypes', 'watermarkSettings', 'filenameSuffixes',
             'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts', 'blockedReaderLimits',
-            'tier2ReleaseHours',
         ));
     }
 
@@ -589,17 +590,6 @@ class SettingController extends Controller
         Setting::setValue('max_blockable_multi', (int) $request->input('max_blockable_multi'));
 
         return back()->with('success', 'Block-reader limits saved.');
-    }
-
-    public function updateTier2ReleaseHours(Request $request): RedirectResponse
-    {
-        abort_unless(auth()->user()->isAdmin(), 403);
-
-        $request->validate(['tier2_release_hours' => 'required|integer|min:1|max:720']);
-
-        Setting::setValue('tier2_release_hours', (int) $request->input('tier2_release_hours'));
-
-        return back()->with('success', 'Tier-2 release window saved.');
     }
 
     public function updateNotificationHistoryRetention(Request $request): RedirectResponse

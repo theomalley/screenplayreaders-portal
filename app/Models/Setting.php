@@ -225,14 +225,6 @@ class Setting extends Model
         static::updateOrCreate(['key' => $key], ['value' => (string) $value]);
     }
 
-    /** Hours a tier-1 assignment must sit unaccepted before it also opens up to tier-2 readers. */
-    public const TIER2_RELEASE_HOURS_DEFAULT = 24;
-
-    public static function getTier2ReleaseHours(): int
-    {
-        return (int) self::getValue('tier2_release_hours', self::TIER2_RELEASE_HOURS_DEFAULT);
-    }
-
     /** Default QC saved replies seeded from the 23 reader rules. */
     public const QC_SAVED_REPLY_DEFAULTS = [
         ['name' => 'Missing actionable feedback',  'body' => 'Your feedback needs to be more actionable, insightful, and constructive. Please ensure every note gives the writer something specific they can do to improve the script.'],

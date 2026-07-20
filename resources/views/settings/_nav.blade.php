@@ -2,6 +2,7 @@
     $tabs = [
         'settings.index'       => 'General',
         'settings.assignments' => 'Assignments & Coverage',
+        'settings.tiers'       => 'Tiers',
         'settings.emails'      => 'Emails & Notifications',
         'settings.orders'      => 'Orders & Payments',
     ];

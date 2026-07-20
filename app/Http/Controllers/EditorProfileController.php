@@ -1,5 +1,8 @@
 <?php
 
+// v1.15 — 2026-07-20 | Role change (editor→reader): replace hardcoded 'tier_1' => true (a
+//                      dropped column) with syncing the reader into the first non-onboarding
+//                      dynamic Tier.
 // v1.14 — 2026-07-13 | Fix: custom_message (Logline) was missing from update() validation, so admin-edit saves silently dropped it
 // v1.13 — 2026-07-08 | Save is_1099 flag when admin edits editor profile
 // v1.12 — 2026-06-23 | Save is_test flag on user when admin edits editor profile
@@ -142,11 +145,15 @@ class EditorProfileController extends Controller
                 'availability_message'       => $editor?->availability_message,
                 'upload_warning'             => $editor?->upload_warning,
                 'timezone'                   => $editor?->timezone,
-                'tier_1'                     => true,
             ];
 
             $user->update(['role' => 'reader']);
-            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], $shared);
+            $readerProfile = $user->readerProfile()->updateOrCreate(['user_id' => $user->id], $shared);
+
+            // Default a newly-converted reader into the first non-onboarding tier.
+            if ($defaultTier = \App\Models\Tier::ordered()->where('is_onboarding', false)->first()) {
+                $readerProfile->tiers()->syncWithoutDetaching([$defaultTier->id]);
+            }
 
             return redirect()->route('readers.edit', $user)->with('success', 'Role changed to reader.');
         }

@@ -28,3 +28,7 @@ Schedule::command('notifications:prune-history')->daily()->withoutOverlapping();
 // the record before a draft attempt hits the stale ID and 404s.
 Schedule::command('helpscout:reconcile-conversation-ids')->daily()->withoutOverlapping();
 // 2026-07-16
+
+// Transfer unaccepted assignments to their configured next tier once a tier's timeout elapses.
+Schedule::command('tiers:escalate-timeouts')->hourly()->withoutOverlapping();
+// 2026-07-20
