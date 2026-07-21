@@ -11,7 +11,7 @@
     <div class="py-6">
         <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <form method="POST" action="{{ route('readers.store') }}" class="p-6 space-y-5">
+                <form method="POST" action="{{ route('readers.store') }}" enctype="multipart/form-data" class="p-6 space-y-5">
                     @csrf
 
                     @if ($errors->any())
@@ -125,6 +125,70 @@
                                     placeholder="optional" />
                                 <x-input-error :messages="$errors->get('paypal_email')" class="mt-1" />
                             </div>
+                        </div>
+                    </div>
+
+                    {{-- Photos --}}
+                    <div class="pt-4 border-t border-gray-100 space-y-4">
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Photos</p>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div x-data="{ previewUrl: '', hasFile: false }">
+                                <x-input-label value="Reader Icon" />
+                                <p class="text-xs text-gray-500 mb-2">Portal avatar and public website icon.</p>
+                                <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-2"
+                                     style="width:120px;height:120px"
+                                     @click="$refs.photoInput.click()">
+                                    <template x-if="previewUrl">
+                                        <img :src="previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="Photo preview" />
+                                    </template>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
+                                         :class="previewUrl ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                                        <svg class="w-6 h-6" :class="previewUrl ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                                        <span class="text-xs font-medium" :class="previewUrl ? 'text-white' : 'text-gray-500'">Click to browse</span>
+                                    </div>
+                                </div>
+                                <input x-ref="photoInput" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
+                                       @change="if ($event.target.files[0]) { const r=new FileReader(); r.onload=e=>{previewUrl=e.target.result;hasFile=true}; r.readAsDataURL($event.target.files[0]); }" />
+                                <p class="text-xs text-gray-400">Min 600×600 &nbsp;·&nbsp; max 8 MB</p>
+                                <x-input-error :messages="$errors->get('photo')" class="mt-1" />
+                            </div>
+
+                            <div x-data="{ previewUrl: '', hasFile: false }">
+                                <x-input-label value="About Page Photo" />
+                                <p class="text-xs text-gray-500 mb-2">Shown on the public About page.</p>
+                                <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-2"
+                                     style="width:120px;height:120px"
+                                     @click="$refs.aboutInput.click()">
+                                    <template x-if="previewUrl">
+                                        <img :src="previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
+                                    </template>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
+                                         :class="previewUrl ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                                        <svg class="w-6 h-6" :class="previewUrl ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                                        <span class="text-xs font-medium" :class="previewUrl ? 'text-white' : 'text-gray-500'">Click to browse</span>
+                                    </div>
+                                </div>
+                                <input x-ref="aboutInput" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
+                                       @change="if ($event.target.files[0]) { const r=new FileReader(); r.onload=e=>{previewUrl=e.target.result;hasFile=true}; r.readAsDataURL($event.target.files[0]); }" />
+                                <p class="text-xs text-gray-400">Min 600×600 &nbsp;·&nbsp; max 8 MB</p>
+                                <x-input-error :messages="$errors->get('about_photo')" class="mt-1" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Tier Membership --}}
+                    <div class="pt-4 border-t border-gray-100 space-y-2">
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tier Membership</p>
+                        <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+                            @foreach (\App\Models\Tier::ordered()->get() as $tierOption)
+                                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                                    <input type="checkbox" name="tiers[]" value="{{ $tierOption->id }}"
+                                           {{ collect(old('tiers', []))->contains($tierOption->id) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 {{ $tierOption->is_onboarding ? 'text-amber-600 focus:ring-amber-500' : 'text-indigo-600 focus:ring-indigo-500' }} shadow-sm" />
+                                    {{ $tierOption->name }}{{ $tierOption->is_onboarding ? ' (Onboarding)' : '' }}
+                                </label>
+                            @endforeach
                         </div>
                     </div>
 

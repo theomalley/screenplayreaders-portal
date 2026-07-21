@@ -1,5 +1,6 @@
 <?php
 
+// v1.13 — 2026-07-21 | Add photo/about_photo upload and tier assignment to store() (create form)
 // v1.12 — 2026-07-20 | Replace tier_0/tier_1/tier_2 checkbox handling with
 //                      $readerProfile->tiers()->sync() against the dynamic Tier model — also
 //                      fixes the old bug where tier_0 was silently cleared on every save because
@@ -66,6 +67,8 @@ class ReaderProfileController extends Controller
             'last_name'                  => ['required', 'string', 'max:100'],
             'max_concurrent_assignments' => ['required', 'integer', 'min:0', 'max:20'],
             'paypal_email'               => ['nullable', 'email', 'max:255'],
+            'photo'                      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192', 'dimensions:min_width=600,min_height=600'],
+            'about_photo'                => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192', 'dimensions:min_width=600,min_height=600'],
             'availability'               => ['required', 'in:available,unavailable'],
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
@@ -80,16 +83,20 @@ class ReaderProfileController extends Controller
             'role'     => 'reader',
         ]);
 
-        $user->readerProfile()->create([
+        $readerProfile = $user->readerProfile()->create([
             'initials'                   => $data['initials'],
             'first_name'                 => $data['first_name'],
             'last_name'                  => $data['last_name'],
             'max_concurrent_assignments'  => $data['max_concurrent_assignments'],
             'requests_bypass_capacity'    => $data['requests_bypass_capacity'],
             'paypal_email'                => $data['paypal_email'] ?? null,
+            'photo'                       => $request->hasFile('photo') ? $request->file('photo')->store('reader-photos', 'public') : null,
+            'about_photo'                 => $request->hasFile('about_photo') ? $request->file('about_photo')->store('reader-photos', 'public') : null,
             'availability'                => $data['availability'],
             'availability_message'        => $data['availability_message'] ?? null,
         ]);
+
+        $readerProfile->tiers()->sync($request->input('tiers', []));
 
         return redirect()->route('team.index')->with('success', 'Reader created.');
     }
