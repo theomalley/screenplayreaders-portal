@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to the manage-permissions Gate ability (AppServiceProvider)
+
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
@@ -10,7 +12,7 @@ class PermissionsController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-permissions');
 
         $grid = Permission::all();
 
@@ -19,7 +21,7 @@ class PermissionsController extends Controller
 
     public function update(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-permissions');
 
         foreach (array_keys(Permission::FEATURES) as $feature) {
             foreach (Permission::ROLES as $role) {

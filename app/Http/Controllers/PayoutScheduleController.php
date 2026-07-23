@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to the manage-payout-schedule Gate ability (AppServiceProvider)
 // v1.0 — 2026-06-02 | Admin payout schedule settings — frequency, day, time, next-date override
 
 namespace App\Http\Controllers;
@@ -17,7 +18,7 @@ class PayoutScheduleController extends Controller
      */
     public function update(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-payout-schedule');
 
         $data = $request->validate([
             'frequency' => ['required', 'in:weekly,biweekly'],
@@ -48,7 +49,7 @@ class PayoutScheduleController extends Controller
      */
     public function setOverride(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-payout-schedule');
 
         $data = $request->validate([
             'override_date' => ['nullable', 'date_format:Y-m-d'],

@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to TierPolicy (app/Policies), replacing inline
+//                     abort_unless(isAdmin()). Covered by tests/Feature/TierControllerTest.php.
 // v1.0 — 2026-07-20 | Tools > Settings > Tiers — admin-only CRUD for dynamic reader tiers:
 // create/rename/reorder, timeout + escalates-to-tier, per-tier assignment-type allowlist, and
 // the from-tier -> to-tier cross-visibility/accept matrix. See App\Models\Tier and
@@ -32,7 +34,7 @@ class TierController extends Controller
 
     public function index(): View
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('viewAny', Tier::class);
 
         $tiers           = Tier::ordered()->get();
         $crossVisibility = TierCrossVisibility::all()->groupBy('from_tier_id');
@@ -46,7 +48,7 @@ class TierController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('create', Tier::class);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:tiers,name'],
@@ -62,7 +64,7 @@ class TierController extends Controller
 
     public function update(Request $request, Tier $tier): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('update', $tier);
 
         $data = $request->validate([
             'name'                        => ['required', 'string', 'max:100', Rule::unique('tiers', 'name')->ignore($tier->id)],
@@ -94,7 +96,7 @@ class TierController extends Controller
 
     public function destroy(Tier $tier): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('delete', $tier);
 
         if ($tier->is_onboarding) {
             return back()->withErrors(['tier' => 'The onboarding tier cannot be deleted.']);
@@ -117,7 +119,7 @@ class TierController extends Controller
     /** Bulk-saves the whole from-tier -> to-tier matrix from one form submission. */
     public function updateCrossVisibility(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manageCrossVisibility', Tier::class);
 
         $tiers   = Tier::all();
         $checked = $request->input('visibility', []);

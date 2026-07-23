@@ -1,5 +1,8 @@
 <?php
 
+// v1.4 — 2026-07-23 | Authorization moved to UserPolicy (app/Policies) abilities
+//                     (viewAnyTeam, toggleVisibility), replacing inline
+//                     abort_unless(...) calls. Covered by tests/Feature/TeamControllerTest.php.
 // v1.3 — 2026-06-02 | Add toggleVisibility() — admin-only toggle for hidden_from_staff.
 // v1.2 — 2026-05-30 | Pass pendingApprovals count to view.
 // v1.1 — 2026-05-27 | Include admins section; reader photo upload; fix admin photo in assigned-reader column.
@@ -16,7 +19,7 @@ class TeamController extends Controller
 {
     public function index()
     {
-        abort_unless(Permission::check('team'), 403);
+        $this->authorize('viewAnyTeam', User::class);
 
         $isAdmin     = auth()->user()->isAdmin();
         $visibleOnly = fn($q) => $isAdmin ? $q : $q->where('hidden_from_staff', false);
@@ -75,7 +78,7 @@ class TeamController extends Controller
      */
     public function toggleVisibility(User $user): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('toggleVisibility', $user);
 
         $user->update(['hidden_from_staff' => ! $user->hidden_from_staff]);
 

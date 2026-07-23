@@ -1,5 +1,10 @@
 <?php
 
+// v2.21 — 2026-07-23 | Authorization moved to two Gate abilities (manage-settings,
+//                     manage-settings-admin-only — AppServiceProvider), replacing 39
+//                     individual abort_unless(...) calls that reduced to the same two
+//                     rules (canManageAssignments()/isAdminOrEditor() are the same check
+//                     under two names). Covered by tests/Feature/SettingControllerTest.php.
 // v2.20 — 2026-07-20 | Remove updateTier2ReleaseHours() — superseded by the new dynamic Tiers
 //                      settings page (Tools > Settings > Tiers, App\Http\Controllers\TierController),
 //                      where per-tier timeout_hours/escalates_to_tier_id now live.
@@ -63,7 +68,7 @@ class SettingController extends Controller
 {
     public function index(): View
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('manage-settings');
 
         $isAdmin       = auth()->user()->isAdmin();
         $portalTheme   = Setting::getValue('portal_theme', 'default');
@@ -87,7 +92,7 @@ class SettingController extends Controller
 
     public function assignments(): View
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('manage-settings');
 
         $isAdmin = auth()->user()->isAdmin();
 
@@ -116,7 +121,7 @@ class SettingController extends Controller
 
     public function emails(): View
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('manage-settings');
 
         $isAdmin              = auth()->user()->isAdmin();
         $emailNotifTexts      = Setting::getEmailNotificationTexts();
@@ -137,7 +142,7 @@ class SettingController extends Controller
 
     public function orders(): View
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('manage-settings');
 
         $isAdmin         = auth()->user()->isAdmin();
         $appTimezone     = Setting::getAppTimezone();
@@ -163,7 +168,7 @@ class SettingController extends Controller
 
     public function uploadLogo(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:4096']);
 
@@ -186,7 +191,7 @@ class SettingController extends Controller
 
     public function uploadLoginLogo(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['login_logo' => 'required|image|mimes:jpeg,jpg,png,gif,webp|max:4096']);
 
@@ -209,7 +214,7 @@ class SettingController extends Controller
 
     public function uploadFavicon(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['favicon' => 'required|file|mimes:png,ico,svg,webp|max:512']);
 
@@ -232,7 +237,7 @@ class SettingController extends Controller
 
     public function updateCapacityOverride(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('manage-settings');
 
         $request->validate(['capacity_override' => 'nullable|integer|min:0|max:99']);
 
@@ -250,7 +255,7 @@ class SettingController extends Controller
 
     public function updateSessionTimeout(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['session_timeout_minutes' => 'required|integer|min:5|max:1440']);
 
@@ -262,7 +267,7 @@ class SettingController extends Controller
 
     public function updateInvoiceSettings(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate([
             'sr_invoice_address' => 'nullable|string|max:1000',
@@ -277,7 +282,7 @@ class SettingController extends Controller
 
     public function updateTheme(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('manage-settings');
 
         $request->validate(['portal_theme' => 'required|in:default,midnight,forest,warm,ocean,slate,rose,dusk,crimson,steel,teal,mocha,arctic,noir']);
 
@@ -288,7 +293,7 @@ class SettingController extends Controller
 
     public function updateAgeThresholds(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $types = array_keys(Setting::AGE_THRESHOLD_TYPES);
         $rules = [];
@@ -310,7 +315,7 @@ class SettingController extends Controller
 
     public function editCoverageSuccess(): View
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $content = Setting::getValue('coverage_success_html', '');
         return view('settings.coverage-success', compact('content'));
@@ -318,7 +323,7 @@ class SettingController extends Controller
 
     public function updateCoverageSuccess(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['content' => ['nullable', 'string']]);
         Setting::setValue('coverage_success_html', trim($request->input('content', '')));
@@ -328,7 +333,7 @@ class SettingController extends Controller
 
     public function updateDevAutofill(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         Setting::setValue('dev_autofill_admin',  $request->boolean('dev_autofill_admin')  ? '1' : '0');
         Setting::setValue('dev_autofill_editor', $request->boolean('dev_autofill_editor') ? '1' : '0');
@@ -339,7 +344,7 @@ class SettingController extends Controller
 
     public function updateWatermark(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate([
             'watermark_show_name'     => 'nullable|boolean',
@@ -359,7 +364,7 @@ class SettingController extends Controller
 
     public function updateQcSavedReplies(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate([
             'replies'           => 'nullable|array',
@@ -380,7 +385,7 @@ class SettingController extends Controller
 
     public function updateEmailNotificationTexts(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $keys  = array_keys(Setting::EMAIL_NOTIFICATION_DEFAULTS);
         $rules = array_fill_keys($keys, 'required|string|max:500');
@@ -395,7 +400,7 @@ class SettingController extends Controller
 
     public function updateTimezone(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['app_timezone' => ['required', 'timezone']]);
 
@@ -406,7 +411,7 @@ class SettingController extends Controller
 
     public function emailAllReaders(Request $request): JsonResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('manage-settings');
 
         $emails = User::where('role', 'reader')
             ->whereNotNull('email')
@@ -429,7 +434,7 @@ class SettingController extends Controller
 
     public function updateFollowupHtml(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate([
             'followup_heading'     => 'nullable|string|max:200',
@@ -446,7 +451,7 @@ class SettingController extends Controller
 
     public function updateFollowupResponseDraft(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['followup_response_draft_body' => 'required|string']);
 
@@ -457,7 +462,7 @@ class SettingController extends Controller
 
     public function updateCompletionDraft(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate([
             'completion_draft_body'           => 'required|string',
@@ -477,7 +482,7 @@ class SettingController extends Controller
      */
     public function testCompletionDraft(): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         try {
             $conversationId = Setting::getTestHelpscoutConversationId();
@@ -516,7 +521,7 @@ class SettingController extends Controller
 
     public function testFollowupResponseDraft(): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         try {
             $conversationId = Setting::getTestHelpscoutConversationId();
@@ -559,7 +564,7 @@ class SettingController extends Controller
 
     public function updateWordCounts(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $keys  = array_keys(Setting::WORD_COUNT_DEFAULTS);
         $rules = ['wc_enabled' => 'required|boolean'];
@@ -579,7 +584,7 @@ class SettingController extends Controller
 
     public function updateBlockedReaderLimits(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate([
             'max_blockable_1r'    => 'required|integer|min:0|max:10',
@@ -594,7 +599,7 @@ class SettingController extends Controller
 
     public function updateNotificationHistoryRetention(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate([
             'notification_history_retention_days' => 'required|integer|min:0|max:3650',
@@ -607,7 +612,7 @@ class SettingController extends Controller
 
     public function uploadPortalPhoto(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['photo' => 'required|image|max:4096']);
 
@@ -626,7 +631,7 @@ class SettingController extends Controller
 
     public function uploadAboutPhoto(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $request->validate(['about_photo' => 'required|image|max:4096']);
 
@@ -645,7 +650,7 @@ class SettingController extends Controller
 
     public function updatePayPeriod(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $validDays = implode(',', range(0, 6));
 
@@ -675,7 +680,7 @@ class SettingController extends Controller
 
     public function resetAllLastSeen(): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         \App\Models\User::query()->update(['last_seen_at' => null]);
 
@@ -684,7 +689,7 @@ class SettingController extends Controller
 
     public function resetMyLastSeen(): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         auth()->user()->update(['last_seen_at' => null]);
 
@@ -693,7 +698,7 @@ class SettingController extends Controller
 
     public function updateDefaultEditor(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $data = $request->validate([
             'editor_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', 'editor')],
@@ -710,7 +715,7 @@ class SettingController extends Controller
 
     public function updateOrderLogEditor(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $data = $request->validate([
             'blocked_product_ids' => ['nullable', 'string', 'max:500'],
@@ -732,7 +737,7 @@ class SettingController extends Controller
 
     public function updateDiscountCoupon(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $data = $request->validate([
             'discount_coupon_prefix'               => 'required|string|min:1|max:10|regex:/^[A-Za-z0-9\-_]+$/',
@@ -766,7 +771,7 @@ class SettingController extends Controller
 
     public function addCommissionProduct(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $data = $request->validate([
             'product_id'    => ['required', 'integer', 'min:1'],
@@ -799,7 +804,7 @@ class SettingController extends Controller
 
     public function removeCommissionProduct(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-settings-admin-only');
 
         $productId = (int) $request->input('product_id');
         $custom    = json_decode(Setting::getValue('commission_custom_products', '[]'), true) ?: [];

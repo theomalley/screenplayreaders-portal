@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to the manage-test-data Gate ability
+//                     (AppServiceProvider). Covered by tests/Feature/TestDataControllerTest.php.
 // v1.0 — 2026-06-04 | Admin test data — seed dummy assignments, bulk reset, auto-reset toggle
 
 namespace App\Http\Controllers;
@@ -37,7 +39,7 @@ class TestDataController extends Controller
 
     public function index()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-test-data');
 
         $testCount       = Assignment::where('is_test', true)->count();
         $pendingReset    = Assignment::where('is_test', true)
@@ -52,7 +54,7 @@ class TestDataController extends Controller
 
     public function seed(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-test-data');
 
         $count = (int) $request->input('count', 10);
         $count = max(1, min(50, $count));
@@ -98,7 +100,7 @@ class TestDataController extends Controller
 
     public function reset()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-test-data');
 
         // Delete coverage submissions for all test assignments
         $testIds = Assignment::where('is_test', true)->pluck('id');
@@ -129,7 +131,7 @@ class TestDataController extends Controller
 
     public function destroy()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-test-data');
 
         $testIds = Assignment::where('is_test', true)->pluck('id');
 
@@ -141,7 +143,7 @@ class TestDataController extends Controller
 
     public function saveTestScript(\Illuminate\Http\Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-test-data');
 
         if ($request->hasFile('pdf')) {
             $request->validate(['pdf' => 'required|file|mimes:pdf|max:20480']);
@@ -181,7 +183,7 @@ class TestDataController extends Controller
 
     public function toggleAutoReset(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-test-data');
 
         $enabled = $request->boolean('enabled');
         Setting::setValue('test_auto_reset', $enabled ? '1' : '0');

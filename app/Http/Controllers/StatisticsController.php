@@ -1,5 +1,6 @@
 <?php
 
+// v1.2 — 2026-07-23 | Authorization moved to the view-statistics Gate ability (AppServiceProvider)
 // v1.1 — 2026-06-12 | Add "Upload → Delivery" turnaround (submitted_at → helpscout_sent_at)
 // v1.0 — 2026-05-25 | Admin-only statistics dashboard — per-reader and combined stats
 
@@ -30,7 +31,7 @@ class StatisticsController extends Controller
 
     public function index()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('view-statistics');
 
         $period = request()->input('period', 'all_time');
         if (! array_key_exists($period, self::$PERIODS)) {

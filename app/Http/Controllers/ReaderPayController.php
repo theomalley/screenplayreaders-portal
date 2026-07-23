@@ -1,5 +1,8 @@
 <?php
 
+// v1.7 — 2026-07-23 | Authorization moved to UserPolicy readerPay* abilities (app/Policies),
+//                     replacing inline abort_unless(...) calls. Covered by
+//                     tests/Feature/ReaderPayControllerTest.php.
 // v1.6 — 2026-07-18 | Removed where('vendor', 'sr') from markPaid()/markUnpaid()/clearUnpaidBatch()/
 //                      removeHistoryBatch() — it silently skipped wd (Writers Digest) assignments
 //                      when marking pay, so even after fixing the Payroll page's own unpaid-list
@@ -24,7 +27,7 @@ class ReaderPayController extends Controller
 {
     public function markPaid(User $reader)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('readerPayMarkPaid', User::class);
 
         $now = Carbon::now();
 
@@ -46,7 +49,7 @@ class ReaderPayController extends Controller
 
     public function markUnpaid(Request $request, User $reader)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('readerPayMarkUnpaid', User::class);
 
         $validated = $request->validate(['paid_at' => 'required|date']);
         $date = Carbon::parse($validated['paid_at'])->toDateString();
@@ -67,7 +70,7 @@ class ReaderPayController extends Controller
 
     public function addAdjustment(Request $request, User $reader)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('readerPayAddAdjustment', User::class);
 
         $validated = $request->validate([
             'amount'      => 'required|numeric|not_in:0',
@@ -90,7 +93,7 @@ class ReaderPayController extends Controller
 
     public function deleteAssignmentPay(Assignment $assignment)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('readerPayDeleteAssignmentPay', User::class);
         abort_unless(is_null($assignment->reader_paid_at), 422);
 
         // Zero the pay and mark as paid (now) so it drops out of the unpaid batch entirely,
@@ -103,7 +106,7 @@ class ReaderPayController extends Controller
 
     public function clearUnpaidBatch(User $reader)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('readerPayClearUnpaidBatch', User::class);
 
         // Hard-delete unpaid completed TEST assignments for this reader + all pending adjustments
         // (real, non-test assignments must never be hard-deleted here — see removeHistoryBatch())
@@ -125,7 +128,7 @@ class ReaderPayController extends Controller
 
     public function removeHistoryBatch(Request $request, User $reader)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('readerPayRemoveHistoryBatch', User::class);
 
         $validated = $request->validate(['paid_at' => 'required|date']);
         $date = Carbon::parse($validated['paid_at'])->toDateString();
@@ -153,7 +156,7 @@ class ReaderPayController extends Controller
 
     public function deleteAdjustment(ReaderPayAdjustment $adjustment)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('readerPayDeleteAdjustment', User::class);
         abort_unless(is_null($adjustment->reader_paid_at), 422);
 
         $adjustment->delete();

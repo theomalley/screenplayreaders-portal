@@ -1,5 +1,11 @@
 <?php
 
+// v1.16 — 2026-07-23 | Authorization moved to UserPolicy (app/Policies) abilities
+//                     (viewAnyEditors, createEditor, editEditor, updateEditorRates,
+//                     manageEditorCommissions, deleteEditor), replacing inline
+//                     abort_unless(isAdmin())/Permission::check() calls. The "is $user
+//                     actually an editor/admin" checks stay inline as 404s (unchanged).
+//                     Covered by tests/Feature/EditorProfileControllerTest.php.
 // v1.15 — 2026-07-20 | Role change (editor→reader): replace hardcoded 'tier_1' => true (a
 //                      dropped column) with syncing the reader into the first non-onboarding
 //                      dynamic Tier.
@@ -26,7 +32,6 @@ use App\Models\Assignment;
 use App\Models\EditorProductCommission;
 use App\Models\User;
 use App\Support\Html;
-use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
@@ -35,7 +40,7 @@ class EditorProfileController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('viewAnyEditors', User::class);
 
         $editors = User::where('role', 'editor')
             ->with('editorProfile')
@@ -52,14 +57,14 @@ class EditorProfileController extends Controller
 
     public function create()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('createEditor', User::class);
 
         return view('admin.editors.create');
     }
 
     public function store(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('createEditor', User::class);
 
         $data = $request->validate([
             'name'                 => ['required', 'string', 'max:255'],
@@ -100,7 +105,7 @@ class EditorProfileController extends Controller
 
     public function edit(User $user)
     {
-        abort_unless(Permission::check('editors.edit'), 403);
+        $this->authorize('editEditor', User::class);
         abort_unless($user->isEditor() || $user->isAdmin(), 404);
 
         $profile = $user->editorProfile;
@@ -116,7 +121,7 @@ class EditorProfileController extends Controller
 
     public function update(Request $request, User $user)
     {
-        abort_unless(Permission::check('editors.edit'), 403);
+        $this->authorize('editEditor', User::class);
         abort_unless($user->isEditor() || $user->isAdmin(), 404);
 
         if (auth()->user()->isAdmin() && $request->input('_action') === 'role_change') {
@@ -191,7 +196,7 @@ class EditorProfileController extends Controller
 
     public function updateRates(Request $request, User $user)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('updateEditorRates', User::class);
         abort_unless($user->isEditor(), 404);
 
         $data = $request->validate([
@@ -209,7 +214,7 @@ class EditorProfileController extends Controller
 
     public function saveCommissions(Request $request, User $user)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manageEditorCommissions', User::class);
         abort_unless($user->isEditor(), 404);
 
         $profile = $user->editorProfile;
@@ -240,7 +245,7 @@ class EditorProfileController extends Controller
 
     public function destroy(User $user)
     {
-        abort_unless(Permission::check('editors.delete'), 403);
+        $this->authorize('deleteEditor', User::class);
         abort_unless($user->isEditor(), 404);
 
         if ($user->assignments()->where('status', Assignment::STATUS_ASSIGNED)->exists()) {

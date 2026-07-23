@@ -1,5 +1,8 @@
 <?php
 
+// v1.3 — 2026-07-23 | Authorization moved to FollowupQuestionPolicy/FollowupTokenPolicy
+//                     (app/Policies), replacing inline abort_unless(...) calls. Covered by
+//                     tests/Feature/FollowupQuestionControllerTest.php.
 // v1.2 — 2026-07-11 | Admin/editor note to reader on followup questions
 // v1.1 — 2026-06-15 | Log deleted followup questions to Notification History
 // v1.0 — 2026-05-30 | Admin/editor management + reader response for followup questions
@@ -22,7 +25,7 @@ class FollowupQuestionController extends Controller
     /** Admin/editor: edit questions, edited_response, or change status. */
     public function update(Request $request, FollowupQuestion $followup): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('update', $followup);
 
         $data = $request->validate([
             'edited_questions' => 'nullable|string|max:5000',
@@ -51,7 +54,7 @@ class FollowupQuestionController extends Controller
     /** Admin/editor: mark complete and create HelpScout draft. */
     public function complete(Request $request, FollowupQuestion $followup): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('complete', $followup);
 
         $followup->update(['status' => FollowupQuestion::STATUS_COMPLETE, 'completed_at' => now()]);
 
@@ -70,7 +73,7 @@ class FollowupQuestionController extends Controller
     /** Admin/editor: regenerate the HelpScout draft for an already-answered followup. */
     public function regenerateDraft(FollowupQuestion $followup): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('regenerateDraft', $followup);
         abort_unless((bool) $followup->reader_response, 422);
 
         $drafted = $this->createHelpScoutDraft($followup);
@@ -88,7 +91,7 @@ class FollowupQuestionController extends Controller
     /** Admin only: delete an entire followup round (token + all its questions). */
     public function destroyToken(FollowupToken $followupToken): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('delete', $followupToken);
 
         $orderNumber = $followupToken->order_number;
         $followupToken->followupQuestions()->delete();
@@ -101,7 +104,7 @@ class FollowupQuestionController extends Controller
     /** Admin/editor: full followup history for an order number. */
     public function history(string $orderNumber): \Illuminate\View\View
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('viewHistory', FollowupQuestion::class);
 
         $appTimezone = Setting::getAppTimezone();
 
@@ -122,7 +125,7 @@ class FollowupQuestionController extends Controller
     /** Admin/editor: delete a followup question at any status. */
     public function destroy(FollowupQuestion $followup): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('delete', $followup);
 
         $assignment = $followup->assignment;
 
@@ -141,9 +144,7 @@ class FollowupQuestionController extends Controller
     /** Reader: submit their response. */
     public function respond(Request $request, FollowupQuestion $followup): JsonResponse
     {
-        $user = auth()->user();
-        abort_unless($user->isReader(), 403);
-        abort_unless($followup->assignment->assigned_reader_id === $user->id, 403);
+        $this->authorize('respond', $followup);
         abort_unless($followup->status === FollowupQuestion::STATUS_UNANSWERED, 409);
 
         $data = $request->validate(['response' => 'required|string|max:10000']);

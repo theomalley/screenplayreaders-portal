@@ -1,5 +1,6 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to the manage-filenames Gate ability (AppServiceProvider)
 // v1.0 — 2026-05-22 | Admin view for editing filename suffix conventions per service type
 
 namespace App\Http\Controllers;
@@ -12,7 +13,7 @@ class FilenamesController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-filenames');
 
         $suffixes = FilenameGenerator::allSuffixes();
 
@@ -21,7 +22,7 @@ class FilenamesController extends Controller
 
     public function update(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-filenames');
 
         $rules = [];
         foreach (array_keys(FilenameGenerator::SUFFIX_DEFAULTS) as $key) {

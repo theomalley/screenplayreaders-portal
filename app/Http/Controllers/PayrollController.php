@@ -1,5 +1,6 @@
 <?php
 
+// v2.7 — 2026-07-23 | Authorization moved to the view-payroll Gate ability (AppServiceProvider)
 // v2.6 — 2026-07-18 | Removed the hardcoded where('vendor', 'sr') from export1099(),
 //                     unpaidReaderSummary(), and buildPaidLineItems() — it silently excluded every
 //                     completed wd (Writers Digest) assignment from the reader payroll page, 1099
@@ -53,7 +54,7 @@ class PayrollController extends Controller
 
     public function index()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('view-payroll');
 
         $period = request()->input('period', 'all_time');
         if (! array_key_exists($period, self::$PERIODS)) {
@@ -85,7 +86,7 @@ class PayrollController extends Controller
 
     public function export1099(): StreamedResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('view-payroll');
 
         $period = request()->input('period', 'all_time');
         if (! array_key_exists($period, self::$PERIODS)) {

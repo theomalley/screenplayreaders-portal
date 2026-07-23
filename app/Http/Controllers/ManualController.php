@@ -1,5 +1,6 @@
 <?php
 
+// v1.3 — 2026-07-23 | Authorization moved to the manage-manual Gate ability (AppServiceProvider)
 // v1.2 — 2026-07-12 | Resolve rate placeholders by their admin-editable shortcode name
 //                      (Setting::rateShortcodesForForms()), not the raw rate_* DB key.
 // v1.1 — 2026-05-21 | Full page source parsing; iframe rendering with WP styles
@@ -41,7 +42,7 @@ class ManualController extends Controller
 
     public function update(Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-manual');
 
         $request->validate(['source_html' => ['nullable', 'string']]);
 

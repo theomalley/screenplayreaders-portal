@@ -1,5 +1,8 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to view-budget-admin/edit-budget-admin Gate
+//                     abilities (AppServiceProvider), replacing inline abort_unless(...)
+//                     calls. Covered by tests/Feature/BudgetAdminControllerTest.php.
 // v1.0 — 2026-06-21 | Initial: admin UI for budget crew rates, fringes, state rates,
 //                      department allocations, and guild tier mappings
 
@@ -21,7 +24,7 @@ class BudgetAdminController extends Controller
 {
     public function index()
     {
-        abort_unless(Permission::check('budget.admin'), 403);
+        $this->authorize('view-budget-admin');
 
         return view('budget-admin.index');
     }
@@ -30,7 +33,7 @@ class BudgetAdminController extends Controller
 
     public function crewRates()
     {
-        abort_unless(Permission::check('budget.admin'), 403);
+        $this->authorize('view-budget-admin');
 
         $positions = CrewPosition::with('rateTiers')
             ->orderBy('sort_order')
@@ -44,7 +47,7 @@ class BudgetAdminController extends Controller
 
     public function updateCrewRates(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $tiers = $request->input('tiers', []);
 
@@ -61,7 +64,7 @@ class BudgetAdminController extends Controller
 
     public function fringes()
     {
-        abort_unless(Permission::check('budget.admin'), 403);
+        $this->authorize('view-budget-admin');
 
         $fringes = FringeRate::orderBy('sort_order')->get();
         $canEdit = Permission::check('budget.admin.edit');
@@ -71,7 +74,7 @@ class BudgetAdminController extends Controller
 
     public function updateFringes(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $data = $request->input('fringes', []);
 
@@ -90,7 +93,7 @@ class BudgetAdminController extends Controller
 
     public function states()
     {
-        abort_unless(Permission::check('budget.admin'), 403);
+        $this->authorize('view-budget-admin');
 
         $states = StateRate::orderBy('state_name')->get();
         $canEdit = Permission::check('budget.admin.edit');
@@ -100,7 +103,7 @@ class BudgetAdminController extends Controller
 
     public function updateStates(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $data = $request->input('states', []);
 
@@ -119,7 +122,7 @@ class BudgetAdminController extends Controller
 
     public function allocations()
     {
-        abort_unless(Permission::check('budget.admin'), 403);
+        $this->authorize('view-budget-admin');
 
         $allocations = DepartmentAllocation::orderBy('department_slug')
             ->orderBy('budget_class')
@@ -133,7 +136,7 @@ class BudgetAdminController extends Controller
 
     public function updateAllocations(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $data = $request->input('allocs', []);
 
@@ -150,7 +153,7 @@ class BudgetAdminController extends Controller
 
     public function guildMappings()
     {
-        abort_unless(Permission::check('budget.admin'), 403);
+        $this->authorize('view-budget-admin');
 
         $mappings = GuildTierMapping::orderBy('guild')
             ->orderBy('budget_class')
@@ -164,7 +167,7 @@ class BudgetAdminController extends Controller
 
     public function updateGuildMappings(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $data = $request->input('mappings', []);
 
@@ -181,7 +184,7 @@ class BudgetAdminController extends Controller
 
     public function testForm(Request $request)
     {
-        abort_unless(Permission::check('budget.admin'), 403);
+        $this->authorize('view-budget-admin');
 
         $states = StateRate::orderBy('state_name')->pluck('state_name')->toArray();
         $payload = session('test_payload');
@@ -195,7 +198,7 @@ class BudgetAdminController extends Controller
 
     public function testRun(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $validated = $request->validate([
             'budget'       => 'required|numeric|min:25000|max:250000000',
@@ -292,7 +295,7 @@ class BudgetAdminController extends Controller
 
     public function testDeliver(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $request->validate([
             'budget'        => 'required|numeric|min:25000|max:250000000',
@@ -352,7 +355,7 @@ class BudgetAdminController extends Controller
 
     public function testBatch(Request $request)
     {
-        abort_unless(Permission::check('budget.admin.edit'), 403);
+        $this->authorize('edit-budget-admin');
 
         $count = min(50, max(1, (int) $request->input('batch_count', 10)));
         $states = StateRate::pluck('state_name')->toArray();

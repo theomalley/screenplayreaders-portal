@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-07-23 | Authorization moved to ScriptRegistrationPolicy (app/Policies),
+//                     replacing inline abort_unless(...) calls. Covered by
+//                     tests/Feature/ScriptRegistrationControllerTest.php.
 // v1.1 — 2026-06-22 | Add test form for end-to-end pipeline testing
 // v1.0 — 2026-06-22 | Initial: admin panel for script registrations — list, detail,
 //                      certificate download/regenerate, unlimited token management.
@@ -16,7 +19,7 @@ class ScriptRegistrationController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('viewAny', ScriptRegistration::class);
 
         $q         = trim((string) $request->input('q', ''));
         $status    = $request->input('status', 'all');
@@ -67,7 +70,7 @@ class ScriptRegistrationController extends Controller
 
     public function show(ScriptRegistration $script_registration)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('view', $script_registration);
 
         $script_registration->load('children', 'parent');
 
@@ -78,7 +81,7 @@ class ScriptRegistrationController extends Controller
 
     public function regenerateCertificate(ScriptRegistration $script_registration)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('regenerateCertificate', $script_registration);
 
         $script_registration->update([
             'status'        => ScriptRegistration::STATUS_PENDING,
@@ -92,7 +95,7 @@ class ScriptRegistrationController extends Controller
 
     public function downloadCertificate(ScriptRegistration $script_registration, GoogleDocsService $docs, SpacesStorageService $spaces)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('download', $script_registration);
 
         if (! $script_registration->drive_certificate_pdf_id) {
             return back()->withErrors(['download' => 'No certificate PDF available. Try regenerating first.']);
@@ -114,7 +117,7 @@ class ScriptRegistrationController extends Controller
 
     public function downloadScript(ScriptRegistration $script_registration, SpacesStorageService $spaces)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('download', $script_registration);
 
         if (! $script_registration->spaces_script_file_path) {
             return back()->withErrors(['download' => 'No script file available for this registration.']);
@@ -138,7 +141,7 @@ class ScriptRegistrationController extends Controller
 
     public function regenerateToken(ScriptRegistration $script_registration)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('regenerateToken', $script_registration);
 
         if (! $script_registration->isUnlimited()) {
             return back()->withErrors(['token' => 'Only unlimited registrations have tokens.']);
@@ -153,7 +156,7 @@ class ScriptRegistrationController extends Controller
 
     public function bulkDestroy(Request $request)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('bulkDelete', ScriptRegistration::class);
 
         $data = $request->validate([
             'ids'   => ['required', 'array', 'min:1'],
@@ -167,7 +170,7 @@ class ScriptRegistrationController extends Controller
 
     public function destroy(ScriptRegistration $script_registration)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('delete', $script_registration);
 
         $regId = $script_registration->registration_id;
         $script_registration->delete();
@@ -180,7 +183,7 @@ class ScriptRegistrationController extends Controller
 
     public function testForm()
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('useTestTools', ScriptRegistration::class);
 
         return view('script-registrations.test', [
             'result'     => session('test_result'),
@@ -191,7 +194,7 @@ class ScriptRegistrationController extends Controller
 
     public function testRun(Request $request)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('useTestTools', ScriptRegistration::class);
 
         $data = $request->validate([
             'test_email'    => 'required|email|max:255',

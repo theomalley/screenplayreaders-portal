@@ -1,5 +1,9 @@
 <?php
 
+// v1.14 — 2026-07-23 | Authorization moved to UserPolicy (app/Policies) abilities
+//                     (viewAnyReaders, createReader, editReader, deleteReader), replacing
+//                     inline abort_unless(canManageAssignments())/Permission::check() calls.
+//                     Covered by tests/Feature/ReaderProfileControllerTest.php.
 // v1.13 — 2026-07-21 | Add photo/about_photo upload and tier assignment to store() (create form)
 // v1.12 — 2026-07-20 | Replace tier_0/tier_1/tier_2 checkbox handling with
 //                      $readerProfile->tiers()->sync() against the dynamic Tier model — also
@@ -23,7 +27,6 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\User;
 use App\Support\Html;
-use App\Support\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
@@ -32,7 +35,7 @@ class ReaderProfileController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('viewAnyReaders', User::class);
 
         $readers = User::where('role', 'reader')
             ->with('readerProfile')
@@ -49,14 +52,14 @@ class ReaderProfileController extends Controller
 
     public function create()
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('createReader', User::class);
 
         return view('readers.create');
     }
 
     public function store(Request $request)
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('createReader', User::class);
 
         $data = $request->validate([
             'name'                       => ['required', 'string', 'max:255'],
@@ -103,7 +106,7 @@ class ReaderProfileController extends Controller
 
     public function edit(User $user)
     {
-        abort_unless(Permission::check('readers.edit'), 403);
+        $this->authorize('editReader', User::class);
         abort_unless($user->isReader(), 404);
 
         $profile = $user->readerProfile;
@@ -119,7 +122,7 @@ class ReaderProfileController extends Controller
 
     public function update(Request $request, User $user)
     {
-        abort_unless(Permission::check('readers.edit'), 403);
+        $this->authorize('editReader', User::class);
         abort_unless($user->isReader(), 404);
 
         if (auth()->user()->isAdmin() && $request->input('_action') === 'role_change') {
@@ -202,7 +205,7 @@ class ReaderProfileController extends Controller
 
     public function destroy(User $user)
     {
-        abort_unless(Permission::check('readers.delete'), 403);
+        $this->authorize('deleteReader', User::class);
         abort_unless($user->isReader(), 404);
 
         if ($user->assignments()->where('status', Assignment::STATUS_ASSIGNED)->exists()) {

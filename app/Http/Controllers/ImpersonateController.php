@@ -1,5 +1,10 @@
 <?php
 
+// v1.1 — 2026-07-23 | Role/target checks moved to UserPolicy::impersonate() (app/Policies),
+//                     replacing two inline abort calls. The session-state preconditions
+//                     (no self-impersonation, no nesting) stay inline — they're not really
+//                     "authorization" so much as guard conditions. Covered by
+//                     tests/Feature/ImpersonateControllerTest.php.
 // v1.0 — 2026-06-04 | Admin impersonation — view portal as any non-admin user
 
 namespace App\Http\Controllers;
@@ -11,8 +16,7 @@ class ImpersonateController extends Controller
 {
     public function start(User $user)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
-        abort_if($user->isAdmin(), 403);
+        $this->authorize('impersonate', $user);
         abort_if($user->id === auth()->id(), 422);
         abort_unless(! session()->has('impersonator_id'), 422); // no nesting
 

@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-07-23 | Authorization moved to the manage-woo-orders Gate ability
+//                     (AppServiceProvider), replacing inline abort_unless(...) calls.
+//                     Covered by tests/Feature/WooOrderControllerTest.php.
 // v1.1 — 2026-06-17 | Add invoicePdf() — generate a Google Doc invoice from a Woo order and stream as PDF download
 // v1.0 — 2026-05-26 | WooCommerce order browser — list, detail, refund, resend email (admin + editor)
 
@@ -28,7 +31,7 @@ class WooOrderController extends Controller
 
     public function index(Request $request, WooCommerceService $woo)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('manage-woo-orders');
 
         $q      = trim((string) $request->input('q', ''));
         $status = $request->input('status', 'any');
@@ -77,7 +80,7 @@ class WooOrderController extends Controller
 
     public function show(int $id, WooCommerceService $woo)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('manage-woo-orders');
 
         try {
             $order = $woo->getOrder($id);
@@ -95,7 +98,7 @@ class WooOrderController extends Controller
 
     public function refund(Request $request, int $id, WooCommerceService $woo)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('manage-woo-orders');
 
         // Fetch the live order to get the current refundable amount
         try {
@@ -125,7 +128,7 @@ class WooOrderController extends Controller
 
     public function resendEmail(Request $request, int $id, WooCommerceService $woo)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('manage-woo-orders');
 
         $validated = $request->validate([
             'test_email' => ['nullable', 'email', 'max:255'],
@@ -145,7 +148,7 @@ class WooOrderController extends Controller
 
     public function invoicePdf(int $id, WooCommerceService $woo, GoogleDocsService $docs)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('manage-woo-orders');
 
         try {
             $order = $woo->getOrder($id);

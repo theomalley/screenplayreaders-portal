@@ -1,5 +1,10 @@
 <?php
 
+// v1.5 — 2026-07-23 | Authorization moved to the manage-profile-approvals Gate ability
+//                     (AppServiceProvider), replacing inline abort_unless(isAdmin()) —
+//                     part of standardizing on Laravel's Gate/Policy system instead of
+//                     three inconsistent ad-hoc authorization patterns. Covered by
+//                     tests/Feature/AdminApprovalControllerTest.php.
 // v1.4 — 2026-06-15 | Log bio/photo/about-photo approvals & rejections to Notification History
 // v1.3 — 2026-06-12 | Sanitize bio HTML when approving bio_pending -> bio
 // v1.2 — 2026-06-05 | Add approveAboutPhoto / rejectAboutPhoto
@@ -19,7 +24,7 @@ class AdminApprovalController extends Controller
 {
     public function approveBio(User $user): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-profile-approvals');
 
         $profile = $this->profile($user);
 
@@ -38,7 +43,7 @@ class AdminApprovalController extends Controller
 
     public function rejectBio(Request $request, User $user): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-profile-approvals');
 
         $data    = $request->validate(['note' => 'nullable|string|max:1000']);
         $profile = $this->profile($user);
@@ -57,7 +62,7 @@ class AdminApprovalController extends Controller
 
     public function approvePhoto(User $user): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-profile-approvals');
 
         $profile = $this->profile($user);
 
@@ -79,7 +84,7 @@ class AdminApprovalController extends Controller
 
     public function rejectPhoto(Request $request, User $user): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-profile-approvals');
 
         $data    = $request->validate(['note' => 'nullable|string|max:1000']);
         $profile = $this->profile($user);
@@ -99,7 +104,7 @@ class AdminApprovalController extends Controller
 
     public function approveAboutPhoto(User $user): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-profile-approvals');
 
         $profile = $this->profile($user);
 
@@ -121,7 +126,7 @@ class AdminApprovalController extends Controller
 
     public function rejectAboutPhoto(Request $request, User $user): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-profile-approvals');
 
         $data    = $request->validate(['note' => 'nullable|string|max:1000']);
         $profile = $this->profile($user);

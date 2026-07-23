@@ -1,5 +1,9 @@
 <?php
 
+// v1.3 — 2026-07-23 | Authorization moved to UserPolicy (app/Policies) abilities
+//                     (viewStaffCard, draftStaffEmail), replacing inline abort_unless(...)
+//                     calls. readerCard() remains deliberately unauthorized. Covered by
+//                     tests/Feature/StaffCardControllerTest.php.
 // v1.2 — 2026-06-03 | readerCard — reader-facing public card (bio, photo, role, online); no sensitive data
 // v1.1 — 2026-06-02 | draftEmail — creates a HelpScout draft to a reader/editor and redirects to it
 // v1.0 — 2026-05-31 | Staff icon popup card — returns rendered HTML for any admin/editor context
@@ -18,7 +22,7 @@ class StaffCardController extends Controller
 {
     public function card(User $user): Response
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('viewStaffCard', User::class);
 
         $user->loadMissing([
             'assignments' => fn($q) => $q->whereIn('status', [
@@ -97,8 +101,7 @@ class StaffCardController extends Controller
      */
     public function draftEmail(User $user, HelpScoutService $helpScout): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
-        abort_if($user->isAdmin(), 403);
+        $this->authorize('draftStaffEmail', $user);
 
         $user->loadMissing(['readerProfile', 'editorProfile']);
         $name = $user->isReader()

@@ -1,5 +1,9 @@
 <?php
 
+// v2.2 — 2026-07-23 | Authorization moved to UserPolicy editorPay* abilities (app/Policies)
+//                     and two editor-pay.* Gate abilities (AppServiceProvider) for the
+//                     OrderRevenue/EditorPayAdjustment-targeted actions, replacing inline
+//                     abort_unless(...) calls. Covered by tests/Feature/EditorPayControllerTest.php.
 // v2.1 — 2026-07-18 | markPaid()/clearUnpaidBatch() now take a required "scope" ('past'|'current')
 //                     since the payroll card is split into a past-due card and a current-period
 //                     card per editor — each card's button only acts on its own bucket, scoped by
@@ -35,7 +39,7 @@ class EditorPayController extends Controller
 {
     public function markPaid(Request $request, User $editor)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editorPayMarkPaid', User::class);
         abort_unless($editor->isEditor(), 404);
 
         $validated = $request->validate(['scope' => 'required|in:past,current']);
@@ -103,7 +107,7 @@ class EditorPayController extends Controller
 
     public function clearUnpaidBatch(Request $request, User $editor)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editorPayClearUnpaidBatch', User::class);
         abort_unless($editor->isEditor(), 404);
 
         $validated = $request->validate(['scope' => 'required|in:past,current']);
@@ -134,9 +138,8 @@ class EditorPayController extends Controller
 
     public function markUnpaid(Request $request, User $editor)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('editorPayMarkUnpaid', $editor);
         abort_unless($editor->isEditor(), 404);
-        abort_unless(auth()->user()->isAdmin() || auth()->id() === $editor->id, 403);
 
         $validated = $request->validate(['paid_at' => 'required|date']);
         $date = Carbon::parse($validated['paid_at'])->toDateString();
@@ -157,7 +160,7 @@ class EditorPayController extends Controller
 
     public function addAdjustment(Request $request, User $editor)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editorPayAddAdjustment', User::class);
         abort_unless($editor->isEditor(), 404);
 
         $validated = $request->validate([
@@ -180,7 +183,7 @@ class EditorPayController extends Controller
 
     public function updateCommission(Request $request, OrderRevenue $order)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editor-pay.manage-commission');
         abort_unless(is_null($order->editor_paid_at), 422);
 
         $validated = $request->validate([
@@ -195,7 +198,7 @@ class EditorPayController extends Controller
 
     public function deleteCommission(OrderRevenue $order)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editor-pay.manage-commission');
         abort_unless(is_null($order->editor_paid_at), 422);
 
         $order->update(['cog_commission' => 0]);
@@ -206,7 +209,7 @@ class EditorPayController extends Controller
 
     public function deleteHistoryBatch(User $editor, string $date)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editorPayDeleteHistoryBatch', User::class);
         abort_unless($editor->isEditor(), 404);
 
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
@@ -229,7 +232,7 @@ class EditorPayController extends Controller
 
     public function deleteAllHistory(User $editor)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editorPayDeleteAllHistory', User::class);
         abort_unless($editor->isEditor(), 404);
 
         OrderRevenue::where('editor_id', $editor->id)
@@ -247,7 +250,7 @@ class EditorPayController extends Controller
 
     public function deleteAdjustment(EditorPayAdjustment $adjustment)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('editor-pay.delete-adjustment');
         abort_unless(is_null($adjustment->editor_paid_at), 422);
 
         $adjustment->delete();

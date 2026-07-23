@@ -1,5 +1,9 @@
 <?php
 
+// v1.27 — 2026-07-23 | BUG FIX: ensureSandboxAssignment() guarded with Schema::hasTable('tiers') —
+//                      the seed_sandbox_onboarding_assignment migration (2026-07-11) runs before
+//                      create_tiers_table (2026-07-20) on a fresh migrate, so a truly fresh
+//                      install/test DB crashed on "no such table: tiers".
 // v1.26 — 2026-07-11 | Add isOpenToTier2() — a tier-1 assignment also opens to tier-2 readers
 //                      once it's sat unaccepted past Setting::getTier2ReleaseHours(); scopeAvailable()
 //                      includes those for tier-2 readers, AssignmentPolicy::accept() authorizes them.
@@ -238,7 +242,12 @@ class Assignment extends Model
             ]
         );
 
-        if ($onboardingTier = Tier::onboarding()) {
+        // Guarded: this is also invoked from a migration dated before the tiers table
+        // existed (2026_07_11_000004, predating 2026_07_20's tier system) — on a genuinely
+        // fresh install/test run, migrations replay in filename order and hit this line
+        // before create_tiers_table has run. Safe to skip; the later backfill migration
+        // (seed_and_backfill_dynamic_tiers) assigns tiers to any untiered assignment.
+        if (\Illuminate\Support\Facades\Schema::hasTable('tiers') && ($onboardingTier = Tier::onboarding())) {
             $assignment->tiers()->syncWithoutDetaching([$onboardingTier->id]);
         }
 

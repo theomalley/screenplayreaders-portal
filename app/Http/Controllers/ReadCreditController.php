@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-07-23 | Authorization moved to ReadCreditPackagePolicy (app/Policies),
+//                     replacing inline abort_unless(...) calls. Covered by
+//                     tests/Feature/ReadCreditControllerTest.php.
 // v1.1 — 2026-06-22 | Admin adjustment note required; log all credit changes
 // v1.0 — 2026-06-18 | Admin/editor views for Notes-Only read credit packages — list, create, edit
 
@@ -13,7 +16,7 @@ class ReadCreditController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('viewAny', ReadCreditPackage::class);
 
         $q      = trim((string) $request->input('q', ''));
         $status = $request->input('status', 'all');
@@ -43,14 +46,14 @@ class ReadCreditController extends Controller
 
     public function create()
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('create', ReadCreditPackage::class);
 
         return view('read-credits.create');
     }
 
     public function store(Request $request)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('create', ReadCreditPackage::class);
 
         $data = $request->validate([
             'customer_email' => 'required|email|max:255',
@@ -76,7 +79,7 @@ class ReadCreditController extends Controller
 
     public function edit(ReadCreditPackage $package)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('update', $package);
 
         $appTimezone = Setting::getAppTimezone();
 
@@ -85,7 +88,7 @@ class ReadCreditController extends Controller
 
     public function update(Request $request, ReadCreditPackage $package)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('update', $package);
 
         $data = $request->validate([
             'credits_remaining' => 'required|integer|min:0|max:999',

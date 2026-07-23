@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to Budget\BudgetOrderPolicy (app/Policies),
+//                     replacing inline abort_unless(...) calls. Covered by
+//                     tests/Feature/BudgetOrderControllerTest.php.
+
 namespace App\Http\Controllers;
 
 use App\Jobs\GenerateBudgetFiles;
@@ -12,7 +16,7 @@ class BudgetOrderController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('viewAny', BudgetOrder::class);
 
         $q      = trim((string) $request->input('q', ''));
         $status = $request->input('status', 'all');
@@ -43,7 +47,7 @@ class BudgetOrderController extends Controller
 
     public function show(BudgetOrder $budgetOrder)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('view', $budgetOrder);
 
         return view('budget-orders.show', [
             'order' => $budgetOrder,
@@ -52,7 +56,7 @@ class BudgetOrderController extends Controller
 
     public function downloadPdf(BudgetOrder $budgetOrder, GoogleDocsService $docs, SpacesStorageService $spaces)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('download', $budgetOrder);
 
         if (! $budgetOrder->drive_pdf_id) {
             return back()->withErrors(['download' => 'No PDF available. Try regenerating first.']);
@@ -74,7 +78,7 @@ class BudgetOrderController extends Controller
 
     public function downloadXlsx(BudgetOrder $budgetOrder, GoogleDocsService $docs, SpacesStorageService $spaces)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('download', $budgetOrder);
 
         if (! $budgetOrder->drive_xlsx_id) {
             return back()->withErrors(['download' => 'No Excel file available. Try regenerating first.']);
@@ -96,7 +100,7 @@ class BudgetOrderController extends Controller
 
     public function bulkDestroy(Request $request)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('bulkDelete', BudgetOrder::class);
 
         $data = $request->validate([
             'ids'   => ['required', 'array', 'min:1'],
@@ -110,7 +114,7 @@ class BudgetOrderController extends Controller
 
     public function regenerate(BudgetOrder $budgetOrder)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('regenerate', $budgetOrder);
 
         $budgetOrder->update([
             'status'        => BudgetOrder::STATUS_PROCESSING,

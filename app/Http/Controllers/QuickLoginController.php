@@ -1,5 +1,9 @@
 <?php
 
+// v1.2 — 2026-07-23 | Authorization moved to the manage-quick-login Gate ability
+//                     (AppServiceProvider), replacing inline abort_unless(isAdmin())
+//                     calls on saveLanding/generate/revoke. Covered by
+//                     tests/Feature/QuickLoginAdminActionsTest.php.
 // v1.1 — 2026-07-23 | Added a per-token rate limit alongside the existing per-IP one,
 //                     so a single leaked/guessed token can't be hammered across many IPs.
 // v1.0 — 2026-06-04 | Tokenized admin quick-login link for phone/browser bookmarks
@@ -90,7 +94,7 @@ class QuickLoginController extends Controller
     /** Admin: save the landing-page preference. */
     public function saveLanding(\Illuminate\Http\Request $request)
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-quick-login');
 
         $landing = $request->input('landing', 'assignments.index');
         if (! array_key_exists($landing, self::LANDING_OPTIONS)) {
@@ -105,7 +109,7 @@ class QuickLoginController extends Controller
     /** Admin: generate (or regenerate) the quick-login token. */
     public function generate()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-quick-login');
 
         $token = Str::random(64);
 
@@ -118,7 +122,7 @@ class QuickLoginController extends Controller
     /** Admin: revoke the token, immediately invalidating any saved bookmarks. */
     public function revoke()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-quick-login');
 
         Setting::setValue(self::TOKEN_KEY,   '');
         Setting::setValue(self::USER_ID_KEY, '');

@@ -1,5 +1,6 @@
 <?php
 
+// v1.4 — 2026-07-23 | Authorization moved to the view-revenue Gate ability (AppServiceProvider)
 // v1.3 — 2026-06-08 | Exclude $0-total orders from index view (totals, chart, listing)
 // v1.2 — 2026-06-08 | Exclude $0-total customers from by-customer listing
 // v1.1 — 2026-06-04 | By-customer / by-client revenue breakdown
@@ -31,7 +32,7 @@ class RevenueController extends Controller
 
     public function index()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('view-revenue');
 
         $period = request()->input('period', 'this_month');
         if (! array_key_exists($period, self::$PERIODS)) {
@@ -65,7 +66,7 @@ class RevenueController extends Controller
 
     public function byCustomer()
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('view-revenue');
 
         $period = request()->input('period', 'this_month');
         if (! array_key_exists($period, self::$PERIODS)) {
