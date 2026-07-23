@@ -1,5 +1,8 @@
 <?php
 
+// v1.7 — 2026-07-23 | Sync every webhook-created assignment to Tier 1 — previously these
+//                     landed with no tier at all, making them invisible in the default
+//                     "grouped by tier" admin/reader views (order 58166 incident).
 // v1.6 — 2026-06-13 | Accept block_initials (hyphen-separated reader initials the customer
 //                     blocked on the upload form) and resolve to blocked_reader_ids on every
 //                     slot created for the order.
@@ -21,6 +24,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\UploadScriptToDrive;
 use App\Models\Assignment;
 use App\Models\Setting;
+use App\Models\Tier;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -142,6 +146,18 @@ class IncomingAssignmentController extends Controller
 
         if (empty($assignments)) {
             return response()->json(['error' => 'All assignment creates failed.'], 500);
+        }
+
+        // Webhook-created assignments have no tier picker (unlike the manual Create
+        // Assignment form), so without this they land in "No Tier Assigned" and are
+        // invisible in the default admin/reader views. Default every slot to Tier 1.
+        $tierOne = Tier::where('is_onboarding', false)->orderBy('position')->first();
+        if ($tierOne) {
+            foreach ($assignments as $assignment) {
+                $assignment->tiers()->sync([$tierOne->id]);
+            }
+        } else {
+            Log::error('IncomingAssignment: no Tier 1 found to assign', ['order_number' => $data['order_number']]);
         }
 
         // Stash the file and dispatch an async Drive upload (keyed to first assignment).
