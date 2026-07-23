@@ -16,10 +16,6 @@ class ReadersController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        if (! $this->authorized($request)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
         $readers = User::where('role', 'reader')
             ->with('readerProfile')
             ->get()
@@ -34,11 +30,5 @@ class ReadersController extends Controller
             ->values();
 
         return response()->json($readers);
-    }
-
-    private function authorized(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }

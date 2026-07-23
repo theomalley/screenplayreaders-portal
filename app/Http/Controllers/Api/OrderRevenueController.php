@@ -26,10 +26,6 @@ class OrderRevenueController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $input = [
             'order_number'        => trim((string) $request->input('order_number', '')),
             'woocommerce_order_id'=> $request->input('woocommerce_order_id'),
@@ -146,15 +142,9 @@ class OrderRevenueController extends Controller
                 'order_number' => $data['order_number'],
                 'error'        => $e->getMessage(),
             ]);
-            return response()->json(['error' => 'DB error: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'DB error — see application log.'], 500);
         }
 
         return response()->json(['status' => 'ok'], 200);
-    }
-
-    private function authorised(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }

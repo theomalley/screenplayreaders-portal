@@ -138,7 +138,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/manual', [ManualController::class, 'show'])->name('manual.show');
     Route::get('/manual/frame', [ManualController::class, 'frame'])->name('manual.frame');
-    Route::patch('/manual', [ManualController::class, 'update'])->name('manual.update');
+    Route::patch('/manual', [ManualController::class, 'update'])->name('manual.update')->middleware('role:admin');
 
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::get('/settings/assignments', [SettingController::class, 'assignments'])->name('settings.assignments');
@@ -167,11 +167,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/word-counts', [SettingController::class, 'updateWordCounts'])->name('settings.word-counts');
     Route::patch('/settings/blocked-reader-limits', [SettingController::class, 'updateBlockedReaderLimits'])->name('settings.blocked-reader-limits');
     Route::patch('/settings/notification-history-retention', [SettingController::class, 'updateNotificationHistoryRetention'])->name('settings.notification-history-retention');
-    Route::get('/settings/tiers', [\App\Http\Controllers\TierController::class, 'index'])->name('settings.tiers');
-    Route::post('/settings/tiers', [\App\Http\Controllers\TierController::class, 'store'])->name('tiers.store');
-    Route::patch('/settings/tiers/{tier}', [\App\Http\Controllers\TierController::class, 'update'])->name('tiers.update');
-    Route::delete('/settings/tiers/{tier}', [\App\Http\Controllers\TierController::class, 'destroy'])->name('tiers.destroy');
-    Route::patch('/settings/tiers-visibility', [\App\Http\Controllers\TierController::class, 'updateCrossVisibility'])->name('tiers.visibility.update');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/settings/tiers', [\App\Http\Controllers\TierController::class, 'index'])->name('settings.tiers');
+        Route::post('/settings/tiers', [\App\Http\Controllers\TierController::class, 'store'])->name('tiers.store');
+        Route::patch('/settings/tiers/{tier}', [\App\Http\Controllers\TierController::class, 'update'])->name('tiers.update');
+        Route::delete('/settings/tiers/{tier}', [\App\Http\Controllers\TierController::class, 'destroy'])->name('tiers.destroy');
+        Route::patch('/settings/tiers-visibility', [\App\Http\Controllers\TierController::class, 'updateCrossVisibility'])->name('tiers.visibility.update');
+    });
     Route::patch('/settings/pay-period',  [SettingController::class, 'updatePayPeriod'])->name('settings.pay-period');
     Route::post('/settings/portal-photo', [SettingController::class, 'uploadPortalPhoto'])->name('settings.portal-photo');
     Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');
@@ -183,9 +185,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/commission-products/remove', [SettingController::class, 'removeCommissionProduct'])->name('settings.commission-products.remove');
     Route::post('/settings/reset-last-seen-all', [SettingController::class, 'resetAllLastSeen'])->name('settings.reset-last-seen-all');
     Route::post('/settings/reset-last-seen-me', [SettingController::class, 'resetMyLastSeen'])->name('settings.reset-last-seen-me');
-    Route::post('/settings/quick-login/generate', [\App\Http\Controllers\QuickLoginController::class, 'generate'])->name('quick-login.generate');
-    Route::post('/settings/quick-login/landing', [\App\Http\Controllers\QuickLoginController::class, 'saveLanding'])->name('quick-login.landing');
-    Route::delete('/settings/quick-login', [\App\Http\Controllers\QuickLoginController::class, 'revoke'])->name('quick-login.revoke');
+    Route::post('/settings/quick-login/generate', [\App\Http\Controllers\QuickLoginController::class, 'generate'])->name('quick-login.generate')->middleware('role:admin');
+    Route::post('/settings/quick-login/landing', [\App\Http\Controllers\QuickLoginController::class, 'saveLanding'])->name('quick-login.landing')->middleware('role:admin');
+    Route::delete('/settings/quick-login', [\App\Http\Controllers\QuickLoginController::class, 'revoke'])->name('quick-login.revoke')->middleware('role:admin');
     Route::post('/settings/email-all-readers', [SettingController::class, 'emailAllReaders'])->name('settings.email-all-readers');
 
     // Assignment notes (reader → admin messaging)
@@ -218,12 +220,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Reader response
     Route::post('/followups/{followup}/respond',   [FollowupQuestionController::class, 'respond'])->name('followups.respond');
 
-    Route::post('/admin/approvals/bio/{user}/approve',   [AdminApprovalController::class, 'approveBio'])->name('admin.approvals.bio.approve');
-    Route::post('/admin/approvals/bio/{user}/reject',    [AdminApprovalController::class, 'rejectBio'])->name('admin.approvals.bio.reject');
-    Route::post('/admin/approvals/photo/{user}/approve',       [AdminApprovalController::class, 'approvePhoto'])->name('admin.approvals.photo.approve');
-    Route::post('/admin/approvals/photo/{user}/reject',        [AdminApprovalController::class, 'rejectPhoto'])->name('admin.approvals.photo.reject');
-    Route::post('/admin/approvals/about-photo/{user}/approve', [AdminApprovalController::class, 'approveAboutPhoto'])->name('admin.approvals.about-photo.approve');
-    Route::post('/admin/approvals/about-photo/{user}/reject',  [AdminApprovalController::class, 'rejectAboutPhoto'])->name('admin.approvals.about-photo.reject');
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/admin/approvals/bio/{user}/approve',   [AdminApprovalController::class, 'approveBio'])->name('admin.approvals.bio.approve');
+        Route::post('/admin/approvals/bio/{user}/reject',    [AdminApprovalController::class, 'rejectBio'])->name('admin.approvals.bio.reject');
+        Route::post('/admin/approvals/photo/{user}/approve',       [AdminApprovalController::class, 'approvePhoto'])->name('admin.approvals.photo.approve');
+        Route::post('/admin/approvals/photo/{user}/reject',        [AdminApprovalController::class, 'rejectPhoto'])->name('admin.approvals.photo.reject');
+        Route::post('/admin/approvals/about-photo/{user}/approve', [AdminApprovalController::class, 'approveAboutPhoto'])->name('admin.approvals.about-photo.approve');
+        Route::post('/admin/approvals/about-photo/{user}/reject',  [AdminApprovalController::class, 'rejectAboutPhoto'])->name('admin.approvals.about-photo.reject');
+    });
 
     Route::get('/announcements/history', [AnnouncementController::class, 'history'])->name('announcements.history');
     Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
@@ -232,17 +236,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->name('announcements.mark-read');
     Route::post('/announcements/{announcement}/dismiss', [AnnouncementController::class, 'dismiss'])->name('announcements.dismiss');
 
-    Route::post('/admin/impersonate/{user}', [\App\Http\Controllers\ImpersonateController::class, 'start'])->name('impersonate.start');
+    Route::post('/admin/impersonate/{user}', [\App\Http\Controllers\ImpersonateController::class, 'start'])->name('impersonate.start')->middleware('role:admin');
+    // NOTE: 'stop' is intentionally NOT admin-gated here — it's called by the impersonated
+    // (non-admin) session to return to the real admin account; its own controller logic
+    // verifies the impersonator_id session value instead.
     Route::post('/admin/impersonate-stop', [\App\Http\Controllers\ImpersonateController::class, 'stop'])->name('impersonate.stop');
 
-    Route::get('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'index'])->name('test-data.index');
-    Route::post('/admin/test-data/script', [\App\Http\Controllers\TestDataController::class, 'saveTestScript'])->name('test-data.script');
-    Route::post('/admin/test-data/seed', [\App\Http\Controllers\TestDataController::class, 'seed'])->name('test-data.seed');
-    Route::post('/admin/test-data/reset', [\App\Http\Controllers\TestDataController::class, 'reset'])->name('test-data.reset');
-    Route::delete('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'destroy'])->name('test-data.destroy');
-    Route::post('/admin/test-data/auto-reset', [\App\Http\Controllers\TestDataController::class, 'toggleAutoReset'])->name('test-data.auto-reset');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'index'])->name('test-data.index');
+        Route::post('/admin/test-data/script', [\App\Http\Controllers\TestDataController::class, 'saveTestScript'])->name('test-data.script');
+        Route::post('/admin/test-data/seed', [\App\Http\Controllers\TestDataController::class, 'seed'])->name('test-data.seed');
+        Route::post('/admin/test-data/reset', [\App\Http\Controllers\TestDataController::class, 'reset'])->name('test-data.reset');
+        Route::delete('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'destroy'])->name('test-data.destroy');
+        Route::post('/admin/test-data/auto-reset', [\App\Http\Controllers\TestDataController::class, 'toggleAutoReset'])->name('test-data.auto-reset');
+    });
 
     Route::get('/staff/{user}/card', [\App\Http\Controllers\StaffCardController::class, 'card'])->name('staff.card');
+    // NOTE: reader-card is intentionally open to any authenticated user (bio/photo/online
+    // status only, no assignment or pay data) — see StaffCardController::readerCard() docblock.
+    // card and draft-email above/below both require canManageAssignments().
     Route::get('/staff/{user}/reader-card', [\App\Http\Controllers\StaffCardController::class, 'readerCard'])->name('staff.reader-card');
     Route::get('/staff/{user}/draft-email', [\App\Http\Controllers\StaffCardController::class, 'draftEmail'])->name('staff.draft-email');
 
@@ -350,15 +362,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/script-registrations-test', [ScriptRegistrationController::class, 'testForm'])->name('script-registrations.test');
     Route::post('/script-registrations-test', [ScriptRegistrationController::class, 'testRun'])->name('script-registrations.test.run');
 
-    Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index');
-    Route::get('/revenue/by-customer', [RevenueController::class, 'byCustomer'])->name('revenue.by-customer');
-    Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
-    Route::get('/payroll/export-1099', [PayrollController::class, 'export1099'])->name('payroll.export-1099');
-    Route::patch('/payroll/schedule', [PayoutScheduleController::class, 'update'])->name('payroll.schedule.update');
-    Route::patch('/payroll/schedule/override', [PayoutScheduleController::class, 'setOverride'])->name('payroll.schedule.override');
+    Route::get('/revenue', [RevenueController::class, 'index'])->name('revenue.index')->middleware('role:admin');
+    Route::get('/revenue/by-customer', [RevenueController::class, 'byCustomer'])->name('revenue.by-customer')->middleware('role:admin');
+    Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index')->middleware('role:admin');
+    Route::get('/payroll/export-1099', [PayrollController::class, 'export1099'])->name('payroll.export-1099')->middleware('role:admin');
+    Route::patch('/payroll/schedule', [PayoutScheduleController::class, 'update'])->name('payroll.schedule.update')->middleware('role:admin');
+    Route::patch('/payroll/schedule/override', [PayoutScheduleController::class, 'setOverride'])->name('payroll.schedule.override')->middleware('role:admin');
     Route::get('/reader-earnings', [ReaderEarningsController::class, 'index'])->name('reader-earnings.index');
     Route::get('/editor-earnings', [EditorEarningsController::class, 'index'])->name('editor-earnings.index');
-    Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
+    Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index')->middleware('role:admin');
     Route::post('/reader-pay/{reader}/mark-paid', [ReaderPayController::class, 'markPaid'])->name('reader-pay.mark-paid');
     Route::post('/reader-pay/{reader}/clear-unpaid', [ReaderPayController::class, 'clearUnpaidBatch'])->name('reader-pay.clear-unpaid');
     Route::post('/reader-pay/{reader}/remove-batch', [ReaderPayController::class, 'removeHistoryBatch'])->name('reader-pay.remove-batch');
@@ -390,13 +402,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/editor-payments', [EditorPaymentsController::class, 'index'])->name('editor-payments.index');
 
-    Route::get('/admin/permissions', [PermissionsController::class, 'index'])->name('admin.permissions');
-    Route::post('/admin/permissions', [PermissionsController::class, 'update'])->name('admin.permissions.update');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/permissions', [PermissionsController::class, 'index'])->name('admin.permissions');
+        Route::post('/admin/permissions', [PermissionsController::class, 'update'])->name('admin.permissions.update');
 
-    Route::get('/admin/filenames', [FilenamesController::class, 'index'])->name('admin.filenames');
-    Route::patch('/admin/filenames', [FilenamesController::class, 'update'])->name('admin.filenames.update');
+        Route::get('/admin/filenames', [FilenamesController::class, 'index'])->name('admin.filenames');
+        Route::patch('/admin/filenames', [FilenamesController::class, 'update'])->name('admin.filenames.update');
 
-    Route::get('/admin/helpscout-webhook-logs', [HelpScoutWebhookLogController::class, 'index'])->name('admin.helpscout-webhook-logs');
+        Route::get('/admin/helpscout-webhook-logs', [HelpScoutWebhookLogController::class, 'index'])->name('admin.helpscout-webhook-logs');
+    });
 
     // --- Admin Drive connection test (dev utility — admin/editor only) ---
     Route::get('/admin/drive-test', function () {

@@ -19,10 +19,6 @@ class BudgetWebhookController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $data = $request->validate([
             'order_id'       => 'required|string|max:64',
             'customer_name'  => 'required|string|max:255',
@@ -95,13 +91,6 @@ class BudgetWebhookController extends Controller
             'status' => 'accepted',
             'budget_order_id' => $order->id,
         ], 202);
-    }
-
-    private function authorised(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 
     private function determineBudgetClass(float $budget): int

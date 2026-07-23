@@ -9,22 +9,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class UploadSettingsController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        if (! $this->authorized($request)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
         return response()->json(Setting::getBlockedReaderLimits());
-    }
-
-    private function authorized(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }

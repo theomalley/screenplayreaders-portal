@@ -49,10 +49,6 @@ class IncomingAssignmentController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $data = $request->validate([
             'order_number'     => 'required|string|max:64',
             'service'          => 'required|string|max:64',
@@ -206,12 +202,5 @@ class IncomingAssignmentController extends Controller
         }
 
         return round($total, 2);
-    }
-
-    private function authorised(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }

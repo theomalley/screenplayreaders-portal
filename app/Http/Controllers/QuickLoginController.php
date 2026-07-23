@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-07-23 | Added a per-token rate limit alongside the existing per-IP one,
+//                     so a single leaked/guessed token can't be hammered across many IPs.
 // v1.0 — 2026-06-04 | Tokenized admin quick-login link for phone/browser bookmarks
 
 namespace App\Http\Controllers;
@@ -26,16 +28,24 @@ class QuickLoginController extends Controller
         'team.index'        => 'Team',
     ];
 
-    /** Public route — validates token and logs in. Rate-limited. */
+    /**
+     * Public route — validates token and logs in. Rate-limited both by IP
+     * (protects a shared office/VPN IP from being exhausted by unrelated
+     * attempts) and by the token value itself (bounds abuse of one specific
+     * leaked/guessed token across many IPs — an IP-only limit wouldn't
+     * catch that).
+     */
     public function login(string $token)
     {
-        $key = 'quick-login:' . request()->ip();
+        $ipKey    = 'quick-login-ip:' . request()->ip();
+        $tokenKey = 'quick-login-token:' . hash('sha256', $token);
 
-        if (RateLimiter::tooManyAttempts($key, 10)) {
+        if (RateLimiter::tooManyAttempts($ipKey, 10) || RateLimiter::tooManyAttempts($tokenKey, 10)) {
             abort(429, 'Too many attempts. Try again later.');
         }
 
-        RateLimiter::hit($key, 60);
+        RateLimiter::hit($ipKey, 60);
+        RateLimiter::hit($tokenKey, 60);
 
         $stored = Setting::getValue(self::TOKEN_KEY);
         $userId = Setting::getValue(self::USER_ID_KEY);
@@ -60,7 +70,8 @@ class QuickLoginController extends Controller
             abort(403);
         }
 
-        RateLimiter::clear($key);
+        RateLimiter::clear($ipKey);
+        RateLimiter::clear($tokenKey);
 
         // Clear any active impersonation so the bookmark always lands you as yourself
         session()->forget('impersonator_id');

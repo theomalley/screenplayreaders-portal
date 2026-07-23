@@ -20,10 +20,6 @@ class HelpScoutConversationController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         // Coerce to string and trim — guards against Zapier sending integers or
         // field names with trailing whitespace when Unflatten is enabled.
         $input = [
@@ -73,12 +69,5 @@ class HelpScoutConversationController extends Controller
         );
 
         return response()->json(['status' => 'ok'], 200);
-    }
-
-    private function authorised(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }

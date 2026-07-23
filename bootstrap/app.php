@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackLastSeen::class,
             \App\Http\Middleware\CheckSessionTimeout::class,
         ]);
+
+        $middleware->alias([
+            'portal.secret' => \App\Http\Middleware\VerifyPortalWebhookSecret::class,
+            'role'          => \App\Http\Middleware\EnsureUserHasRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->renderable(function (

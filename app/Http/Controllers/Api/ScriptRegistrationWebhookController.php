@@ -26,10 +26,6 @@ class ScriptRegistrationWebhookController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $data = $request->validate([
             'order_id'       => 'required|string|max:64',
             'order_number'   => 'nullable|string|max:64',
@@ -112,13 +108,6 @@ class ScriptRegistrationWebhookController extends Controller
             'status' => 'accepted',
             'registration_ids' => $created,
         ], 202);
-    }
-
-    private function authorised(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 
     private function parseExpiry(?string $expiryString, int $variationId, bool $neverExpires = false): ?\DateTimeInterface

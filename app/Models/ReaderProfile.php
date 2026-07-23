@@ -149,4 +149,37 @@ class ReaderProfile extends Model
     {
         return $this->first_name . ' ' . $this->last_name;
     }
+
+    /**
+     * Field set shared with EditorProfile, used by ReaderProfileController::update()
+     * when converting a reader to an editor (role_change) — carries bio/photo/
+     * availability/etc. across the role boundary. $profile may be null (e.g. a
+     * reader who never had a profile row); falls back to name-derived defaults.
+     */
+    public static function sharedArrayFrom(?self $profile, User $user): array
+    {
+        $nameParts = explode(' ', $user->name, 2);
+
+        return [
+            'initials'                   => $profile?->initials ?? strtoupper(substr($user->name, 0, 2)),
+            'first_name'                 => $profile?->first_name ?? ($nameParts[0] ?? ''),
+            'last_name'                  => $profile?->last_name ?? ($nameParts[1] ?? ''),
+            'title'                      => $profile?->title,
+            'bio'                        => $profile?->bio,
+            'bio_pending'                => $profile?->bio_pending,
+            'bio_rejection_note'         => $profile?->bio_rejection_note,
+            'custom_message'             => $profile?->custom_message,
+            'photo'                      => $profile?->photo,
+            'photo_pending'              => $profile?->photo_pending,
+            'photo_rejection_note'       => $profile?->photo_rejection_note,
+            'about_photo'                => $profile?->about_photo,
+            'about_photo_pending'        => $profile?->about_photo_pending,
+            'about_photo_rejection_note' => $profile?->about_photo_rejection_note,
+            'paypal_email'               => $profile?->paypal_email,
+            'availability'               => $profile?->availability ?? 'available',
+            'availability_message'       => $profile?->availability_message,
+            'upload_warning'             => $profile?->upload_warning,
+            'timezone'                   => $profile?->timezone,
+        ];
+    }
 }

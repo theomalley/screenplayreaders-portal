@@ -125,30 +125,7 @@ class ReaderProfileController extends Controller
         if (auth()->user()->isAdmin() && $request->input('_action') === 'role_change') {
             abort_unless($request->input('role') === 'editor', 422);
 
-            $reader  = $user->readerProfile;
-            $nameParts = explode(' ', $user->name, 2);
-
-            $shared = [
-                'initials'                   => $reader?->initials ?? strtoupper(substr($user->name, 0, 2)),
-                'first_name'                 => $reader?->first_name ?? ($nameParts[0] ?? ''),
-                'last_name'                  => $reader?->last_name ?? ($nameParts[1] ?? ''),
-                'title'                      => $reader?->title,
-                'bio'                        => $reader?->bio,
-                'bio_pending'                => $reader?->bio_pending,
-                'bio_rejection_note'         => $reader?->bio_rejection_note,
-                'custom_message'             => $reader?->custom_message,
-                'photo'                      => $reader?->photo,
-                'photo_pending'              => $reader?->photo_pending,
-                'photo_rejection_note'       => $reader?->photo_rejection_note,
-                'about_photo'                => $reader?->about_photo,
-                'about_photo_pending'        => $reader?->about_photo_pending,
-                'about_photo_rejection_note' => $reader?->about_photo_rejection_note,
-                'paypal_email'               => $reader?->paypal_email,
-                'availability'               => $reader?->availability ?? 'available',
-                'availability_message'       => $reader?->availability_message,
-                'upload_warning'             => $reader?->upload_warning,
-                'timezone'                   => $reader?->timezone,
-            ];
+            $shared = \App\Models\ReaderProfile::sharedArrayFrom($user->readerProfile, $user);
 
             $user->update(['role' => 'editor']);
             $user->editorProfile()->updateOrCreate(['user_id' => $user->id], $shared);

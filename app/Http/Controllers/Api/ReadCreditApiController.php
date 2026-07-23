@@ -24,10 +24,6 @@ class ReadCreditApiController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $data = $request->validate([
             'customer_email'   => 'required|email|max:255',
             'customer_name'    => 'required|string|max:255',
@@ -106,10 +102,6 @@ class ReadCreditApiController extends Controller
 
     public function redeem(Request $request, string $token): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $data = $request->validate([
             'script_title' => 'required|string|max:255',
             'writer_name'  => 'nullable|string|max:255',
@@ -193,10 +185,6 @@ class ReadCreditApiController extends Controller
 
     public function setCoupon(Request $request, string $token): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $data = $request->validate([
             'coupon_code' => 'required|string|max:50',
         ]);
@@ -238,12 +226,8 @@ class ReadCreditApiController extends Controller
         ]);
     }
 
-    public function expiredPendingCoupon(Request $request): JsonResponse
+    public function expiredPendingCoupon(): JsonResponse
     {
-        if (! $this->authorised($request)) {
-            return response()->json(['error' => 'Unauthorised.'], 401);
-        }
-
         $packages = ReadCreditPackage::where('status', ReadCreditPackage::STATUS_EXPIRED)
             ->whereNull('coupon_code')
             ->where(function ($q) {
@@ -263,12 +247,5 @@ class ReadCreditApiController extends Controller
         ]);
 
         return response()->json(['packages' => $result]);
-    }
-
-    private function authorised(Request $request): bool
-    {
-        $secret = config('services.portal.webhook_secret');
-
-        return ! empty($secret) && hash_equals($secret, $request->bearerToken() ?? '');
     }
 }

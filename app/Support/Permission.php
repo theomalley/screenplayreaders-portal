@@ -7,7 +7,10 @@ use App\Models\User;
 
 class Permission
 {
-    public const ROLES = ['admin', 'editor', 'reader', 'writer', 'producer'];
+    // Note: the users.role DB enum still permits 'writer'/'producer' historically,
+    // but User's isWriter()/isProducer() role helpers were removed — no role-based
+    // logic in this app treats those as real roles, so they're excluded here too.
+    public const ROLES = ['admin', 'editor', 'reader'];
 
     public const FEATURES = [
         'assignments'        => 'Assignments — View',
@@ -31,23 +34,23 @@ class Permission
 
     // Defaults used when no DB record exists yet
     public const DEFAULTS = [
-        'assignments'        => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],
-        'assignments.manage' => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
-        'script.download'    => ['admin' => true,  'editor' => false, 'reader' => true,  'writer' => false, 'producer' => false],
-        'script.print'       => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
-        'qc'                 => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
-        'archive'            => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
-        'ratebook'           => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],
-        'ratebook.edit'      => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
-        'manual'             => ['admin' => true,  'editor' => true,  'reader' => true,  'writer' => false, 'producer' => false],
-        'manual.edit'        => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
-        'team'               => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
-        'readers.edit'       => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
-        'readers.delete'     => ['admin' => true,  'editor' => true,  'reader' => false, 'writer' => false, 'producer' => false],
-        'editors.edit'       => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
-        'editors.delete'     => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
-        'budget.admin'       => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
-        'budget.admin.edit'  => ['admin' => true,  'editor' => false, 'reader' => false, 'writer' => false, 'producer' => false],
+        'assignments'        => ['admin' => true,  'editor' => true,  'reader' => true],
+        'assignments.manage' => ['admin' => true,  'editor' => true,  'reader' => false],
+        'script.download'    => ['admin' => true,  'editor' => false, 'reader' => true],
+        'script.print'       => ['admin' => true,  'editor' => false, 'reader' => false],
+        'qc'                 => ['admin' => true,  'editor' => true,  'reader' => false],
+        'archive'            => ['admin' => true,  'editor' => true,  'reader' => false],
+        'ratebook'           => ['admin' => true,  'editor' => true,  'reader' => true],
+        'ratebook.edit'      => ['admin' => true,  'editor' => false, 'reader' => false],
+        'manual'             => ['admin' => true,  'editor' => true,  'reader' => true],
+        'manual.edit'        => ['admin' => true,  'editor' => false, 'reader' => false],
+        'team'               => ['admin' => true,  'editor' => true,  'reader' => false],
+        'readers.edit'       => ['admin' => true,  'editor' => true,  'reader' => false],
+        'readers.delete'     => ['admin' => true,  'editor' => true,  'reader' => false],
+        'editors.edit'       => ['admin' => true,  'editor' => false, 'reader' => false],
+        'editors.delete'     => ['admin' => true,  'editor' => false, 'reader' => false],
+        'budget.admin'       => ['admin' => true,  'editor' => false, 'reader' => false],
+        'budget.admin.edit'  => ['admin' => true,  'editor' => false, 'reader' => false],
     ];
 
     /** Settings key for a feature+role pair. */
