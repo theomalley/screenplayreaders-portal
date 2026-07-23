@@ -62,6 +62,38 @@
                 </div>
             </div>
 
+            @if($user->isAdmin())
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Your Session Timeout</h2>
+                    <p class="text-sm text-gray-600 mb-4">Override the site-wide session timeout ({{ (int) \App\Models\Setting::getValue('session_timeout_minutes', 120) }} minutes) for your own account only. Leave blank to use the site-wide value.</p>
+
+                    @if (session('status') === 'session-timeout-updated')
+                        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                            Saved.
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('profile.session-timeout') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <x-input-label for="session_timeout_minutes" value="Timeout after (minutes)" />
+                            <input type="number" id="session_timeout_minutes" name="session_timeout_minutes" min="5" max="1440"
+                                   value="{{ old('session_timeout_minutes', $user->session_timeout_minutes) }}"
+                                   placeholder="Use site-wide default"
+                                   class="mt-1 block w-48 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <x-input-error :messages="$errors->get('session_timeout_minutes')" class="mt-1" />
+                            <p class="mt-1 text-xs text-gray-400">Between 5 and 1440 minutes. Blank uses the site-wide default.</p>
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             @if($user->isAdminOrEditor() || $user->isReader())
             @php
                 $currentPhoto            = $profile?->photo             ? asset('storage/' . $profile->photo)             : null;

@@ -110,6 +110,20 @@ class ProfileController extends Controller
         return back()->with('status', 'refresh-interval-updated');
     }
 
+    public function updateSessionTimeoutOverride(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isAdmin(), 403);
+
+        $data = $request->validate([
+            'session_timeout_minutes' => 'nullable|integer|min:5|max:1440',
+        ]);
+
+        $user->update(['session_timeout_minutes' => $data['session_timeout_minutes'] ?? null]);
+
+        return back()->with('status', 'session-timeout-updated');
+    }
+
     public function updateBio(Request $request): RedirectResponse
     {
         $user = $request->user();

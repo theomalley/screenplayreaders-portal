@@ -1,5 +1,6 @@
 <?php
 
+// v1.8 — 2026-07-23 | Add nullable session_timeout_minutes override (admin-only; null = use global setting)
 // v1.7 — 2026-06-23 | Add is_test flag to exclude test users from payroll and editor lookups
 // v1.6 — 2026-06-15 | Add refresh_interval_seconds (per-user dashboard auto-refresh rate) +
 //                     getRefreshIntervalSeconds() helper enforcing a 30s minimum.
@@ -33,6 +34,7 @@ class User extends Authenticatable
         'hidden_from_staff',
         'refresh_interval_seconds',
         'is_test',
+        'session_timeout_minutes',
     ];
 
     protected $hidden = [
@@ -69,6 +71,19 @@ class User extends Authenticatable
     public function getRefreshIntervalSeconds(): int
     {
         return max(30, (int) $this->refresh_interval_seconds);
+    }
+
+    /**
+     * Effective session timeout in minutes: an admin's own override if set,
+     * otherwise the global Setting::getValue('session_timeout_minutes') default.
+     */
+    public function getSessionTimeoutMinutes(): int
+    {
+        if ($this->isAdmin() && $this->session_timeout_minutes !== null) {
+            return (int) $this->session_timeout_minutes;
+        }
+
+        return (int) Setting::getValue('session_timeout_minutes', 120);
     }
 
     public function lastOnlineText(): string

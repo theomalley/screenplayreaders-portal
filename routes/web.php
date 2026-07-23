@@ -80,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications');
     Route::patch('/profile/refresh-interval', [ProfileController::class, 'updateRefreshInterval'])->name('profile.refresh-interval');
+    Route::patch('/profile/session-timeout', [ProfileController::class, 'updateSessionTimeoutOverride'])->name('profile.session-timeout');
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto'])->name('profile.photo');
     Route::post('/profile/about-photo', [ProfileController::class, 'uploadAboutPhoto'])->name('profile.about-photo');
     Route::patch('/profile/bio', [ProfileController::class, 'updateBio'])->name('profile.bio');

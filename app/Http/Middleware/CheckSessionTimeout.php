@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Setting;
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,7 +13,7 @@ class CheckSessionTimeout
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::check()) {
-            $timeoutMinutes = (int) Setting::getValue('session_timeout_minutes', 120);
+            $timeoutMinutes = Auth::user()->getSessionTimeoutMinutes();
             $lastActivity   = $request->session()->get('last_activity_at');
 
             if ($lastActivity !== null) {
