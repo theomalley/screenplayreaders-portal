@@ -82,4 +82,44 @@ class ReaderProfileControllerTest extends TestCase
         $this->actingAs($reader)->delete("/readers/{$otherReader->id}")->assertForbidden();
         $this->assertDatabaseHas('users', ['id' => $otherReader->id]);
     }
+
+    public function test_admin_and_editor_can_see_the_readers_notification_preferences(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = User::factory()->create(['role' => 'editor']);
+        $reader = $this->makeReader();
+        $reader->readerProfile->update([
+            'sms_notifications'   => true,
+            'sms_notify_any'      => false,
+            'sms_notify_rush'     => true,
+            'email_notifications' => true,
+            'email_notify_any'    => true,
+        ]);
+
+        foreach ([$admin, $editor] as $viewer) {
+            $response = $this->actingAs($viewer)->get("/readers/{$reader->id}/edit");
+            $response->assertOk();
+            $response->assertSee('Notifications');
+            $response->assertSee('Rush assignments');
+        }
+    }
+
+    public function test_reader_notification_panel_reflects_the_readers_actual_saved_preferences(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+        $reader->readerProfile->update([
+            'sms_notifications'            => false,
+            'email_notifications'          => true,
+            'email_notify_qc_fail'         => true,
+            'notify_only_if_under_capacity' => true,
+            'max_concurrent_assignments'    => 5,
+        ]);
+
+        $html = $this->actingAs($admin)->get("/readers/{$reader->id}/edit")->getContent();
+
+        // Email section (enabled) should list its sub-items; SMS (disabled) should not.
+        $this->assertStringContainsString('Coverage fails QC', $html);
+        $this->assertStringContainsString('Only notify when under capacity (max 5)', $html);
+    }
 }

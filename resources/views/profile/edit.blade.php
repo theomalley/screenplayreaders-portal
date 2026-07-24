@@ -716,6 +716,56 @@
                 </div>
                 @endif
 
+                @if ($isEditingReader)
+                {{-- Notifications (read-only) — admin/editor view of what the reader has opted into --}}
+                <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                    <div class="max-w-xl space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900">Notifications <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">read only</span></h2>
+                        <p class="text-sm text-gray-600 -mt-2">What this reader has opted into for new-assignment alerts. Readers manage this themselves under their own Profile.</p>
+
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" disabled {{ $profile?->sms_notifications ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-100" />
+                                <span class="text-sm font-medium text-gray-700">SMS notifications</span>
+                            </label>
+                            @if ($profile?->sms_notifications)
+                            <ul class="mt-2 ml-7 space-y-1 text-sm text-gray-600">
+                                <li>{{ $profile->sms_notify_any ? '✓' : '—' }} Any new assignment</li>
+                                <li>{{ ($profile->sms_notify_any || $profile->sms_notify_rush) ? '✓' : '—' }} Rush assignments</li>
+                                <li>{{ ($profile->sms_notify_any || $profile->sms_notify_requests) ? '✓' : '—' }} Reader requests</li>
+                                <li>{{ $profile->sms_notify_followup ? '✓' : '—' }} Followup questions</li>
+                                <li>{{ $profile->sms_notify_qc_fail ? '✓' : '—' }} Coverage fails QC</li>
+                            </ul>
+                            @endif
+                        </div>
+
+                        <div>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" disabled {{ $profile?->email_notifications ? 'checked' : '' }}
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-100" />
+                                <span class="text-sm font-medium text-gray-700">Email notifications</span>
+                            </label>
+                            @if ($profile?->email_notifications)
+                            <ul class="mt-2 ml-7 space-y-1 text-sm text-gray-600">
+                                <li>{{ $profile->email_notify_any ? '✓' : '—' }} Any new assignment</li>
+                                <li>{{ ($profile->email_notify_any || $profile->email_notify_rush) ? '✓' : '—' }} Rush assignments</li>
+                                <li>{{ ($profile->email_notify_any || $profile->email_notify_requests) ? '✓' : '—' }} Reader requests</li>
+                                <li>{{ $profile->email_notify_followup ? '✓' : '—' }} Followup questions</li>
+                                <li>{{ $profile->email_notify_qc_fail ? '✓' : '—' }} Coverage fails QC</li>
+                            </ul>
+                            @endif
+                        </div>
+
+                        <label class="flex items-center gap-2 pt-2 border-t border-gray-200">
+                            <input type="checkbox" disabled {{ $profile?->notify_only_if_under_capacity ? 'checked' : '' }}
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-100" />
+                            <span class="text-sm text-gray-700">Only notify when under capacity (max {{ $profile?->max_concurrent_assignments ?? 3 }})</span>
+                        </label>
+                    </div>
+                </div>
+                @endif
+
                 {{-- Upload Form Warning — admin only --}}
                 <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
