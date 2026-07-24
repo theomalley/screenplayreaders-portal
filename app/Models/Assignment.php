@@ -1,9 +1,9 @@
 <?php
 
-// v1.28 — 2026-07-24 | Add hidden_from_reader_ids — an admin per-reader "hide this
-//                      assignment" override that beats tier visibility entirely (unlike
-//                      blocked_reader_ids, hidden readers don't see the row at all, not
-//                      even with a badge). isHiddenFromReader() + hiddenReaderInitials()
+// v1.28 — 2026-07-24 | Add hidden_from_reader_ids — an admin-only (not editor) per-reader
+//                      "hide this assignment" override that beats tier visibility entirely
+//                      (unlike blocked_reader_ids, hidden readers don't see the row at all,
+//                      not even with a badge). isHiddenFromReader() + hiddenReaderInitials()
 //                      helpers; scopeAvailable()/scopeAcceptedRequests() exclude it.
 // v1.27 — 2026-07-23 | BUG FIX: ensureSandboxAssignment() guarded with Schema::hasTable('tiers') —
 //                      the seed_sandbox_onboarding_assignment migration (2026-07-11) runs before

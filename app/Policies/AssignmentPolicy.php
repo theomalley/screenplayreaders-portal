@@ -1,8 +1,10 @@
 <?php
 
 // v1.8 — 2026-07-24 | view/accept: deny readers an assignment is hidden from
-//                     (isHiddenFromReader) — an admin override that beats tier match
-//                     entirely, unlike isReaderBlocked which only blocks accept().
+//                     (isHiddenFromReader) — an admin-only override that beats tier
+//                     match entirely, unlike isReaderBlocked which only blocks accept().
+//                     Setting/clearing the hide list is restricted to admins in
+//                     AssignmentController — editors can't touch it.
 // v1.7 — 2026-07-20 | view/accept: tier match now goes through App\Support\TierAccess —
 //                     generalizes the old hardcoded tier-2-into-tier-1 special case into
 //                     admin-configurable cross-visibility/accept per tier pair, for any number

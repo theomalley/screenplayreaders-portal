@@ -412,7 +412,8 @@
                             <x-input-error :messages="$errors->get('blocked_reader_ids')" class="mt-1" />
                         </div>
 
-                        {{-- Hide From Reader --}}
+                        {{-- Hide From Reader (admin only) --}}
+                        @if (auth()->user()->isAdmin())
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mt-5">
                             <x-input-label value="Hide From Reader" />
                             <p class="mt-1 text-xs text-gray-400">These readers will never see this assignment at all, overriding tier visibility entirely.</p>
@@ -428,6 +429,7 @@
                             </div>
                             <x-input-error :messages="$errors->get('hidden_from_reader_ids')" class="mt-1" />
                         </div>
+                        @endif
 
                         {{-- Script Details --}}
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 space-y-4 mt-5">

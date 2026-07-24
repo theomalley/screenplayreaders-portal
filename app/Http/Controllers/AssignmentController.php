@@ -1,9 +1,11 @@
 <?php
 
-// v2.30 — 2026-07-24 | store()/update(): accept hidden_from_reader_ids[] — an admin
-//                      per-reader "hide this assignment" override, unlike blocked_reader_ids
-//                      this is per-assignment (not synced to sibling order rows) and hides
-//                      the row entirely rather than showing a badge.
+// v2.30 — 2026-07-24 | store()/update(): accept hidden_from_reader_ids[] — an admin-only
+//                      (not editor) per-reader "hide this assignment" override, unlike
+//                      blocked_reader_ids this is per-assignment (not synced to sibling
+//                      order rows) and hides the row entirely rather than showing a badge.
+//                      Field is silently ignored/left untouched when the acting user isn't
+//                      an admin, since the form only renders the control for admins.
 // v2.29 — 2026-07-23 | Authorization on streamCoverage/dismissHelpscoutDraft/
 //                      pageCountFlagDraft (over120/over160) moved to AssignmentPolicy
 //                      (app/Policies), replacing inline abort_unless(...) calls — the
@@ -393,9 +395,15 @@ class AssignmentController extends Controller
         $data['blocked_reader_ids'] = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
             : null;
-        $data['hidden_from_reader_ids'] = !empty($data['hidden_from_reader_ids'])
-            ? array_map('intval', $data['hidden_from_reader_ids'])
-            : null;
+        // Admin-only field — editors can't set it, even via a crafted request (the
+        // form only renders the checkboxes for admins in the first place).
+        if ($request->user()->isAdmin()) {
+            $data['hidden_from_reader_ids'] = !empty($data['hidden_from_reader_ids'])
+                ? array_map('intval', $data['hidden_from_reader_ids'])
+                : null;
+        } else {
+            unset($data['hidden_from_reader_ids']);
+        }
         $numReaders   = (int) $data['num_readers'];
 
         // Empty selects submit '' for these nullable FK columns, which MySQL's
@@ -1007,9 +1015,16 @@ class AssignmentController extends Controller
         $data['blocked_reader_ids']     = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
             : null;
-        $data['hidden_from_reader_ids'] = !empty($data['hidden_from_reader_ids'])
-            ? array_map('intval', $data['hidden_from_reader_ids'])
-            : null;
+        // Admin-only field — editors can't set or clear it, even via a crafted request
+        // (the form only renders the checkboxes for admins), so leave the existing
+        // value untouched when the acting user isn't an admin.
+        if ($request->user()->isAdmin()) {
+            $data['hidden_from_reader_ids'] = !empty($data['hidden_from_reader_ids'])
+                ? array_map('intval', $data['hidden_from_reader_ids'])
+                : null;
+        } else {
+            unset($data['hidden_from_reader_ids']);
+        }
 
         // Empty selects submit '' for these nullable FK columns, which MySQL's
         // strict mode rejects as an invalid integer — coerce to null.
