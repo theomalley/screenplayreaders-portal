@@ -125,4 +125,32 @@ class AssignmentPolicy
     {
         return $user->canManageAssignments();
     }
+
+    /** Reader posting a note to the editor (AssignmentNoteController::store). */
+    public function addNote(User $user, Assignment $assignment): bool
+    {
+        return $user->isReader();
+    }
+
+    /** Admin/editor adding an internal note (AssignmentEditorNoteController::store). */
+    public function addEditorNote(User $user, Assignment $assignment): bool
+    {
+        return $user->canManageAssignments();
+    }
+
+    public function streamCoverage(User $user, Assignment $assignment): bool
+    {
+        return $user->canManageAssignments();
+    }
+
+    public function dismissHelpscoutDraft(User $user, Assignment $assignment): bool
+    {
+        return $user->canManageAssignments();
+    }
+
+    /** Shared by over120()/over160() page-count-flag HelpScout drafts. */
+    public function flagPageCountDraft(User $user, Assignment $assignment): bool
+    {
+        return $user->canManageAssignments();
+    }
 }

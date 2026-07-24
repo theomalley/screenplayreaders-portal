@@ -65,5 +65,13 @@ class AppServiceProvider extends ServiceProvider
 
         // QuickLoginController admin actions (not the public token-consumption route).
         Gate::define('manage-quick-login', fn (User $user) => $user->isAdmin());
+
+        // UrlBuilderController — a tool page, not tied to an Eloquent instance.
+        Gate::define('use-url-builder', fn (User $user) => $user->isAdminOrEditor());
+
+        // Marketing\PartnerSiteController::updateFormSettings — site-wide form
+        // defaults, not tied to a single PartnerSite instance (see PartnerSitePolicy
+        // for the per-instance actions on that same controller).
+        Gate::define('manage-partner-form-settings', fn (User $user) => $user->isAdmin());
     }
 }

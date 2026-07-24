@@ -1,5 +1,8 @@
 <?php
 
+// v1.3 — 2026-07-23 | Authorization moved to AnnouncementPolicy (app/Policies), replacing
+//                     inline abort_unless(...) calls. Covered by
+//                     tests/Feature/AnnouncementControllerTest.php.
 // v1.2 — 2026-06-14 | Add update() — admins can edit any announcement, editors only their own
 // v1.1 — 2026-06-02 | Add expires_at support to store(); add history() for all-user announcement archive
 // v1.0 — 2026-05-26 | Create/delete announcements (admin/editor); mark-read/dismiss (reader).
@@ -18,7 +21,7 @@ class AnnouncementController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('create', Announcement::class);
 
         $request->validate([
             'body'       => 'required|string|max:2000',
@@ -41,7 +44,7 @@ class AnnouncementController extends Controller
 
     public function update(Request $request, Announcement $announcement): RedirectResponse
     {
-        abort_unless($announcement->canBeEditedBy(auth()->user()), 403);
+        $this->authorize('update', $announcement);
 
         $request->validate([
             'body'       => 'required|string|max:2000',
@@ -63,7 +66,7 @@ class AnnouncementController extends Controller
 
     public function destroy(Announcement $announcement): RedirectResponse
     {
-        abort_unless(auth()->user()->canManageAssignments(), 403);
+        $this->authorize('delete', $announcement);
 
         $announcement->delete();
 

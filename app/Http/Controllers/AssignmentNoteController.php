@@ -1,5 +1,9 @@
 <?php
 
+// v1.2 — 2026-07-23 | Authorization moved to AssignmentPolicy::addNote() /
+//                     AssignmentNotePolicy::reply() (app/Policies), replacing inline
+//                     abort_unless(...) calls. Covered by
+//                     tests/Feature/AssignmentNoteControllerTest.php.
 // v1.1 — 2026-06-15 | Log dismissed notes/replies to Notification History
 // v1.0 — 2026-05-31 | Reader notes on assignments + admin replies; per-user dismissal
 
@@ -17,8 +21,8 @@ class AssignmentNoteController extends Controller
 {
     public function store(Request $request, Assignment $assignment): RedirectResponse
     {
+        $this->authorize('addNote', $assignment);
         $user = auth()->user();
-        abort_unless($user->isReader(), 403);
 
         $request->validate(['body' => 'required|string|max:1000']);
 
@@ -40,7 +44,7 @@ class AssignmentNoteController extends Controller
 
     public function reply(Request $request, AssignmentNote $note): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('reply', $note);
 
         $request->validate(['body' => 'required|string|max:1000']);
 

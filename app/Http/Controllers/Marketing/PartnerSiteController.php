@@ -1,6 +1,10 @@
 <?php
 
 // v1.0 — 2026-06-08 | Partner backlink monitor — CRUD, check-now, uptime stats
+// v1.1 — 2026-07-23 | Authorization moved to PartnerSitePolicy (instance-bound
+//                     actions) and the manage-partner-form-settings Gate ability
+//                     (AppServiceProvider), replacing inline abort_unless(...) calls.
+//                     Covered by tests/Feature/PartnerSiteControllerTest.php.
 
 namespace App\Http\Controllers\Marketing;
 
@@ -35,7 +39,7 @@ class PartnerSiteController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('viewAny', PartnerSite::class);
 
         $period = $request->input('period', 'last_30');
         if (!array_key_exists($period, self::$PERIODS)) {
@@ -73,7 +77,7 @@ class PartnerSiteController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('create', PartnerSite::class);
 
         $data = $this->validated($request);
         $site = PartnerSite::create($data);
@@ -92,7 +96,7 @@ class PartnerSiteController extends Controller
 
     public function update(Request $request, PartnerSite $partnerSite): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('update', $partnerSite);
 
         $data = $this->validated($request);
 
@@ -117,7 +121,7 @@ class PartnerSiteController extends Controller
 
     public function destroy(PartnerSite $partnerSite): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('delete', $partnerSite);
 
         $partnerSite->delete(); // cascades to checks
 
@@ -131,7 +135,7 @@ class PartnerSiteController extends Controller
 
     public function checkNow(PartnerSite $partnerSite): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('checkNow', $partnerSite);
 
         $result = $this->runCheck($partnerSite);
 
@@ -156,7 +160,7 @@ class PartnerSiteController extends Controller
 
     public function toggleActive(PartnerSite $partnerSite): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('toggleActive', $partnerSite);
 
         $partnerSite->update(['active' => !$partnerSite->active]);
 
@@ -169,7 +173,7 @@ class PartnerSiteController extends Controller
 
     public function history(PartnerSite $partnerSite): JsonResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('history', $partnerSite);
 
         $checks = $partnerSite->checks()
             ->orderByDesc('checked_at')
@@ -447,7 +451,7 @@ class PartnerSiteController extends Controller
 
     public function updateFormSettings(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $this->authorize('manage-partner-form-settings');
 
         $keys = array_keys(\App\Models\Setting::PARTNER_FORM_DEFAULTS);
 

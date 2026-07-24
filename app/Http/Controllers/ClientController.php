@@ -1,5 +1,8 @@
 <?php
 
+// v1.4 — 2026-07-23 | Authorization moved to ClientPolicy (app/Policies), replacing
+//                     inline abort_unless(...) calls. Covered by
+//                     tests/Feature/ClientControllerTest.php.
 // v1.3 — 2026-07-07 | Restore batch_invoicing field to validate()
 // v1.2 — 2026-06-02 | Remove batch invoicing — clean up show() and validate()
 // v1.0 — 2026-05-26 | Client management — CRUD for invoicing clients
@@ -14,7 +17,7 @@ class ClientController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('viewAny', Client::class);
 
         $clients = Client::orderBy('name')->get();
 
@@ -23,7 +26,7 @@ class ClientController extends Controller
 
     public function create()
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('create', Client::class);
 
         $defaultSrAddress = Setting::getValue('sr_invoice_address', '');
 
@@ -35,7 +38,7 @@ class ClientController extends Controller
 
     public function store(Request $request)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('create', Client::class);
 
         $data = $this->validate($request);
 
@@ -46,14 +49,14 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('view', $client);
 
         return view('clients.show', compact('client'));
     }
 
     public function edit(Client $client)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('update', $client);
 
         $defaultSrAddress = Setting::getValue('sr_invoice_address', '');
 
@@ -65,7 +68,7 @@ class ClientController extends Controller
 
     public function update(Request $request, Client $client)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('update', $client);
 
         $data = $this->validate($request, $client);
 
@@ -76,7 +79,7 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('delete', $client);
 
         $client->delete();
 

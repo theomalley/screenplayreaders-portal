@@ -1,5 +1,8 @@
 <?php
 
+// v1.5 — 2026-07-23 | Authorization moved to OrderRevenuePolicy (app/Policies), replacing
+//                     inline abort_unless(...) calls. Covered by
+//                     tests/Feature/OrderLogControllerTest.php.
 // v1.4 — 2026-06-23 | Add bulkDestroy() for multi-select delete
 // v1.3 — 2026-06-23 | Unified order log: open index to editors with admin-configurable filters
 //                      (hide $0 / woo / invoice orders, block by product ID, column visibility).
@@ -38,7 +41,7 @@ class OrderLogController extends Controller
 
     public function index(Request $request)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('viewAny', OrderRevenue::class);
 
         $isAdmin = auth()->user()->isAdmin();
         $period  = $request->input('period', 'last_30');
@@ -114,13 +117,13 @@ class OrderLogController extends Controller
 
     public function create()
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('create', OrderRevenue::class);
         return view('order-log.form', ['order' => null, 'editors' => $this->editorOptions()]);
     }
 
     public function store(Request $request)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('create', OrderRevenue::class);
 
         $data = $this->validated($request);
 
@@ -132,7 +135,7 @@ class OrderLogController extends Controller
 
     public function edit(OrderRevenue $orderLog)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('update', $orderLog);
         return view('order-log.form', ['order' => $orderLog, 'editors' => $this->editorOptions()]);
     }
 
@@ -143,7 +146,7 @@ class OrderLogController extends Controller
 
     public function update(Request $request, OrderRevenue $orderLog)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('update', $orderLog);
 
         $data = $this->validated($request, $orderLog->id);
 
@@ -155,7 +158,7 @@ class OrderLogController extends Controller
 
     public function destroy(OrderRevenue $orderLog)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('delete', $orderLog);
 
         $orderLog->delete();
 
@@ -164,7 +167,7 @@ class OrderLogController extends Controller
 
     public function bulkDestroy(Request $request)
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        $this->authorize('bulkDelete', OrderRevenue::class);
 
         $data = $request->validate([
             'ids'   => ['required', 'array', 'min:1'],
@@ -182,7 +185,7 @@ class OrderLogController extends Controller
      */
     public function invoicePdf(OrderRevenue $orderLog, GoogleDocsService $docs)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('download', $orderLog);
 
         $srAddress   = Setting::getValue('sr_invoice_address', '');
         $description = $orderLog->ticket_summary ?: $orderLog->services_purchased ?: 'Order #' . $orderLog->order_number;

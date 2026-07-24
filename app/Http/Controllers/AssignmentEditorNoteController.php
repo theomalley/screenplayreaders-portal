@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to AssignmentPolicy::addEditorNote() /
+//                     AssignmentEditorNotePolicy::delete() (app/Policies), replacing
+//                     inline abort_unless(...) calls. Covered by
+//                     tests/Feature/AssignmentEditorNoteControllerTest.php.
 // v1.0 — 2026-06-02 | Store and delete internal editor notes on assignments
 
 namespace App\Http\Controllers;
@@ -13,7 +17,7 @@ class AssignmentEditorNoteController extends Controller
 {
     public function store(Request $request, Assignment $assignment): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('addEditorNote', $assignment);
 
         $request->validate(['body' => 'required|string|max:2000']);
 
@@ -28,7 +32,7 @@ class AssignmentEditorNoteController extends Controller
 
     public function destroy(AssignmentEditorNote $note): RedirectResponse
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('delete', $note);
 
         $note->delete();
 

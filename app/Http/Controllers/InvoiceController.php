@@ -1,5 +1,8 @@
 <?php
 
+// v2.4 — 2026-07-23 | Authorization moved to InvoicePolicy (app/Policies), replacing
+//                     inline abort_unless(...) calls across all 10 actions. Covered by
+//                     tests/Feature/InvoiceControllerTest.php.
 // v2.3 — 2026-07-07 | Add send() — manually send an accumulated batch draft invoice
 // v2.2 — 2026-06-03 | Add markOutstanding() — revert a paid PDF invoice back to sent/outstanding
 // v2.1 — 2026-06-02 | Add edit(), update(), downloadPdf() — edit/regenerate and download for PDF invoices
@@ -26,7 +29,7 @@ class InvoiceController extends Controller
      */
     public function index()
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('viewAny', Invoice::class);
 
         $outstanding = Invoice::with('client')
             ->whereIn('status', ['draft', 'sent'])
@@ -46,7 +49,7 @@ class InvoiceController extends Controller
      */
     public function create()
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('create', Invoice::class);
 
         $clients = Client::orderBy('name')->get();
 
@@ -61,7 +64,7 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('create', Invoice::class);
 
         if ($request->input('recipient_type') === 'customer') {
             return $this->storeForCustomer($request);
@@ -171,7 +174,7 @@ class InvoiceController extends Controller
      */
     public function send(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('send', $invoice);
         abort_unless($invoice->status === 'draft', 403);
 
         try {
@@ -189,7 +192,7 @@ class InvoiceController extends Controller
      */
     public function markPaid(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('markPaid', $invoice);
 
         $invoice->update([
             'status'  => 'paid',
@@ -222,7 +225,7 @@ class InvoiceController extends Controller
      */
     public function destroy(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('delete', $invoice);
 
         if ($invoice->status !== 'paid') {
             return back()->withErrors(['invoice' => 'Only paid invoices can be deleted.']);
@@ -246,7 +249,7 @@ class InvoiceController extends Controller
      */
     public function edit(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('update', $invoice);
         abort_unless($invoice->invoice_type === 'pdf', 403);
 
         $lineItems = $invoice->lineItems()->orderBy('created_at')->get();
@@ -260,7 +263,7 @@ class InvoiceController extends Controller
      */
     public function update(Request $request, Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('update', $invoice);
         abort_unless($invoice->invoice_type === 'pdf', 403);
 
         $data = $request->validate([
@@ -313,7 +316,7 @@ class InvoiceController extends Controller
      */
     public function resend(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('resend', $invoice);
         abort_unless($invoice->invoice_type === 'pdf' && $invoice->google_doc_id, 403);
 
         try {
@@ -334,7 +337,7 @@ class InvoiceController extends Controller
      */
     public function downloadPdf(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('download', $invoice);
         abort_unless($invoice->invoice_type === 'pdf' && $invoice->google_doc_id, 404);
 
         try {
@@ -363,7 +366,7 @@ class InvoiceController extends Controller
      */
     public function markOutstanding(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('markOutstanding', $invoice);
         abort_unless($invoice->invoice_type === 'pdf', 403);
 
         if (! $invoice->isPaid()) {
@@ -389,7 +392,7 @@ class InvoiceController extends Controller
      */
     public function void(Invoice $invoice)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('void', $invoice);
 
         if ($invoice->stripe_invoice_id) {
             try {

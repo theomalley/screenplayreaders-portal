@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-07-23 | Authorization moved to the use-url-builder Gate ability
+//                     (AppServiceProvider), replacing inline abort_unless(...) calls.
+//                     Covered by tests/Feature/UrlBuilderControllerTest.php.
+
 namespace App\Http\Controllers;
 
 use App\Services\WooCommerceService;
@@ -10,14 +14,14 @@ class UrlBuilderController extends Controller
 {
     public function index()
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('use-url-builder');
 
         return view('url-builder.index');
     }
 
     public function uploadLookup(Request $request, WooCommerceService $woo)
     {
-        abort_unless(auth()->user()?->isAdminOrEditor(), 403);
+        $this->authorize('use-url-builder');
 
         $request->validate(['order_id' => 'required|integer|min:1']);
 

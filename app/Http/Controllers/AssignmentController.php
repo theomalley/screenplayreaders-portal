@@ -1,5 +1,10 @@
 <?php
 
+// v2.29 — 2026-07-23 | Authorization on streamCoverage/dismissHelpscoutDraft/
+//                      pageCountFlagDraft (over120/over160) moved to AssignmentPolicy
+//                      (app/Policies), replacing inline abort_unless(...) calls — the
+//                      three remaining spots in this controller not already using the
+//                      policy. Covered by tests/Feature/AssignmentControllerExtraActionsTest.php.
 // v2.28 — 2026-07-20 | Dynamic tiers: store()/update() now sync assignment_tier (multiple tiers
 //                      or none) instead of a scalar tier column; index() admin branch groups
 //                      into $tierSections (one per Tier row, ordered) + $unassignedTierAssignments
@@ -900,7 +905,7 @@ class AssignmentController extends Controller
 
     public function streamCoverage(Assignment $assignment, GoogleDriveService $drive)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('streamCoverage', $assignment);
         abort_unless($assignment->drive_coverage_pdf_id, 404);
 
         $contents = $assignment->spaces_coverage_pdf_path
@@ -922,7 +927,7 @@ class AssignmentController extends Controller
     /** Dismiss the "goback ready at HelpScout" notification for all admins/editors. */
     public function dismissHelpscoutDraft(Assignment $assignment)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('dismissHelpscoutDraft', $assignment);
 
         $assignment->dismissHelpscoutDraft(auth()->id());
 
@@ -1487,7 +1492,7 @@ class AssignmentController extends Controller
 
     private function pageCountFlagDraft(Assignment $assignment, \App\Services\HelpScoutService $helpScout, string $flag)
     {
-        abort_unless(auth()->user()->isAdminOrEditor(), 403);
+        $this->authorize('flagPageCountDraft', $assignment);
         abort_unless($assignment->status === Assignment::STATUS_INCOMING, 422);
         abort_unless($assignment->pageCountFlag() === $flag, 422);
 
