@@ -28,6 +28,8 @@ class StoreAssignmentRequest extends FormRequest
             'assigned_reader_id'    => ['nullable', 'exists:users,id'],
             'blocked_reader_ids'    => ['nullable', 'array'],
             'blocked_reader_ids.*'  => ['integer', 'exists:users,id'],
+            'hidden_from_reader_ids'   => ['nullable', 'array'],
+            'hidden_from_reader_ids.*' => ['integer', 'exists:users,id'],
             'rush'                 => ['nullable', 'boolean'],
             'proofreading'         => ['nullable', 'boolean'],
             'pay_rate'             => ['nullable', 'numeric', 'min:0', 'max:9999.99'],

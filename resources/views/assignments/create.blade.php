@@ -412,6 +412,23 @@
                             <x-input-error :messages="$errors->get('blocked_reader_ids')" class="mt-1" />
                         </div>
 
+                        {{-- Hide From Reader --}}
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mt-5">
+                            <x-input-label value="Hide From Reader" />
+                            <p class="mt-1 text-xs text-gray-400">These readers will never see this assignment at all, overriding tier visibility entirely.</p>
+                            <div class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                @foreach ($readers as $reader)
+                                    <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700">
+                                        <input type="checkbox" name="hidden_from_reader_ids[]" value="{{ $reader->id }}"
+                                            {{ in_array((string) $reader->id, (array) old('hidden_from_reader_ids', []), true) ? 'checked' : '' }}
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+                                        {{ $reader->readerProfile?->initials ?? $reader->name }}
+                                    </label>
+                                @endforeach
+                            </div>
+                            <x-input-error :messages="$errors->get('hidden_from_reader_ids')" class="mt-1" />
+                        </div>
+
                         {{-- Script Details --}}
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 space-y-4 mt-5">
                             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Script Details</h3>

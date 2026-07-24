@@ -1,5 +1,8 @@
 <?php
 
+// v1.8 — 2026-07-24 | view/accept: deny readers an assignment is hidden from
+//                     (isHiddenFromReader) — an admin override that beats tier match
+//                     entirely, unlike isReaderBlocked which only blocks accept().
 // v1.7 — 2026-07-20 | view/accept: tier match now goes through App\Support\TierAccess —
 //                     generalizes the old hardcoded tier-2-into-tier-1 special case into
 //                     admin-configurable cross-visibility/accept per tier pair, for any number
@@ -43,6 +46,7 @@ class AssignmentPolicy
             $tierMatch = $this->tierMatch($user, $assignment, forAccept: false);
 
             $openToMe = $assignment->isAvailable()
+                && ! $assignment->isHiddenFromReader($user->id)
                 && (is_null($assignment->requested_reader_id) || $assignment->requested_reader_id === $user->id)
                 && $tierMatch;
 
@@ -94,6 +98,7 @@ class AssignmentPolicy
         return $assignment->isAvailable()
             && ($user->isReader() || $user->canManageAssignments())
             && ! $assignment->isReaderBlocked($user->id)
+            && ! $assignment->isHiddenFromReader($user->id)
             && (! $assignment->requested_reader_id || $assignment->requested_reader_id === $user->id)
             && $tierMatch;
     }

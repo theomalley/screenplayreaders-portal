@@ -1,5 +1,9 @@
 <?php
 
+// v2.30 — 2026-07-24 | store()/update(): accept hidden_from_reader_ids[] — an admin
+//                      per-reader "hide this assignment" override, unlike blocked_reader_ids
+//                      this is per-assignment (not synced to sibling order rows) and hides
+//                      the row entirely rather than showing a badge.
 // v2.29 — 2026-07-23 | Authorization on streamCoverage/dismissHelpscoutDraft/
 //                      pageCountFlagDraft (over120/over160) moved to AssignmentPolicy
 //                      (app/Policies), replacing inline abort_unless(...) calls — the
@@ -388,6 +392,9 @@ class AssignmentController extends Controller
         unset($data['tiers']);
         $data['blocked_reader_ids'] = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
+            : null;
+        $data['hidden_from_reader_ids'] = !empty($data['hidden_from_reader_ids'])
+            ? array_map('intval', $data['hidden_from_reader_ids'])
             : null;
         $numReaders   = (int) $data['num_readers'];
 
@@ -999,6 +1006,9 @@ class AssignmentController extends Controller
         unset($data['tiers']);
         $data['blocked_reader_ids']     = !empty($data['blocked_reader_ids'])
             ? array_map('intval', $data['blocked_reader_ids'])
+            : null;
+        $data['hidden_from_reader_ids'] = !empty($data['hidden_from_reader_ids'])
+            ? array_map('intval', $data['hidden_from_reader_ids'])
             : null;
 
         // Empty selects submit '' for these nullable FK columns, which MySQL's

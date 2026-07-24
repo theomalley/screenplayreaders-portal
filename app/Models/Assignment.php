@@ -1,5 +1,10 @@
 <?php
 
+// v1.28 — 2026-07-24 | Add hidden_from_reader_ids — an admin per-reader "hide this
+//                      assignment" override that beats tier visibility entirely (unlike
+//                      blocked_reader_ids, hidden readers don't see the row at all, not
+//                      even with a badge). isHiddenFromReader() + hiddenReaderInitials()
+//                      helpers; scopeAvailable()/scopeAcceptedRequests() exclude it.
 // v1.27 — 2026-07-23 | BUG FIX: ensureSandboxAssignment() guarded with Schema::hasTable('tiers') —
 //                      the seed_sandbox_onboarding_assignment migration (2026-07-11) runs before
 //                      create_tiers_table (2026-07-20) on a fresh migrate, so a truly fresh
@@ -80,6 +85,7 @@ class Assignment extends Model
         'page_count',
         'requested_reader_id',
         'blocked_reader_ids',
+        'hidden_from_reader_ids',
         'rush',
         'pay_rate',
         'notes',
@@ -120,6 +126,7 @@ class Assignment extends Model
         return [
             'rush'           => 'boolean',
             'blocked_reader_ids' => 'array',
+            'hidden_from_reader_ids' => 'array',
             'public_opt_in'  => 'boolean',
             'pay_rate'       => 'decimal:2',
             'unassigned_at'  => 'datetime',
@@ -287,6 +294,30 @@ class Assignment extends Model
             ->all();
     }
 
+    /**
+     * True if an admin has hidden this assignment from the given reader. Unlike
+     * isReaderBlocked(), this is a full visibility override — it takes precedence
+     * over tier matching everywhere the assignment would otherwise be discoverable.
+     */
+    public function isHiddenFromReader(int $userId): bool
+    {
+        return \in_array($userId, $this->hidden_from_reader_ids ?: []);
+    }
+
+    /** Initials of every reader this assignment is hidden from, for the admin edit view. */
+    public function hiddenReaderInitials(): array
+    {
+        if (empty($this->hidden_from_reader_ids)) {
+            return [];
+        }
+
+        return User::whereIn('id', $this->hidden_from_reader_ids)
+            ->with('readerProfile')
+            ->get()
+            ->map(fn (User $u) => $u->readerProfile?->initials ?? $u->name)
+            ->all();
+    }
+
     /** Whether the "goback ready at HelpScout" notice for this order has been dismissed (shared across admins/editors). */
     public function isHelpscoutDraftDismissed(): bool
     {
@@ -417,17 +448,28 @@ class Assignment extends Model
 
     // --- Scopes ---
 
+    /** Excludes assignments an admin has hidden from this specific reader — overrides tier visibility entirely. */
+    public function scopeNotHiddenFrom($query, int $userId)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->whereNull('hidden_from_reader_ids')
+                ->orWhereJsonDoesntContain('hidden_from_reader_ids', $userId);
+        });
+    }
+
     /**
      * Assignments visible to a specific reader in the available list, filtered to the tiers
      * they can reach (own tiers plus any cross-visibility grants, see App\Support\TierAccess).
      * Includes assignments requested for other readers (visible but not acceptable).
      * Assignments that block this reader are still included (so the reader can see why an
      * order is unavailable to them) — AssignmentPolicy::accept() prevents them from accepting.
+     * Assignments hidden from this reader (hidden_from_reader_ids) are excluded entirely.
      */
     public function scopeAvailable($query, int $userId, array $tierGroups)
     {
         return $query->where('status', self::STATUS_UNASSIGNED)
-            ->matchingTierGroups($tierGroups);
+            ->matchingTierGroups($tierGroups)
+            ->notHiddenFrom($userId);
     }
 
     /**
@@ -439,7 +481,8 @@ class Assignment extends Model
         return $query->where('status', self::STATUS_ASSIGNED)
             ->matchingTierGroups($tierGroups)
             ->whereNotNull('requested_reader_id')
-            ->where('requested_reader_id', '!=', $userId);
+            ->where('requested_reader_id', '!=', $userId)
+            ->notHiddenFrom($userId);
     }
 
     /** A reader's own active assignments */
