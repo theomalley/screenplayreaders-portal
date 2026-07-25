@@ -28,10 +28,10 @@ class AddEditorWeeklyFlatPay extends Command
 
         [$periodStart] = PayPeriod::current();
         $label = PayPeriod::label($periodStart);
+        $description = "Weekly flat rate — {$label} (auto)";
 
         $alreadyAdded = EditorPayAdjustment::where('user_id', $editor->id)
-            ->where('created_at', '>=', $periodStart->copy()->utc())
-            ->where('description', 'like', 'Weekly flat rate%')
+            ->where('description', $description)
             ->exists();
 
         if ($alreadyAdded) {
