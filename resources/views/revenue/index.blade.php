@@ -34,6 +34,9 @@
                     <div class="rounded-lg border px-4 py-3 {{ $classes }}">
                         <div class="text-xs font-medium uppercase tracking-wide opacity-70">{{ $label }}</div>
                         <div class="mt-1 text-xl font-semibold">{{ $value }}</div>
+                        @if($label === 'Reader COG' && $totals['editor_flat_cog'] > 0)
+                            <div class="mt-0.5 text-[11px] opacity-70">incl. ${{ number_format($totals['editor_flat_cog'], 2) }} editor flat rate</div>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -99,7 +102,12 @@
                             </tbody>
                             <tfoot class="bg-gray-50 border-t-2 border-gray-300 text-sm font-semibold">
                                 <tr>
-                                    <td colspan="4" class="px-4 py-3 text-gray-600">Totals ({{ $totals['count'] }} orders)</td>
+                                    <td colspan="4" class="px-4 py-3 text-gray-600">
+                                        Totals ({{ $totals['count'] }} orders)
+                                        @if($totals['editor_flat_cog'] > 0)
+                                            <div class="text-[11px] font-normal text-gray-400">Reader/Total COG include ${{ number_format($totals['editor_flat_cog'], 2) }} editor flat rate (not order-attributable)</div>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 text-right text-gray-700">${{ number_format($totals['gross'], 2) }}</td>
                                     <td class="px-4 py-3 text-right text-amber-600">@if($totals['discount'] > 0)−${{ number_format($totals['discount'], 2) }}@else—@endif</td>
                                     <td class="px-4 py-3 text-right text-red-500">${{ number_format($totals['cog_reader'], 2) }}</td>

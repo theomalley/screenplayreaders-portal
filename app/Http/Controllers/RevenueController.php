@@ -8,6 +8,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EditorPayAdjustment;
 use App\Models\OrderRevenue;
 use App\Support\Permission;
 use Carbon\Carbon;
@@ -47,15 +48,24 @@ class RevenueController extends Controller
 
         $orders = $query->orderByDesc('ordered_at')->get();
 
+        // Editor weekly flat-rate pay isn't tied to any order, but it's still a reader-side
+        // cost of doing business — fold it into Reader COG for this period rather than only
+        // tracking it in payroll.
+        $editorFlatCog = EditorPayAdjustment::where('description', 'like', 'Weekly flat rate%')
+            ->when($start, fn($q) => $q->where('created_at', '>=', $start))
+            ->when($end,   fn($q) => $q->where('created_at', '<=', $end))
+            ->sum('amount');
+
         $totals = [
-            'gross'      => $orders->sum('order_total'),
-            'discount'   => $orders->sum('discount_amount'),
-            'cog_reader' => $orders->sum('cog_reader'),
-            'cog_proc'   => $orders->sum('cog_processing'),
-            'cog_comm'   => $orders->sum('cog_commission'),
-            'cog_total'  => $orders->sum('cog_total'),
-            'net'        => $orders->sum('net_revenue'),
-            'count'      => $orders->count(),
+            'gross'          => $orders->sum('order_total'),
+            'discount'       => $orders->sum('discount_amount'),
+            'cog_reader'     => $orders->sum('cog_reader') + $editorFlatCog,
+            'cog_proc'       => $orders->sum('cog_processing'),
+            'cog_comm'       => $orders->sum('cog_commission'),
+            'cog_total'      => $orders->sum('cog_total') + $editorFlatCog,
+            'net'            => $orders->sum('net_revenue') - $editorFlatCog,
+            'count'          => $orders->count(),
+            'editor_flat_cog' => $editorFlatCog,
         ];
 
         // Chart data — daily net/gross bucketed within the selected period
