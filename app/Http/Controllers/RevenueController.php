@@ -1,5 +1,6 @@
 <?php
 
+// v1.5 — 2026-07-25 | Custom date range picker; fold editor weekly flat rate into Reader COG
 // v1.4 — 2026-07-23 | Authorization moved to the view-revenue Gate ability (AppServiceProvider)
 // v1.3 — 2026-06-08 | Exclude $0-total orders from index view (totals, chart, listing)
 // v1.2 — 2026-06-08 | Exclude $0-total customers from by-customer listing
@@ -29,6 +30,7 @@ class RevenueController extends Controller
         'this_year'  => 'This Year',
         'last_year'  => 'Last Year',
         'all_time'   => 'All Time',
+        'custom'     => 'Custom Range',
     ];
 
     public function index()
@@ -41,6 +43,8 @@ class RevenueController extends Controller
         }
 
         [$start, $end] = $this->dateRange($period);
+        $customStart = $start ? $start->format('Y-m-d') : '';
+        $customEnd   = $end ? $end->format('Y-m-d') : '';
 
         $query = OrderRevenue::where('order_total', '>', 0)
                              ->when($start, fn($q) => $q->where('ordered_at', '>=', $start))
@@ -71,7 +75,7 @@ class RevenueController extends Controller
         // Chart data — daily net/gross bucketed within the selected period
         $chartData = $this->buildChartData($orders, $start, $end, $period);
 
-        return view('revenue.index', compact('orders', 'totals', 'period', 'chartData'));
+        return view('revenue.index', compact('orders', 'totals', 'period', 'chartData', 'customStart', 'customEnd'));
     }
 
     public function byCustomer()
@@ -121,6 +125,18 @@ class RevenueController extends Controller
         $tz = config('app.timezone', 'America/Los_Angeles');
         $now = Carbon::now($tz);
 
+        if ($period === 'custom') {
+            $start = $this->parseCustomDate(request()->input('start'), $tz)?->startOfDay();
+            $end   = $this->parseCustomDate(request()->input('end'), $tz)?->endOfDay();
+
+            if ($start && $end && $start->lte($end)) {
+                return [$start, $end];
+            }
+
+            // Missing/invalid custom range — fall back to this month.
+            return [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()];
+        }
+
         return match ($period) {
             'today'      => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
             'yesterday'  => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
@@ -137,14 +153,27 @@ class RevenueController extends Controller
         };
     }
 
+    private function parseCustomDate(?string $value, string $tz): ?Carbon
+    {
+        if (! $value) return null;
+
+        try {
+            return Carbon::createFromFormat('Y-m-d', $value, $tz);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     private function buildChartData($orders, $start, $end, string $period): array
     {
         if ($orders->isEmpty()) {
             return ['labels' => [], 'gross' => [], 'net' => []];
         }
 
-        // For multi-month or all_time periods, bucket by month; otherwise by day
-        $bucketByMonth = in_array($period, ['this_year', 'last_year', 'all_time', 'last_90', 'last_60']);
+        // For multi-month or all_time periods, bucket by month; otherwise by day.
+        // A custom range follows the same rule based on its actual span.
+        $bucketByMonth = in_array($period, ['this_year', 'last_year', 'all_time', 'last_90', 'last_60'])
+            || ($period === 'custom' && $start && $end && $start->diffInDays($end) > 60);
 
         $buckets = [];
         foreach ($orders as $order) {

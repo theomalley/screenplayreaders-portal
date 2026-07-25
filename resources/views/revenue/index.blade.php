@@ -3,13 +3,23 @@
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Revenue</h2>
             {{-- Period selector --}}
-            <form method="GET" action="{{ route('revenue.index') }}">
-                <select name="period" onchange="this.form.submit()"
+            <form method="GET" action="{{ route('revenue.index') }}" class="flex items-center gap-2">
+                <select name="period" id="period-select"
+                    onchange="document.getElementById('custom-range').classList.toggle('hidden', this.value !== 'custom'); if (this.value !== 'custom') this.form.submit();"
                     class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     @foreach(\App\Http\Controllers\RevenueController::$PERIODS as $key => $label)
                         <option value="{{ $key }}" @selected($period === $key)>{{ $label }}</option>
                     @endforeach
                 </select>
+                <span id="custom-range" class="flex items-center gap-2 {{ $period === 'custom' ? '' : 'hidden' }}">
+                    <input type="date" name="start" value="{{ $customStart }}"
+                        class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <span class="text-gray-400 text-sm">to</span>
+                    <input type="date" name="end" value="{{ $customEnd }}"
+                        class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <button type="submit"
+                        class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Apply</button>
+                </span>
             </form>
         </div>
     </x-slot>
