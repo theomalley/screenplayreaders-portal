@@ -99,7 +99,7 @@
                                     @endunless
                                     <td class="px-5 py-3 text-right font-mono text-gray-800">
                                         @php $wcMin = $wordCounts[$srBaseWcKeys[$key]] ?? 0; @endphp
-                                        {{ $wcMin > 0 ? number_format($wcMin) . ' words min' : 'No minimum' }}
+                                        {{ $wcMin > 0 ? number_format($wcMin) . ' words' : 'No minimum' }}
                                     </td>
                                 </tr>
                             @endforeach
@@ -110,7 +110,7 @@
                                     <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
                                 @endunless
                                 <td class="px-5 py-3 text-right text-gray-400 text-xs">
-                                    {{ ($wordCounts['wc_sr_notes_book'] ?? 0) > 0 ? number_format($wordCounts['wc_sr_notes_book']) . ' words min' : 'No minimum' }}
+                                    {{ ($wordCounts['wc_sr_notes_book'] ?? 0) > 0 ? number_format($wordCounts['wc_sr_notes_book']) . ' words' : 'No minimum' }}
                                 </td>
                             </tr>
                         </tbody>
@@ -255,7 +255,7 @@
                                     @endunless
                                     <td class="px-5 py-3 text-right font-mono text-gray-800">
                                         @php $wcMin = $wordCounts[$wdBaseWcKeys[$key]] ?? 0; @endphp
-                                        {{ $wcMin > 0 ? number_format($wcMin) . ' words min' : 'No minimum' }}
+                                        {{ $wcMin > 0 ? number_format($wcMin) . ' words' : 'No minimum' }}
                                     </td>
                                 </tr>
                             @endforeach
