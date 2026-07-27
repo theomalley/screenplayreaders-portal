@@ -65,10 +65,9 @@
                                                class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="text" x-model="row.notes" @change="save(row)"
-                                               :disabled="!canManage"
+                                        <input type="text" :value="row.notes" @click="openNotes(row)" readonly
                                                placeholder="—"
-                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
+                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 font-mono text-xs cursor-pointer">
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
                                         <input type="date" x-model="row.flagged_date" @change="save(row)"
@@ -94,6 +93,30 @@
                         + Add Karen
                     </button>
                 </div>
+
+                <div x-show="notesModal" x-cloak
+                     @keydown.escape.window="closeNotes()"
+                     @click.self="closeNotes()"
+                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
+                        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-gray-700"
+                                x-text="notesModal ? [notesModal.first_name, notesModal.last_name].filter(Boolean).join(' ') || 'Notes' : ''"></h3>
+                            <button type="button" @click="closeNotes()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                        </div>
+                        <div class="p-4 overflow-y-auto">
+                            <template x-if="notesModal">
+                                <textarea x-model="notesModal.notes" :readonly="!canManage" rows="10"
+                                          placeholder="—"
+                                          class="w-full border border-gray-200 rounded p-2 text-sm font-mono focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400"></textarea>
+                            </template>
+                        </div>
+                        <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2">
+                            <button type="button" @click="closeNotes()"
+                                    class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800">Close</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -118,6 +141,15 @@
             flash: '',
             error: '',
             _seq: 0,
+            notesModal: null,
+
+            openNotes(row) {
+                this.notesModal = row;
+            },
+            closeNotes() {
+                if (this.canManage && this.notesModal) this.save(this.notesModal);
+                this.notesModal = null;
+            },
 
             get sorted() {
                 return [...this.rows].sort((a, b) => {
