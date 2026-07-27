@@ -72,6 +72,7 @@
                                     <td class="px-4 py-2 whitespace-nowrap">
                                         <input type="date" x-model="row.flagged_date" @change="save(row)"
                                                :disabled="!canManage"
+                                               :class="row.flagged_date ? '' : 'date-empty'"
                                                class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2 text-right whitespace-nowrap">
@@ -121,6 +122,18 @@
 
         </div>
     </div>
+
+    <style>
+    /* Native date inputs always render the mm/dd/yyyy format hint even when empty —
+       hide it so an unset date reads as truly blank instead of a placeholder value. */
+    input[type="date"].date-empty::-webkit-datetime-edit-fields-wrapper,
+    input[type="date"].date-empty::-webkit-datetime-edit-text,
+    input[type="date"].date-empty::-webkit-datetime-edit-month-field,
+    input[type="date"].date-empty::-webkit-datetime-edit-day-field,
+    input[type="date"].date-empty::-webkit-datetime-edit-year-field {
+        color: transparent;
+    }
+    </style>
 
     @push('scripts')
     <script>
