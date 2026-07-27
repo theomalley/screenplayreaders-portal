@@ -172,7 +172,7 @@
                     _key: 'new-' + (this._seq++),
                     id: null,
                     first_name: '', last_name: '', email: '', notes: '',
-                    flagged_date: new Date().toISOString().slice(0, 10),
+                    flagged_date: '',
                 });
             },
             csrf() {

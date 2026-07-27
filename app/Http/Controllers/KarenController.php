@@ -24,10 +24,7 @@ class KarenController extends Controller
     {
         $this->authorize('create', Karen::class);
 
-        $data = $this->validate($request);
-        $data['flagged_date'] = $data['flagged_date'] ?? now()->toDateString();
-
-        $karen = Karen::create($data);
+        $karen = Karen::create($this->validate($request));
 
         if ($request->wantsJson()) {
             return response()->json(['karen' => $karen]);
