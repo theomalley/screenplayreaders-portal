@@ -30,6 +30,7 @@ class RatebookController extends Controller
 
         $retailPrices = Setting::retailPricesForForms();
         $wordCounts = Setting::getWordCounts();
+        $wordCountTotals = $this->wordCountTotals($wordCounts);
 
         $editorRates   = null;  // admin: all editors with their effective rates
         $myEditorRates = null;  // editor: own effective rates
@@ -57,8 +58,43 @@ class RatebookController extends Controller
         }
 
         return view('ratebook.index', compact(
-            'rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems', 'retailPrices', 'wordCounts'
+            'rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems', 'retailPrices',
+            'wordCounts', 'wordCountTotals'
         ));
+    }
+
+    /**
+     * Per assignment-type total minimum word count (logline + synopsis + notes), including
+     * only the fields that type's submission form actually shows/requires — must stay in sync
+     * with the field-visibility rules in StoreCoverageSubmissionRequest::checkSrWordCounts()
+     * and ::wdRules(). Keyed by the ratebook's rate-key ('book' has no rate key, so it's keyed
+     * literally as 'book').
+     */
+    private function wordCountTotals(array $wc): array
+    {
+        // Types whose submission form shows a Logline / Synopsis field — Notes-Only and Budget
+        // show neither; only these get that component added to their total.
+        $srLoglineTypes  = ['script_coverage', 'short', 'deep_dive', 'book'];
+        $srSynopsisTypes = ['script_coverage', 'book'];
+
+        $srTotal = fn (string $type, string $notesKey) =>
+            (in_array($type, $srLoglineTypes, true)  ? $wc['wc_sr_logline']  : 0)
+            + (in_array($type, $srSynopsisTypes, true) ? $wc['wc_sr_synopsis'] : 0)
+            + ($wc[$notesKey] ?? 0);
+
+        // WD: Logline and Synopsis are required for both assignment types, so both always count.
+        $wdTotal = fn (string $notesKey) => $wc['wc_wd_logline'] + $wc['wc_wd_synopsis'] + ($wc[$notesKey] ?? 0);
+
+        return [
+            'rate_sr_script_coverage'    => $srTotal('script_coverage', 'wc_sr_notes_script_coverage'),
+            'rate_sr_notes_only'         => $srTotal('notes_only', 'wc_sr_notes_notes_only'),
+            'rate_sr_short'              => $srTotal('short', 'wc_sr_notes_short'),
+            'rate_sr_deep_dive'          => $srTotal('deep_dive', 'wc_sr_notes_deep_dive'),
+            'rate_sr_budget'             => $srTotal('budget', 'wc_sr_notes_budget'),
+            'book'                       => $srTotal('book', 'wc_sr_notes_book'),
+            'rate_wd_coverage'           => $wdTotal('wc_wd_notes_coverage'),
+            'rate_wd_development_notes' => $wdTotal('wc_wd_notes_development_notes'),
+        ];
     }
 
     public function update(Request $request)

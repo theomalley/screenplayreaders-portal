@@ -22,7 +22,7 @@ class TierController extends Controller
     public const ASSIGNMENT_TYPES = [
         'script_coverage'   => 'Script Coverage',
         'notes_only'        => 'Notes-Only',
-        'deep_dive'         => 'Advanced Script Coverage (Deep Dive)',
+        'deep_dive'         => 'Advanced Script Coverage',
         'short'             => 'Short',
         'budget'            => 'Budget Coverage',
         'book'              => 'Book',
