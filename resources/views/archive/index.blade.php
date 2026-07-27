@@ -66,14 +66,14 @@
                                     $scriptId    = $group->firstWhere(fn($a) => $a->hasCloudScript())?->drive_script_file_id;
                                     $draftSent   = $group->some(fn($a) => !empty($a->helpscout_draft_sent_at));
 
-                                    $hsSentAt    = $group->filter(fn($a) => !empty($a->helpscout_draft_sent_at))->first()?->helpscout_draft_sent_at;
                                     $minCreated  = $group->min(fn($a) => $a->created_at?->timestamp ?? PHP_INT_MAX);
-                                    if ($hsSentAt && $minCreated !== PHP_INT_MAX) {
-                                        $taDiff  = \Carbon\Carbon::createFromTimestamp($minCreated)->diff($hsSentAt);
+                                    if ($latestDone && $minCreated !== PHP_INT_MAX) {
+                                        $completedAt = \Carbon\Carbon::createFromTimestamp($latestDone);
+                                        $taDiff  = \Carbon\Carbon::createFromTimestamp($minCreated)->diff($completedAt);
                                         $taStr   = $taDiff->days >= 1
                                             ? ($taDiff->days . 'd ' . $taDiff->h . 'h')
                                             : ($taDiff->h >= 1 ? ($taDiff->h . 'h ' . $taDiff->i . 'm') : (max(0, $taDiff->i) . 'm'));
-                                        $taTitle = \Carbon\Carbon::createFromTimestamp($minCreated)->format('M j g:ia') . ' → ' . $hsSentAt->format('M j g:ia');
+                                        $taTitle = \Carbon\Carbon::createFromTimestamp($minCreated)->format('M j g:ia') . ' → ' . $completedAt->format('M j g:ia');
                                     } else {
                                         $taStr   = null;
                                         $taTitle = null;
@@ -222,7 +222,7 @@
 
                                     {{-- Coverage links — one per completed reader --}}
                                     <td class="px-4 py-3">
-                                        <div class="flex flex-wrap gap-2">
+                                        <div class="flex flex-wrap gap-x-4 gap-y-1.5">
                                             @foreach($group as $assignment)
                                                 @php
                                                     $initials            = $assignment->assignedReader?->readerProfile?->initials ?? '?';
@@ -231,28 +231,28 @@
                                                     $coverageStreamUrl   = $pdfId ? route('assignments.streamCoverage', $assignment) : null;
                                                     $coverageDownloadUrl = $pdfId ? "https://drive.google.com/uc?export=download&id={$pdfId}" : null;
                                                 @endphp
-                                                @if($pdfId || $docId)
-                                                    <div x-data="{ pdfOpen: false, editOpen: false, textOpen: false }">
+                                                <div class="flex items-center gap-1.5" x-data="{ pdfOpen: false, textOpen: false }">
+                                                    <span class="text-xs font-medium text-gray-500" title="{{ $initials }}{{ !$pdfId && !$docId && !$assignment->coverageSubmission ? ' — No coverage doc' : '' }}">{{ $initials }}</span>
 
-                                                        {{-- Badge button --}}
+                                                    @if($pdfId || $docId)
                                                         <button @click="pdfOpen = true" type="button"
-                                                                title="{{ $initials }} — {{ $pdfId ? 'Coverage PDF' : 'Coverage Doc (no PDF yet)' }}"
-                                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border hover:opacity-80 {{ $pdfId ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200' }}">
-                                                            {{ $initials }}
-                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                                            </svg>
-                                                        </button>
-                                                        @if($assignment->coverageSubmission)
-                                                            <button @click="textOpen = true" type="button"
-                                                                    class="text-[10px] text-indigo-500 hover:text-indigo-700 underline leading-none">txt</button>
-                                                        @endif
+                                                                class="text-[10px] text-indigo-500 hover:text-indigo-700 underline leading-none">pdf</button>
+                                                    @endif
+                                                    @if($assignment->coverageSubmission)
+                                                        <button @click="textOpen = true" type="button"
+                                                                class="text-[10px] text-indigo-500 hover:text-indigo-700 underline leading-none">txt</button>
+                                                    @endif
+                                                    @if($docId)
+                                                        <a href="https://docs.google.com/document/d/{{ $docId }}/edit" target="_blank" rel="noopener noreferrer"
+                                                           class="text-[10px] text-indigo-500 hover:text-indigo-700 underline leading-none">doc</a>
+                                                    @endif
 
-                                                        {{-- Coverage PDF modal --}}
+                                                    {{-- Coverage PDF modal --}}
+                                                    @if($pdfId || $docId)
                                                         <div x-show="pdfOpen" x-cloak
-                                                             @keydown.escape.window="editOpen ? (editOpen = false) : (pdfOpen = false)"
+                                                             @keydown.escape.window="pdfOpen = false"
                                                              tabindex="-1"
-                                                             x-effect="if (pdfOpen && !editOpen) $nextTick(() => $el.focus())"
+                                                             x-effect="if (pdfOpen) $nextTick(() => $el.focus())"
                                                              class="fixed inset-0 z-50 flex flex-col bg-black/80">
                                                             <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
                                                                 <span class="text-sm text-gray-200 font-medium truncate min-w-0">
@@ -260,14 +260,7 @@
                                                                 </span>
                                                                 <div class="flex items-center gap-2 shrink-0">
                                                                     @if($docId)
-                                                                        <button @click="editOpen = true" type="button"
-                                                                                class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-medium whitespace-nowrap">
-                                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                                            </svg>
-                                                                            Edit Doc
-                                                                        </button>
-                                                                        <form x-ref="regenForm" method="POST" action="{{ route('qc.regenerate-pdf', $assignment) }}">
+                                                                        <form method="POST" action="{{ route('qc.regenerate-pdf', $assignment) }}">
                                                                             @csrf
                                                                             <button type="submit"
                                                                                     class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-medium whitespace-nowrap">
@@ -298,89 +291,31 @@
                                                             @else
                                                                 <div class="flex-1 flex items-center justify-center flex-col gap-2 text-center px-4">
                                                                     <p class="text-gray-400 text-sm">No PDF generated yet.</p>
-                                                                    <p class="text-gray-500 text-xs">Edit the doc, then click <strong class="text-gray-300">Regen PDF</strong> to generate one.</p>
+                                                                    <p class="text-gray-500 text-xs">Edit the doc (via the <strong class="text-gray-300">doc</strong> link), then click <strong class="text-gray-300">Regen PDF</strong> to generate one.</p>
                                                                 </div>
                                                             @endif
                                                         </div>
-
-                                                        {{-- Google Docs editing overlay (above PDF modal) --}}
-                                                        @if($docId)
-                                                            <div x-show="editOpen" x-cloak
-                                                                 class="fixed inset-0 z-[60] flex flex-col bg-white">
-                                                                <div class="flex items-center justify-between px-5 py-3 bg-indigo-700 text-white shrink-0 gap-3 flex-wrap">
-                                                                    <span class="font-semibold text-sm truncate min-w-0">
-                                                                        Editing: {{ $first->script_title }} — {{ $initials }}
-                                                                    </span>
-                                                                    <div class="flex items-center gap-3 shrink-0">
-                                                                        <button @click="editOpen = false" type="button"
-                                                                                class="text-sm text-indigo-200 hover:text-white transition-colors">
-                                                                            Cancel
-                                                                        </button>
-                                                                        <button @click="editOpen = false; $refs.regenForm.submit()" type="button"
-                                                                                class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold bg-green-500 hover:bg-green-400 text-white rounded-md transition-colors">
-                                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                            </svg>
-                                                                            Done Editing — Generate New PDF
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                                <iframe src="https://docs.google.com/document/d/{{ $docId }}/edit"
-                                                                        class="flex-1 w-full border-0"></iframe>
-                                                            </div>
-                                                        @endif
-
-                                                        {{-- Coverage text modal --}}
-                                                        @if($assignment->coverageSubmission)
-                                                            <div x-show="textOpen" x-cloak
-                                                                 @keydown.escape.window="textOpen = false"
-                                                                 class="fixed inset-0 z-[70] flex flex-col bg-black/80">
-                                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
-                                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">
-                                                                        {{ $first->script_title }} — {{ $initials }} — Coverage Text
-                                                                    </span>
-                                                                    <button @click="textOpen = false" type="button"
-                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
-                                                                </div>
-                                                                <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
-                                                                        x-ref="txtFrameA{{ $assignment->id }}"
-                                                                        @load="try { $refs['txtFrameA{{ $assignment->id }}'].contentWindow.addEventListener('keydown', e => { if (e.key === 'Escape') textOpen = false; }); } catch(e) {}"
-                                                                        class="flex-1 w-full border-0 bg-white"></iframe>
-                                                            </div>
-                                                        @endif
-
-                                                    </div>
-                                                @else
-                                                    @if($assignment->coverageSubmission)
-                                                        <div x-data="{ textOpen: false }">
-                                                            <button @click="textOpen = true" type="button"
-                                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border bg-indigo-50 text-indigo-600 border-indigo-200 hover:opacity-80">
-                                                                {{ $initials }}
-                                                                <span class="text-[9px]">txt</span>
-                                                            </button>
-                                                            <div x-show="textOpen" x-cloak
-                                                                 @keydown.escape.window="textOpen = false"
-                                                                 class="fixed inset-0 z-[70] flex flex-col bg-black/80">
-                                                                <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
-                                                                    <span class="text-sm text-gray-200 font-medium truncate min-w-0">
-                                                                        {{ $first->script_title }} — {{ $initials }} — Coverage Text
-                                                                    </span>
-                                                                    <button @click="textOpen = false" type="button"
-                                                                            class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
-                                                                </div>
-                                                                <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
-                                                                        x-ref="txtFrameB{{ $assignment->id }}"
-                                                                        @load="try { $refs['txtFrameB{{ $assignment->id }}'].contentWindow.addEventListener('keydown', e => { if (e.key === 'Escape') textOpen = false; }); } catch(e) {}"
-                                                                        class="flex-1 w-full border-0 bg-white"></iframe>
-                                                            </div>
-                                                        </div>
-                                                    @else
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-400 border border-gray-200"
-                                                              title="{{ $initials }} — No coverage doc">
-                                                            {{ $initials }}
-                                                        </span>
                                                     @endif
-                                                @endif
+
+                                                    {{-- Coverage text modal --}}
+                                                    @if($assignment->coverageSubmission)
+                                                        <div x-show="textOpen" x-cloak
+                                                             @keydown.escape.window="textOpen = false"
+                                                             class="fixed inset-0 z-[70] flex flex-col bg-black/80">
+                                                            <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                                                <span class="text-sm text-gray-200 font-medium truncate min-w-0">
+                                                                    {{ $first->script_title }} — {{ $initials }} — Coverage Text
+                                                                </span>
+                                                                <button @click="textOpen = false" type="button"
+                                                                        class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
+                                                            </div>
+                                                            <iframe :src="textOpen ? @js(route('coverage.preview', $assignment)) : ''"
+                                                                    x-ref="txtFrame{{ $assignment->id }}"
+                                                                    @load="try { $refs['txtFrame{{ $assignment->id }}'].contentWindow.addEventListener('keydown', e => { if (e.key === 'Escape') textOpen = false; }); } catch(e) {}"
+                                                                    class="flex-1 w-full border-0 bg-white"></iframe>
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             @endforeach
                                         </div>
                                     </td>
