@@ -385,6 +385,10 @@ class AssignmentController extends Controller
         $this->authorize('create', Assignment::class);
 
         $data         = $request->validated();
+        if ($request->boolean('generate_order_number')) {
+            $data['order_number'] = Assignment::generateManualOrderNumber();
+        }
+        unset($data['generate_order_number']);
         $data['rush']                    = $request->boolean('rush');
         $data['proofreading']            = $request->boolean('proofreading');
         $data['oversized_fee_included']  = $request->boolean('oversized_fee_included');

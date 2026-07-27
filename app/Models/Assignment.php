@@ -369,6 +369,28 @@ class Assignment extends Model
         return $code;
     }
 
+    /**
+     * Generate a unique order_number for manually-created assignments that have
+     * no real WooCommerce order behind them (e.g. WD dev-notes jobs, scripts that
+     * came in by email). Never let staff type a placeholder like "00000" for this —
+     * order_number is the sole key archive/QC use to group an order's assignments,
+     * so two unrelated manual entries sharing a placeholder silently merge into one
+     * archive record.
+     */
+    public static function generateManualOrderNumber(): string
+    {
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — avoids look-alike confusion
+        do {
+            $suffix = '';
+            for ($i = 0; $i < 6; $i++) {
+                $suffix .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            $candidate = 'MANUAL-' . $suffix;
+        } while (static::where('order_number', $candidate)->exists());
+
+        return $candidate;
+    }
+
     // --- Relationships ---
 
     public function assignedReader(): BelongsTo

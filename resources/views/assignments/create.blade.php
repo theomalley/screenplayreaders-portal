@@ -19,6 +19,7 @@
                       customOversizedFee: '{{ old('custom_oversized_fee', '') }}',
                       rush: {{ old('rush') ? 'true' : 'false' }},
                       numReaders: '{{ old('num_readers', '1') }}',
+                      generateOrderNumber: {{ old('generate_order_number') ? 'true' : 'false' }},
                       requestedReaders: ['{{ old('requested_reader_id_1', '') }}', '{{ old('requested_reader_id_2', '') }}', '{{ old('requested_reader_id_3', '') }}'],
                       overrideRate: false,
                       updatePayDisplay() {
@@ -551,11 +552,24 @@
                         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status &amp; Workflow</h3>
 
                         <div>
-                            <x-input-label for="order_number" value="Order/Invoice #" />
+                            <div class="flex items-center justify-between gap-2">
+                                <x-input-label for="order_number" value="Order/Invoice #" />
+                                <label class="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
+                                    <input type="checkbox" name="generate_order_number" value="1" form="create-form"
+                                        x-model="generateOrderNumber"
+                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    No WC order — auto-generate
+                                </label>
+                            </div>
                             <input type="text" id="order_number" name="order_number" form="create-form"
                                 value="{{ old('order_number') }}"
                                 placeholder="e.g. 12345"
+                                :disabled="generateOrderNumber"
+                                :class="generateOrderNumber ? 'bg-gray-100 text-gray-400' : ''"
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            <p class="mt-1 text-xs text-gray-400" x-show="generateOrderNumber" x-cloak>
+                                A unique reference number will be generated automatically — use this when the script came in outside WooCommerce (e.g. emailed in) and there's no real order number to enter.
+                            </p>
                             <x-input-error :messages="$errors->get('order_number')" class="mt-1" />
                         </div>
 

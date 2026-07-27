@@ -15,7 +15,8 @@ class StoreAssignmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'order_number'         => ['required', 'string', 'max:50'],
+            'generate_order_number' => ['nullable', 'boolean'],
+            'order_number'         => ['required_unless:generate_order_number,1', 'nullable', 'string', 'max:50'],
             'vendor'               => ['required', 'in:sr,wd'],
             'num_readers'          => ['required', 'in:1,2,3'],
             'assignment_type'      => ['nullable', 'in:script_coverage,notes_only,deep_dive,short,budget,book,coverage,development_notes,formatting,proofreading'],
