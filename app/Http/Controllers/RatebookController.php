@@ -29,6 +29,7 @@ class RatebookController extends Controller
         $customItems = RateItem::orderBy('sort_order')->orderBy('id')->get();
 
         $retailPrices = Setting::retailPricesForForms();
+        $wordCounts = Setting::getWordCounts();
 
         $editorRates   = null;  // admin: all editors with their effective rates
         $myEditorRates = null;  // editor: own effective rates
@@ -56,7 +57,7 @@ class RatebookController extends Controller
         }
 
         return view('ratebook.index', compact(
-            'rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems', 'retailPrices'
+            'rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems', 'retailPrices', 'wordCounts'
         ));
     }
 

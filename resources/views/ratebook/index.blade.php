@@ -41,6 +41,7 @@
                                 @unless ($isReader)
                                     <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
                                 @endunless
+                                <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Word Count Req.</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -51,6 +52,13 @@
                                 'rate_sr_short'           => 'Short Coverage',
                                 'rate_sr_deep_dive'       => 'Advanced Script Coverage',
                                 'rate_sr_budget'          => 'Budget Script Coverage',
+                            ];
+                            $srBaseWcKeys = [
+                                'rate_sr_script_coverage' => 'wc_sr_notes_script_coverage',
+                                'rate_sr_notes_only'      => 'wc_sr_notes_notes_only',
+                                'rate_sr_short'           => 'wc_sr_notes_short',
+                                'rate_sr_deep_dive'       => 'wc_sr_notes_deep_dive',
+                                'rate_sr_budget'          => 'wc_sr_notes_budget',
                             ];
                             @endphp
                             @foreach ($srBaseRows as $key => $defaultLabel)
@@ -89,6 +97,10 @@
                                             @include('ratebook.partials.retail-cell', ['key' => $key])
                                         </td>
                                     @endunless
+                                    <td class="px-5 py-3 text-right font-mono text-gray-800">
+                                        @php $wcMin = $wordCounts[$srBaseWcKeys[$key]] ?? 0; @endphp
+                                        {{ $wcMin > 0 ? number_format($wcMin) . ' words min' : 'No minimum' }}
+                                    </td>
                                 </tr>
                             @endforeach
                             <tr class="bg-gray-50">
@@ -97,6 +109,9 @@
                                 @unless ($isReader)
                                     <td class="px-5 py-3 text-right text-gray-400 text-xs">Custom quote</td>
                                 @endunless
+                                <td class="px-5 py-3 text-right text-gray-400 text-xs">
+                                    {{ ($wordCounts['wc_sr_notes_book'] ?? 0) > 0 ? number_format($wordCounts['wc_sr_notes_book']) . ' words min' : 'No minimum' }}
+                                </td>
                             </tr>
                         </tbody>
                     </table></div>
@@ -188,6 +203,7 @@
                                 @unless ($isReader)
                                     <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Retail Price</th>
                                 @endunless
+                                <th class="px-5 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Word Count Req.</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -195,6 +211,10 @@
                             $wdBaseRows = [
                                 'rate_wd_coverage'          => 'Coverage',
                                 'rate_wd_development_notes' => 'Development Notes',
+                            ];
+                            $wdBaseWcKeys = [
+                                'rate_wd_coverage'          => 'wc_wd_notes_coverage',
+                                'rate_wd_development_notes' => 'wc_wd_notes_development_notes',
                             ];
                             @endphp
                             @foreach ($wdBaseRows as $key => $defaultLabel)
@@ -233,6 +253,10 @@
                                             @include('ratebook.partials.retail-cell', ['key' => $key])
                                         </td>
                                     @endunless
+                                    <td class="px-5 py-3 text-right font-mono text-gray-800">
+                                        @php $wcMin = $wordCounts[$wdBaseWcKeys[$key]] ?? 0; @endphp
+                                        {{ $wcMin > 0 ? number_format($wcMin) . ' words min' : 'No minimum' }}
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
