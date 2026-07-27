@@ -52,12 +52,12 @@
                                     <td class="px-4 py-2">
                                         <input type="text" x-model="row.first_name" @change="save(row)"
                                                :disabled="!canManage"
-                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500">
+                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2">
                                         <input type="text" x-model="row.last_name" @change="save(row)"
                                                :disabled="!canManage"
-                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500">
+                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2">
                                         <input type="email" x-model="row.email" @change="save(row)"
@@ -68,12 +68,12 @@
                                         <input type="text" x-model="row.notes" @change="save(row)"
                                                :disabled="!canManage"
                                                placeholder="—"
-                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500">
+                                               class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
                                         <input type="date" x-model="row.flagged_date" @change="save(row)"
                                                :disabled="!canManage"
-                                               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 tabular-nums">
+                                               class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2 text-right whitespace-nowrap">
                                         <button x-show="canDelete && row.id" type="button" @click="remove(row)"
