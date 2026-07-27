@@ -1269,7 +1269,7 @@
                                 <input type="number" name="wc_wd_synopsis" min="0" max="99999"
                                     value="{{ old('wc_wd_synopsis', $wordCounts['wc_wd_synopsis']) }}"
                                     class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
-                                <p class="mt-0.5 text-xs text-gray-400">Coverage type only</p>
+                                <p class="mt-0.5 text-xs text-gray-400">Applies to Coverage and Development Notes</p>
                             </div>
                         </div>
 

@@ -100,7 +100,7 @@ class StoreCoverageSubmissionRequest extends FormRequest
             }
         }
 
-        if ($type === 'coverage' && $wc['wc_wd_synopsis'] > 0) {
+        if (in_array($type, ['coverage', 'development_notes'], true) && $wc['wc_wd_synopsis'] > 0) {
             $count = $this->wordCount($this->input('wd_synopsis'));
             if ($count < $wc['wc_wd_synopsis']) {
                 $validator->errors()->add('wd_synopsis', "Synopsis must be at least {$wc['wc_wd_synopsis']} words (currently {$count}).");
@@ -192,7 +192,7 @@ class StoreCoverageSubmissionRequest extends FormRequest
             'wd_form'                 => ['required', 'string', 'max:255'],
             'wd_mpaa_rating'          => ['required', 'string', 'max:100'],
             'wd_logline'              => ['required', 'string'],
-            'wd_synopsis'             => $type === 'coverage' ? ['required', 'string'] : ['nullable', 'string'],
+            'wd_synopsis'             => in_array($type, ['coverage', 'development_notes'], true) ? ['required', 'string'] : ['nullable', 'string'],
             'wd_script_recommendations' => ['required', 'string', 'max:500'],
 
             'wd_score_concept'    => ['required', 'in:Poor,Fair,Good,Excellent'],

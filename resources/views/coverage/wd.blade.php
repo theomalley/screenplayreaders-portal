@@ -165,8 +165,8 @@
                         <x-input-error :messages="$errors->get('wd_logline')" class="mt-1" />
                     </div>
 
-                    {{-- Synopsis (Coverage type only) --}}
-                    <div x-show="assignmentType === 'coverage'">
+                    {{-- Synopsis --}}
+                    <div>
                         <div class="flex items-baseline justify-between">
                             <x-input-label for="wd_synopsis" value="Synopsis" />
                             <span class="text-xs" :class="wordCount(synopsis) >= synopsisMinWords() ? 'text-green-600' : 'text-gray-400'"
@@ -387,7 +387,7 @@
             wordCountsMet() {
                 if (!wdWcSettings.wc_enabled || wdWcExempt) return true;
                 if (this.loglineMinWords() > 0 && this.wordCount(this.logline) < this.loglineMinWords()) return false;
-                if (this.assignmentType === 'coverage' && this.synopsisMinWords() > 0 && this.wordCount(this.synopsis) < this.synopsisMinWords()) return false;
+                if (this.synopsisMinWords() > 0 && this.wordCount(this.synopsis) < this.synopsisMinWords()) return false;
                 if (this.notesMinWords() > 0 && this.totalNoteWords() < this.notesMinWords()) return false;
                 return true;
             },
