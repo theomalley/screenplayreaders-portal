@@ -34,6 +34,7 @@ use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\KarenController;
 use App\Http\Controllers\UrlBuilderController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReadCreditController;
@@ -315,6 +316,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
     Route::patch('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
     Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+
+    // Karen List
+    Route::get('/karens', [KarenController::class, 'index'])->name('karens.index');
+    Route::post('/karens', [KarenController::class, 'store'])->name('karens.store');
+    Route::patch('/karens/{karen}', [KarenController::class, 'update'])->name('karens.update');
+    Route::delete('/karens/{karen}', [KarenController::class, 'destroy'])->name('karens.destroy');
 
     Route::get('/invoicing', [InvoiceController::class, 'index'])->name('invoicing.index');
     Route::get('/invoicing/create', [InvoiceController::class, 'create'])->name('invoicing.create');

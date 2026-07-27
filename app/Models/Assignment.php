@@ -1,5 +1,8 @@
 <?php
 
+// v1.29 — 2026-07-27 | Add karen_alert/karen_alert_note — set by Api\IncomingAssignmentController
+//                      when a webhook-created assignment's customer matches the Karen List
+//                      (App\Models\Karen). Surfaced as a badge + row highlight in the admin views.
 // v1.28 — 2026-07-24 | Add hidden_from_reader_ids — an admin-only (not editor) per-reader
 //                      "hide this assignment" override that beats tier visibility entirely
 //                      (unlike blocked_reader_ids, hidden readers don't see the row at all,
@@ -119,6 +122,8 @@ class Assignment extends Model
         'oversized_fee_included',
         'manual_page_flag',
         'exempt_from_capacity',
+        'karen_alert',
+        'karen_alert_note',
     ];
 
     protected function casts(): array
@@ -144,6 +149,7 @@ class Assignment extends Model
             'proofreading'              => 'boolean',
             'oversized_fee_included'    => 'boolean',
             'exempt_from_capacity'      => 'boolean',
+            'karen_alert'               => 'boolean',
         ];
     }
 

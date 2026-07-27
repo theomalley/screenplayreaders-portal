@@ -31,6 +31,15 @@
                 <div class="text-base text-gray-500 mt-0.5">by {{ $assignment->writer_name }}</div>
             </div>
 
+            @if ($assignment->karen_alert)
+                <div class="mb-5 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm font-semibold flex items-center gap-2">
+                    <span>⚠️ Karen alert. Check Karen list.</span>
+                    @if ($assignment->karen_alert_note)
+                        <span class="font-normal text-red-700">— {{ $assignment->karen_alert_note }}</span>
+                    @endif
+                </div>
+            @endif
+
             @php
                 $isOld        = session()->hasOldInput();
                 $v            = fn($field, $default) => $isOld ? old($field) : $default;

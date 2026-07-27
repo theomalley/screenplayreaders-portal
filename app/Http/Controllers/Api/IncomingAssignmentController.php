@@ -1,5 +1,10 @@
 <?php
 
+// v1.8 — 2026-07-27 | Accept customer_first_name/customer_last_name/customer_email and check
+//                     them against the Karen List (App\Models\Karen). A match sets
+//                     karen_alert/karen_alert_note on every slot created for the order —
+//                     surfaced in the admin assignment views. Fields are optional so older
+//                     theme deploys (pre customer-fields payload) keep working unflagged.
 // v1.7 — 2026-07-23 | Sync every webhook-created assignment to Tier 1 — previously these
 //                     landed with no tier at all, making them invisible in the default
 //                     "grouped by tier" admin/reader views (order 58166 incident).
@@ -23,6 +28,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Jobs\UploadScriptToDrive;
 use App\Models\Assignment;
+use App\Models\Karen;
 use App\Models\Setting;
 use App\Models\Tier;
 use App\Models\User;
@@ -61,6 +67,9 @@ class IncomingAssignmentController extends Controller
             'reader_request_2' => 'nullable|string|max:20',
             'reader_request_3' => 'nullable|string|max:20',
             'block_initials'   => 'nullable|string|max:255',
+            'customer_first_name' => 'nullable|string|max:255',
+            'customer_last_name'  => 'nullable|string|max:255',
+            'customer_email'      => 'nullable|string|max:255',
             'script'           => 'required|file|mimes:pdf,docx|max:5120',
         ]);
 
@@ -110,6 +119,22 @@ class IncomingAssignmentController extends Controller
         $rush         = (bool) ($data['rush'] ?? false);
         $proofreading = (bool) ($data['proofreading'] ?? false);
 
+        // Karen List check — one lookup per order, applied to every slot created for it.
+        $karenMatch = Karen::matchFor(
+            $data['customer_first_name'] ?? null,
+            $data['customer_last_name'] ?? null,
+            $data['customer_email'] ?? null
+        );
+        if ($karenMatch) {
+            Log::warning('IncomingAssignment: Karen List match', [
+                'order_number' => $data['order_number'],
+                'karen_id'     => $karenMatch->id,
+            ]);
+        }
+        $karenAlertNote = $karenMatch
+            ? 'Karen alert. Check Karen list. (Matched: ' . trim($karenMatch->first_name . ' ' . $karenMatch->last_name) . ')'
+            : null;
+
         // Create one Assignment row per reader slot
         $assignments = [];
         foreach ($slots as $i => $type) {
@@ -129,6 +154,8 @@ class IncomingAssignmentController extends Controller
                     'status'              => Assignment::STATUS_INCOMING,
                     'requested_reader_id' => $readerIds[$i] ?? null,
                     'blocked_reader_ids'  => $blockedReaderIds ?: null,
+                    'karen_alert'         => (bool) $karenMatch,
+                    'karen_alert_note'    => $karenAlertNote,
                 ]);
             } catch (\Throwable $e) {
                 Log::error('IncomingAssignment: slot create failed', [

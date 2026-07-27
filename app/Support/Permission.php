@@ -30,6 +30,8 @@ class Permission
         'editors.delete'     => 'Editors — Delete',
         'budget.admin'       => 'Budget — View Rates',
         'budget.admin.edit'  => 'Budget — Edit Rates',
+        'karens'              => 'Karen List — View',
+        'karens.manage'       => 'Karen List — Create / Edit',
     ];
 
     // Defaults used when no DB record exists yet
@@ -51,6 +53,8 @@ class Permission
         'editors.delete'     => ['admin' => true,  'editor' => false, 'reader' => false],
         'budget.admin'       => ['admin' => true,  'editor' => false, 'reader' => false],
         'budget.admin.edit'  => ['admin' => true,  'editor' => false, 'reader' => false],
+        'karens'              => ['admin' => true,  'editor' => true,  'reader' => false],
+        'karens.manage'       => ['admin' => true,  'editor' => true,  'reader' => false],
     ];
 
     /** Settings key for a feature+role pair. */

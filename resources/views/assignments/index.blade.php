@@ -860,6 +860,9 @@
                                         $rowClass = ($assignment->rush && $assignment->status === 'unassigned')
                                             ? 'border-l-4 border-amber-400'
                                             : '';
+                                        if ($assignment->karen_alert) {
+                                            $rowClass .= ' bg-red-50 hover:bg-red-100';
+                                        }
 
                                         $searchStr = strtolower(implode(' ', array_filter([
                                             $assignment->order_number,
@@ -917,6 +920,7 @@
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
                                             @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
+                                            @include('assignments.partials.karen-alert-badge', ['assignment' => $assignment])
                                             <div class="mt-1.5">
                                                 <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
                                                       x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
@@ -1280,6 +1284,9 @@
                                         $rowClass = $assignment->status === 'needs_attention'
                                             ? 'border-l-4 border-orange-400'
                                             : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
+                                        if ($assignment->karen_alert) {
+                                            $rowClass .= ' bg-red-50 hover:bg-red-100';
+                                        }
                                         $accDiff  = $assignment->accepted_at ? now()->diff($assignment->accepted_at) : null;
                                         $accStr   = $accDiff
                                             ? ($accDiff->days >= 1
@@ -1345,6 +1352,7 @@
                                             <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
                                             <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ $meUser->isAdmin() ? '0.00' : number_format($assignment->pay_rate, 2) }}</div>
                                             @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
+                                            @include('assignments.partials.karen-alert-badge', ['assignment' => $assignment])
                                             <div class="mt-1.5">
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">{{ $statusLabel }}</span>
                                             </div>
