@@ -54,6 +54,10 @@
 // v1.3 — 2026-05-24 | Add helpscout_draft_sent_at to fillable and casts
 // v1.2 — 2026-05-17 | Replace author_first_initial/author_last_name with writer_name
 
+// v1.31 — 2026-07-30 | Add qc_completed_by_user_id — stamped by QcController::approve() with the
+//                      actual approving user, so EditorCommissionService::applyQcAdjustmentForOrder()
+//                      can tell whether the order's assigned editor personally did the QC.
+
 namespace App\Models;
 
 use App\Services\WooCommerceService;
@@ -112,6 +116,7 @@ class Assignment extends Model
         'accepted_at',
         'submitted_at',
         'completed_at',
+        'qc_completed_by_user_id',
         'reader_paid_at',
         'helpscout_draft_sent_at',
         'helpscout_draft_dismissed_by',
@@ -428,6 +433,11 @@ class Assignment extends Model
     public function assignedReader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_reader_id');
+    }
+
+    public function qcCompletedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'qc_completed_by_user_id');
     }
 
     public function requestedReader(): BelongsTo

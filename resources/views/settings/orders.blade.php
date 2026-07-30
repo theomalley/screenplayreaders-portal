@@ -362,6 +362,31 @@
             </div>
             @endif
 
+            {{-- QC Commission Penalty --}}
+            @if($qcCommissionPenaltyEnabled !== null)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">QC Commission Penalty</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    When enabled, an order's assigned editor only earns full commission if they personally
+                    approve QC on every reader assignment for that order. If they approve some but not all
+                    (e.g. 2R/3R orders), commission is pro-rated by how many they personally did. If they
+                    approve none of them, commission is reduced to 50%.
+                </p>
+
+                <form method="POST" action="{{ route('settings.qc-commission-penalty') }}">
+                    @csrf
+                    @method('PATCH')
+                    <label class="flex items-center gap-2 mb-4">
+                        <input type="checkbox" name="qc_commission_penalty_enabled" value="1"
+                            @checked($qcCommissionPenaltyEnabled)
+                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        <span class="text-sm text-gray-700">Reduce editor commission when they skip QC</span>
+                    </label>
+                    <x-primary-button>Save</x-primary-button>
+                </form>
+            </div>
+            @endif
+
             {{-- Order Log — Editor Visibility --}}
             @if($orderLogEditorSettings)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

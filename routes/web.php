@@ -181,6 +181,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/settings/about-photo', [SettingController::class, 'uploadAboutPhoto'])->name('settings.about-photo');
     Route::patch('/settings/order-log-editor', [SettingController::class, 'updateOrderLogEditor'])->name('settings.order-log-editor');
     Route::patch('/settings/default-editor', [SettingController::class, 'updateDefaultEditor'])->name('settings.default-editor');
+    Route::patch('/settings/qc-commission-penalty', [SettingController::class, 'updateQcCommissionPenalty'])->name('settings.qc-commission-penalty');
     Route::patch('/settings/discount-coupon', [SettingController::class, 'updateDiscountCoupon'])->name('settings.discount-coupon');
 
     Route::post('/settings/commission-products/add', [SettingController::class, 'addCommissionProduct'])->name('settings.commission-products.add');

@@ -1,5 +1,8 @@
 <?php
 
+// v1.4 — 2026-07-30 | Add cog_commission_base — commission before any QC penalty is applied by
+//                     EditorCommissionService::applyQcAdjustmentForOrder(), so re-deriving
+//                     cog_commission (e.g. on a webhook resync) never compounds the penalty.
 // v1.3 — 2026-07-17 | Add editor_id — attributes each order to a specific editor so
 //                     commission/earnings no longer commingle across multiple editors
 // v1.2 — 2026-05-25 | Add customer/order detail columns for Order Log
@@ -24,6 +27,7 @@ class OrderRevenue extends Model
         'cog_processing',
         'cog_precommission',
         'cog_commission',
+        'cog_commission_base',
         'cog_total',
         'net_revenue',
         'payment_method',
@@ -54,6 +58,7 @@ class OrderRevenue extends Model
             'cog_processing'    => 'decimal:2',
             'cog_precommission' => 'decimal:2',
             'cog_commission'    => 'decimal:2',
+            'cog_commission_base' => 'decimal:2',
             'cog_total'         => 'decimal:2',
             'net_revenue'       => 'decimal:2',
             'skip_commission'   => 'boolean',

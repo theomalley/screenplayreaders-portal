@@ -7,6 +7,9 @@
 //                     (generated via Assignment::generateWooDiscountCode if not already set).
 // v1.8 — 2026-06-12 | Completion draft body now sourced from Setting::getCompletionDraftBody(),
 //                     with {{followup_url}} replaced by a per-order FollowupToken URL.
+// v1.8 — 2026-07-30 | approve() now stamps qc_completed_by_user_id and triggers
+//                     EditorCommissionService::applyQcAdjustmentForOrder() — reduces the order's
+//                     assigned editor's commission when they didn't personally do the QC.
 // v1.7 — 2026-06-05 | sendBack() emails reader if email_notify_qc_fail is enabled.
 // v1.6 — 2026-05-29 | Pass qcSavedReplies to show() for Send Back modal quick-insert checkboxes.
 // v1.5 — 2026-05-25 | Add sendBack() — returns assignment to reader as needs_attention with optional notes
@@ -25,9 +28,11 @@ use App\Jobs\CopyFileToSpaces;
 use App\Models\Assignment;
 use App\Models\Setting;
 use App\Services\CompletionDraftService;
+use App\Services\EditorCommissionService;
 use App\Services\GoogleDocsService;
 use App\Support\FilenameGenerator;
 use App\Support\Permission;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -88,10 +93,15 @@ class QcController extends Controller
         abort_unless(Permission::check('qc'), 403);
         abort_unless($assignment->status === Assignment::STATUS_QC, 422);
 
-        $assignment->update([
-            'status'       => Assignment::STATUS_COMPLETED,
-            'completed_at' => now(),
-        ]);
+        DB::transaction(function () use ($assignment) {
+            $assignment->update([
+                'status'                  => Assignment::STATUS_COMPLETED,
+                'completed_at'            => now(),
+                'qc_completed_by_user_id' => auth()->id(),
+            ]);
+
+            app(EditorCommissionService::class)->applyQcAdjustmentForOrder($assignment->order_number);
+        });
 
         // Auto-draft when every reader for this order is now complete and has a coverage doc.
         // PDFs are generated inline for any sibling that doesn't have one yet.

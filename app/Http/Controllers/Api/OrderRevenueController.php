@@ -1,5 +1,8 @@
 <?php
 
+// v1.6 — 2026-07-30 | Track cog_commission_base alongside cog_commission and re-apply
+//                     EditorCommissionService::applyQcAdjustmentForOrder() after every save, so a
+//                     resync after QC has already completed doesn't wipe out the QC penalty.
 // v1.5 — 2026-05-28 | Source commission rate from editor profile; remove global Setting dependency
 // v1.3 — 2026-05-26 | Cast numeric NOT-NULL fields to float to reject null from callers
 // v1.2 — 2026-05-25 | Accept customer/order detail fields for Order Log
@@ -122,6 +125,10 @@ class OrderRevenueController extends Controller
             }
         }
 
+        // Base commission before any QC penalty — whatever cog_commission would be at this point,
+        // portal-calculated or theme-supplied as-is, is the pre-penalty figure.
+        $data['cog_commission_base'] = $data['cog_commission'];
+
         Log::info('OrderRevenue sync', [
             'order_number' => $data['order_number'],
             'ordered_at'   => $data['ordered_at'],
@@ -134,6 +141,7 @@ class OrderRevenueController extends Controller
                 ['order_number' => $data['order_number']],
                 $data
             );
+            $this->commissionService->applyQcAdjustmentForOrder($data['order_number']);
             Log::info('OrderRevenue sync OK', ['order_number' => $data['order_number']]);
 
             AppendOrderToSheet::dispatch($data);

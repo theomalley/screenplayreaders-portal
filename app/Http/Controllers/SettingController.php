@@ -1,5 +1,8 @@
 <?php
 
+// v2.22 — 2026-07-30 | Add updateQcCommissionPenalty() — admin on/off toggle for
+//                     EditorCommissionService::applyQcAdjustmentForOrder()'s QC-based
+//                     commission reduction; orders() passes the current flag to the view.
 // v2.21 — 2026-07-23 | Authorization moved to two Gate abilities (manage-settings,
 //                     manage-settings-admin-only — AppServiceProvider), replacing 39
 //                     individual abort_unless(...) calls that reduced to the same two
@@ -157,12 +160,15 @@ class SettingController extends Controller
         $orderLogColumns  = Setting::ORDER_LOG_COLUMNS;
         $editors          = $isAdmin ? User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get() : null;
         $defaultEditorId  = $isAdmin ? Setting::getValue('default_editor_id') : null;
+        $qcCommissionPenaltyEnabled = $isAdmin
+            ? (string) Setting::getValue('qc_commission_penalty_enabled', '1') === '1'
+            : null;
 
         return view('settings.orders', compact(
             'isAdmin', 'appTimezone', 'payPeriod', 'payoutSchedule', 'nextPayout',
             'srInvoiceAddress', 'invoiceEmailBody', 'discountCoupon',
             'permissionsGrid', 'orderLogEditorSettings', 'orderLogColumns',
-            'editors', 'defaultEditorId',
+            'editors', 'defaultEditorId', 'qcCommissionPenaltyEnabled',
         ));
     }
 
@@ -711,6 +717,15 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'Default editor updated.');
+    }
+
+    public function updateQcCommissionPenalty(Request $request): RedirectResponse
+    {
+        $this->authorize('manage-settings-admin-only');
+
+        Setting::setValue('qc_commission_penalty_enabled', $request->boolean('qc_commission_penalty_enabled') ? '1' : '0');
+
+        return back()->with('success', 'QC commission penalty setting updated.');
     }
 
     public function updateOrderLogEditor(Request $request): RedirectResponse
