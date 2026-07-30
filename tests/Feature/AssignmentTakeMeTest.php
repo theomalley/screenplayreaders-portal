@@ -87,6 +87,17 @@ class AssignmentTakeMeTest extends TestCase
         $this->assertSame(Assignment::TAKE_ME_DEFAULT_TEXT['neon'], $assignment->takeMeDisplayText());
     }
 
+    public function test_edit_page_renders_take_me_card_for_unassigned_assignment(): void
+    {
+        $admin      = User::factory()->create(['role' => 'admin']);
+        $assignment = $this->makeAssignment();
+
+        $this->actingAs($admin)
+            ->get("/assignments/{$assignment->id}/edit")
+            ->assertOk()
+            ->assertSee('Take Me');
+    }
+
     public function test_take_me_is_cleared_when_admin_assigns_a_reader(): void
     {
         $admin      = User::factory()->create(['role' => 'admin']);

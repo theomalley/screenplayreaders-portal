@@ -169,9 +169,6 @@
             @if($assignment->is_test)
                 <span class="inline-flex items-center px-1 py-px rounded text-[9px] font-bold bg-amber-200 text-amber-800 tracking-wide">TEST</span>
             @endif
-            @if ($assignment->status === 'unassigned')
-                @include('assignments.partials.take-me-control', ['assignment' => $assignment])
-            @endif
         </div>
         @if ($assignment->take_me_enabled)
             <div class="mb-1 take-me-badge take-me-badge-{{ $assignment->take_me_style }}">

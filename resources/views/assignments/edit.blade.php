@@ -554,6 +554,11 @@
                             </div>
                         </details>
 
+                        {{-- "Take Me" attention-grabber (only meaningful while unassigned) --}}
+                        @if ($assignment->status === 'unassigned')
+                            @include('assignments.partials.take-me-control', ['assignment' => $assignment])
+                        @endif
+
                         {{-- Notes (visible to readers) --}}
                         <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mt-5"
                              x-data="{
