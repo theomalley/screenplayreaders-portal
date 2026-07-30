@@ -1,5 +1,9 @@
 <?php
 
+// v1.2 — 2026-07-30 | applyQcAdjustmentForOrder() now skips entirely if any countable assignment
+//                     has no qc_completed_by_user_id recorded — that means it predates this
+//                     feature (approved before the column existed) and there's no reliable QC-actor
+//                     data for it, so it must never be retroactively penalized on a later resync.
 // v1.1 — 2026-07-30 | Add applyQcAdjustmentForOrder() — reduces an order's stored commission when
 //                     the order's assigned editor didn't personally QC (all of) its assignments.
 //                     Toggleable via the qc_commission_penalty_enabled setting.
@@ -123,6 +127,13 @@ class EditorCommissionService
             ->get();
 
         if ($countable->isEmpty() || $countable->contains(fn (Assignment $a) => $a->status !== Assignment::STATUS_COMPLETED)) {
+            return;
+        }
+
+        // Any countable assignment with no recorded QC actor predates this feature (approved
+        // before qc_completed_by_user_id existed) — there's no reliable data on who did that QC,
+        // so leave the order untouched rather than retroactively penalizing it on a later resync.
+        if ($countable->contains(fn (Assignment $a) => $a->qc_completed_by_user_id === null)) {
             return;
         }
 

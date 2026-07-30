@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\OrderRevenue;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\EditorCommissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -152,6 +153,25 @@ class QcCommissionPenaltyTest extends TestCase
         $this->actingAs($admin)
             ->post("/qc/{$assignment->id}/approve")
             ->assertRedirect();
+
+        $this->assertSame(30.0, (float) $order->fresh()->cog_commission);
+    }
+
+    public function test_legacy_completed_order_with_no_recorded_qc_actor_is_never_penalized(): void
+    {
+        $editor = $this->makeEditor();
+        $order  = $this->makeOrder($editor, 'QC-LEGACY-ORDER', 30);
+
+        // Simulates an order approved before qc_completed_by_user_id existed: already
+        // STATUS_COMPLETED, but no QC actor was ever recorded for it.
+        $this->makeAssignment('QC-LEGACY-ORDER', [
+            'status'                  => Assignment::STATUS_COMPLETED,
+            'completed_at'            => now()->subDays(30),
+            'qc_completed_by_user_id' => null,
+        ]);
+
+        // Simulates a later webhook resync (e.g. a refund) touching this old order.
+        app(EditorCommissionService::class)->applyQcAdjustmentForOrder('QC-LEGACY-ORDER');
 
         $this->assertSame(30.0, (float) $order->fresh()->cog_commission);
     }
