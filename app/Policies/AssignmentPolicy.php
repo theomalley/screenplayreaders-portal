@@ -87,6 +87,12 @@ class AssignmentPolicy
         return $user->canManageAssignments();
     }
 
+    /** Admin/editor toggle the playful "Take Me" attention-grabber shown to everyone. */
+    public function takeMe(User $user, Assignment $assignment): bool
+    {
+        return $user->canManageAssignments();
+    }
+
     public function delete(User $user, Assignment $assignment): bool
     {
         return $user->canManageAssignments();

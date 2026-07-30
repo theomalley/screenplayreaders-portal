@@ -1,5 +1,9 @@
 <?php
 
+// v1.30 — 2026-07-30 | Add take_me_enabled/take_me_style/take_me_text — admin/editor "Take Me"
+//                      attention-grabber for stale unassigned assignments; auto-cleared on
+//                      accept (AssignmentController::accept/updateStatus). takeMeDisplayText()
+//                      falls back to a stock line per style when no custom text is set.
 // v1.29 — 2026-07-27 | Add karen_alert/karen_alert_note — set by Api\IncomingAssignmentController
 //                      when a webhook-created assignment's customer matches the Karen List
 //                      (App\Models\Karen). Surfaced as a badge + row highlight in the admin views.
@@ -124,6 +128,9 @@ class Assignment extends Model
         'exempt_from_capacity',
         'karen_alert',
         'karen_alert_note',
+        'take_me_enabled',
+        'take_me_style',
+        'take_me_text',
     ];
 
     protected function casts(): array
@@ -150,7 +157,26 @@ class Assignment extends Model
             'oversized_fee_included'    => 'boolean',
             'exempt_from_capacity'      => 'boolean',
             'karen_alert'               => 'boolean',
+            'take_me_enabled'           => 'boolean',
         ];
+    }
+
+    // --- "Take Me" attention-grabber (admin/editor toggle, shown to everyone) ---
+
+    public const TAKE_ME_STYLES = ['gold', 'rainbow', 'neon'];
+
+    public const TAKE_ME_DEFAULT_TEXT = [
+        'gold'    => '✨ Take me! ✨',
+        'rainbow' => '🌈 Somebody, anybody… 🌈',
+        'neon'    => '⚡ Too spicy for you? ⚡',
+    ];
+
+    /** Custom text if set, otherwise the stock line for the chosen style. */
+    public function takeMeDisplayText(): string
+    {
+        return trim((string) $this->take_me_text) !== ''
+            ? $this->take_me_text
+            : (self::TAKE_ME_DEFAULT_TEXT[$this->take_me_style] ?? self::TAKE_ME_DEFAULT_TEXT['gold']);
     }
 
     // --- Page count flags ---

@@ -1172,6 +1172,7 @@ class AssignmentController extends Controller
             abort_unless($this->canAssign((int) $request->assigned_reader_id), 403);
             $data['assigned_reader_id'] = $request->assigned_reader_id;
             $data['accepted_at']        = now();
+            $data['take_me_enabled']    = false;
         }
 
         if ($request->status === Assignment::STATUS_COMPLETED
@@ -1230,6 +1231,7 @@ class AssignmentController extends Controller
                 'status'             => Assignment::STATUS_ASSIGNED,
                 'assigned_reader_id' => $user->id,
                 'accepted_at'        => now(),
+                'take_me_enabled'    => false,
             ]);
         });
 
@@ -1242,6 +1244,26 @@ class AssignmentController extends Controller
         return request()->expectsJson()
             ? response()->json(['success' => true])
             : back()->with('success', 'Assignment accepted.');
+    }
+
+    /** Admin/editor toggle the playful "Take Me" attention-grabber (outline + text shown to everyone). */
+    public function takeMe(Request $request, Assignment $assignment)
+    {
+        $this->authorize('takeMe', $assignment);
+
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'style'   => ['required_if:enabled,1', 'nullable', 'in:' . implode(',', Assignment::TAKE_ME_STYLES)],
+            'text'    => ['nullable', 'string', 'max:80'],
+        ]);
+
+        $assignment->update([
+            'take_me_enabled' => (bool) $data['enabled'],
+            'take_me_style'   => $data['enabled'] ? $data['style'] : $assignment->take_me_style,
+            'take_me_text'    => $data['enabled'] ? trim((string) ($data['text'] ?? '')) : $assignment->take_me_text,
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
     public function decline(Assignment $assignment)

@@ -66,6 +66,9 @@
     if ($assignment->karen_alert) {
         $rowClass .= ' bg-red-50 hover:bg-red-100';
     }
+    if ($assignment->take_me_enabled) {
+        $rowClass .= ' take-me-' . $assignment->take_me_style;
+    }
     $typeLabel = match($assignment->assignment_type) {
         'script_coverage'   => 'Script Coverage',
         'notes_only'        => 'Notes-Only',
@@ -166,7 +169,15 @@
             @if($assignment->is_test)
                 <span class="inline-flex items-center px-1 py-px rounded text-[9px] font-bold bg-amber-200 text-amber-800 tracking-wide">TEST</span>
             @endif
+            @if ($assignment->status === 'unassigned')
+                @include('assignments.partials.take-me-control', ['assignment' => $assignment])
+            @endif
         </div>
+        @if ($assignment->take_me_enabled)
+            <div class="mb-1 take-me-badge take-me-badge-{{ $assignment->take_me_style }}">
+                {{ $assignment->takeMeDisplayText() }}
+            </div>
+        @endif
         <div class="flex items-center gap-1">
             @if($assignment->editorNotes->isNotEmpty())
                 <div class="inline-block shrink-0 md:hidden"

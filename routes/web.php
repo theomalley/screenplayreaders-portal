@@ -120,6 +120,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/dismiss-helpscout-draft', [AssignmentController::class, 'dismissHelpscoutDraft'])->name('assignments.dismissHelpscoutDraft');
     Route::post('assignments/{assignment}/dismiss-cancelled', [AssignmentController::class, 'dismissCancelled'])->name('assignments.dismiss-cancelled');
     Route::post('assignments/{assignment}/regenerate-discount-code', [AssignmentController::class, 'regenerateDiscountCode'])->name('assignments.regenerateDiscountCode');
+    Route::post('assignments/{assignment}/take-me', [AssignmentController::class, 'takeMe'])->name('assignments.take-me');
 
     Route::get('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'show'])->name('coverage.show');
     Route::post('assignments/{assignment}/coverage', [CoverageSubmissionController::class, 'store'])->name('coverage.store');

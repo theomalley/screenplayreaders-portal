@@ -1715,6 +1715,9 @@
                                                         : ($isRequestedForOther
                                                             ? 'border-l-4 border-purple-200 opacity-75'
                                                             : ($assignment->rush ? 'border-l-4 border-amber-400' : '')));
+                                                if ($assignment->take_me_enabled) {
+                                                    $rowClass .= ' take-me-' . $assignment->take_me_style;
+                                                }
                                                 $viewUrl  = $assignment->hasCloudScript()
                                                     ? route('assignments.streamScript', $assignment)
                                                     : null;
@@ -1751,6 +1754,11 @@
                                                 </td>
                                                 <td class="px-3 py-3" x-data="pdfViewer(@js($viewUrl))">
                                                     <div class="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{{ $typeLabel }}@if($assignment->is_test) <span class="inline-flex items-center px-1 py-px rounded text-[9px] font-bold bg-amber-200 text-amber-800 tracking-wide">TEST</span>@endif</div>
+                                                    @if ($assignment->take_me_enabled)
+                                                        <div class="mb-1 take-me-badge take-me-badge-{{ $assignment->take_me_style }}">
+                                                            {{ $assignment->takeMeDisplayText() }}
+                                                        </div>
+                                                    @endif
                                                     @if($viewUrl)
                                                         <button @click="openViewer()" type="button"
                                                                 class="font-medium text-gray-900 hover:text-indigo-600 text-left leading-snug max-w-xs block">📄 {{ $assignment->script_title }}</button>
