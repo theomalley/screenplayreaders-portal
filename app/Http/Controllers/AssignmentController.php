@@ -311,7 +311,8 @@ class AssignmentController extends Controller
             ->where('hidden_from_staff', false)
             ->with(['readerProfile', 'assignments' => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED)])
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->sortBy(fn($r) => $r->readerProfile?->availability === 'unavailable' ? 1 : 0);
 
         $myFollowups = FollowupQuestion::with(['assignment'])
             ->whereHas('assignment', fn($q) => $q->where('assigned_reader_id', $user->id))
