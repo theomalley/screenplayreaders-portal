@@ -862,6 +862,19 @@
                                             : '';
                                         if ($assignment->karen_alert) {
                                             $rowClass .= ' bg-red-50 hover:bg-red-100';
+                                        } else {
+                                            $rowClass .= ' ' . match($assignment->status) {
+                                                'unassigned'       => 'bg-amber-50 hover:bg-amber-100',
+                                                'assigned'         => 'bg-green-50 hover:bg-green-100',
+                                                'completed'        => 'bg-green-50 hover:bg-green-100',
+                                                'qc'               => 'bg-blue-50 hover:bg-blue-100',
+                                                'incoming'         => 'bg-gray-50 hover:bg-gray-100',
+                                                'cancelled'        => 'bg-red-50 hover:bg-red-100',
+                                                'on_hold_customer' => 'bg-red-50 hover:bg-red-100',
+                                                'on_hold_sr'       => 'bg-red-50 hover:bg-red-100',
+                                                'needs_attention'  => 'bg-orange-50 hover:bg-orange-100',
+                                                default            => 'hover:bg-gray-50',
+                                            };
                                         }
 
                                         $searchStr = strtolower(implode(' ', array_filter([
@@ -871,7 +884,7 @@
                                         ])));
                                     @endphp
                                     <tr id="fmt-row-{{ $assignment->id }}"
-                                        class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
+                                        class="{{ $rowClass }} cursor-pointer"
                                         x-show="!search || $el.dataset.search.includes(search.toLowerCase())"
                                         data-search="{{ $searchStr }}"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
@@ -1286,6 +1299,13 @@
                                             : ($assignment->rush ? 'border-l-4 border-amber-400' : '');
                                         if ($assignment->karen_alert) {
                                             $rowClass .= ' bg-red-50 hover:bg-red-100';
+                                        } else {
+                                            $rowClass .= ' ' . match($assignment->status) {
+                                                'assigned'        => 'bg-green-50 hover:bg-green-100',
+                                                'qc'              => 'bg-blue-50 hover:bg-blue-100',
+                                                'needs_attention' => 'bg-orange-50 hover:bg-orange-100',
+                                                default           => 'hover:bg-gray-50',
+                                            };
                                         }
                                         $accDiff  = $assignment->accepted_at ? now()->diff($assignment->accepted_at) : null;
                                         $accStr   = $accDiff
@@ -1302,7 +1322,7 @@
                                             ? route('woo-orders.show', $assignment->order_number)
                                             : null;
                                     @endphp
-                                    <tr class="hover:bg-gray-50 {{ $rowClass }} cursor-pointer"
+                                    <tr class="{{ $rowClass }} cursor-pointer"
                                         @click="if (!$event.target.closest('a, button, select, textarea, input, form')) window.location = @js(route('assignments.edit', $assignment))">
                                         <td class="px-3 py-3 whitespace-nowrap">
                                             @if ($wooOrderUrl)
