@@ -6,7 +6,7 @@
     $photoUrl  = $photoRaw ? asset('storage/' . $photoRaw) : null;
     $online    = $user->isOnline();
     $active    = $user->assignments->count();
-    $max       = $profile?->max_concurrent_assignments ?? 0;
+    $max       = $profile?->effectiveCap() ?? 0;
     $bgClass    = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
     $customMsg  = $profile?->custom_message ? trim($profile->custom_message) : null;
     $avail      = $profile?->availability ?? 'available';

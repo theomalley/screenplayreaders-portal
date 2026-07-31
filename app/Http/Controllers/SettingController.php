@@ -100,6 +100,7 @@ class SettingController extends Controller
         $isAdmin = auth()->user()->isAdmin();
 
         $capacityOverride                     = (int) Setting::getValue('capacity_override', 0);
+        $capacityOverrideEffective             = \App\Models\ReaderProfile::globalDefaultCap();
         $capacityOverrideExcludesRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
         $ageThresholds     = Setting::getAgeThresholds();
         $ageThresholdTypes = Setting::AGE_THRESHOLD_TYPES;
@@ -116,7 +117,7 @@ class SettingController extends Controller
         $blockedReaderLimits = $isAdmin ? Setting::getBlockedReaderLimits() : null;
 
         return view('settings.assignments', compact(
-            'isAdmin', 'capacityOverride', 'capacityOverrideExcludesRushRequests',
+            'isAdmin', 'capacityOverride', 'capacityOverrideEffective', 'capacityOverrideExcludesRushRequests',
             'ageThresholds', 'ageThresholdTypes', 'watermarkSettings', 'filenameSuffixes',
             'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts', 'blockedReaderLimits',
         ));
@@ -254,9 +255,10 @@ class SettingController extends Controller
             $request->boolean('capacity_override_excludes_rush_requests') ? '1' : '0'
         );
 
-        return redirect()->route('settings.assignments')->with('success', $value > 0
-            ? "Capacity override set to {$value} assignment" . ($value === 1 ? '' : 's') . ' for all readers.'
-            : 'Capacity override cleared — individual reader limits apply.');
+        $effective = $value > 0 ? $value : \App\Models\ReaderProfile::globalDefaultCap();
+
+        return redirect()->route('settings.assignments')->with('success',
+            "Default capacity set to {$effective} assignment" . ($effective === 1 ? '' : 's') . ' for all readers (individual overrides still apply).');
     }
 
     public function updateSessionTimeout(Request $request): RedirectResponse

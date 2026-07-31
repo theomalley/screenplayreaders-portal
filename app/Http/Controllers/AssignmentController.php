@@ -240,7 +240,7 @@ class AssignmentController extends Controller
                 'editors'          => $editors,
                 'readers'          => $readers,
                 'assignableUsers'  => $this->assignableUsers(),
-                'capacityOverride' => (int) Setting::getValue('capacity_override', 0),
+                'capacityOverride' => \App\Models\ReaderProfile::globalDefaultCap(),
                 'readerWeekStats'  => $readerWeekStats,
                 'archivedAll'      => $archivedAll,
                 'myAssignments'    => $myAssignments,
@@ -297,8 +297,8 @@ class AssignmentController extends Controller
             fn ($a) => PayPeriod::start($a->completed_at)->format('Y-m-d H:i:s')
         )->sortKeysDesc();
 
-        $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
-        $readerMax        = $capacityOverride > 0 ? $capacityOverride : (int) ($profile?->max_concurrent_assignments ?? 0);
+        $capacityOverride = \App\Models\ReaderProfile::globalDefaultCap();
+        $readerMax        = $profile?->effectiveCap() ?? $capacityOverride;
         $capacityOverrideExcludesRushRequests = (bool) \App\Models\Setting::getValue('capacity_override_excludes_rush_requests', true);
 
         $staffEditors = User::whereIn('role', ['admin', 'editor'])

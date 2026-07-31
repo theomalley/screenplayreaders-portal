@@ -133,7 +133,7 @@
                 <label for="notify_only_if_under_capacity" class="text-sm font-medium text-gray-700">Only notify me when I'm under my assignment capacity</label>
                 <p class="text-xs text-gray-500">
                     Skip new-assignment notifications while I'm already at my max of
-                    {{ auth()->user()->readerProfile?->max_concurrent_assignments }} active assignment(s).
+                    {{ auth()->user()->readerProfile?->effectiveCap() }} active assignment(s).
                 </p>
             </div>
         </div>

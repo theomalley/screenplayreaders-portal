@@ -152,12 +152,14 @@
                     {{-- Capacity + PayPal --}}
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <x-input-label for="max_concurrent_assignments" value="Max Concurrent Assignments" />
+                            <x-input-label for="max_concurrent_assignments" value="Max Concurrent Assignments (override)" />
                             <x-text-input id="max_concurrent_assignments" name="max_concurrent_assignments" type="number"
                                 class="mt-1 block w-full"
-                                value="{{ old('max_concurrent_assignments', $profile?->max_concurrent_assignments ?? 3) }}"
-                                min="0" max="20" required />
+                                value="{{ old('max_concurrent_assignments', $profile?->max_concurrent_assignments) }}"
+                                placeholder="Default: {{ \App\Models\ReaderProfile::globalDefaultCap() }}"
+                                min="0" max="20" />
                             <x-input-error :messages="$errors->get('max_concurrent_assignments')" class="mt-1" />
+                            <p class="mt-1 text-xs text-gray-500">Leave blank to use the sitewide default (Settings &gt; Assignments &amp; Coverage).</p>
                             <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
                                 <input type="checkbox" name="requests_bypass_capacity" value="1"
                                     {{ old('requests_bypass_capacity', $profile?->requests_bypass_capacity) ? 'checked' : '' }}

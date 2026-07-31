@@ -49,7 +49,7 @@
                                 @php
                                     $profile   = $reader->readerProfile;
                                     $initials  = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
-                                    $max       = $profile?->max_concurrent_assignments ?? 0;
+                                    $max       = $profile?->effectiveCap() ?? 0;
                                     $active    = $reader->active_count;
                                     $atCap     = $max > 0 && $active >= $max;
                                     $photoUrl  = $profile?->photo ? asset('storage/' . $profile->photo) : null;

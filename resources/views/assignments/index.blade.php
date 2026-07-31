@@ -645,7 +645,7 @@
                                     $rProfile  = $reader->readerProfile;
                                     $rInitials = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                                     $rActive   = $reader->assignments->count();
-                                    $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
+                                    $rMax      = $rProfile?->effectiveCap() ?? $capacityOverride;
                                     $rFull     = $rMax > 0 && $rActive >= $rMax;
                                     $rHasSelfRequest = $reader->assignments->contains(fn($a) => $a->requested_reader_id === $reader->id);
                                     $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
@@ -683,17 +683,16 @@
                             @endforeach
                         </div>
 
-                        @if($capacityOverride > 0)
-                            @php
-                                $adminExcludesRushRequests = (bool) \App\Models\Setting::getValue('capacity_override_excludes_rush_requests', true);
-                            @endphp
-                            <div class="mt-2 text-sm text-gray-500">
-                                <span class="font-medium text-gray-700">Max. concurrent assignments:</span> {{ $capacityOverride }}
-                                @if($adminExcludesRushRequests)
-                                    <span class="text-xs text-gray-400 ml-1">Reader Requests and Rush orders do not apply to this cap. (* on a badge = includes a Reader Request.)</span>
-                                @endif
-                            </div>
-                        @endif
+                        @php
+                            $adminExcludesRushRequests = (bool) \App\Models\Setting::getValue('capacity_override_excludes_rush_requests', true);
+                        @endphp
+                        <div class="mt-2 text-sm text-gray-500">
+                            <span class="font-medium text-gray-700">Default max. concurrent assignments:</span> {{ $capacityOverride }}
+                            <span class="text-xs text-gray-400 ml-1">(readers with an individual override use that number instead.)</span>
+                            @if($adminExcludesRushRequests)
+                                <span class="text-xs text-gray-400 ml-1">Reader Requests and Rush orders do not apply to this cap. (* on a badge = includes a Reader Request.)</span>
+                            @endif
+                        </div>
 
                         {{-- Detail panels --}}
                         @foreach ($editors as $editor)
@@ -773,7 +772,7 @@
                                 $rProfile  = $reader->readerProfile;
                                 $rInitials = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                                 $rActive   = $reader->assignments->count();
-                                $rMax      = $capacityOverride > 0 ? $capacityOverride : ($rProfile?->max_concurrent_assignments ?? 0);
+                                $rMax      = $rProfile?->effectiveCap() ?? $capacityOverride;
                                 $rPhotoUrl = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
                                 $rOnline   = $reader->isOnline();
                                 $rStats    = $readerWeekStats[$reader->id] ?? null;
@@ -1482,7 +1481,7 @@
                             $rProfile     = $reader->readerProfile;
                             $rInitials    = $rProfile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                             $rActive      = $reader->assignments->count();
-                            $rMax         = $rProfile?->max_concurrent_assignments ?? 0;
+                            $rMax         = $rProfile?->effectiveCap() ?? 0;
                             $rFull        = $rMax > 0 && $rActive >= $rMax;
                             $rHasSelfRequest = $reader->assignments->contains(fn($a) => $a->requested_reader_id === $reader->id);
                             $rPhotoUrl    = $rProfile?->photo ? asset('storage/' . $rProfile->photo) : null;
@@ -1526,15 +1525,14 @@
 
                 @if($readerMax > 0)
                     @php
-                        $capacityOverride = (int) \App\Models\Setting::getValue('capacity_override', 0);
-                        $showRushRequestNote = ($capacityOverride > 0 && $capacityOverrideExcludesRushRequests)
-                            || (!$capacityOverride && auth()->user()->readerProfile?->requests_bypass_capacity);
+                        $readerHasOwnOverride = (bool) auth()->user()->readerProfile?->requests_bypass_capacity;
+                        $showRushRequestNote = $capacityOverrideExcludesRushRequests || $readerHasOwnOverride;
                     @endphp
                     <div class="mb-4 text-sm text-gray-500">
                         <span class="font-medium text-gray-700">Max. concurrent assignments:</span> {{ $readerMax }}
                         @if($showRushRequestNote)
                             <span class="text-xs text-gray-400 ml-1">
-                                @if($capacityOverride > 0 && $capacityOverrideExcludesRushRequests)
+                                @if($capacityOverrideExcludesRushRequests)
                                     Reader Requests and Rush orders do not apply to this cap. (* on your badge = includes a Reader Request.)
                                 @else
                                     Reader Requests do not count toward your limit. (* on your badge = includes a Reader Request.)

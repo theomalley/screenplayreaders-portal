@@ -1,5 +1,11 @@
 <?php
 
+// v1.17 — 2026-07-31 | Invert capacity precedence: capacity_override is now the global
+//                      DEFAULT cap applied to every reader; max_concurrent_assignments is
+//                      now nullable and, when set, is a per-reader OVERRIDE of that default
+//                      (previously the reverse). Added effectiveCap() as the single source
+//                      of truth for "what cap applies to this reader" — callers that used to
+//                      duplicate the override-vs-per-reader arithmetic should use it instead.
 // v1.16 — 2026-07-20 | Replace tier_0/tier_1/tier_2 booleans with a tiers() belongsToMany
 //                      relation (reader_profile_tier pivot) against the new dynamic Tier model —
 //                      see App\Support\TierAccess for how tier membership now gates visibility.
@@ -105,12 +111,34 @@ class ReaderProfile extends Model
                           ->whereIn('status', [Assignment::STATUS_ASSIGNED]);
     }
 
+    /**
+     * The global default cap applied to every reader unless they have an explicit
+     * per-reader override set. Falls back to 3 if the setting has never been configured
+     * (an admin left the "Default max concurrent assignments" field blank/0).
+     */
+    public static function globalDefaultCap(): int
+    {
+        $stored = (int) Setting::getValue('capacity_override', 0);
+
+        return $stored > 0 ? $stored : 3;
+    }
+
+    /**
+     * The concurrent-assignment cap that actually applies to this reader: their own
+     * max_concurrent_assignments override if they have one set, otherwise the global default.
+     */
+    public function effectiveCap(): int
+    {
+        return $this->max_concurrent_assignments !== null
+            ? (int) $this->max_concurrent_assignments
+            : self::globalDefaultCap();
+    }
+
     public function isAtCapacity(bool $isRequestedAssignment = false, bool $isRushAssignment = false): bool
     {
-        $override = (int) Setting::getValue('capacity_override', 0);
-        $max      = $override > 0 ? $override : (int) $this->max_concurrent_assignments;
+        $max = $this->effectiveCap();
 
-        // Applies to all caps (override and individual reader caps).
+        // Applies to all caps (global default and per-reader overrides).
         $excludeRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
 
         // Rush/request assignments always bypass the cap when the setting is on.

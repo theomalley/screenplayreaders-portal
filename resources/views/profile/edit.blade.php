@@ -649,12 +649,14 @@
                         <h2 class="text-lg font-medium text-gray-900">Capacity &amp; Pay <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <x-input-label for="max_concurrent_assignments" value="Max Concurrent Assignments" />
+                                <x-input-label for="max_concurrent_assignments" value="Max Concurrent Assignments (override)" />
                                 <x-text-input id="max_concurrent_assignments" name="max_concurrent_assignments" type="number"
                                     class="mt-1 block w-full"
-                                    value="{{ old('max_concurrent_assignments', $profile?->max_concurrent_assignments ?? 3) }}"
-                                    min="0" max="20" required />
+                                    value="{{ old('max_concurrent_assignments', $profile?->max_concurrent_assignments) }}"
+                                    placeholder="Default: {{ \App\Models\ReaderProfile::globalDefaultCap() }}"
+                                    min="0" max="20" />
                                 <x-input-error :messages="$errors->get('max_concurrent_assignments')" class="mt-1" />
+                                <p class="mt-1 text-xs text-gray-500">Leave blank to use the sitewide default (Settings &gt; Assignments &amp; Coverage).</p>
                                 <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
                                     <input type="checkbox" name="requests_bypass_capacity" value="1"
                                         {{ old('requests_bypass_capacity', $profile?->requests_bypass_capacity) ? 'checked' : '' }}
@@ -760,7 +762,7 @@
                         <label class="flex items-center gap-2 pt-2 border-t border-gray-200">
                             <input type="checkbox" disabled {{ $profile?->notify_only_if_under_capacity ? 'checked' : '' }}
                                 class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-100" />
-                            <span class="text-sm text-gray-700">Only notify when under capacity (max {{ $profile?->max_concurrent_assignments ?? 3 }})</span>
+                            <span class="text-sm text-gray-700">Only notify when under capacity (max {{ $profile?->effectiveCap() ?? \App\Models\ReaderProfile::globalDefaultCap() }})</span>
                         </label>
                     </div>
                 </div>
