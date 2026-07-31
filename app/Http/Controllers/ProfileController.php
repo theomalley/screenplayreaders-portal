@@ -58,26 +58,41 @@ class ProfileController extends Controller
     public function updateNotifications(Request $request): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($user->isReader(), 403);
+        abort_unless($user->isReader() || $user->isAdmin(), 403);
 
-        $user->readerProfile()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'sms_notifications'      => $request->boolean('sms_notifications'),
-                'sms_notify_any'         => $request->boolean('sms_notify_any'),
-                'sms_notify_rush'        => $request->boolean('sms_notify_rush'),
-                'sms_notify_requests'    => $request->boolean('sms_notify_requests'),
-                'email_notifications'    => $request->boolean('email_notifications'),
-                'email_notify_any'       => $request->boolean('email_notify_any'),
-                'email_notify_rush'      => $request->boolean('email_notify_rush'),
-                'email_notify_requests'  => $request->boolean('email_notify_requests'),
-                'email_notify_followup'  => $request->boolean('email_notify_followup'),
-                'sms_notify_followup'    => $request->boolean('sms_notify_followup'),
-                'email_notify_qc_fail'   => $request->boolean('email_notify_qc_fail'),
-                'sms_notify_qc_fail'     => $request->boolean('sms_notify_qc_fail'),
-                'notify_only_if_under_capacity' => $request->boolean('notify_only_if_under_capacity'),
-            ]
-        );
+        if ($user->isReader()) {
+            $user->readerProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'sms_notifications'      => $request->boolean('sms_notifications'),
+                    'sms_notify_any'         => $request->boolean('sms_notify_any'),
+                    'sms_notify_rush'        => $request->boolean('sms_notify_rush'),
+                    'sms_notify_requests'    => $request->boolean('sms_notify_requests'),
+                    'email_notifications'    => $request->boolean('email_notifications'),
+                    'email_notify_any'       => $request->boolean('email_notify_any'),
+                    'email_notify_rush'      => $request->boolean('email_notify_rush'),
+                    'email_notify_requests'  => $request->boolean('email_notify_requests'),
+                    'email_notify_followup'  => $request->boolean('email_notify_followup'),
+                    'sms_notify_followup'    => $request->boolean('sms_notify_followup'),
+                    'email_notify_qc_fail'   => $request->boolean('email_notify_qc_fail'),
+                    'sms_notify_qc_fail'     => $request->boolean('sms_notify_qc_fail'),
+                    'notify_only_if_under_capacity' => $request->boolean('notify_only_if_under_capacity'),
+                ]
+            );
+        } else {
+            // Admin-only: lets an admin preview the same new-assignment email readers get,
+            // for testing deliverability and dialing in the MailerSend template. Editors
+            // don't get this — see ReaderNotificationService::notifyOptedInAdmins().
+            $user->editorProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'email_notifications'   => $request->boolean('email_notifications'),
+                    'email_notify_any'      => $request->boolean('email_notify_any'),
+                    'email_notify_rush'     => $request->boolean('email_notify_rush'),
+                    'email_notify_requests' => $request->boolean('email_notify_requests'),
+                ]
+            );
+        }
 
         return Redirect::route('profile.edit')->with('status', 'notifications-updated');
     }

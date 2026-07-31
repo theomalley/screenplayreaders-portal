@@ -1,5 +1,9 @@
 <?php
 
+// v1.11 — 2026-07-31 | Add email_notifications/email_notify_any/rush/requests to fillable/casts —
+//                      admin-only "preview the new-assignment email" toggle (ProfileController::
+//                      updateNotifications(), ReaderNotificationService::notifyOptedInAdmins()).
+//                      Editors get the columns too (shared table) but no UI/behavior change.
 // v1.10 — 2026-07-08 | Add is_1099 to fillable/casts
 // v1.9 — 2026-06-05 | Add about_photo_pending and about_photo_rejection_note fields
 // v1.8 — 2026-06-04 | Add about_photo for main website About page
@@ -44,12 +48,20 @@ class EditorProfile extends Model
         'about_photo',
         'about_photo_pending',
         'about_photo_rejection_note',
+        'email_notifications',
+        'email_notify_any',
+        'email_notify_rush',
+        'email_notify_requests',
     ];
 
     protected $casts = [
-        'editor_commission'  => 'float',
-        'editor_weekly_flat' => 'float',
-        'is_1099'            => 'boolean',
+        'editor_commission'     => 'float',
+        'editor_weekly_flat'    => 'float',
+        'is_1099'               => 'boolean',
+        'email_notifications'   => 'boolean',
+        'email_notify_any'      => 'boolean',
+        'email_notify_rush'     => 'boolean',
+        'email_notify_requests' => 'boolean',
     ];
 
     public function user(): BelongsTo

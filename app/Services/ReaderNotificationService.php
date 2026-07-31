@@ -1,5 +1,10 @@
 <?php
 
+// v1.4 — 2026-07-31 | Add notifyOptedInAdmins() — admins who opt in (ProfileController::
+//                      updateNotifications(), admin-only) get a copy of the same
+//                      NewAssignmentMail a reader would get, for previewing/testing the
+//                      template. Not gated by the accept() policy or capacity — this isn't
+//                      a real eligibility check, just "send me what a reader would see."
 // v1.3 — 2026-07-31 | Fix: neither notification path checked tier reachability,
 //                      allowed_assignment_types, hidden_from_reader_ids, or blocked_reader_ids
 //                      before emailing — an opted-in reader outside the assignment's tier (or
@@ -50,6 +55,8 @@ class ReaderNotificationService
                 Mail::to($requested->email)
                     ->send(new NewAssignmentMail($assignment, $requested, 'request'));
             }
+
+            $this->notifyOptedInAdmins($assignment, 'request');
         }
 
         // General pool: only for assignments open to anyone. Assignments with a
@@ -59,6 +66,8 @@ class ReaderNotificationService
         if ($assignment->requested_reader_id) {
             return;
         }
+
+        $this->notifyOptedInAdmins($assignment, $assignment->rush ? 'rush' : 'any');
 
         $readers = User::with('readerProfile')
             ->whereHas('readerProfile', function ($q) use ($assignment) {
@@ -102,5 +111,36 @@ class ReaderNotificationService
         }
 
         return $profile->isAtCapacity($isRequestedAssignment);
+    }
+
+    /**
+     * Admins who opted into "preview the new-assignment email" (editor_profiles.email_notify_*,
+     * admin-only — editors never have these set) get a copy of the exact email a reader would
+     * receive for this context, addressed to them. This is for previewing/testing the MailerSend
+     * template, not a real eligibility check, so it skips accept() and capacity entirely.
+     */
+    private function notifyOptedInAdmins(Assignment $assignment, string $context): void
+    {
+        $admins = User::where('role', 'admin')
+            ->with('editorProfile')
+            ->whereHas('editorProfile', function ($q) use ($context) {
+                $q->where('email_notifications', true);
+
+                if ($context === 'request') {
+                    $q->where('email_notify_requests', true);
+                } elseif ($context === 'rush') {
+                    $q->where(function ($q2) {
+                        $q2->where('email_notify_any', true)
+                           ->orWhere('email_notify_rush', true);
+                    });
+                } else {
+                    $q->where('email_notify_any', true);
+                }
+            })
+            ->get();
+
+        foreach ($admins as $admin) {
+            Mail::to($admin->email)->send(new NewAssignmentMail($assignment, $admin, $context));
+        }
     }
 }
