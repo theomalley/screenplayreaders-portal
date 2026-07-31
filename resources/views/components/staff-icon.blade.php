@@ -15,7 +15,7 @@
     $photoUrl  = $photoRaw ? asset('storage/' . $photoRaw) : null;
     $online    = $user->isOnline();
     $active    = $user->relationLoaded('assignments') ? $user->assignments->count() : null;
-    $max       = $profile?->effectiveCap() ?? 0;
+    $max       = $isReader ? ($profile?->effectiveCap() ?? 0) : 0;
     $bgClass   = $isReader ? 'bg-gray-200 text-gray-700' : 'bg-indigo-100 text-indigo-700';
     $sizeClass = match ($size) {
         'sm'    => 'w-7 h-7 text-xs',
