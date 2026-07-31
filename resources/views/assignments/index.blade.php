@@ -498,10 +498,20 @@
                                         <div x-data="followupCountdown('{{ $fqDeadline->utc()->toIso8601String() }}', @js($fqDeadline->setTimezone($appTimezone)->format('M j, g:ia')))"
                                              x-text="display" :class="overdue ? 'rush-overdue' : 'text-amber-600'" class="text-xs" @click.stop></div>
                                     @endif
-                                    <button type="button" @click.stop="open = !open"
-                                            class="ml-auto text-xs text-indigo-500 hover:text-indigo-700 underline">
-                                        <span x-text="open ? 'Hide' : 'Edit / Review'"></span>
-                                    </button>
+                                    <span class="ml-auto flex items-center gap-3">
+                                        @if ($fqReader)
+                                            <a href="{{ route('staff.draft-email', $fqReader) }}" target="_blank"
+                                               @click.stop
+                                               class="text-xs text-gray-400 hover:text-indigo-600 transition"
+                                               title="Create HelpScout draft to {{ $fqReader->email }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="inline w-3.5 h-3.5 mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>Email
+                                            </a>
+                                        @endif
+                                        <button type="button" @click.stop="open = !open"
+                                                class="text-xs text-indigo-500 hover:text-indigo-700 underline">
+                                            <span x-text="open ? 'Hide' : 'Edit / Review'"></span>
+                                        </button>
+                                    </span>
                                 </div>
 
                                 <div x-show="open" x-cloak class="mt-3 space-y-3 border-t border-gray-200 pt-3 px-4 pb-3">
