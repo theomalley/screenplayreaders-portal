@@ -1,5 +1,12 @@
 <?php
 
+// v1.3 — 2026-07-31 | Fix: neither notification path checked tier reachability,
+//                      allowed_assignment_types, hidden_from_reader_ids, or blocked_reader_ids
+//                      before emailing — an opted-in reader outside the assignment's tier (or
+//                      explicitly hidden/blocked from it) still got the email even though
+//                      AssignmentPolicy::accept() would deny them. Both paths now gate through
+//                      Gate::forUser($reader)->allows('accept', $assignment) — the same check
+//                      the Accept button itself uses — instead of duplicating the tier logic.
 // v1.2 — 2026-07-10 | Fix: general pool notification no longer fires at all when the
 //                      assignment has a requested_reader_id — it was previously only
 //                      excluding the requested reader themselves, so every other opted-in
@@ -14,6 +21,7 @@ use App\Mail\NewAssignmentMail;
 use App\Models\Assignment;
 use App\Models\ReaderProfile;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 
 class ReaderNotificationService
@@ -34,6 +42,7 @@ class ReaderNotificationService
 
             if (
                 $requested &&
+                Gate::forUser($requested)->allows('accept', $assignment) &&
                 $requested->readerProfile?->email_notifications &&
                 $requested->readerProfile?->email_notify_requests &&
                 ! $this->skipForCapacity($requested->readerProfile, true)
@@ -69,6 +78,10 @@ class ReaderNotificationService
         $context = $assignment->rush ? 'rush' : 'any';
 
         foreach ($readers as $reader) {
+            if (! Gate::forUser($reader)->allows('accept', $assignment)) {
+                continue;
+            }
+
             if ($this->skipForCapacity($reader->readerProfile, false)) {
                 continue;
             }
