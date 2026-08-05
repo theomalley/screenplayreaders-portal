@@ -43,7 +43,7 @@ class StoreAssignmentRequest extends FormRequest
             'manual_page_flag'        => ['nullable', 'in:over_120,over_160'],
             'tiers'                => ['nullable', 'array'],
             'tiers.*'              => ['integer', 'exists:tiers,id'],
-            'script'               => ['nullable', 'file', 'mimes:pdf', 'max:51200'],
+            'script'               => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
             'status'               => ['required', 'in:' . implode(',', [
                                           Assignment::STATUS_INCOMING,
                                           Assignment::STATUS_UNASSIGNED,

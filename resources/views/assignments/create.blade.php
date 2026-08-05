@@ -691,7 +691,7 @@
                     {{-- Script (optional) --}}
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5" x-data="{ fileName: '' }">
                         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Script (optional)</h3>
-                        <p class="text-xs text-gray-400 mb-2">PDF only · max 50 MB · can also be uploaded after creation</p>
+                        <p class="text-xs text-gray-400 mb-2">PDF only · max 5 MB · can also be uploaded after creation</p>
 
                         <input type="file" id="script_upload" name="script" form="create-form" accept="application/pdf"
                                class="sr-only"

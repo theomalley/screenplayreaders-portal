@@ -1104,7 +1104,7 @@
                                 </svg>
                                 <p class="text-sm font-medium" :class="fileName ? 'text-indigo-700' : 'text-gray-500'"
                                    x-text="fileName || 'Click to choose a PDF'"></p>
-                                <p class="text-xs text-gray-400 mt-1" x-show="!fileName">PDF only · max 50 MB</p>
+                                <p class="text-xs text-gray-400 mt-1" x-show="!fileName">PDF only · max 5 MB</p>
                             </label>
 
                             <button type="submit"

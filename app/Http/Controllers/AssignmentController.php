@@ -656,7 +656,7 @@ class AssignmentController extends Controller
     {
         $this->authorize('update', $assignment);
 
-        $request->validate(['script' => 'required|file|mimes:pdf|max:51200']);
+        $request->validate(['script' => 'required|file|mimes:pdf|max:5120']);
 
         $drive    = app(\App\Services\GoogleDriveService::class);
         $file     = $request->file('script');
