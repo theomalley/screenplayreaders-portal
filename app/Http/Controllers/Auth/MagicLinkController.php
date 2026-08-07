@@ -1,5 +1,10 @@
 <?php
 
+// v1.1 — 2026-08-07 | Added per-email rate limit on send() (alongside per-IP) and a
+//                     per-token rate limit on login() (alongside per-IP), mirroring
+//                     QuickLoginController's v1.1 pattern — an IP-only limit doesn't
+//                     stop a distributed sender from spamming one victim's inbox, or
+//                     a distributed brute force against one leaked/guessed token.
 // v1.0 — 2026-06-05 | Passwordless magic-link login — generates token, emails link, consumes on visit
 
 namespace App\Http\Controllers\Auth;
@@ -22,13 +27,18 @@ class MagicLinkController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $key = 'magic-link:' . $request->ip();
-        if (RateLimiter::tooManyAttempts($key, 5)) {
+        $email = strtolower($request->input('email'));
+
+        $ipKey    = 'magic-link-ip:' . $request->ip();
+        $emailKey = 'magic-link-email:' . hash('sha256', $email);
+
+        if (RateLimiter::tooManyAttempts($ipKey, 5) || RateLimiter::tooManyAttempts($emailKey, 5)) {
             return back()->with('magic_link_status', 'Too many requests. Please wait a minute and try again.');
         }
-        RateLimiter::hit($key, 60);
+        RateLimiter::hit($ipKey, 60);
+        RateLimiter::hit($emailKey, 60);
 
-        $user = User::where('email', $request->input('email'))->first();
+        $user = User::where('email', $email)->first();
 
         // Always respond the same way — don't reveal whether the address is registered.
         if ($user) {
@@ -52,11 +62,14 @@ class MagicLinkController extends Controller
     /** GET /magic-link/{token} — validate token, log user in. */
     public function login(string $token): RedirectResponse
     {
-        $key = 'magic-link-use:' . request()->ip();
-        if (RateLimiter::tooManyAttempts($key, 10)) {
+        $ipKey    = 'magic-link-use-ip:' . request()->ip();
+        $tokenKey = 'magic-link-use-token:' . hash('sha256', $token);
+
+        if (RateLimiter::tooManyAttempts($ipKey, 10) || RateLimiter::tooManyAttempts($tokenKey, 10)) {
             abort(429, 'Too many attempts.');
         }
-        RateLimiter::hit($key, 60);
+        RateLimiter::hit($ipKey, 60);
+        RateLimiter::hit($tokenKey, 60);
 
         $record = MagicLinkToken::where('token_hash', hash('sha256', $token))
             ->with('user')
@@ -70,7 +83,8 @@ class MagicLinkController extends Controller
         // Mark as used before logging in — prevents replay.
         $record->update(['used_at' => now()]);
 
-        RateLimiter::clear($key);
+        RateLimiter::clear($ipKey);
+        RateLimiter::clear($tokenKey);
 
         $user = $record->user;
         Auth::login($user, remember: true);
