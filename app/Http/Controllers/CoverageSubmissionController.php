@@ -14,6 +14,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCoverageSubmissionRequest;
 use App\Models\Assignment;
 use App\Models\AssignmentNote;
+use App\Models\CoverageAttestation;
 use App\Models\ReaderScriptNote;
 use App\Models\Setting;
 use App\Services\GoogleDocsService;
@@ -45,7 +46,11 @@ class CoverageSubmissionController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        return view($view, compact('assignment', 'existing', 'showAutofill', 'wordCounts', 'wcExempt', 'readingNotes'));
+        $attestations = $view === 'coverage.sr'
+            ? CoverageAttestation::orderBy('sort_order')->orderBy('id')->get()
+            : collect();
+
+        return view($view, compact('assignment', 'existing', 'showAutofill', 'wordCounts', 'wcExempt', 'readingNotes', 'attestations'));
     }
 
     public function store(StoreCoverageSubmissionRequest $request, Assignment $assignment)
@@ -57,6 +62,19 @@ class CoverageSubmissionController extends Controller
         DB::transaction(function () use ($request, $assignment, &$submission) {
             $data = $request->validated();
             $data['vendor'] = $assignment->vendor;
+
+            if (array_key_exists('attestations', $data)) {
+                $attestationIds = $data['attestations'];
+                unset($data['attestations']);
+
+                $data['quality_checked'] = true;
+                $data['quality_attestations_snapshot'] = CoverageAttestation::whereIn('id', $attestationIds)
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->pluck('text')
+                    ->values()
+                    ->all();
+            }
 
             $submission = $assignment->coverageSubmission()->updateOrCreate(
                 ['assignment_id' => $assignment->id],

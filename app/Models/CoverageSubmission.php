@@ -13,7 +13,7 @@ class CoverageSubmission extends Model
         'assignment_id',
         'vendor',
         'writer_name', 'genre', 'time_period', 'locations', 'estimated_budget',
-        'quality_checked',
+        'quality_checked', 'quality_attestations_snapshot',
 
         // SR metadata
         'sr_assignment_type', 'sr_number_of_readers', 'sr_reader_request',
@@ -59,6 +59,7 @@ class CoverageSubmission extends Model
     {
         return [
             'quality_checked'    => 'boolean',
+            'quality_attestations_snapshot' => 'array',
             'sr_reader_request'  => 'boolean',
             'sr_proofreading'    => 'boolean',
             'sr_net15'           => 'boolean',

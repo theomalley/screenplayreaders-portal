@@ -173,7 +173,18 @@ class StoreCoverageSubmissionRequest extends FormRequest
             'sr_bechdel'       => ['required', 'in:Not applicable,Yes,No'],
             'sr_diversity'     => ['required', 'in:Not applicable,Diverse,Moderately Diverse,Could use more Diversity'],
             'sr_recommendation'=> ['required', 'in:Pass,Consider,Consider with Reservations,Recommend'],
-            'quality_checked'  => ['required', 'accepted'],
+            'attestations'     => [
+                'required',
+                'array',
+                function ($_attribute, $value, $fail) {
+                    $requiredIds = \App\Models\CoverageAttestation::pluck('id')->all();
+                    $submitted   = array_map('intval', $value ?? []);
+                    if (array_diff($requiredIds, $submitted)) {
+                        $fail('You must confirm all quality attestations before submitting.');
+                    }
+                },
+            ],
+            'attestations.*'   => ['integer', 'exists:coverage_attestations,id'],
             'note_to_team'     => ['nullable', 'string', 'max:1000'],
         ];
     }

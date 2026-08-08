@@ -324,17 +324,16 @@
                     </div>
 
                     {{-- Quality check --}}
-                    <div class="border-t border-gray-100 pt-4">
-                        <label class="flex items-start gap-3 cursor-pointer">
-                            <input id="quality_checked" name="quality_checked" type="checkbox" value="1"
-                                x-model="qualityChecked"
-                                {{ old('quality_checked') ? 'checked' : '' }}
-                                class="mt-0.5 rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500" />
-                            <span class="text-sm text-gray-700 font-medium">
-                                I've provided helpful, actionable feedback, have adhered to Screenplay Readers quality standards listed in the Reader Manual, and have reviewed my work for errors.
-                            </span>
-                        </label>
-                        <x-input-error :messages="$errors->get('quality_checked')" class="mt-1" />
+                    <div class="border-t border-gray-100 pt-4 space-y-3">
+                        @foreach ($attestations as $attestation)
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="attestations[]" value="{{ $attestation->id }}"
+                                    x-model="attestations"
+                                    class="mt-0.5 rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500" />
+                                <span class="text-sm text-gray-700 font-medium">{{ $attestation->text }}</span>
+                            </label>
+                        @endforeach
+                        <x-input-error :messages="$errors->get('attestations')" class="mt-1" />
                     </div>
 
                     {{-- Note to editor (optional) --}}
@@ -364,8 +363,8 @@
                                 <span x-text="draftSaving ? 'Saving…' : 'Save for Later'"></span>
                             </button>
                             <button type="submit"
-                                :disabled="!qualityChecked || submitting || !wordCountsMet()"
-                                :class="(qualityChecked && !submitting && wordCountsMet()) ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'"
+                                :disabled="!allAttestationsChecked() || submitting || !wordCountsMet()"
+                                :class="(allAttestationsChecked() && !submitting && wordCountsMet()) ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'"
                                 class="px-4 py-2 text-sm font-semibold text-white rounded-md transition-colors inline-flex items-center gap-2">
                                 <svg x-show="submitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -440,7 +439,8 @@
         return {
             type: '{{ old('sr_assignment_type', $existing?->sr_assignment_type ?? $assignment->assignment_type ?? '') }}',
             pageCount: {{ old('page_count', $assignment->page_count) }},
-            qualityChecked: {{ old('quality_checked') ? 'true' : 'false' }},
+            attestations: @js(array_map('strval', old('attestations', []))),
+            totalAttestations: {{ $attestations->count() }},
             submitting: false,
             draftSaving: false,
             draftSaved: false,
@@ -528,6 +528,10 @@
                 if (showSynopsis && this.synopsisMinWords() > 0 && this.wordCount(this.synopsis) < this.synopsisMinWords()) return false;
                 if (this.notesMinWords() > 0 && this.wordCount(this.notes) < this.notesMinWords()) return false;
                 return true;
+            },
+
+            allAttestationsChecked() {
+                return this.attestations.length >= this.totalAttestations;
             },
 
             async saveDraft(btn) {

@@ -23,6 +23,7 @@ use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QcController;
+use App\Http\Controllers\CoverageAttestationController;
 use App\Http\Controllers\RatebookController;
 use App\Http\Controllers\ReaderPayController;
 use App\Http\Controllers\ReaderProfileController;
@@ -252,6 +253,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/test-data/reset', [\App\Http\Controllers\TestDataController::class, 'reset'])->name('test-data.reset');
         Route::delete('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'destroy'])->name('test-data.destroy');
         Route::post('/admin/test-data/auto-reset', [\App\Http\Controllers\TestDataController::class, 'toggleAutoReset'])->name('test-data.auto-reset');
+
+        Route::get('/admin/coverage-attestations', [CoverageAttestationController::class, 'index'])->name('coverage-attestations.index');
+        Route::post('/admin/coverage-attestations', [CoverageAttestationController::class, 'store'])->name('coverage-attestations.store');
+        Route::patch('/admin/coverage-attestations/{coverageAttestation}', [CoverageAttestationController::class, 'update'])->name('coverage-attestations.update');
+        Route::delete('/admin/coverage-attestations/{coverageAttestation}', [CoverageAttestationController::class, 'destroy'])->name('coverage-attestations.destroy');
+        Route::post('/admin/coverage-attestations/{coverageAttestation}/move-up', [CoverageAttestationController::class, 'moveUp'])->name('coverage-attestations.move-up');
+        Route::post('/admin/coverage-attestations/{coverageAttestation}/move-down', [CoverageAttestationController::class, 'moveDown'])->name('coverage-attestations.move-down');
     });
 
     Route::get('/staff/{user}/card', [\App\Http\Controllers\StaffCardController::class, 'card'])->name('staff.card');
