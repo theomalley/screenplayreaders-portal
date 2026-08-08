@@ -118,7 +118,10 @@ class AssignmentController extends Controller
 
             $allAssignments = Assignment::with(['assignedReader.readerProfile', 'assignedReader.editorProfile', 'requestedReader.readerProfile', 'helpscoutConversation', 'editorNotes', 'tiers'])
                 ->where('status', '!=', Assignment::STATUS_COMPLETED)
-                ->whereNotIn('assignment_type', $formattingTypes)
+                ->where(function ($q) use ($formattingTypes) {
+                    $q->whereNotIn('assignment_type', $formattingTypes)
+                      ->orWhereNull('assignment_type');
+                })
                 ->orderBy('created_at', 'asc')
                 ->get()
                 ->filter(fn($a) => $a->status !== Assignment::STATUS_CANCELLED || ! $a->isCancelledDismissedBy($user->id))
