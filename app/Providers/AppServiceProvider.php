@@ -22,6 +22,32 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->registerGates();
+        $this->syncSessionLifetime();
+    }
+
+    /**
+     * Laravel's own session cookie/GC lifetime must never be shorter than the
+     * admin-configurable idle timeout (Setting::session_timeout_minutes, or a
+     * per-admin override on users.session_timeout_minutes) — otherwise the
+     * framework silently expires the session before CheckSessionTimeout's idle
+     * check ever gets a chance to fire, making the configured value a no-op.
+     */
+    private function syncSessionLifetime(): void
+    {
+        if ($this->app->runningInConsole()) {
+            return;
+        }
+
+        try {
+            $globalTimeout = (int) \App\Models\Setting::getValue('session_timeout_minutes', 120);
+            $maxOverride   = (int) (User::whereNotNull('session_timeout_minutes')->max('session_timeout_minutes') ?? 0);
+            $required      = max($globalTimeout, $maxOverride, (int) config('session.lifetime'));
+
+            config(['session.lifetime' => $required]);
+        } catch (\Throwable $e) {
+            // DB not reachable yet (e.g. fresh install before migrations run) — leave the
+            // env-configured session.lifetime fallback in place.
+        }
     }
 
     /**
