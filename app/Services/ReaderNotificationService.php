@@ -1,5 +1,12 @@
 <?php
 
+// v1.5 — 2026-08-17 | Dedup: a reader can now only be emailed once per order_number, via the
+//                      new assignment_notified_readers ledger (checked/claimed with insertOrIgnore
+//                      to stay race-safe). Fixes readers getting indistinguishable duplicate
+//                      emails when a multi-reader order has same-type sibling slots (e.g. the
+//                      two notes_only slots on a 3-reader order both going STATUS_UNASSIGNED
+//                      independently), and readers getting re-emailed for an assignment that was
+//                      already STATUS_UNASSIGNED when EscalateTierTimeouts transfers its tier.
 // v1.4 — 2026-07-31 | Add notifyOptedInAdmins() — admins who opt in (ProfileController::
 //                      updateNotifications(), admin-only) get a copy of the same
 //                      NewAssignmentMail a reader would get, for previewing/testing the
@@ -26,6 +33,7 @@ use App\Mail\NewAssignmentMail;
 use App\Models\Assignment;
 use App\Models\ReaderProfile;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 
@@ -50,7 +58,8 @@ class ReaderNotificationService
                 Gate::forUser($requested)->allows('accept', $assignment) &&
                 $requested->readerProfile?->email_notifications &&
                 $requested->readerProfile?->email_notify_requests &&
-                ! $this->skipForCapacity($requested->readerProfile, true)
+                ! $this->skipForCapacity($requested->readerProfile, true) &&
+                $this->claimNotification($assignment->order_number, $requested->id)
             ) {
                 Mail::to($requested->email)
                     ->send(new NewAssignmentMail($assignment, $requested, 'request'));
@@ -95,6 +104,10 @@ class ReaderNotificationService
                 continue;
             }
 
+            if (! $this->claimNotification($assignment->order_number, $reader->id)) {
+                continue;
+            }
+
             Mail::to($reader->email)
                 ->send(new NewAssignmentMail($assignment, $reader, $context));
         }
@@ -111,6 +124,22 @@ class ReaderNotificationService
         }
 
         return $profile->isAtCapacity($isRequestedAssignment);
+    }
+
+    /**
+     * Atomically claims the (order_number, reader) pair via the unique index on
+     * assignment_notified_readers — returns true (and records the claim) only the
+     * first time this reader is notified about this order, across every sibling
+     * Assignment row and every trigger (creation, escalation, scheduled release).
+     * insertOrIgnore() makes this race-safe against two triggers firing concurrently.
+     */
+    private function claimNotification(string $orderNumber, int $readerId): bool
+    {
+        return DB::table('assignment_notified_readers')->insertOrIgnore([
+            'order_number' => $orderNumber,
+            'reader_id'    => $readerId,
+            'created_at'   => now(),
+        ]) > 0;
     }
 
     /**
