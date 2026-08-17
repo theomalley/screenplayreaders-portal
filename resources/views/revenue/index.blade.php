@@ -82,11 +82,11 @@
                                     <th class="px-4 py-3 text-left">Coupon</th>
                                     <th class="px-4 py-3 text-right">Gross</th>
                                     <th class="px-4 py-3 text-right">Discount</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-700">Net</th>
                                     <th class="px-4 py-3 text-right">Reader COG</th>
                                     <th class="px-4 py-3 text-right">Proc COG</th>
                                     <th class="px-4 py-3 text-right">Comm COG</th>
                                     <th class="px-4 py-3 text-right">Total COG</th>
-                                    <th class="px-4 py-3 text-right font-semibold text-gray-700">Net</th>
                                     <th class="px-4 py-3 text-left">Method</th>
                                 </tr>
                             </thead>
@@ -101,11 +101,11 @@
                                         <td class="px-4 py-3 text-right {{ $order->discount_amount > 0 ? 'text-amber-600' : 'text-gray-400' }}">
                                             @if($order->discount_amount > 0)−${{ number_format($order->discount_amount, 2) }}@else—@endif
                                         </td>
+                                        <td class="px-4 py-3 text-right font-semibold text-green-700">${{ number_format($order->net_revenue, 2) }}</td>
                                         <td class="px-4 py-3 text-right text-red-500">${{ number_format($order->cog_reader, 2) }}</td>
                                         <td class="px-4 py-3 text-right text-orange-500">${{ number_format($order->cog_processing, 2) }}</td>
                                         <td class="px-4 py-3 text-right text-yellow-600">${{ number_format($order->cog_commission, 2) }}</td>
                                         <td class="px-4 py-3 text-right text-rose-600">${{ number_format($order->cog_total, 2) }}</td>
-                                        <td class="px-4 py-3 text-right font-semibold text-green-700">${{ number_format($order->net_revenue, 2) }}</td>
                                         <td class="px-4 py-3 text-gray-500 text-xs">{{ $order->payment_method }}</td>
                                     </tr>
                                 @endforeach
@@ -120,11 +120,11 @@
                                     </td>
                                     <td class="px-4 py-3 text-right text-gray-700">${{ number_format($totals['gross'], 2) }}</td>
                                     <td class="px-4 py-3 text-right text-amber-600">@if($totals['discount'] > 0)−${{ number_format($totals['discount'], 2) }}@else—@endif</td>
+                                    <td class="px-4 py-3 text-right text-green-700">${{ number_format($totals['net'], 2) }}</td>
                                     <td class="px-4 py-3 text-right text-red-500">${{ number_format($totals['cog_reader'], 2) }}</td>
                                     <td class="px-4 py-3 text-right text-orange-500">${{ number_format($totals['cog_proc'], 2) }}</td>
                                     <td class="px-4 py-3 text-right text-yellow-600">${{ number_format($totals['cog_comm'], 2) }}</td>
                                     <td class="px-4 py-3 text-right text-rose-600">${{ number_format($totals['cog_total'], 2) }}</td>
-                                    <td class="px-4 py-3 text-right text-green-700">${{ number_format($totals['net'], 2) }}</td>
                                     <td></td>
                                 </tr>
                             </tfoot>
