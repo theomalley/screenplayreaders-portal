@@ -48,7 +48,8 @@
                         </thead>
                         <tbody class="divide-y divide-gray-50">
                             <template x-for="row in sorted" :key="row.id ?? row._key">
-                                <tr class="hover:bg-gray-50" :class="row.saving ? 'opacity-60' : ''">
+                                <tr class="hover:bg-gray-50" :class="row.saving ? 'opacity-60' : ''"
+                                    :data-row-key="row.id ?? row._key">
                                     <td class="px-4 py-2">
                                         <input type="text" x-model="row.first_name" @change="save(row)"
                                                :disabled="!canManage"
@@ -181,11 +182,21 @@
                 }
             },
             addRow() {
+                const key = 'new-' + (this._seq++);
                 this.rows.push({
-                    _key: 'new-' + (this._seq++),
+                    _key: key,
                     id: null,
                     first_name: '', last_name: '', email: '', notes: '',
                     flagged_date: '',
+                });
+                // New rows sort to the top of a 100+ row table — without this the
+                // click reads as "does nothing" since the row lands off-screen.
+                this.$nextTick(() => {
+                    const el = document.querySelector(`[data-row-key="${key}"] input`);
+                    if (el) {
+                        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                        el.focus();
+                    }
                 });
             },
             csrf() {
