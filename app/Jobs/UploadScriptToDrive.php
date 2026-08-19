@@ -1,5 +1,7 @@
 <?php
 
+// v1.5 — 2026-08-19 | Retry (with backoff) instead of giving up permanently when the temp
+//                     file isn't found yet — order 58328 hit this on the first attempt.
 // v1.4 — 2026-05-24 | Formatting keeps original file format; proofreading converts to PDF like other services.
 // v1.3 — 2026-05-24 | DOCX→PDF conversion via Drive import/export before upload.
 // v1.2 — 2026-05-22 | Explicit local-disk path resolution; pre-flight file-exists check.
@@ -22,6 +24,9 @@ class UploadScriptToDrive implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 4;
+    public array $backoff = [10, 30, 60];
+
     public function __construct(
         public readonly int $assignmentId,
         public readonly string $storagePath, // relative to storage/app/
@@ -33,9 +38,20 @@ class UploadScriptToDrive implements ShouldQueue
         $fullPath   = Storage::disk('local')->path($this->storagePath);
 
         if (! file_exists($fullPath)) {
-            Log::error('UploadScriptToDrive: file not found', [
+            if ($this->attempts() < $this->tries) {
+                Log::warning('UploadScriptToDrive: file not found, retrying', [
+                    'assignment_id' => $this->assignmentId,
+                    'path'          => $fullPath,
+                    'attempt'       => $this->attempts(),
+                ]);
+                $this->release($this->backoff[$this->attempts() - 1] ?? 60);
+                return;
+            }
+
+            Log::error('UploadScriptToDrive: file not found after retries', [
                 'assignment_id' => $this->assignmentId,
                 'path'          => $fullPath,
+                'attempts'      => $this->attempts(),
             ]);
             return;
         }
