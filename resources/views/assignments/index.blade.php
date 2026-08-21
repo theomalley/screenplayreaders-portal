@@ -2305,6 +2305,10 @@
                                                         : null;
                                                     $isRequestedForMe = $assignment->requested_reader_id === auth()->id();
                                                     $rowClass = $assignment->rush ? 'border-l-4 border-amber-400' : '';
+                                                    $rushDueAt = $assignment->rush && $assignment->created_at
+                                                        ? $assignment->created_at->copy()->addHours(23) : null;
+                                                    $rushMetDeadline = $rushDueAt && $assignment->completed_at
+                                                        ? $assignment->completed_at->lte($rushDueAt) : null;
                                                     $viewUrl  = $assignment->hasCloudScript()
                                                         ? route('assignments.streamScript', $assignment)
                                                         : null;
@@ -2336,7 +2340,14 @@
                                                     <td class="px-3 py-3 whitespace-nowrap">
                                                         <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
                                                         @if ($assignment->rush)
-                                                            <div x-data="rushCountdown('{{ $assignment->created_at->copy()->addHours(23)->utc()->toIso8601String() }}', @js($assignment->created_at->copy()->addHours(23)->setTimezone($appTimezone ?? 'UTC')->format('M j, g:ia')))"><div class="mt-0.5"><span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span> <span class="rush-due text-[9px]" x-text="(overdue ? 'Was due by ' : 'Due by ') + dueLabel"></span></div><div x-text="display" :class="overdue ? 'rush-overdue' : 'rush-countdown'" class="text-[9px]"></div></div>
+                                                            <div class="mt-0.5">
+                                                                <span class="inline-flex px-1 py-px rounded text-[9px] font-bold bg-amber-400 text-amber-900 uppercase leading-none">Rush</span>
+                                                                @if ($rushMetDeadline)
+                                                                    <span class="text-[9px] ml-1 text-green-700">Met deadline</span>
+                                                                @else
+                                                                    <span class="text-[9px] ml-1 rush-overdue">Missed deadline. Refund RUSH fee.</span>
+                                                                @endif
+                                                            </div>
                                                         @endif
                                                         <div class="mt-1.5">
                                                             <div class="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Overall Turnaround</div>
