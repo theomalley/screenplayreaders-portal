@@ -1,5 +1,11 @@
 <?php
 
+// v1.7 — 2026-08-23 | FIX: line_items_json was stored as a raw JSON string into a model
+//                     attribute cast as 'array', double-encoding it on write. Reading it
+//                     back only undid one layer of encoding, so it came back as a string —
+//                     Assignment::orderHasOversizedFee() (and anything else reading
+//                     OrderRevenue::line_items_json) always saw is_array() === false and
+//                     silently failed. Decode to a real array right before the DB write.
 // v1.6 — 2026-07-30 | Track cog_commission_base alongside cog_commission and re-apply
 //                     EditorCommissionService::applyQcAdjustmentForOrder() after every save, so a
 //                     resync after QC has already completed doesn't wipe out the QC penalty.
@@ -128,6 +134,16 @@ class OrderRevenueController extends Controller
         // Base commission before any QC penalty — whatever cog_commission would be at this point,
         // portal-calculated or theme-supplied as-is, is the pre-penalty figure.
         $data['cog_commission_base'] = $data['cog_commission'];
+
+        // line_items_json arrives as a JSON string (used as such above by
+        // commissionService->calculate()) but the OrderRevenue model casts this
+        // column as 'array' — assigning a raw JSON string double-encodes it,
+        // so orderHasOversizedFee()/decode-on-read down the line always saw a
+        // string instead of an array and silently failed. Decode once here,
+        // right before the write, so the array cast encodes it exactly once.
+        $data['line_items_json'] = ! empty($data['line_items_json'])
+            ? (json_decode($data['line_items_json'], true) ?: [])
+            : [];
 
         Log::info('OrderRevenue sync', [
             'order_number' => $data['order_number'],
