@@ -1,5 +1,9 @@
 <?php
 
+// v2.31 — 2026-08-24 | accept()/updateStatus()/update(): clear reader_declined ("No can do")
+//                      whenever the reader re-accepts or is re-assigned to the same slot —
+//                      previously only the transition through Unassigned cleared it, so the
+//                      badge stuck around on a direct Assigned+reader re-pick.
 // v2.30 — 2026-07-24 | store()/update(): accept hidden_from_reader_ids[] — an admin-only
 //                      (not editor) per-reader "hide this assignment" override, unlike
 //                      blocked_reader_ids this is per-assignment (not synced to sibling
@@ -1095,6 +1099,12 @@ class AssignmentController extends Controller
 
         if (!empty($data['assigned_reader_id'])) {
             abort_unless($this->canAssign((int) $data['assigned_reader_id']), 403);
+
+            // Re-picking a reader (even one who previously declined) clears the
+            // stale "No can do" flag admins would otherwise still see.
+            if ((int) $data['assigned_reader_id'] !== (int) $assignment->assigned_reader_id) {
+                $data['reader_declined'] = false;
+            }
         }
 
         // If a short conversation number was entered (< 10,000,000), resolve it to
@@ -1176,6 +1186,7 @@ class AssignmentController extends Controller
             $data['assigned_reader_id'] = $request->assigned_reader_id;
             $data['accepted_at']        = now();
             $data['take_me_enabled']    = false;
+            $data['reader_declined']    = false;
         }
 
         if ($request->status === Assignment::STATUS_COMPLETED
@@ -1235,6 +1246,7 @@ class AssignmentController extends Controller
                 'assigned_reader_id' => $user->id,
                 'accepted_at'        => now(),
                 'take_me_enabled'    => false,
+                'reader_declined'    => false,
             ]);
         });
 
