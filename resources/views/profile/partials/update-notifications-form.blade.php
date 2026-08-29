@@ -93,7 +93,8 @@
                 </label>
                 <label class="flex items-center gap-2 text-sm"
                        :class="any ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'">
-                    <input type="checkbox" name="email_notify_rush" value="1"
+                    <input type="hidden" name="email_notify_rush" :value="(any || rush) ? '1' : '0'" />
+                    <input type="checkbox"
                            :checked="any || rush"
                            :disabled="any"
                            @change="rush = $event.target.checked"
@@ -102,7 +103,8 @@
                 </label>
                 <label class="flex items-center gap-2 text-sm"
                        :class="any ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'">
-                    <input type="checkbox" name="email_notify_requests" value="1"
+                    <input type="hidden" name="email_notify_requests" :value="(any || requests) ? '1' : '0'" />
+                    <input type="checkbox"
                            :checked="any || requests"
                            :disabled="any"
                            @change="requests = $event.target.checked"

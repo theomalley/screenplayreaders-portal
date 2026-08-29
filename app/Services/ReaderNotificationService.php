@@ -1,5 +1,15 @@
 <?php
 
+// v1.6 — 2026-08-29 | Fix: the requested-reader path required email_notify_requests exactly,
+//                      with no fallback to email_notify_any — unlike the rush path a few lines
+//                      below, which already ORs the two. The profile form displays "Reader
+//                      requests" as covered whenever "Any new assignment" is on (and previously
+//                      submitted email_notify_requests=false via a disabled checkbox in that
+//                      state, now fixed separately in update-notifications-form.blade.php), so
+//                      every reader who only opted into "any" was silently never emailed when
+//                      personally requested. Confirmed in production: 0 of 5 opted-in readers
+//                      had email_notify_requests=true, and 13 requested-reader assignments in
+//                      the prior 30 days never appeared in the notification ledger.
 // v1.5 — 2026-08-17 | Dedup: a reader can now only be emailed once per order_number, via the
 //                      new assignment_notified_readers ledger (checked/claimed with insertOrIgnore
 //                      to stay race-safe). Fixes readers getting indistinguishable duplicate
@@ -57,7 +67,10 @@ class ReaderNotificationService
                 $requested &&
                 Gate::forUser($requested)->allows('accept', $assignment) &&
                 $requested->readerProfile?->email_notifications &&
-                $requested->readerProfile?->email_notify_requests &&
+                (
+                    $requested->readerProfile?->email_notify_any ||
+                    $requested->readerProfile?->email_notify_requests
+                ) &&
                 ! $this->skipForCapacity($requested->readerProfile, true) &&
                 $this->claimNotification($assignment->order_number, $requested->id)
             ) {
