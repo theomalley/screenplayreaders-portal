@@ -57,12 +57,6 @@
                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                     Followup questions from customers
                 </label>
-                <label class="flex items-center gap-2 text-sm text-gray-700">
-                    <input type="checkbox" name="sms_notify_qc_fail" value="1"
-                           {{ auth()->user()->readerProfile?->sms_notify_qc_fail ? 'checked' : '' }}
-                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                    My coverage doesn't pass QC
-                </label>
             </div>
         </div>
 
@@ -117,12 +111,7 @@
                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                     Followup questions from customers
                 </label>
-                <label class="flex items-center gap-2 text-sm text-gray-700">
-                    <input type="checkbox" name="email_notify_qc_fail" value="1"
-                           {{ auth()->user()->readerProfile?->email_notify_qc_fail ? 'checked' : '' }}
-                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                    My coverage doesn't pass QC
-                </label>
+                <p class="text-xs text-gray-400">You'll always be emailed if a coverage you submitted doesn't pass QC and is sent back for revisions — that one isn't optional.</p>
             </div>
         </div>
 

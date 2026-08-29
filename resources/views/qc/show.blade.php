@@ -8,6 +8,9 @@
             </a>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 QC Review — #{{ $assignment->order_number }}
+                @if($assignment->status === \App\Models\Assignment::STATUS_NEEDS_ATTENTION)
+                    <span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 tracking-wide">NEEDS ATTENTION</span>
+                @endif
                 @if($assignment->rush)
                     <span class="ml-2 text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
                 @endif
@@ -102,6 +105,13 @@
                 <div><span class="text-indigo-500 font-medium block">Order</span><span class="font-mono">{{ $assignment->order_number }}</span></div>
             </div>
 
+            @if($assignment->status === \App\Models\Assignment::STATUS_NEEDS_ATTENTION && $assignment->needs_attention_notes)
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 text-sm text-orange-800">
+                    <span class="font-medium block mb-1">Notes sent to reader</span>
+                    {{ $assignment->needs_attention_notes }}
+                </div>
+            @endif
+
             {{-- Action bar --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-wrap items-center gap-3">
 
@@ -137,16 +147,18 @@
 
                 <div class="flex-1"></div>
 
-                {{-- Send Back to Reader --}}
-                <button type="button" @click="sendBackOpen = true"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-                    </svg>
-                    Send Back to Reader
-                </button>
+                {{-- Send Back to Reader (only from the QC queue — an already-returned coverage is sent back via re-editing the notes below) --}}
+                @if($assignment->status === \App\Models\Assignment::STATUS_QC)
+                    <button type="button" @click="sendBackOpen = true"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                        </svg>
+                        Send Back to Reader
+                    </button>
+                @endif
 
-                {{-- Approve --}}
+                {{-- Approve (also delivers directly when reviewing/editing a Needs Attention item yourself) --}}
                 <form method="POST" action="{{ route('qc.approve', $assignment) }}"
                     @submit="if (!confirm('Approve #{{ $assignment->order_number }} and mark as complete?')) { $event.preventDefault(); return; } approving = true">
                     @csrf
@@ -155,7 +167,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Approve
+                        {{ $assignment->status === \App\Models\Assignment::STATUS_NEEDS_ATTENTION ? 'Approve & Deliver' : 'Approve' }}
                     </button>
                 </form>
             </div>

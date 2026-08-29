@@ -1,5 +1,10 @@
 <?php
 
+// v1.1 — 2026-08-29 | Switch to the dedicated qc_needs_attention_template_id MailerSend
+//                      template (pxkjn4138jqgz781) instead of sharing assignment_template_id
+//                      with NewAssignmentMail — its copy ("Your assignment needs attention" /
+//                      portal button) is static in the template, so only reader_name and
+//                      script_details are passed; header/body_message/subject-as-data dropped.
 // v1.0 — 2026-06-05 | Notify reader when their assignment is sent back from QC (needs_attention).
 
 namespace App\Mail;
@@ -33,25 +38,16 @@ class QcFailedMail extends Mailable implements ShouldQueue
             default             => ucwords(str_replace('_', ' ', $this->assignment->assignment_type ?? '')),
         };
 
-        $notes = $this->assignment->needs_attention_notes;
-        $bodyMessage = 'Your coverage for one of your assignments did not pass QC and has been returned to you for revisions. Please log in to the portal to review the notes and resubmit.';
-        if ($notes) {
-            $bodyMessage .= "\n\nNotes from QC: " . $notes;
-        }
-
         $this->subject('Coverage Needs Revision — ' . $this->assignment->script_title);
 
         $this->mailersend(
-            template_id: config('services.mailersend.assignment_template_id'),
+            template_id: config('services.mailersend.qc_needs_attention_template_id'),
             personalization: [
                 [
                     'email' => $this->reader->email,
                     'data'  => [
                         'reader_name'    => $readerName,
-                        'subject'        => 'Coverage Needs Revision — ' . $this->assignment->script_title,
-                        'header'         => 'Your Coverage Needs Revision',
                         'script_details' => $this->assignment->script_title . ' (' . $typeLabel . ')',
-                        'body_message'   => $bodyMessage,
                         'portal_url'     => config('app.url') . '/assignments#tab-attention',
                     ],
                 ],

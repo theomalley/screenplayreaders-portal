@@ -11,7 +11,37 @@
                     {{ session('success') }}
                 </div>
             @endif
+            @if(session('error'))
+                <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                    {{ session('error') }}
+                </div>
+            @endif
 
+            <div x-data="{ tab: (location.hash.startsWith('#tab-') ? location.hash.slice(5) : 'queue') }"
+                 x-init="$watch('tab', val => history.replaceState(null, '', '#tab-' + val))">
+
+                {{-- Tabs --}}
+                <div class="flex border-b border-gray-200 mb-4">
+                    <button @click="tab = 'queue'"
+                            :class="tab === 'queue' ? 'border-b-2 border-indigo-600 text-indigo-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2 text-sm transition flex items-center gap-1.5">
+                        QC Queue
+                        @if($assignments->total() > 0)
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">{{ $assignments->total() }}</span>
+                        @endif
+                    </button>
+                    <button @click="tab = 'attention'"
+                            :class="tab === 'attention' ? 'border-b-2 border-orange-600 text-orange-700 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2 text-sm transition flex items-center gap-1.5">
+                        Needs Attention
+                        @if($needsAttention->total() > 0)
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">{{ $needsAttention->total() }}</span>
+                        @endif
+                    </button>
+                </div>
+
+            {{-- ---- QC Queue tab ---- --}}
+            <div x-show="tab === 'queue'">
             @if($assignments->isEmpty())
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-12 text-center text-gray-400 text-sm">
                     No assignments awaiting QC.
@@ -127,6 +157,88 @@
                     <div>{{ $assignments->links() }}</div>
                 @endif
             @endif
+            </div>
+
+            {{-- ---- Needs Attention tab ---- --}}
+            <div x-show="tab === 'attention'">
+            @if($needsAttention->isEmpty())
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-12 text-center text-gray-400 text-sm">
+                    No coverages currently need attention.
+                </div>
+            @else
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            <tr>
+                                <th class="px-4 py-3 text-left">Order</th>
+                                <th class="px-4 py-3 text-left">Script / Writer</th>
+                                <th class="px-4 py-3 text-left">Type</th>
+                                <th class="px-4 py-3 text-left">Reader</th>
+                                <th class="px-4 py-3 text-left">Sent Back</th>
+                                <th class="px-4 py-3 text-left">Notes</th>
+                                <th class="px-4 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($needsAttention as $assignment)
+                                @php
+                                    $typeLabel = match($assignment->assignment_type) {
+                                        'script_coverage' => 'Script Coverage',
+                                        'notes_only'      => 'Notes-Only',
+                                        'deep_dive'       => 'Advanced Script Coverage',
+                                        'short'           => 'Short',
+                                        'budget'          => 'Budget',
+                                        'book'            => 'Book',
+                                        'coverage'        => 'Coverage',
+                                        'development_notes' => 'Dev Notes',
+                                        default           => $assignment->assignment_type ?? '—',
+                                    };
+                                    if ($assignment->vendor === 'wd') {
+                                        $typeLabel = 'WD ' . $typeLabel;
+                                    }
+                                @endphp
+                                <tr class="hover:bg-gray-50 cursor-pointer"
+                                    onclick="if (!event.target.closest('a, button, form')) window.location='{{ route('qc.show', $assignment) }}'">
+                                    <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
+                                        {{ $assignment->order_number }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-gray-800">{{ $assignment->script_title }}</div>
+                                        <div class="text-gray-400 text-xs">{{ $assignment->writer_name }}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $typeLabel }}@if($assignment->is_test) <span class="inline-flex items-center px-1 py-px rounded text-[9px] font-bold bg-amber-200 text-amber-800 tracking-wide">TEST</span>@endif</td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        @if ($assignment->assignedReader)
+                                            <x-staff-icon :user="$assignment->assignedReader" size="sm" />
+                                        @else
+                                            <span class="text-gray-300">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-500 whitespace-nowrap tabular-nums">
+                                        {{ $assignment->updated_at?->format('M j, Y') ?? '—' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-500 max-w-xs truncate" title="{{ $assignment->needs_attention_notes }}">
+                                        {{ $assignment->needs_attention_notes ?: '—' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <a href="{{ route('qc.show', $assignment) }}"
+                                            class="text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                                            Review →
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                @if($needsAttention->hasPages())
+                    <div>{{ $needsAttention->links() }}</div>
+                @endif
+            @endif
+            </div>
+
+            </div>
 
         </div>
     </div>

@@ -82,6 +82,7 @@ return [
         'invoice_template_id'       => env('MAILERSEND_INVOICE_TEMPLATE_ID', 'vywj2lpzxepg7oqz'),
         'budget_template_id'        => env('MAILERSEND_BUDGET_TEMPLATE_ID', ''),
         'registration_template_id'  => env('MAILERSEND_REGISTRATION_TEMPLATE_ID', 'pq3enl6dozrg2vwr'),
+        'qc_needs_attention_template_id' => env('MAILERSEND_QC_NEEDS_ATTENTION_TEMPLATE_ID', 'pxkjn4138jqgz781'),
     ],
 
 ];

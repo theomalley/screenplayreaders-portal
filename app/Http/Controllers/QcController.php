@@ -1,5 +1,12 @@
 <?php
 
+// v1.13 — 2026-08-29 | sendBack() now always emails the reader — QC-fail notification is
+//                      mandatory, not an opt-in preference (readerProfile.email_notify_qc_fail
+//                      is no longer read here; see ProfileController/notifications form).
+// v1.12 — 2026-08-29 | Add "Needs Attention" tab: index() also lists STATUS_NEEDS_ATTENTION
+//                      assignments; show()/approve() accept that status too so admins/editors
+//                      can view, edit, and directly approve/deliver a returned coverage instead
+//                      of waiting on the reader to revise and resubmit through QC.
 // v1.11 — 2026-06-19 | Extract buildHelpScoutDraft + openInNewTab to CompletionDraftService
 // v1.10 — 2026-06-12 | regeneratePdf(): delete the previous Drive PDF after a replacement is
 //                      generated successfully, so repeated regeneration doesn't leave orphans.
@@ -45,15 +52,23 @@ class QcController extends Controller
         $assignments = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
             ->where('status', Assignment::STATUS_QC)
             ->orderByDesc('submitted_at')
-            ->paginate(50);
+            ->paginate(50, ['*'], 'page');
 
-        return view('qc.index', compact('assignments'));
+        $needsAttention = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
+            ->where('status', Assignment::STATUS_NEEDS_ATTENTION)
+            ->orderByDesc('updated_at')
+            ->paginate(50, ['*'], 'attention_page');
+
+        return view('qc.index', compact('assignments', 'needsAttention'));
     }
 
     public function show(Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
-        abort_unless($assignment->status === Assignment::STATUS_QC, 404);
+        abort_unless(
+            in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_NEEDS_ATTENTION], true),
+            404
+        );
 
         $assignment->load(['assignedReader.readerProfile', 'coverageSubmission']);
 
@@ -91,7 +106,10 @@ class QcController extends Controller
     public function approve(Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
-        abort_unless($assignment->status === Assignment::STATUS_QC, 422);
+        abort_unless(
+            in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_NEEDS_ATTENTION], true),
+            422
+        );
 
         DB::transaction(function () use ($assignment) {
             $assignment->update([
@@ -272,10 +290,10 @@ class QcController extends Controller
         ]);
 
         $reader = $assignment->assignedReader;
-        if ($reader?->readerProfile?->email_notify_qc_fail) {
+        if ($reader) {
             Mail::to($reader->email)->send(new \App\Mail\QcFailedMail($assignment->fresh(), $reader));
         }
-        // SMS: pending Twilio integration — flag: sms_notify_qc_fail
+        // SMS: pending Twilio integration
 
         return redirect()->route('qc.index')
             ->with('success', "#{$assignment->order_number} — {$assignment->script_title} sent back to reader.");
