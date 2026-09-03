@@ -32,6 +32,13 @@
                 <div x-show="error" x-transition x-text="error"
                      class="px-4 py-2 text-sm text-red-800 bg-red-50 border-b border-red-200"></div>
 
+                <div x-show="canManage" class="px-4 py-3 border-b border-gray-100">
+                    <button type="button" @click="addRow()"
+                            class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded text-xs font-medium text-white hover:bg-indigo-700 transition">
+                        + Add Karen
+                    </button>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm divide-y divide-gray-100">
                         <thead class="bg-gray-50">
@@ -47,21 +54,22 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50">
-                            <template x-for="row in sorted" :key="row.id ?? row._key">
+                            <template x-for="row in sortedRows" :key="row._key">
                                 <tr class="hover:bg-gray-50" :class="row.saving ? 'opacity-60' : ''"
-                                    :data-row-key="row.id ?? row._key">
+                                    :data-row-key="row._key"
+                                    @focusout="onRowFocusOut(row, $event)">
                                     <td class="px-4 py-2">
-                                        <input type="text" x-model="row.first_name" @change="save(row)"
+                                        <input type="text" x-model="row.first_name"
                                                :disabled="!canManage"
                                                class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="text" x-model="row.last_name" @change="save(row)"
+                                        <input type="text" x-model="row.last_name"
                                                :disabled="!canManage"
                                                class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="email" x-model="row.email" @change="save(row)"
+                                        <input type="email" x-model="row.email"
                                                :disabled="!canManage"
                                                class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
                                     </td>
@@ -71,7 +79,7 @@
                                                class="w-full border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 font-mono text-xs cursor-pointer">
                                     </td>
                                     <td class="px-4 py-2 whitespace-nowrap">
-                                        <input type="date" x-model="row.flagged_date" @change="save(row)"
+                                        <input type="date" x-model="row.flagged_date"
                                                :disabled="!canManage"
                                                :class="row.flagged_date ? '' : 'date-empty'"
                                                class="border-0 bg-transparent focus:ring-1 focus:ring-indigo-400 rounded px-1 py-0.5 disabled:text-gray-500 font-mono text-xs">
@@ -87,13 +95,6 @@
                             </tr>
                         </tbody>
                     </table>
-                </div>
-
-                <div x-show="canManage" class="px-4 py-3 border-t border-gray-100">
-                    <button type="button" @click="addRow()"
-                            class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded text-xs font-medium text-white hover:bg-indigo-700 transition">
-                        + Add Karen
-                    </button>
                 </div>
 
                 <div x-show="notesModal" x-cloak
@@ -156,6 +157,12 @@
             error: '',
             _seq: 0,
             notesModal: null,
+            sortedRows: [],
+
+            init() {
+                this.rows.forEach(row => { row._key = 'row-' + (this._seq++); });
+                this.resort();
+            },
 
             openNotes(row) {
                 this.notesModal = row;
@@ -165,8 +172,12 @@
                 this.notesModal = null;
             },
 
-            get sorted() {
-                return [...this.rows].sort((a, b) => {
+            // Sorting is recomputed explicitly (on load, on header click, and once a row is
+            // done being edited) rather than via a reactive getter — resorting live on every
+            // keystroke would move the row being typed into out from under the cursor, which
+            // forces the browser to blur the input mid-edit.
+            resort() {
+                this.sortedRows = [...this.rows].sort((a, b) => {
                     const av = (a[this.sortCol] ?? '').toString().toLowerCase();
                     const bv = (b[this.sortCol] ?? '').toString().toLowerCase();
                     const cmp = av.localeCompare(bv);
@@ -180,15 +191,23 @@
                     this.sortCol = col;
                     this.sortAsc = true;
                 }
+                this.resort();
+            },
+            // Saves the whole row once, when focus leaves it entirely — not per field —
+            // so tabbing between fields in the same row no longer triggers a save mid-edit.
+            onRowFocusOut(row, event) {
+                if (event.currentTarget.contains(event.relatedTarget)) return;
+                this.save(row);
             },
             addRow() {
-                const key = 'new-' + (this._seq++);
+                const key = 'row-' + (this._seq++);
                 this.rows.push({
                     _key: key,
                     id: null,
                     first_name: '', last_name: '', email: '', notes: '',
                     flagged_date: '',
                 });
+                this.resort();
                 // New rows sort to the top of a 100+ row table — without this the
                 // click reads as "does nothing" since the row lands off-screen.
                 this.$nextTick(() => {
@@ -239,6 +258,7 @@
                     if (!r.ok) throw new Error('Save failed');
                     const data = await r.json().catch(() => null);
                     if (isNew && data?.karen?.id) row.id = data.karen.id;
+                    this.resort();
                     this.flashMsg('Saved.');
                 })
                 .catch(() => {
@@ -260,6 +280,7 @@
                 .then((r) => {
                     if (!r.ok) throw new Error('Delete failed');
                     this.rows = this.rows.filter(r2 => r2 !== row);
+                    this.resort();
                     this.flashMsg('Removed.');
                 })
                 .catch(() => this.flashErr('Could not delete — please try again.'));
