@@ -1,5 +1,10 @@
 <?php
 
+// v1.8 — 2026-09-06 | Fix convertDocxToPdf() creating its temp Google Doc with no parent —
+//                     it landed in the service account's own My Drive (0-byte quota under
+//                     domain-wide delegation, which isn't actually wired up here) and failed
+//                     every DOCX upload with storageQuotaExceeded (order 58399 incident).
+//                     Parent it in the scripts Shared Drive folder instead.
 // v1.7 — 2026-06-10 | Add watermarkPdf() — tiles a forensic watermark across every page and
 //                     applies qpdf print/copy/edit restrictions for reader downloads.
 // v1.6 — 2026-06-07 | Add unlockScript() — strips PDF encryption via qpdf (falls back to Ghostscript).
@@ -385,6 +390,7 @@ class GoogleDriveService
             new DriveFile([
                 'name'     => 'sr_tmp_' . uniqid(),
                 'mimeType' => 'application/vnd.google-apps.document',
+                'parents'  => [config('services.google.drive_scripts_folder_id')],
             ]),
             [
                 'data'              => file_get_contents($localDocxPath),
