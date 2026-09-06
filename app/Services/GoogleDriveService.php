@@ -1,5 +1,10 @@
 <?php
 
+// v1.9 — 2026-09-06 | Don't let a failed temp-doc cleanup in convertDocxToPdf() mask a
+//                     successful conversion — the service account can create files in the
+//                     scripts Shared Drive (see v1.8) but delete() 404s on them for reasons
+//                     unconfirmed; a PHP finally-block exception overrides the try's result,
+//                     so this was silently discarding good PDF conversions.
 // v1.8 — 2026-09-06 | Fix convertDocxToPdf() creating its temp Google Doc with no parent —
 //                     it landed in the service account's own My Drive (0-byte quota under
 //                     domain-wide delegation, which isn't actually wired up here) and failed
@@ -407,7 +412,19 @@ class GoogleDriveService
             $response = $this->drive->files->export($docId, 'application/pdf', ['alt' => 'media']);
             $pdfBytes = $response->getBody()->getContents();
         } finally {
-            $this->drive->files->delete($docId, ['supportsAllDrives' => true]);
+            // Best-effort cleanup — an exception thrown here would override the
+            // export result above and fail the whole conversion (order 58399:
+            // the service account can create files in the shared drive but
+            // delete() 404s on them, cause unconfirmed — leaving orphaned
+            // sr_tmp_ docs is a smaller problem than losing the conversion).
+            try {
+                $this->drive->files->delete($docId, ['supportsAllDrives' => true]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('convertDocxToPdf: failed to delete temp doc', [
+                    'doc_id' => $docId,
+                    'error'  => $e->getMessage(),
+                ]);
+            }
         }
 
         $tmp = tempnam(sys_get_temp_dir(), 'sr_docx_') . '.pdf';
