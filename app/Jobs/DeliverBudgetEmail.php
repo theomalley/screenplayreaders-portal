@@ -78,6 +78,23 @@ class DeliverBudgetEmail implements ShouldQueue
                 'email' => $order->customer_email,
                 'attachments' => count($attachments),
             ]);
+        } catch (\Throwable $e) {
+            // FIX: this job previously had no catch (only the finally below), unlike
+            // its two sibling jobs (ProcessBudgetOrder, GenerateBudgetFiles), which
+            // both mark the order failed with a reason. A permanent mail failure here
+            // (bad address, provider outage past retries) left the order silently
+            // stuck at STATUS_PROCESSING forever, with no error surfaced anywhere.
+            $order->update([
+                'status' => BudgetOrder::STATUS_FAILED,
+                'error_message' => 'Email delivery failed: ' . $e->getMessage(),
+            ]);
+
+            Log::error('DeliverBudgetEmail: failed', [
+                'budget_order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
         } finally {
             foreach ($tempFiles as $tmp) {
                 @unlink($tmp);

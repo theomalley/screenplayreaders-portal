@@ -1,5 +1,11 @@
 <?php
 
+// v1.2 — 2026-09-09 | BUG FIX: regenerate() always dispatched GenerateBudgetFiles,
+//                     which no-ops without payload_json — the only recovery action for
+//                     an order that failed before calculation ever succeeded left it
+//                     permanently stuck at 'processing' with error_message wiped. Now
+//                     dispatches ProcessBudgetOrder (and sets status='pending', which
+//                     that job requires to actually run) when there's no payload yet.
 // v1.1 — 2026-07-23 | Authorization moved to Budget\BudgetOrderPolicy (app/Policies),
 //                     replacing inline abort_unless(...) calls. Covered by
 //                     tests/Feature/BudgetOrderControllerTest.php.
@@ -7,6 +13,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\GenerateBudgetFiles;
+use App\Jobs\ProcessBudgetOrder;
 use App\Models\Budget\BudgetOrder;
 use App\Services\GoogleDocsService;
 use App\Services\SpacesStorageService;
@@ -116,12 +123,30 @@ class BudgetOrderController extends Controller
     {
         $this->authorize('regenerate', $budgetOrder);
 
-        $budgetOrder->update([
-            'status'        => BudgetOrder::STATUS_PROCESSING,
-            'error_message' => null,
-        ]);
-
-        GenerateBudgetFiles::dispatch($budgetOrder->id);
+        // FIX: this always set status=processing and dispatched GenerateBudgetFiles,
+        // which requires payload_json to already exist. For an order that failed
+        // before its calculation ever succeeded (payload_json still null — e.g.
+        // ProcessBudgetOrder itself failed), this was the only recovery action
+        // offered, but GenerateBudgetFiles just logs a warning and silently no-ops
+        // for that case — leaving the order permanently stuck at STATUS_PROCESSING
+        // with error_message just wiped, and no way to actually retry the
+        // calculation. Re-run the calculation from scratch when there's no payload
+        // yet (ProcessBudgetOrder requires STATUS_PENDING to actually run — it
+        // no-ops on anything else, same failure mode, so set that instead); only
+        // regenerate files/re-deliver when a payload already exists.
+        if ($budgetOrder->payload_json) {
+            $budgetOrder->update([
+                'status'        => BudgetOrder::STATUS_PROCESSING,
+                'error_message' => null,
+            ]);
+            GenerateBudgetFiles::dispatch($budgetOrder->id);
+        } else {
+            $budgetOrder->update([
+                'status'        => BudgetOrder::STATUS_PENDING,
+                'error_message' => null,
+            ]);
+            ProcessBudgetOrder::dispatch($budgetOrder->id);
+        }
 
         return back()->with('success', 'Budget regeneration queued for order ' . $budgetOrder->woo_order_id . '.');
     }

@@ -15,7 +15,14 @@
                 </div>
             @endif
 
-            <p class="text-sm text-gray-500 mb-4">Default rate tier code used for each guild at each budget class when "all guilds automatic" is selected. 999 = non-union.</p>
+            <div class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm">
+                <strong>Not yet connected to calculations.</strong> Editing and saving mappings here updates this
+                table, but every real budget calculation currently resolves guild tier codes from a hardcoded
+                dollar/budget-class matrix in <code>BudgetClassResolver::resolveGuildCodes()</code>, not from this
+                table — changes made on this page have no effect on any budget produced today.
+            </div>
+
+            <p class="text-sm text-gray-500 mb-4">Default rate tier code used for each guild at each budget class, intended for a future "all guilds automatic" mode (see warning above). 999 = non-union.</p>
 
             <form method="POST" action="{{ route('budget-admin.guild-mappings.update') }}">
                 @csrf

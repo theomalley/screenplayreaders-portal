@@ -1,5 +1,16 @@
 <?php
 
+// v1.1 — 2026-09-09 | SECURITY/BUG FIX: the exists()-then-create() idempotency check had
+//                      no transaction, lock, or DB constraint behind it — two near-
+//                      simultaneous deliveries for the same order could both pass the
+//                      check and create duplicate BudgetOrder rows, duplicate
+//                      calculation/file-generation jobs, and duplicate customer emails
+//                      with attached files. Added a unique index on woo_order_id
+//                      (migration 2026_09_09_000002) as the real guarantee, and catch
+//                      the resulting constraint violation here. Also added a range
+//                      check on the mapped budget amount — previously only 4 top-level
+//                      fields were validated; a malformed payload could silently create
+//                      a $0/absurd-budget order that still ran through the full pipeline.
 // v1.0 — 2026-06-21 | Initial: receives budget order webhook from WooCommerce,
 //                      maps GF fields, creates BudgetOrder, dispatches calculation job.
 //                      PORTAL INTEGRATION: endpoint called by woo_budgeting.php
@@ -11,6 +22,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ProcessBudgetOrder;
 use App\Models\Budget\BudgetOrder;
 use App\Services\Budget\GravityFormFieldMapper;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +44,9 @@ class BudgetWebhookController extends Controller
             'customer_email' => $data['customer_email'],
         ]);
 
-        // Idempotency — skip if we already have this order
+        // Idempotency pre-check — the real, race-safe guarantee is the unique index on
+        // woo_order_id (see migration 2026_09_09_000002); this exists() call is just a
+        // fast path that avoids doing the mapping/calculation work on an obvious repeat.
         if (BudgetOrder::where('woo_order_id', $data['order_id'])->exists()) {
             return response()->json(['status' => 'already_exists'], 200);
         }
@@ -43,6 +57,22 @@ class BudgetWebhookController extends Controller
 
         $budget = (float) ($mapped['budget'] ?? 0);
 
+        // FIX: the only other field this endpoint validated was the 4 top-level ones
+        // above; the budget amount itself — the single most consequential input, since
+        // it drives every downstream rate/tier lookup — was only ever cast to float
+        // with no range check, so a malformed/garbage payload would silently create a
+        // $0 (or absurd) budget order that still runs through the full calculation and
+        // delivery pipeline. Mirrors the same $25,000-$250,000,000 bound the theme's
+        // own budget form already enforces client- and server-side.
+        if ($budget < 25000 || $budget > 250000000) {
+            Log::warning('BudgetWebhook: rejected out-of-range budget', [
+                'order_id' => $data['order_id'],
+                'budget'   => $budget,
+            ]);
+
+            return response()->json(['status' => 'rejected', 'reason' => 'budget out of range'], 422);
+        }
+
         // Determine budget class for storage
         $budgetClass = $this->determineBudgetClass($budget);
 
@@ -50,40 +80,51 @@ class BudgetWebhookController extends Controller
         $budgetFormat = $mapped['budgetformat'] ?? ($mapped['budget_format'] ?? '');
         $topsheetOnly = ($budgetFormat === '67');
 
-        $order = BudgetOrder::create([
-            'woo_order_id'    => $data['order_id'],
-            'customer_name'   => $data['customer_name'],
-            'customer_email'  => $data['customer_email'],
-            'form_entry_id'   => $data['form_entry_id'] ?? null,
-            'budget_amount'   => $budget,
-            'budget_class'    => $budgetClass,
-            'state'           => $mapped['shootingstate'] ?? null,
-            'guild_wga'       => !empty($mapped['userwga']),
-            'guild_dga'       => !empty($mapped['userdga']),
-            'guild_sag'       => !empty($mapped['usersag']),
-            'guild_iatse'     => !empty($mapped['useriatse']),
-            'guild_teamsters' => !empty($mapped['userteamsters']),
-            'sag_student'     => !empty($mapped['usersagstudent']),
-            'sag_short'       => !empty($mapped['usersagshort']),
-            'weeks_prep'      => (float) ($mapped['userweeksprep'] ?? 0),
-            'weeks_shoot'     => (float) ($mapped['userweeksshoot'] ?? 0),
-            'weeks_wrap'      => (float) ($mapped['userweekswrap'] ?? 0),
-            'weeks_post'      => (float) ($mapped['userweekspost'] ?? 0),
-            'use_time_defaults' => (int) ($mapped['userusetimedefaults'] ?? 1) === 1,
-            'cast_size'       => (int) ($mapped['usercastsize'] ?? 0),
-            'cast_data'       => $this->extractCastData($mapped),
-            'surplus_cast'    => (float) ($mapped['usercast'] ?? 0),
-            'surplus_stunts'  => (float) ($mapped['userstunts'] ?? 0),
-            'surplus_travel'  => (float) ($mapped['usertravel'] ?? 0),
-            'surplus_spfx'    => (float) ($mapped['userspfx'] ?? 0),
-            'surplus_mufx'    => (float) ($mapped['usermufx'] ?? 0),
-            'surplus_animals' => (float) ($mapped['useranimals'] ?? 0),
-            'surplus_vfx'     => (float) ($mapped['uservfx'] ?? 0),
-            'header_data'     => $this->extractHeaderData($mapped),
-            'form_input_data' => $mapped,
-            'topsheet_only'   => $topsheetOnly,
-            'status'          => BudgetOrder::STATUS_PENDING,
-        ]);
+        try {
+            $order = BudgetOrder::create([
+                'woo_order_id'    => $data['order_id'],
+                'customer_name'   => $data['customer_name'],
+                'customer_email'  => $data['customer_email'],
+                'form_entry_id'   => $data['form_entry_id'] ?? null,
+                'budget_amount'   => $budget,
+                'budget_class'    => $budgetClass,
+                'state'           => $mapped['shootingstate'] ?? null,
+                'guild_wga'       => !empty($mapped['userwga']),
+                'guild_dga'       => !empty($mapped['userdga']),
+                'guild_sag'       => !empty($mapped['usersag']),
+                'guild_iatse'     => !empty($mapped['useriatse']),
+                'guild_teamsters' => !empty($mapped['userteamsters']),
+                'sag_student'     => !empty($mapped['usersagstudent']),
+                'sag_short'       => !empty($mapped['usersagshort']),
+                'weeks_prep'      => (float) ($mapped['userweeksprep'] ?? 0),
+                'weeks_shoot'     => (float) ($mapped['userweeksshoot'] ?? 0),
+                'weeks_wrap'      => (float) ($mapped['userweekswrap'] ?? 0),
+                'weeks_post'      => (float) ($mapped['userweekspost'] ?? 0),
+                'use_time_defaults' => (int) ($mapped['userusetimedefaults'] ?? 1) === 1,
+                'cast_size'       => (int) ($mapped['usercastsize'] ?? 0),
+                'cast_data'       => $this->extractCastData($mapped),
+                'surplus_cast'    => (float) ($mapped['usercast'] ?? 0),
+                'surplus_stunts'  => (float) ($mapped['userstunts'] ?? 0),
+                'surplus_travel'  => (float) ($mapped['usertravel'] ?? 0),
+                'surplus_spfx'    => (float) ($mapped['userspfx'] ?? 0),
+                'surplus_mufx'    => (float) ($mapped['usermufx'] ?? 0),
+                'surplus_animals' => (float) ($mapped['useranimals'] ?? 0),
+                'surplus_vfx'     => (float) ($mapped['uservfx'] ?? 0),
+                'header_data'     => $this->extractHeaderData($mapped),
+                'form_input_data' => $mapped,
+                'topsheet_only'   => $topsheetOnly,
+                'status'          => BudgetOrder::STATUS_PENDING,
+            ]);
+        } catch (QueryException $e) {
+            // Race: a concurrent request (retry, duplicate delivery) already inserted
+            // this woo_order_id between our exists() check above and this create() —
+            // the unique index (migration 2026_09_09_000002) is what actually caught it.
+            if ((int) ($e->errorInfo[1] ?? 0) === 1062 || str_contains($e->getMessage(), 'Unique')) {
+                return response()->json(['status' => 'already_exists'], 200);
+            }
+
+            throw $e;
+        }
 
         ProcessBudgetOrder::dispatch($order->id);
 

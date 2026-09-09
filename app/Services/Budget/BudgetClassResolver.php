@@ -2,6 +2,12 @@
 
 // v1.0 — 2026-06-21 | Initial: determines budget class, guild codes, non-union rates, schedule weeks
 // Ported from step-02-budget-calculations.js lines 1062-2323
+//
+// NOTE (2026-09-09): resolveGuildCodes() below is the hardcoded matrix of dollar/budget-class
+// thresholds actually used by every real calculation. App\Models\Budget\GuildTierMapping and its
+// admin CRUD UI (Budget -> Guild Tier Mappings) are NOT read here — that table was scaffolded
+// ahead of a "Phase 3" rewire that hasn't happened (see BudgetReferenceDataSeeder's own comment
+// on the guild mapping seed data). Do not assume editing GuildTierMapping changes output.
 
 namespace App\Services\Budget;
 

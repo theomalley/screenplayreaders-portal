@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\GenerateBudgetFiles;
+use App\Jobs\ProcessBudgetOrder;
 use App\Models\Budget\BudgetOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,7 +57,10 @@ class BudgetOrderControllerTest extends TestCase
         $this->assertNotEquals(403, $this->actingAs($admin)->get("/budget-orders/{$order->id}/download-xlsx")->getStatusCode());
         $this->actingAs($editor)->post("/budget-orders/{$order->id}/regenerate")->assertRedirect();
 
-        Queue::assertPushed(GenerateBudgetFiles::class);
+        // This fixture has no payload_json (calculation never ran), so regenerate()
+        // re-runs the calculation (ProcessBudgetOrder) rather than GenerateBudgetFiles,
+        // which requires a payload to already exist.
+        Queue::assertPushed(ProcessBudgetOrder::class);
     }
 
     public function test_reader_cannot_download_or_regenerate(): void
