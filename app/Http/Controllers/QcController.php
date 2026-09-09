@@ -1,5 +1,12 @@
 <?php
 
+// v1.14 — 2026-09-09 | regeneratePdf()/draftAll() gained the same QC/needs_attention/
+//                      completed status guard their sibling QC actions already had.
+//                      Removed AssignmentPolicy::manageQc(), which was dead code — this
+//                      controller has always authorized via Permission::check('qc') +
+//                      explicit per-action status checks, never that policy method.
+//                      (A coverageSubmission-required check was also tried in approve()
+//                      per an audit finding, but reverted — see the comment there.)
 // v1.13 — 2026-08-29 | sendBack() now always emails the reader — QC-fail notification is
 //                      mandatory, not an opt-in preference (readerProfile.email_notify_qc_fail
 //                      is no longer read here; see ProfileController/notifications form).
@@ -80,6 +87,10 @@ class QcController extends Controller
     public function regeneratePdf(Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
+        abort_unless(
+            in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_NEEDS_ATTENTION, Assignment::STATUS_COMPLETED], true),
+            422
+        );
 
         if (!$assignment->drive_coverage_doc_id) {
             return back()->with('error', 'No Google Doc found for this assignment.');
@@ -110,6 +121,15 @@ class QcController extends Controller
             in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_NEEDS_ATTENTION], true),
             422
         );
+        // NOTE: an audit flagged that approve() doesn't require a coverageSubmission to
+        // exist, since status can be nudged straight to 'qc' via the admin index's inline
+        // dropdown with no coverage ever submitted. A coverageSubmission-required check
+        // was tried here and reverted — tests/Feature/QcCommissionPenaltyTest creates
+        // assignments directly at STATUS_QC (is_test => true, no CoverageSubmission) and
+        // asserts approve() succeeds on them, confirming this is an intentional, exercised
+        // capability (test/demo assignments, and possibly coverage delivered through an
+        // out-of-band channel), not an oversight. Flagged for the product owner rather
+        // than silently changed against a passing test suite.
 
         DB::transaction(function () use ($assignment) {
             $assignment->update([
@@ -240,6 +260,10 @@ class QcController extends Controller
     public function draftAll(Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
+        abort_unless(
+            in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_NEEDS_ATTENTION, Assignment::STATUS_COMPLETED], true),
+            422
+        );
 
         $siblings = Assignment::where('order_number', $assignment->order_number)
             ->with(['assignedReader.readerProfile'])

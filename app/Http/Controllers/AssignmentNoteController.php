@@ -1,5 +1,13 @@
 <?php
 
+// v1.3 — 2026-09-09 | SECURITY: dismiss()/dismissReply() logged the note/reply's raw body
+//                     into the dismisser's own Notification History regardless of whether
+//                     they had any legitimate access to it — combined with those actions
+//                     being deliberately open to any authenticated user (see
+//                     AssignmentNotePolicy), this let a reader enumerate note/reply IDs and
+//                     read other people's private note content into their own feed. Now
+//                     redacted unless the dismisser is the note/reply's own author or
+//                     admin/editor.
 // v1.2 — 2026-07-23 | Authorization moved to AssignmentPolicy::addNote() /
 //                     AssignmentNotePolicy::reply() (app/Policies), replacing inline
 //                     abort_unless(...) calls. Covered by
@@ -62,10 +70,20 @@ class AssignmentNoteController extends Controller
     {
         $note->dismiss(auth()->id());
 
+        // SECURITY: dismiss() is deliberately open to any authenticated user (see
+        // AssignmentNotePolicy's changelog) — the dismissal itself is harmless. But
+        // logging the note's raw body into the *dismisser's own* Notification History
+        // let anyone enumerate note IDs and read private reader<->editor content into
+        // their own feed even though they have no other access to it. Only log the
+        // real body when the dismisser could already legitimately see it (the note's
+        // own author, or admin/editor).
+        $user    = auth()->user();
+        $canView = $user->id === $note->user_id || $user->isAdminOrEditor();
+
         NotificationHistory::log(
             auth()->id(),
             "Dismissed note — Order #{$note->assignment->order_number}",
-            $note->body,
+            $canView ? $note->body : '(content hidden)',
             route('assignments.edit', $note->assignment_id)
         );
 
@@ -76,10 +94,15 @@ class AssignmentNoteController extends Controller
     {
         $reply->dismiss(auth()->id());
 
+        // SECURITY: same fix as dismiss() above — only log the real reply body when
+        // the dismisser is the reply's author, the original note's author, or admin/editor.
+        $user    = auth()->user();
+        $canView = $user->id === $reply->user_id || $user->id === $reply->note->user_id || $user->isAdminOrEditor();
+
         NotificationHistory::log(
             auth()->id(),
             "Dismissed reply — {$reply->note->assignment->script_title}",
-            $reply->body,
+            $canView ? $reply->body : '(content hidden)',
             route('assignments.index')
         );
 

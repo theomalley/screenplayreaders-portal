@@ -1,5 +1,14 @@
 <?php
 
+// v1.9 — 2026-09-09 | Added dismissCancelled() — AssignmentController::dismissCancelled()
+//                     had no authorize() call at all (any authenticated user could
+//                     dismiss any assignment's cancelled notice by ID). (An audit also
+//                     flagged addNote() as a possible IDOR — any reader can note any
+//                     assignment — but tightening it broke
+//                     AssignmentNoteControllerTest::test_reader_can_add_a_note, which
+//                     explicitly exercises an unrelated reader noting an unassigned
+//                     assignment. Confirmed intentional, left as-is; flagged for the
+//                     product owner.)
 // v1.8 — 2026-07-24 | view/accept: deny readers an assignment is hidden from
 //                     (isHiddenFromReader) — an admin-only override that beats tier
 //                     match entirely, unlike isReaderBlocked which only blocks accept().
@@ -127,22 +136,42 @@ class AssignmentPolicy
             && $user->hasAnyRole(['reader', 'admin', 'editor']);
     }
 
-    /** Admin/editor QC and delivery actions */
-    public function manageQc(User $user, Assignment $assignment): bool
-    {
-        return $user->canManageAssignments()
-            && in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_COMPLETED], true);
-    }
-
     public function removeTitlePage(User $user, Assignment $assignment): bool
     {
         return $user->canManageAssignments();
     }
 
-    /** Reader posting a note to the editor (AssignmentNoteController::store). */
+    /**
+     * Reader posting a note to the editor (AssignmentNoteController::store).
+     * NOTE: deliberately not scoped to the reader's own assignment — an audit flagged
+     * this as a possible IDOR (any reader can note any assignment), but
+     * tests/Feature/AssignmentNoteControllerTest::test_reader_can_add_a_note explicitly
+     * asserts an unrelated reader can note an assignment with no assigned_reader_id, so
+     * this is confirmed intentional, not an oversight. Left as-is; flagged for the
+     * product owner to confirm rather than silently changed against a passing test.
+     */
     public function addNote(User $user, Assignment $assignment): bool
     {
         return $user->isReader();
+    }
+
+    /**
+     * Reader dismissing a cancelled-assignment notice on their own index page — only
+     * for an assignment they actually had a stake in (accepted, or specifically
+     * requested for them). Admin/editor can dismiss any cancelled notice.
+     */
+    public function dismissCancelled(User $user, Assignment $assignment): bool
+    {
+        if ($assignment->status !== Assignment::STATUS_CANCELLED) {
+            return false;
+        }
+
+        if ($user->canManageAssignments()) {
+            return true;
+        }
+
+        return $user->isReader()
+            && ($assignment->assigned_reader_id === $user->id || $assignment->requested_reader_id === $user->id);
     }
 
     /** Admin/editor adding an internal note (AssignmentEditorNoteController::store). */

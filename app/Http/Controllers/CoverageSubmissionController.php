@@ -1,5 +1,11 @@
 <?php
 
+// v1.7 — 2026-09-09 | store(): lock the assignment row (Assignment::lockForUpdate()) and
+//                     re-check status inside the transaction — closes a double-submit
+//                     race that could create two separate Google Docs/PDFs and duplicate
+//                     the note_to_team AssignmentNote. saveDraft(): allowlist now derived
+//                     from CoverageSubmission::draftFillable() instead of a hand-typed
+//                     duplicate of the model's $fillable.
 // v1.6 — 2026-06-12 | store(): delete the previous coverage Doc/PDF from Drive on resubmission
 //                     (e.g. after QC send-back) so re-submitting no longer leaves orphaned files.
 // v1.4 — 2026-05-28 | saveDraft(): persist coverage fields without advancing status; "Continue Coverage" UX.
@@ -15,6 +21,7 @@ use App\Http\Requests\StoreCoverageSubmissionRequest;
 use App\Models\Assignment;
 use App\Models\AssignmentNote;
 use App\Models\CoverageAttestation;
+use App\Models\CoverageSubmission;
 use App\Models\ReaderScriptNote;
 use App\Models\Setting;
 use App\Services\GoogleDocsService;
@@ -57,11 +64,28 @@ class CoverageSubmissionController extends Controller
     {
         $this->authorize('submitCoverage', $assignment);
 
-        $submission = null;
+        $submission       = null;
+        $alreadySubmitted = false;
 
-        DB::transaction(function () use ($request, $assignment, &$submission) {
+        // FIX: lock the row and re-check status inside the transaction — previously a
+        // double-click or retried POST could fire two requests while status was still
+        // 'assigned'/'needs_attention'; both would pass submitCoverage() authorization
+        // (read before either write), both updateOrCreate() the same coverage_submissions
+        // row and set status=qc, and both independently create a separate Google Doc/PDF
+        // below — whichever finished last would win the drive_coverage_doc_id/pdf_id
+        // columns, silently orphaning the other Doc/PDF pair, and note_to_team would fire
+        // twice. Only the first request to acquire the lock now proceeds.
+        $assignment = DB::transaction(function () use ($request, $assignment, &$submission, &$alreadySubmitted) {
+            $fresh = Assignment::lockForUpdate()->findOrFail($assignment->id);
+
+            if (! in_array($fresh->status, [Assignment::STATUS_ASSIGNED, Assignment::STATUS_NEEDS_ATTENTION], true)) {
+                $alreadySubmitted = true;
+
+                return $fresh;
+            }
+
             $data = $request->validated();
-            $data['vendor'] = $assignment->vendor;
+            $data['vendor'] = $fresh->vendor;
 
             if (array_key_exists('attestations', $data)) {
                 $attestationIds = $data['attestations'];
@@ -76,12 +100,12 @@ class CoverageSubmissionController extends Controller
                     ->all();
             }
 
-            $submission = $assignment->coverageSubmission()->updateOrCreate(
-                ['assignment_id' => $assignment->id],
+            $submission = $fresh->coverageSubmission()->updateOrCreate(
+                ['assignment_id' => $fresh->id],
                 $data
             );
 
-            $assignment->update([
+            $fresh->update([
                 'status'       => Assignment::STATUS_QC,
                 'submitted_at' => now(),
             ]);
@@ -90,13 +114,20 @@ class CoverageSubmissionController extends Controller
             $noteBody = trim($request->input('note_to_team', ''));
             if ($noteBody !== '') {
                 AssignmentNote::create([
-                    'assignment_id' => $assignment->id,
+                    'assignment_id' => $fresh->id,
                     'user_id'       => auth()->id(),
                     'body'          => $noteBody,
                     'dismissed_by'  => [],
                 ]);
             }
+
+            return $fresh;
         });
+
+        if ($alreadySubmitted) {
+            return redirect()->route('coverage.submitted')
+                ->with('submitted_title', $assignment->script_title);
+        }
 
         // Create the coverage Google Doc and draft PDF outside the transaction
         // so a Drive API failure doesn't roll back the submitted coverage.
@@ -146,32 +177,10 @@ class CoverageSubmissionController extends Controller
     {
         $this->authorize('submitCoverage', $assignment);
 
-        $data = $request->only([
-            'writer_name', 'genre', 'time_period', 'locations', 'estimated_budget',
-            'sr_assignment_type', 'sr_number_of_readers', 'sr_reader_request',
-            'sr_proofreading', 'sr_net15', 'sr_custom_oversized_fee', 'sr_book_pay_rate',
-            'sr_logline', 'sr_synopsis', 'sr_notes',
-            'sr_score_concept', 'sr_score_opening_pages', 'sr_score_theme',
-            'sr_score_story_logic', 'sr_score_story_element', 'sr_score_setting',
-            'sr_score_story_bogged', 'sr_score_scenes_impact', 'sr_score_stakes',
-            'sr_score_tension', 'sr_score_characters_interesting',
-            'sr_score_characters_choices', 'sr_score_characters_motivations',
-            'sr_score_characters_different', 'sr_score_antagonistic',
-            'sr_score_dialogue', 'sr_score_action_text', 'sr_score_climax',
-            'sr_score_work_feels', 'sr_score_target_audience',
-            'sr_score_content', 'sr_score_format',
-            'sr_bechdel', 'sr_diversity', 'sr_recommendation',
-            'wd_assignment_type', 'wd_form', 'wd_mpaa_rating', 'wd_request',
-            'wd_script_recommendations', 'wd_logline', 'wd_synopsis',
-            'wd_score_concept', 'wd_notes_concept',
-            'wd_score_plot', 'wd_notes_plot',
-            'wd_score_pacing', 'wd_notes_pacing',
-            'wd_score_format', 'wd_notes_format',
-            'wd_score_characters', 'wd_notes_characters',
-            'wd_score_dialogue', 'wd_notes_dialogue',
-            'wd_score_overall', 'wd_notes_overall',
-            'wd_recommend_writer', 'wd_recommend_material',
-        ]);
+        // FIX: was a hand-typed 60+ field allowlist duplicated from CoverageSubmission's
+        // $fillable, which could silently drift if a field was added to one but not the
+        // other. Now derived from the model directly.
+        $data = $request->only(CoverageSubmission::draftFillable());
 
         $data['vendor'] = $assignment->vendor;
 

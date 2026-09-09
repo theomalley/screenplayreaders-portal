@@ -1,5 +1,30 @@
 <?php
 
+// v2.32 — 2026-09-09 | SECURITY audit fixes:
+//                      - streamScript(): a reader hitting this route directly got the
+//                        exact same clean, unrestricted PDF bytes the viewer renders
+//                        inline — no watermark, no print/copy restriction — defeating
+//                        the "view-only, no download/print" design. Now applies the
+//                        same watermark+qpdf-restriction pipeline downloadScriptForReader()
+//                        already uses, for readers only (admins/editors keep the raw stream).
+//                      - index() (reader branch): $cancelledAssignments queried ALL
+//                        cancelled assignments system-wide with no reader/tier scoping,
+//                        leaking other readers'/tiers' script titles, author names, order
+//                        numbers, and cancellation reasons to every reader. Scoped to
+//                        assignments this reader was actually assigned to or requested for.
+//                      - dismissCancelled() had no authorize() call at all — any
+//                        authenticated user could dismiss any assignment's cancelled
+//                        notice by ID. Added AssignmentPolicy::dismissCancelled().
+//                      - updateStatus() had no row lock (unlike accept()) — two admins/
+//                        editors editing the same assignment concurrently raced with
+//                        silent last-write-wins. Now uses lockForUpdate() the same way.
+//                      - accept(): AssignmentPolicy checks isReaderBlocked/
+//                        isHiddenFromReader before the lock is acquired; now re-checked
+//                        against the freshly locked row too.
+//                      - streamScript()/downloadScript()/downloadScriptForReader() had no
+//                        error handling around Drive API/watermark calls — a transient
+//                        failure surfaced as a raw uncaught 500. Now logged and turned
+//                        into a friendly, retryable error.
 // v2.31 — 2026-08-24 | accept()/updateStatus()/update(): clear reader_declined ("No can do")
 //                      whenever the reader re-accepts or is re-assigned to the same slot —
 //                      previously only the transition through Unassigned cleared it, so the
@@ -108,6 +133,7 @@ use App\Support\Permission;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AssignmentController extends Controller
 {
@@ -346,8 +372,18 @@ class AssignmentController extends Controller
             ->groupBy('assignment_id')
             ->pluck('note_count', 'assignment_id');
 
-        // Cancelled assignments not yet dismissed by this user — shown as notices until cleared
+        // Cancelled assignments this reader actually had a stake in (accepted, or
+        // specifically requested for them) and hasn't dismissed yet — shown as notices
+        // until cleared. SECURITY: previously queried ALL cancelled assignments
+        // system-wide with no reader/tier scoping at all, leaking other readers'/tiers'
+        // script titles, author names, order numbers, and cancellation reasons to every
+        // reader. Scoped the same way scopeForReader()/scopeAcceptedRequests() scope
+        // this reader's other assignment lists.
         $cancelledAssignments = Assignment::where('status', Assignment::STATUS_CANCELLED)
+            ->where(function ($q) use ($user) {
+                $q->where('assigned_reader_id', $user->id)
+                  ->orWhere('requested_reader_id', $user->id);
+            })
             ->orderByDesc('updated_at')
             ->get()
             ->filter(fn($a) => ! $a->isCancelledDismissedBy($user->id))
@@ -814,14 +850,61 @@ class AssignmentController extends Controller
 
         $filename = $assignment->drive_script_filename ?? 'script.pdf';
 
-        if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
-            $localPath = storage_path('app/test-script.pdf');
-            abort_unless(file_exists($localPath), 404);
-            $contents = file_get_contents($localPath);
-        } elseif ($assignment->spaces_script_path) {
-            $contents = app(SpacesStorageService::class)->get($assignment->spaces_script_path);
-        } else {
-            $contents = $drive->downloadContents($assignment->drive_script_file_id);
+        // FIX: this route had no error handling around the Drive fetch/watermark calls —
+        // a transient Drive API failure or a Ghostscript/qpdf hiccup surfaced as a raw,
+        // uncaught 500 for the reader trying to view their assigned script. Now logged
+        // and turned into a clean, friendly failure.
+        try {
+            if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
+                $localPath = storage_path('app/test-script.pdf');
+                abort_unless(file_exists($localPath), 404);
+                $contents = file_get_contents($localPath);
+            } elseif ($assignment->spaces_script_path) {
+                $contents = app(SpacesStorageService::class)->get($assignment->spaces_script_path);
+            } else {
+                $contents = $drive->downloadContents($assignment->drive_script_file_id);
+            }
+
+            // SECURITY: a reader hitting this route directly (curl, devtools "Save As")
+            // used to get the exact same clean, unrestricted bytes the PDF.js viewer
+            // renders inline — the client-side viewer's missing download button is not
+            // real access control. Readers are only meant to *view*, never obtain a clean
+            // copy (see CLAUDE.md), so apply the same watermark + qpdf print/copy/modify
+            // restrictions the sanctioned download flow (downloadScriptForReader())
+            // already uses. Admins/editors — who are allowed to download the clean
+            // original — keep the raw stream.
+            if (auth()->user()->isReader()) {
+                $tmp = tempnam(sys_get_temp_dir(), 'sr_view_') . '.pdf';
+                file_put_contents($tmp, $contents);
+
+                $wm    = Setting::getWatermarkSettings();
+                $parts = [];
+                if ($wm['watermark_custom_text'] !== '') {
+                    $parts[] = $wm['watermark_custom_text'];
+                }
+                if ($wm['watermark_show_name']) {
+                    $parts[] = auth()->user()->name;
+                }
+                if ($wm['watermark_show_order']) {
+                    $parts[] = 'Order #' . $assignment->order_number;
+                }
+                if ($wm['watermark_show_datetime']) {
+                    $parts[] = now()->setTimezone(Setting::getAppTimezone())->format('M j, Y g:ia');
+                }
+                $watermarkText = $parts !== [] ? implode(' · ', $parts) : 'Screenplay Readers';
+
+                $output   = $drive->watermarkPdf($tmp, $watermarkText);
+                $contents = file_get_contents($output);
+                @unlink($output);
+            }
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e; // abort_unless() above — not a Drive/watermark failure
+        } catch (\Throwable $e) {
+            Log::error('streamScript failed', [
+                'assignment_id' => $assignment->id,
+                'error'         => $e->getMessage(),
+            ]);
+            abort(503, 'Could not load the script right now. Please try again in a moment, or contact support if this persists.');
         }
 
         return response($contents, 200, [
@@ -855,14 +938,24 @@ class AssignmentController extends Controller
             'user_agent'    => $request->userAgent(),
         ]);
 
-        if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
-            $localPath = storage_path('app/test-script.pdf');
-            abort_unless(file_exists($localPath), 404);
-            $contents = file_get_contents($localPath);
-        } elseif ($assignment->spaces_script_path) {
-            $contents = app(SpacesStorageService::class)->get($assignment->spaces_script_path);
-        } else {
-            $contents = $drive->downloadContents($assignment->drive_script_file_id);
+        try {
+            if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
+                $localPath = storage_path('app/test-script.pdf');
+                abort_unless(file_exists($localPath), 404);
+                $contents = file_get_contents($localPath);
+            } elseif ($assignment->spaces_script_path) {
+                $contents = app(SpacesStorageService::class)->get($assignment->spaces_script_path);
+            } else {
+                $contents = $drive->downloadContents($assignment->drive_script_file_id);
+            }
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e; // abort_unless() above — not a Drive failure
+        } catch (\Throwable $e) {
+            Log::error('downloadScript failed', [
+                'assignment_id' => $assignment->id,
+                'error'         => $e->getMessage(),
+            ]);
+            abort(503, 'Could not download the script right now. Please try again in a moment.');
         }
 
         return response($contents, 200, [
@@ -887,40 +980,52 @@ class AssignmentController extends Controller
         abort_if($scriptDownload->used_at !== null, 410, 'This download link has already been used.');
         abort_if($scriptDownload->expires_at->isPast(), 410, 'This download link has expired.');
 
-        if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
-            $source = storage_path('app/test-script.pdf');
-            abort_unless(file_exists($source), 404);
-            $tmpSource = tempnam(sys_get_temp_dir(), 'sr_dl_') . '.pdf';
-            copy($source, $tmpSource);
-        } elseif ($assignment->spaces_script_path) {
-            $tmpSource = tempnam(sys_get_temp_dir(), 'sr_dl_') . '.pdf';
-            file_put_contents($tmpSource, app(SpacesStorageService::class)->get($assignment->spaces_script_path));
-        } else {
-            $tmpSource = $drive->downloadToTemp($assignment->drive_script_file_id);
-        }
+        try {
+            if ($assignment->drive_script_file_id === '__LOCAL_TEST__') {
+                $source = storage_path('app/test-script.pdf');
+                abort_unless(file_exists($source), 404);
+                $tmpSource = tempnam(sys_get_temp_dir(), 'sr_dl_') . '.pdf';
+                copy($source, $tmpSource);
+            } elseif ($assignment->spaces_script_path) {
+                $tmpSource = tempnam(sys_get_temp_dir(), 'sr_dl_') . '.pdf';
+                file_put_contents($tmpSource, app(SpacesStorageService::class)->get($assignment->spaces_script_path));
+            } else {
+                $tmpSource = $drive->downloadToTemp($assignment->drive_script_file_id);
+            }
 
-        $wm = Setting::getWatermarkSettings();
+            $wm = Setting::getWatermarkSettings();
 
-        $parts = [];
-        if ($wm['watermark_custom_text'] !== '') {
-            $parts[] = $wm['watermark_custom_text'];
-        }
-        if ($wm['watermark_show_name']) {
-            $parts[] = auth()->user()->name;
-        }
-        if ($wm['watermark_show_order']) {
-            $parts[] = 'Order #' . $assignment->order_number;
-        }
-        if ($wm['watermark_show_datetime']) {
-            $parts[] = now()->setTimezone(Setting::getAppTimezone())->format('M j, Y g:ia');
-        }
-        if ($wm['watermark_show_ref']) {
-            $parts[] = 'Ref DL-' . $scriptDownload->id;
-        }
+            $parts = [];
+            if ($wm['watermark_custom_text'] !== '') {
+                $parts[] = $wm['watermark_custom_text'];
+            }
+            if ($wm['watermark_show_name']) {
+                $parts[] = auth()->user()->name;
+            }
+            if ($wm['watermark_show_order']) {
+                $parts[] = 'Order #' . $assignment->order_number;
+            }
+            if ($wm['watermark_show_datetime']) {
+                $parts[] = now()->setTimezone(Setting::getAppTimezone())->format('M j, Y g:ia');
+            }
+            if ($wm['watermark_show_ref']) {
+                $parts[] = 'Ref DL-' . $scriptDownload->id;
+            }
 
-        $watermarkText = $parts !== [] ? implode(' · ', $parts) : 'Screenplay Readers';
+            $watermarkText = $parts !== [] ? implode(' · ', $parts) : 'Screenplay Readers';
 
-        $output = $drive->watermarkPdf($tmpSource, $watermarkText);
+            $output = $drive->watermarkPdf($tmpSource, $watermarkText);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e; // abort_unless() above — not a Drive/watermark failure
+        } catch (\Throwable $e) {
+            Log::error('downloadScriptForReader failed', [
+                'assignment_id' => $assignment->id,
+                'error'         => $e->getMessage(),
+            ]);
+            // used_at is only stamped below on success, so this single-use token
+            // remains valid and the reader can safely retry the same link.
+            abort(503, 'Could not prepare your download right now. Please try again in a moment.');
+        }
 
         $scriptDownload->update(['used_at' => now()]);
 
@@ -1162,39 +1267,52 @@ class AssignmentController extends Controller
             'cancellation_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $data = ['status' => $request->status];
+        $transitioningToUnassigned = false;
 
-        if ($request->status === Assignment::STATUS_CANCELLED) {
-            $data['cancellation_reason'] = $request->input('cancellation_reason');
-        }
+        // FIX: lock the row for the duration of this read-then-write — previously two
+        // admins/editors changing the same assignment concurrently (e.g. one setting
+        // status->assigned with Reader X while another sets status->cancelled) raced
+        // with silent last-write-wins and no conflict surfaced to either. Mirrors
+        // accept()'s existing lockForUpdate() pattern below.
+        $assignment = DB::transaction(function () use ($request, $assignment, &$transitioningToUnassigned) {
+            $fresh = Assignment::lockForUpdate()->findOrFail($assignment->id);
 
-        $transitioningToUnassigned = $request->status === Assignment::STATUS_UNASSIGNED
-            && $assignment->status !== Assignment::STATUS_UNASSIGNED;
+            $data = ['status' => $request->status];
 
-        if ($transitioningToUnassigned) {
-            $data['unassigned_at'] = now();
-        }
+            if ($request->status === Assignment::STATUS_CANCELLED) {
+                $data['cancellation_reason'] = $request->input('cancellation_reason');
+            }
 
-        if ($request->status === Assignment::STATUS_UNASSIGNED) {
-            $data['assigned_reader_id'] = null;
-            $data['accepted_at']        = null;
-            $data['reader_declined']    = false;
-        }
+            $transitioningToUnassigned = $request->status === Assignment::STATUS_UNASSIGNED
+                && $fresh->status !== Assignment::STATUS_UNASSIGNED;
 
-        if ($request->status === Assignment::STATUS_ASSIGNED && $request->filled('assigned_reader_id')) {
-            abort_unless($this->canAssign((int) $request->assigned_reader_id), 403);
-            $data['assigned_reader_id'] = $request->assigned_reader_id;
-            $data['accepted_at']        = now();
-            $data['take_me_enabled']    = false;
-            $data['reader_declined']    = false;
-        }
+            if ($transitioningToUnassigned) {
+                $data['unassigned_at'] = now();
+            }
 
-        if ($request->status === Assignment::STATUS_COMPLETED
-            && $assignment->status !== Assignment::STATUS_COMPLETED) {
-            $data['completed_at'] = now();
-        }
+            if ($request->status === Assignment::STATUS_UNASSIGNED) {
+                $data['assigned_reader_id'] = null;
+                $data['accepted_at']        = null;
+                $data['reader_declined']    = false;
+            }
 
-        $assignment->update($data);
+            if ($request->status === Assignment::STATUS_ASSIGNED && $request->filled('assigned_reader_id')) {
+                abort_unless($this->canAssign((int) $request->assigned_reader_id), 403);
+                $data['assigned_reader_id'] = $request->assigned_reader_id;
+                $data['accepted_at']        = now();
+                $data['take_me_enabled']    = false;
+                $data['reader_declined']    = false;
+            }
+
+            if ($request->status === Assignment::STATUS_COMPLETED
+                && $fresh->status !== Assignment::STATUS_COMPLETED) {
+                $data['completed_at'] = now();
+            }
+
+            $fresh->update($data);
+
+            return $fresh;
+        });
 
         if ($transitioningToUnassigned) {
             app(ReaderNotificationService::class)->notifyNewAssignment($assignment->fresh());
@@ -1214,6 +1332,17 @@ class AssignmentController extends Controller
             $fresh = Assignment::lockForUpdate()->findOrFail($assignment->id);
 
             if ($fresh->status !== Assignment::STATUS_UNASSIGNED) {
+                $error = 'This assignment is no longer available.';
+                return;
+            }
+
+            // FIX: AssignmentPolicy::accept() checks isReaderBlocked/isHiddenFromReader
+            // against the route-bound $assignment instance *before* this lock is
+            // acquired. Re-check against the freshly locked row too — an admin could
+            // otherwise add this reader to the block/hide list in the narrow window
+            // between the policy check and the lock, and the accept would still go
+            // through.
+            if ($fresh->isReaderBlocked($user->id) || $fresh->isHiddenFromReader($user->id)) {
                 $error = 'This assignment is no longer available.';
                 return;
             }
@@ -1463,9 +1592,7 @@ class AssignmentController extends Controller
 
     public function dismissCancelled(Assignment $assignment)
     {
-        if ($assignment->status !== Assignment::STATUS_CANCELLED) {
-            return response()->json(['ok' => false], 422);
-        }
+        $this->authorize('dismissCancelled', $assignment);
 
         $assignment->dismissCancelledFor(auth()->id());
 

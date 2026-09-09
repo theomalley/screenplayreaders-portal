@@ -55,6 +55,23 @@ class CoverageSubmission extends Model
         'wd_recommend_writer', 'wd_recommend_material',
     ];
 
+    /**
+     * Fillable fields a reader's autosaved draft (CoverageSubmissionController::saveDraft())
+     * is allowed to write directly, unvalidated, before final submit. Derived from
+     * $fillable rather than hand-duplicated, so adding a field to $fillable can't
+     * silently drift out of sync with what the draft-save endpoint accepts.
+     * Excludes fields the draft path must never set itself: assignment_id/vendor are
+     * set by the controller, and quality_checked/quality_attestations_snapshot are only
+     * ever set by the final, validated submit (store()).
+     */
+    public static function draftFillable(): array
+    {
+        return array_values(array_diff(
+            (new self())->getFillable(),
+            ['assignment_id', 'vendor', 'quality_checked', 'quality_attestations_snapshot']
+        ));
+    }
+
     protected function casts(): array
     {
         return [

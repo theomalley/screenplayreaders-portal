@@ -1,5 +1,14 @@
 <?php
 
+// v1.10 — 2026-09-09 | SECURITY: removed the unused setViewOnly()/viewLink() methods.
+//                      setViewOnly() granted a Drive permission of type "anyone" (public,
+//                      no login) — the exact opposite of the "no public Drive permissions"
+//                      design the rest of this service enforces (see v1.3, revokePublicAccess()).
+//                      Neither method had any caller; uploadScript()'s docblock claimed the
+//                      file was "set view-only (anyone with link)" on upload, which was never
+//                      true and would have been a public-sharing vulnerability if it were.
+//                      Corrected the docblock: access control is enforced entirely by the
+//                      portal's own auth/proxy layer, not Drive sharing settings.
 // v1.9 — 2026-09-06 | Don't let a failed temp-doc cleanup in convertDocxToPdf() mask a
 //                     successful conversion — the service account can create files in the
 //                     scripts Shared Drive (see v1.8) but delete() 404s on them for reasons
@@ -26,7 +35,6 @@ use App\Support\Pdf\WatermarkPdf;
 use Google\Client;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
-use Google\Service\Drive\Permission;
 use setasign\Fpdi\Fpdi;
 
 class GoogleDriveService
@@ -44,7 +52,11 @@ class GoogleDriveService
 
     /**
      * Upload a script PDF into scripts/{assignmentId}/ and return the Drive file ID.
-     * The file is set view-only (anyone with link, no download/print).
+     * Deliberately left with NO public/"anyone" Drive permission — the file is only ever
+     * reachable through the portal's own authenticated proxy (streamScript()/
+     * downloadContents()/downloadScriptForReader() in AssignmentController), so the Drive
+     * file ID never reaches a browser and Drive-level sharing settings are irrelevant to
+     * access control here.
      */
     public function uploadScript(string $orderNumber, string $localPath, string $fileName = 'script.pdf', string $mimeType = 'application/pdf'): string
     {
@@ -89,14 +101,6 @@ class GoogleDriveService
         return $fileId;
     }
 
-    /**
-     * Iframe-embeddable view-only URL (no download button shown in the Drive viewer).
-     * Use this for reader-facing script display.
-     */
-    public function viewLink(string $fileId): string
-    {
-        return "https://drive.google.com/file/d/{$fileId}/preview";
-    }
 
     /**
      * Direct download URL — only surface this in admin/editor UI.
@@ -453,19 +457,6 @@ class GoogleDriveService
                 ]);
             }
         }
-    }
-
-    /**
-     * Set a file to "anyone with link = viewer" and prevent viewers from downloading or printing.
-     */
-    private function setViewOnly(string $fileId): void
-    {
-        $this->drive->permissions->create(
-            $fileId,
-            new Permission(['type' => 'anyone', 'role' => 'reader']),
-            ['fields' => 'id', 'supportsAllDrives' => true]
-        );
-        // copyRequiresWriterPermission cannot be set per-file on Shared Drives — manage at drive level instead.
     }
 
     /**
