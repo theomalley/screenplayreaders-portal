@@ -20,6 +20,7 @@ use App\Jobs\GenerateRegistrationCertificate;
 use App\Models\ScriptRegistration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ScriptRegistrationWebhookController extends Controller
@@ -40,73 +41,102 @@ class ScriptRegistrationWebhookController extends Controller
             'payload_count' => count($data['payloads']),
         ]);
 
-        if (ScriptRegistration::where('woo_order_id', $data['order_id'])->exists()) {
-            return response()->json(['status' => 'already_exists'], 200);
-        }
+        // Idempotency is checked per-payload (by registration_id) below, not per-order —
+        // an order can carry several payloads (bundled registrations), and a partial
+        // failure that rolls back mid-loop must be retryable without re-creating the
+        // payloads that already committed. A bare order-level check here would also
+        // permanently skip any still-missing payload once a single one exists.
+        $existingRegistrationIds = ScriptRegistration::where('woo_order_id', $data['order_id'])
+            ->pluck('registration_id')
+            ->all();
 
-        $created = [];
+        $created = DB::transaction(function () use ($data, $existingRegistrationIds) {
+            $created = [];
 
-        foreach ($data['payloads'] as $payload) {
-            $variationId = (int) ($payload['sr_registration_variation_id'] ?? 0);
+            foreach ($data['payloads'] as $payload) {
+                $registrationId = $payload['sr_registration_id'] ?? null;
 
-            // Prefer the label the theme computed from its admin-configured term (works for
-            // any variation, not just the original 4). Fall back to the legacy hardcoded map
-            // for payloads from a theme deploy that predates this field.
-            $variationLabel = $payload['sr_registration_variation_label']
-                ?? ScriptRegistration::VARIATION_LABELS[$variationId]
-                ?? 'Unknown';
-            $variationLabel = \Illuminate\Support\Str::limit($variationLabel, 20, '');
+                // Already processed this specific payload (retry of a prior partial-failure
+                // webhook call, or a duplicate delivery) — skip without recreating it.
+                if ($registrationId && in_array($registrationId, $existingRegistrationIds, true)) {
+                    continue;
+                }
 
-            // Same story for "never expires" — prefer the explicit flag over the hardcoded ID check.
-            $neverExpires = array_key_exists('sr_registration_never_expires', $payload)
-                ? $payload['sr_registration_never_expires'] === '1'
-                : $variationId === ScriptRegistration::VAR_LIFETIME;
+                $variationId = (int) ($payload['sr_registration_variation_id'] ?? 0);
 
-            $registration = ScriptRegistration::create([
-                'woo_order_id'      => $data['order_id'],
-                'woo_order_number'  => $data['order_number'] ?? null,
-                'customer_name'     => $data['customer_name'],
-                'customer_email'    => $data['customer_email'],
-                'variation_id'      => $variationId,
-                'variation_label'   => $variationLabel,
-                'registration_id'   => $payload['sr_registration_id'] ?? ScriptRegistration::generateRegistrationId(),
-                'script_title'      => $payload['sr_title'] ?? '',
-                'page_count'        => ! empty($payload['sr_page_count']) ? (int) $payload['sr_page_count'] : null,
-                'type_of_work'      => $payload['sr_type_of_work'] ?? '',
-                'author_first'      => $payload['sr_author_first'] ?? '',
-                'author_last'       => $payload['sr_author_last'] ?? '',
-                'additional_authors' => $payload['sr_additional_authors'] ?? null,
-                'street_address'    => $payload['sr_street_address'] ?? '',
-                'city'              => $payload['sr_city'] ?? '',
-                'state_or_province' => $payload['sr_state_or_province'] ?? '',
-                'postal_or_zip'     => $payload['sr_postal_or_zip'] ?? '',
-                'country'           => $payload['sr_country'] ?? '',
-                'phone'             => $payload['sr_phone'] ?? '',
-                'unique_id'         => $payload['sr_unique_id_optional'] ?? null,
-                'email'             => $payload['sr_email'] ?? $data['customer_email'],
-                'uploaded_file_url' => $payload['sr_uploaded_file_url'] ?? null,
-                'uploaded_file_name' => $payload['sr_uploaded_file_original_name'] ?? null,
-                'authcode'          => $payload['sr_authcode'] ?? bin2hex(random_bytes(16)),
-                'registered_at'     => now(),
-                'expires_at'        => $this->parseExpiry($payload['sr_registration_expires'] ?? null, $variationId, $neverExpires),
-                'unlimited_token'   => $neverExpires
-                    ? ScriptRegistration::generateUnlimitedToken()
-                    : null,
-                'status'            => ScriptRegistration::STATUS_PENDING,
-            ]);
+                // Prefer the label the theme computed from its admin-configured term (works for
+                // any variation, not just the original 4). Fall back to the legacy hardcoded map
+                // for payloads from a theme deploy that predates this field.
+                $variationLabel = $payload['sr_registration_variation_label']
+                    ?? ScriptRegistration::VARIATION_LABELS[$variationId]
+                    ?? 'Unknown';
+                $variationLabel = \Illuminate\Support\Str::limit($variationLabel, 20, '');
 
+                // Same story for "never expires" — prefer the explicit flag over the hardcoded ID check.
+                $neverExpires = array_key_exists('sr_registration_never_expires', $payload)
+                    ? $payload['sr_registration_never_expires'] === '1'
+                    : $variationId === ScriptRegistration::VAR_LIFETIME;
+
+                $registration = ScriptRegistration::create([
+                    'woo_order_id'      => $data['order_id'],
+                    'woo_order_number'  => $data['order_number'] ?? null,
+                    'customer_name'     => $data['customer_name'],
+                    'customer_email'    => $data['customer_email'],
+                    'variation_id'      => $variationId,
+                    'variation_label'   => $variationLabel,
+                    'registration_id'   => $registrationId ?? ScriptRegistration::generateRegistrationId(),
+                    'script_title'      => $payload['sr_title'] ?? '',
+                    'page_count'        => ! empty($payload['sr_page_count']) ? (int) $payload['sr_page_count'] : null,
+                    'type_of_work'      => $payload['sr_type_of_work'] ?? '',
+                    'author_first'      => $payload['sr_author_first'] ?? '',
+                    'author_last'       => $payload['sr_author_last'] ?? '',
+                    'additional_authors' => $payload['sr_additional_authors'] ?? null,
+                    'street_address'    => $payload['sr_street_address'] ?? '',
+                    'city'              => $payload['sr_city'] ?? '',
+                    'state_or_province' => $payload['sr_state_or_province'] ?? '',
+                    'postal_or_zip'     => $payload['sr_postal_or_zip'] ?? '',
+                    'country'           => $payload['sr_country'] ?? '',
+                    'phone'             => $payload['sr_phone'] ?? '',
+                    'unique_id'         => $payload['sr_unique_id_optional'] ?? null,
+                    'email'             => $payload['sr_email'] ?? $data['customer_email'],
+                    'uploaded_file_url' => $payload['sr_uploaded_file_url'] ?? null,
+                    'uploaded_file_name' => $payload['sr_uploaded_file_original_name'] ?? null,
+                    'authcode'          => $payload['sr_authcode'] ?? bin2hex(random_bytes(16)),
+                    'registered_at'     => now(),
+                    'expires_at'        => $this->parseExpiry($payload['sr_registration_expires'] ?? null, $variationId, $neverExpires),
+                    'unlimited_token'   => $neverExpires
+                        ? ScriptRegistration::generateUnlimitedToken()
+                        : null,
+                    'status'            => ScriptRegistration::STATUS_PENDING,
+                ]);
+
+                $created[] = $registration;
+            }
+
+            return $created;
+        });
+
+        // Dispatched after the transaction commits — a queue worker could otherwise pick
+        // up a job referencing a registration row that gets rolled back if a later
+        // payload in the same batch fails.
+        $createdIds = [];
+        foreach ($created as $registration) {
             GenerateRegistrationCertificate::dispatch($registration->id);
 
             if ($registration->uploaded_file_url) {
                 CopyRegistrationScriptToSpaces::dispatch($registration->id);
             }
 
-            $created[] = $registration->id;
+            $createdIds[] = $registration->id;
+        }
+
+        if (empty($createdIds) && ! empty($existingRegistrationIds)) {
+            return response()->json(['status' => 'already_exists'], 200);
         }
 
         return response()->json([
             'status' => 'accepted',
-            'registration_ids' => $created,
+            'registration_ids' => $createdIds,
         ], 202);
     }
 

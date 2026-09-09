@@ -11,6 +11,7 @@ use App\Jobs\GenerateRegistrationCertificate;
 use App\Models\ScriptRegistration;
 use App\Services\SpacesStorageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ScriptRegistrationPublicController extends Controller
@@ -47,16 +48,6 @@ class ScriptRegistrationPublicController extends Controller
     public function submit(Request $request, string $token)
     {
         $parent = $this->findParent($token);
-
-        $todayCount = ScriptRegistration::where('unlimited_token_parent_id', $parent->id)
-            ->whereDate('created_at', now()->toDateString())
-            ->count();
-
-        if ($todayCount >= self::DAILY_SUBMISSION_LIMIT) {
-            return back()->withInput()->withErrors([
-                'sr_title' => 'Daily registration limit reached. Please try again tomorrow.',
-            ]);
-        }
 
         $data = $request->validate([
             'sr_title'              => 'required|string|max:255',
@@ -99,45 +90,73 @@ class ScriptRegistrationPublicController extends Controller
 
         $regId = ScriptRegistration::generateRegistrationId();
         $spacesPath = "registrations/{$regId}/{$regId}.{$ext}";
+        // Uploaded before the daily-cap check below so the cap check (and its DB lock) isn't
+        // held open across a slow network call to object storage. Trade-off: a request that
+        // ends up over the cap has already spent an upload; low-impact given the low daily
+        // limit and the route's own rate limiting.
         app(SpacesStorageService::class)->store($spacesPath, file_get_contents($file->getRealPath()), match ($ext) {
             'pdf' => 'application/pdf',
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             default => 'application/octet-stream',
         });
 
-        $registration = ScriptRegistration::create([
-            'woo_order_id'          => 'UNLIMITED-' . $parent->woo_order_id . '-' . uniqid(),
-            'woo_order_number'      => null,
-            'customer_name'         => trim($data['sr_author_first'] . ' ' . $data['sr_author_last']),
-            'customer_email'        => $data['sr_email'],
-            // Inherit the parent's own variation identity rather than hardcoding the legacy
-            // lifetime ID — correct regardless of which lifetime-type variation the parent used.
-            'variation_id'          => $parent->variation_id,
-            'variation_label'       => $parent->variation_label,
-            'registration_id'       => $regId,
-            'script_title'          => $data['sr_title'],
-            'page_count'            => (int) $data['sr_page_count'],
-            'type_of_work'          => $data['sr_type_of_work'],
-            'author_first'          => $data['sr_author_first'],
-            'author_last'           => $data['sr_author_last'],
-            'additional_authors'    => $data['sr_additional_authors'] ?: null,
-            'street_address'        => $data['sr_street_address'],
-            'city'                  => $data['sr_city'],
-            'state_or_province'     => $data['sr_state_or_province'],
-            'postal_or_zip'         => $data['sr_postal_or_zip'],
-            'country'               => $data['sr_country'],
-            'phone'                 => $data['sr_phone'],
-            'unique_id'             => $data['sr_unique_id'] ?: null,
-            'email'                 => $data['sr_email'],
-            'uploaded_file_url'     => null,
-            'uploaded_file_name'    => $file->getClientOriginalName(),
-            'spaces_script_file_path' => $spacesPath,
-            'authcode'              => bin2hex(random_bytes(16)),
-            'registered_at'         => now(),
-            'expires_at'            => null,
-            'unlimited_token_parent_id' => $parent->id,
-            'status'                => ScriptRegistration::STATUS_PENDING,
-        ]);
+        // Lock the parent row so concurrent submissions against the same token serialize —
+        // without this, two simultaneous requests could each read a today-count below the
+        // daily cap and both proceed, letting the cap be exceeded.
+        $limitReached = false;
+        $registration = DB::transaction(function () use ($parent, $data, $regId, $spacesPath, $file, &$limitReached) {
+            $lockedParent = ScriptRegistration::where('id', $parent->id)->lockForUpdate()->first();
+
+            $todayCount = ScriptRegistration::where('unlimited_token_parent_id', $lockedParent->id)
+                ->whereDate('created_at', now()->toDateString())
+                ->count();
+
+            if ($todayCount >= self::DAILY_SUBMISSION_LIMIT) {
+                $limitReached = true;
+
+                return null;
+            }
+
+            return ScriptRegistration::create([
+                'woo_order_id'          => 'UNLIMITED-' . $lockedParent->woo_order_id . '-' . uniqid(),
+                'woo_order_number'      => null,
+                'customer_name'         => trim($data['sr_author_first'] . ' ' . $data['sr_author_last']),
+                'customer_email'        => $data['sr_email'],
+                // Inherit the parent's own variation identity rather than hardcoding the legacy
+                // lifetime ID — correct regardless of which lifetime-type variation the parent used.
+                'variation_id'          => $lockedParent->variation_id,
+                'variation_label'       => $lockedParent->variation_label,
+                'registration_id'       => $regId,
+                'script_title'          => $data['sr_title'],
+                'page_count'            => (int) $data['sr_page_count'],
+                'type_of_work'          => $data['sr_type_of_work'],
+                'author_first'          => $data['sr_author_first'],
+                'author_last'           => $data['sr_author_last'],
+                'additional_authors'    => $data['sr_additional_authors'] ?: null,
+                'street_address'        => $data['sr_street_address'],
+                'city'                  => $data['sr_city'],
+                'state_or_province'     => $data['sr_state_or_province'],
+                'postal_or_zip'         => $data['sr_postal_or_zip'],
+                'country'               => $data['sr_country'],
+                'phone'                 => $data['sr_phone'],
+                'unique_id'             => $data['sr_unique_id'] ?: null,
+                'email'                 => $data['sr_email'],
+                'uploaded_file_url'     => null,
+                'uploaded_file_name'    => $file->getClientOriginalName(),
+                'spaces_script_file_path' => $spacesPath,
+                'authcode'              => bin2hex(random_bytes(16)),
+                'registered_at'         => now(),
+                'expires_at'            => null,
+                'unlimited_token_parent_id' => $lockedParent->id,
+                'status'                => ScriptRegistration::STATUS_PENDING,
+            ]);
+        });
+
+        if ($limitReached) {
+            return back()->withInput()->withErrors([
+                'sr_title' => 'Daily registration limit reached. Please try again tomorrow.',
+            ]);
+        }
 
         GenerateRegistrationCertificate::dispatch($registration->id);
 

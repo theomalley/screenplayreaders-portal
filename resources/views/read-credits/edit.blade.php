@@ -82,8 +82,12 @@
 
                     <div>
                         <x-input-label for="adjustment_note" value="Adjustment Note" />
+                        <p class="text-xs text-amber-600 mt-1 mb-1">
+                            &#9888; Visible to the customer — this text is shown on their public credit-status page as
+                            "Admin adjustment: &hellip;". Do not include internal remarks, other customers' details, or anything not meant for them to read.
+                        </p>
                         <textarea id="adjustment_note" name="adjustment_note" rows="2" required
-                            placeholder="Reason for this change (required)"
+                            placeholder="Reason for this change (required) — shown to the customer"
                             class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm">{{ old('adjustment_note') }}</textarea>
                         <x-input-error :messages="$errors->get('adjustment_note')" class="mt-1" />
                     </div>
