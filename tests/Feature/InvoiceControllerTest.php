@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\OrderRevenue;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -71,6 +72,57 @@ class InvoiceControllerTest extends TestCase
             $paid = $this->makeInvoice(['status' => 'paid']);
             $this->assertNotEquals(403, $this->actingAs($user)->delete("/invoices/{$paid->id}")->getStatusCode());
         }
+    }
+
+    public function test_edit_and_update_are_blocked_on_a_paid_or_void_invoice(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        foreach (['paid', 'void'] as $status) {
+            $invoice = $this->makeInvoice(['status' => $status]);
+
+            $this->actingAs($admin)->get("/invoices/{$invoice->id}/edit")->assertForbidden();
+            $this->actingAs($admin)->patch("/invoices/{$invoice->id}", [
+                'items' => [['description' => 'Item', 'amount' => 10]],
+            ])->assertForbidden();
+        }
+    }
+
+    public function test_send_is_blocked_on_a_non_pdf_draft_invoice(): void
+    {
+        $admin   = User::factory()->create(['role' => 'admin']);
+        $invoice = $this->makeInvoice(['status' => 'draft', 'invoice_type' => 'stripe']);
+
+        $this->actingAs($admin)->post("/invoices/{$invoice->id}/send")->assertForbidden();
+    }
+
+    public function test_voiding_a_paid_invoice_removes_its_order_revenue_row(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $client = $this->makeClient();
+        $invoice = $this->makeInvoice(['client_id' => $client->id, 'status' => 'paid', 'invoice_number' => '4242']);
+
+        $code = strtoupper($client->code);
+        OrderRevenue::create([
+            'order_number'   => "INV-{$code}-4242",
+            'ordered_at'     => now(),
+            'order_total'    => 100,
+            'customer_name'  => $client->name,
+            'customer_email' => 'x@example.com',
+        ]);
+
+        $this->actingAs($admin)->post("/invoices/{$invoice->id}/void")->assertRedirect();
+
+        $this->assertSame('void', $invoice->fresh()->status);
+        $this->assertDatabaseMissing('order_revenues', ['order_number' => "INV-{$code}-4242"]);
+    }
+
+    public function test_voiding_an_already_void_invoice_is_rejected(): void
+    {
+        $admin   = User::factory()->create(['role' => 'admin']);
+        $invoice = $this->makeInvoice(['status' => 'void']);
+
+        $this->actingAs($admin)->post("/invoices/{$invoice->id}/void")->assertSessionHasErrors('invoice');
     }
 
     public function test_reader_is_forbidden_from_every_invoice_action(): void

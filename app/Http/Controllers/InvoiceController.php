@@ -1,5 +1,16 @@
 <?php
 
+// v2.5 — 2026-09-09 | SECURITY/BUG FIX: edit()/update() only checked invoice_type ===
+//                     'pdf', never status — a paid or void invoice's amount could be
+//                     silently overwritten with no re-sync of the order_revenues row
+//                     markPaid() created, permanently desyncing the books. void() had
+//                     no status guard and never cleaned up that same row (unlike
+//                     destroy()/markOutstanding(), which both do). send() didn't check
+//                     invoice_type, so a Stripe-type invoice stuck in 'draft' (Stripe
+//                     creation failed mid-flow) could be delivered as a Google-Docs
+//                     PDF by sendBatch(), which has no Stripe branch — permanently
+//                     mismatching invoice_type. Extracted the duplicated "up to 8 line
+//                     items" validation rules into lineItemRules().
 // v2.4 — 2026-07-23 | Authorization moved to InvoicePolicy (app/Policies), replacing
 //                     inline abort_unless(...) calls across all 10 actions. Covered by
 //                     tests/Feature/InvoiceControllerTest.php.
@@ -23,6 +34,16 @@ use Illuminate\Support\Facades\Log;
 class InvoiceController extends Controller
 {
     public function __construct(private readonly InvoiceService $invoiceService) {}
+
+    /** Shared "up to 8 line items" validation rules — was duplicated across store(), storeForCustomer(), and update(). */
+    private static function lineItemRules(): array
+    {
+        return [
+            'items'               => 'required|array|min:1|max:8',
+            'items.*.description' => 'required|string|max:1000',
+            'items.*.amount'      => 'required|numeric|min:0.01',
+        ];
+    }
 
     /**
      * Invoicing tab — all outstanding and paid invoices across all clients.
@@ -70,14 +91,11 @@ class InvoiceController extends Controller
             return $this->storeForCustomer($request);
         }
 
-        $data = $request->validate([
-            'client_id'                  => 'required|exists:clients,id',
-            'items'                      => 'required|array|min:1|max:8',
-            'items.*.description'        => 'required|string|max:1000',
-            'items.*.amount'             => 'required|numeric|min:0.01',
-            'due_date'                   => 'nullable|date',
-            'notes'                      => 'nullable|string|max:2000',
-        ]);
+        $data = $request->validate(array_merge(self::lineItemRules(), [
+            'client_id' => 'required|exists:clients,id',
+            'due_date'  => 'nullable|date',
+            'notes'     => 'nullable|string|max:2000',
+        ]));
 
         $client    = Client::findOrFail($data['client_id']);
         $lineItems = array_map(fn ($item) => [
@@ -103,16 +121,13 @@ class InvoiceController extends Controller
 
     private function storeForCustomer(Request $request)
     {
-        $data = $request->validate([
-            'customer_first_name'        => 'required|string|max:100',
-            'customer_last_name'         => 'required|string|max:100',
-            'customer_email'             => 'required|email|max:255',
-            'helpscout_ticket'           => 'nullable|string|max:50',
-            'items'                      => 'required|array|min:1|max:8',
-            'items.*.description'        => 'required|string|max:1000',
-            'items.*.amount'             => 'required|numeric|min:0.01',
-            'due_date'                   => 'nullable|date',
-        ]);
+        $data = $request->validate(array_merge(self::lineItemRules(), [
+            'customer_first_name' => 'required|string|max:100',
+            'customer_last_name'  => 'required|string|max:100',
+            'customer_email'      => 'required|email|max:255',
+            'helpscout_ticket'    => 'nullable|string|max:50',
+            'due_date'            => 'nullable|date',
+        ]));
 
         $lineItems = array_map(fn ($item) => [
             'description' => $item['description'],
@@ -176,6 +191,13 @@ class InvoiceController extends Controller
     {
         $this->authorize('send', $invoice);
         abort_unless($invoice->status === 'draft', 403);
+        // FIX: sendBatch() unconditionally calls sendPdf() — it has no Stripe branch.
+        // A 'stripe'-type invoice that got stuck in 'draft' (e.g. sendStripe() threw
+        // after the row was created in generate()) would otherwise be delivered as a
+        // Google-Docs PDF here, permanently mismatching invoice_type against how it
+        // was actually sent and locking it out of edit/update/downloadPdf/resend/
+        // markOutstanding, which all gate on invoice_type === 'pdf'.
+        abort_unless($invoice->invoice_type === 'pdf', 403);
 
         try {
             $this->invoiceService->sendBatch($invoice->fresh());
@@ -251,6 +273,12 @@ class InvoiceController extends Controller
     {
         $this->authorize('update', $invoice);
         abort_unless($invoice->invoice_type === 'pdf', 403);
+        // FIX: only draft/sent (outstanding) invoices can be edited — a paid invoice's
+        // amount feeds the order_revenues row logToOrderRevenue() created, which is
+        // never re-synced on edit; a void invoice shouldn't be editable at all. To
+        // correct a paid invoice, use markOutstanding() first (which removes that
+        // revenue row), edit, then mark paid again.
+        abort_unless(in_array($invoice->status, ['draft', 'sent'], true), 403);
 
         $lineItems = $invoice->lineItems()->orderBy('created_at')->get();
 
@@ -265,14 +293,15 @@ class InvoiceController extends Controller
     {
         $this->authorize('update', $invoice);
         abort_unless($invoice->invoice_type === 'pdf', 403);
+        // FIX: see edit() above — this previously let a paid or void invoice's amount
+        // be overwritten with no re-sync of the order_revenues row markPaid() created,
+        // permanently desyncing the books from what the invoice actually says.
+        abort_unless(in_array($invoice->status, ['draft', 'sent'], true), 403);
 
-        $data = $request->validate([
-            'items'               => 'required|array|min:1|max:8',
-            'items.*.description' => 'required|string|max:1000',
-            'items.*.amount'      => 'required|numeric|min:0.01',
-            'due_date'            => 'nullable|date',
-            'notes'               => 'nullable|string|max:2000',
-        ]);
+        $data = $request->validate(array_merge(self::lineItemRules(), [
+            'due_date' => 'nullable|date',
+            'notes'    => 'nullable|string|max:2000',
+        ]));
 
         $lineItems = array_map(fn ($i) => [
             'description' => $i['description'],
@@ -394,6 +423,17 @@ class InvoiceController extends Controller
     {
         $this->authorize('void', $invoice);
 
+        // FIX: void() had no status precondition at all (unlike every other status-
+        // changing action here) and never cleaned up the order_revenues row markPaid()
+        // creates — unlike destroy() and markOutstanding(), which both explicitly
+        // delete it in the same scenario. A paid invoice could be voided while still
+        // counting as revenue forever.
+        if ($invoice->status === 'void') {
+            return back()->withErrors(['invoice' => 'Invoice is already void.']);
+        }
+
+        $wasPaid = $invoice->status === 'paid';
+
         if ($invoice->stripe_invoice_id) {
             try {
                 (new \App\Services\StripeService())->voidInvoice($invoice->stripe_invoice_id);
@@ -402,7 +442,12 @@ class InvoiceController extends Controller
             }
         }
 
-        $invoice->update(['status' => 'void']);
+        if ($wasPaid && $invoice->client_id) {
+            $code = strtoupper($invoice->client->code ?? 'INV');
+            OrderRevenue::where('order_number', "INV-{$code}-{$invoice->invoice_number}")->delete();
+        }
+
+        $invoice->update(['status' => 'void', 'paid_at' => null]);
 
         return back()->with('success', "Invoice #{$invoice->invoice_number} voided.");
     }

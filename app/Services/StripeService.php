@@ -1,5 +1,11 @@
 <?php
 
+// v1.5 — 2026-09-09 | SECURITY: added Stripe Idempotency-Key headers to every POST — a
+//                     retried request (double-submitted "Send Invoice" click, a retry
+//                     after a slow/timed-out response) could otherwise create a second
+//                     full set of invoice items and a second finalized, sent invoice
+//                     for the same charge. Also escaped the email in ensureCustomer()'s
+//                     search query.
 // v1.4 — 2026-05-26 | Return invoice_number (Stripe's human-readable number) in createAndSendInvoice result
 // v1.3 — 2026-05-26 | Add pending_invoice_items_behavior=include and log amount_cents to debug $0 invoice
 // v1.2 — 2026-05-26 | Accept array of line items in createAndSendInvoice() for batch invoicing
@@ -29,7 +35,12 @@ class StripeService
      */
     public function ensureCustomer(string $email, string $name): string
     {
-        $search = $this->get('/customers/search', ['query' => "email:\"{$email}\""]);
+        // Escape a literal `"` or `\` in the email before embedding it in Stripe's
+        // search query syntax — otherwise an email containing one would malform the
+        // query (Stripe's search parser, not SQL — this can't lead to data leakage,
+        // only a malformed/failed search).
+        $escapedEmail = str_replace(['\\', '"'], ['\\\\', '\\"'], $email);
+        $search = $this->get('/customers/search', ['query' => "email:\"{$escapedEmail}\""]);
 
         if (! empty($search['data'])) {
             return $search['data'][0]['id'];
@@ -55,8 +66,18 @@ class StripeService
         array  $lineItems,
         ?int   $dueDateTimestamp = null
     ): array {
+        // FIX: none of the POSTs below carried an Idempotency-Key — a retried request
+        // (a double-submitted "Send Invoice" click, or a retry after a slow/timed-out
+        // response) would create a second full set of invoice items and a second
+        // finalized, sent Stripe invoice for the same charge, which the client could
+        // receive and pay twice. Anchored to the exact inputs so a genuine retry with
+        // identical customer/line-items/due-date replays Stripe's cached result for
+        // each step instead of creating new objects; a request with different inputs
+        // gets a different key, so it is never blocked from proceeding normally.
+        $idempotencyBase = hash('sha256', json_encode([$stripeCustomerId, $lineItems, $dueDateTimestamp]));
+
         // 1. Create one pending invoice item per line
-        foreach ($lineItems as $item) {
+        foreach ($lineItems as $i => $item) {
             Log::debug('StripeService: creating invoice item', [
                 'customer'    => $stripeCustomerId,
                 'amount_cents'=> $item['amount_cents'],
@@ -67,7 +88,7 @@ class StripeService
                 'amount'      => $item['amount_cents'],
                 'currency'    => 'usd',
                 'description' => $item['description'],
-            ]);
+            ], "{$idempotencyBase}-item-{$i}");
         }
 
         // 2. Create the invoice — include=pending ensures items created above are collected
@@ -83,14 +104,14 @@ class StripeService
             $invoiceParams['due_date'] = $dueDateTimestamp;
         }
 
-        $invoice   = $this->post('/invoices', $invoiceParams);
+        $invoice   = $this->post('/invoices', $invoiceParams, "{$idempotencyBase}-invoice");
         $invoiceId = $invoice['id'];
 
         // 3. Finalize (locks it)
-        $this->post("/invoices/{$invoiceId}/finalize", []);
+        $this->post("/invoices/{$invoiceId}/finalize", [], "{$idempotencyBase}-finalize");
 
         // 4. Send — triggers Stripe's own email to the customer
-        $sent = $this->post("/invoices/{$invoiceId}/send", []);
+        $sent = $this->post("/invoices/{$invoiceId}/send", [], "{$idempotencyBase}-send");
 
         return [
             'invoice_id'         => $invoiceId,
@@ -104,7 +125,7 @@ class StripeService
      */
     public function voidInvoice(string $stripeInvoiceId): void
     {
-        $this->post("/invoices/{$stripeInvoiceId}/void", []);
+        $this->post("/invoices/{$stripeInvoiceId}/void", [], 'void-' . $stripeInvoiceId);
     }
 
     // -------------------------------------------------------------------------
@@ -126,9 +147,14 @@ class StripeService
         return $response->json();
     }
 
-    private function post(string $path, array $params): array
+    private function post(string $path, array $params, ?string $idempotencyKey = null): array
     {
-        $response = $this->client()->asForm()->post(self::BASE . $path, $params);
+        $client = $this->client()->asForm();
+        if ($idempotencyKey !== null) {
+            $client = $client->withHeader('Idempotency-Key', $idempotencyKey);
+        }
+
+        $response = $client->post(self::BASE . $path, $params);
 
         if ($response->failed()) {
             throw new RuntimeException('Stripe API error: ' . ($response->json('error.message') ?? $response->body()));

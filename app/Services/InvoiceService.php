@@ -1,5 +1,11 @@
 <?php
 
+// v2.4 — 2026-09-09 | BUG FIX: addToBatchInvoice() read-then-created the client's open
+//                     draft with no lock — two concurrent generate() calls for the same
+//                     batch_invoicing client could both miss the existing draft and
+//                     each create a separate one, silently splitting what should be one
+//                     accumulated invoice. Wrapped in a transaction with a locking read
+//                     on the client row.
 // v2.3 — 2026-07-08 | BUG FIX: HelpScout delivery only ever checked the manual
 //                      helpscout_ticket_number field, which is never auto-populated —
 //                      so invoices for normally-created assignments always skipped
@@ -202,39 +208,48 @@ class InvoiceService
         ?string     $notes,
         ?string     $dueDate,
     ): Invoice {
-        $invoice = Invoice::where('client_id', $client->id)
-            ->where('status', 'draft')
-            ->first();
+        // FIX: read-then-create with no lock/transaction — two concurrent generate()
+        // calls for the same batch_invoicing client could both miss the existing
+        // draft and each create a separate one, silently splitting what should be
+        // one accumulated invoice into two. Lock the client row for the duration so
+        // concurrent calls for the same client serialize.
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($client, $lineItems, $assignment, $notes, $dueDate) {
+            $client = Client::where('id', $client->id)->lockForUpdate()->first();
 
-        if (! $invoice) {
-            $client->increment('last_invoice_number');
-            $client->refresh();
+            $invoice = Invoice::where('client_id', $client->id)
+                ->where('status', 'draft')
+                ->first();
 
-            $invoice = Invoice::create([
-                'client_id'      => $client->id,
-                'invoice_number' => (string) $client->last_invoice_number,
-                'description'    => 'Batch invoice',
-                'amount'         => 0,
-                'status'         => 'draft',
-                'invoice_type'   => 'pdf',
-                'notes'          => $notes,
-                'due_date'       => $dueDate,
-                'issued_at'      => now(),
-            ]);
-        }
+            if (! $invoice) {
+                $client->increment('last_invoice_number');
+                $client->refresh();
 
-        foreach ($lineItems as $item) {
-            InvoiceLineItem::create([
-                'invoice_id'    => $invoice->id,
-                'assignment_id' => $assignment?->id,
-                'description'   => $item['description'],
-                'amount'        => $item['amount'],
-            ]);
-        }
+                $invoice = Invoice::create([
+                    'client_id'      => $client->id,
+                    'invoice_number' => (string) $client->last_invoice_number,
+                    'description'    => 'Batch invoice',
+                    'amount'         => 0,
+                    'status'         => 'draft',
+                    'invoice_type'   => 'pdf',
+                    'notes'          => $notes,
+                    'due_date'       => $dueDate,
+                    'issued_at'      => now(),
+                ]);
+            }
 
-        $invoice->update(['amount' => $invoice->lineItems()->sum('amount')]);
+            foreach ($lineItems as $item) {
+                InvoiceLineItem::create([
+                    'invoice_id'    => $invoice->id,
+                    'assignment_id' => $assignment?->id,
+                    'description'   => $item['description'],
+                    'amount'        => $item['amount'],
+                ]);
+            }
 
-        return $invoice->fresh();
+            $invoice->update(['amount' => $invoice->lineItems()->sum('amount')]);
+
+            return $invoice->fresh();
+        });
     }
 
     /**

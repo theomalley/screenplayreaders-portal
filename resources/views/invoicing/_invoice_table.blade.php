@@ -91,12 +91,17 @@ $statusColors = [
                             <button type="submit" class="text-red-500 hover:underline">Delete</button>
                         </form>
                     @elseif($invoice->status === 'draft')
-                        <a href="{{ route('invoices.edit', $invoice) }}" class="text-gray-600 hover:underline">Edit</a>
-                        <form method="POST" action="{{ route('invoices.send', $invoice) }}"
-                              onsubmit="return confirm('Send invoice #{{ $invoice->invoice_number }} to {{ $invoice->client?->name }} now?')">
-                            @csrf
-                            <button type="submit" class="text-indigo-600 hover:underline">Send</button>
-                        </form>
+                        {{-- Edit/Send are PDF-only (sendBatch() has no Stripe branch) — a
+                             'stripe'-type invoice stuck in draft (e.g. Stripe creation
+                             failed) can only be voided from here, not sent as a PDF. --}}
+                        @if($invoice->invoice_type === 'pdf')
+                            <a href="{{ route('invoices.edit', $invoice) }}" class="text-gray-600 hover:underline">Edit</a>
+                            <form method="POST" action="{{ route('invoices.send', $invoice) }}"
+                                  onsubmit="return confirm('Send invoice #{{ $invoice->invoice_number }} to {{ $invoice->client?->name }} now?')">
+                                @csrf
+                                <button type="submit" class="text-indigo-600 hover:underline">Send</button>
+                            </form>
+                        @endif
                         <form method="POST" action="{{ route('invoices.void', $invoice) }}"
                               onsubmit="return confirm('Void this invoice?')">
                             @csrf
