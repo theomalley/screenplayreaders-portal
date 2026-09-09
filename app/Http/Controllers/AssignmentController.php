@@ -1212,11 +1212,11 @@ class AssignmentController extends Controller
             }
         }
 
-        // If a short conversation number was entered (< 10,000,000), resolve it to
-        // the large internal HelpScout ID so the URL link works correctly.
+        // If a short conversation number was entered, resolve it to the large
+        // internal HelpScout ID so the URL link works correctly.
         if (! empty($data['helpscout_ticket_number'])
             && is_numeric($data['helpscout_ticket_number'])
-            && (int) $data['helpscout_ticket_number'] < 10_000_000) {
+            && (int) $data['helpscout_ticket_number'] < HelpScoutService::TICKET_NUMBER_MAX) {
             try {
                 $resolved = app(HelpScoutService::class)
                     ->findConversationIdByTicketNumber($data['helpscout_ticket_number']);

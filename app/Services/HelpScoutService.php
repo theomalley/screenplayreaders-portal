@@ -26,6 +26,14 @@ class HelpScoutService
     private const TOKEN_URL = 'https://api.helpscout.net/v2/oauth2/token';
     private const API_BASE  = 'https://api.helpscout.net/v2';
 
+    /**
+     * Threshold distinguishing a short, human-readable Help Scout ticket number from
+     * a large internal conversation ID. Was duplicated as a literal 10_000_000 here,
+     * in HelpScoutConversationController, and in AssignmentController — kept in one
+     * place so all three stay in lockstep if Help Scout's ID space ever changes.
+     */
+    public const TICKET_NUMBER_MAX = 10_000_000;
+
     private function getToken(): string
     {
         return Cache::remember('helpscout_access_token', 55 * 60, function () {
@@ -274,7 +282,7 @@ class HelpScoutService
         }
 
         // Value may already be a conversation ID rather than a ticket number.
-        if (is_numeric($ticketNumber) && (int) $ticketNumber >= 10_000_000) {
+        if (is_numeric($ticketNumber) && (int) $ticketNumber >= self::TICKET_NUMBER_MAX) {
             $check = Http::withToken($token)
                 ->get(self::API_BASE . "/conversations/{$ticketNumber}");
 

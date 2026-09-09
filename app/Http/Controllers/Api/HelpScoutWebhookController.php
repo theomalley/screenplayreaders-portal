@@ -1,5 +1,14 @@
 <?php
 
+// v1.3 — 2026-09-09 | SECURITY/BUG FIX: this route has no auth beyond the signature
+//                     check, but logged every delivery's full raw payload before
+//                     checking it — anyone could flood the endpoint with garbage
+//                     bodies to grow helpscout_webhook_logs indefinitely. Invalid-
+//                     signature deliveries now log a lightweight placeholder instead
+//                     of the raw payload. Also wrapped the eligibility check + update
+//                     in a locked transaction — two near-simultaneous redeliveries of
+//                     the same event (Help Scout retries on non-2xx/timeout) could
+//                     both pass the whereNull() check before either write landed.
 // v1.2 — 2026-06-15 | When the draft is actually sent, clear helpscout_draft_sent_at /
 //                     helpscout_draft_dismissed_by so the "goback ready" alert disappears
 //                     for everyone instead of lingering until manually dismissed.
@@ -23,6 +32,7 @@ use App\Models\HelpScoutConversation;
 use App\Models\HelpScoutWebhookLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class HelpScoutWebhookController extends Controller
@@ -37,10 +47,17 @@ class HelpScoutWebhookController extends Controller
 
         $conversationId = $this->extractConversationId($payload);
 
+        // FIX: every delivery was logged with its full raw payload regardless of
+        // signature validity — since this route has no auth beyond the signature
+        // itself, anyone (not just Help Scout) could flood it with arbitrary garbage
+        // bodies to grow this table indefinitely (bounded only by the route's
+        // throttle:60,1). Keep the diagnostic visibility (that an invalid-signature
+        // delivery happened, and roughly how big it was) without persisting
+        // attacker-supplied content when the signature doesn't check out.
         HelpScoutWebhookLog::create([
             'event'                     => $request->header('X-HelpScout-Event') ?? ($payload['event'] ?? $payload['type'] ?? null),
             'helpscout_conversation_id' => $conversationId,
-            'payload'                   => $payload,
+            'payload'                   => $valid ? $payload : ['_note' => 'payload omitted — invalid signature', 'size_bytes' => strlen($request->getContent())],
             'signature_valid'           => $valid,
         ]);
 
@@ -50,38 +67,50 @@ class HelpScoutWebhookController extends Controller
         }
 
         if ($conversationId) {
-            $conversation = HelpScoutConversation::where('helpscout_conversation_id', $conversationId)
-                ->whereNull('helpscout_sent_at')
-                ->first();
+            // FIX: the eligibility check and the later update() weren't wrapped in a
+            // transaction/lock — Help Scout does retry webhook delivery on a non-2xx
+            // response or timeout, and two near-simultaneous redeliveries of the same
+            // event could both pass the whereNull() check before either write landed,
+            // both logging "processed" (the actual writes below are idempotent in
+            // outcome either way, so this was a duplicate-log issue, not a duplicate
+            // side effect — holding the lock for the whole decision+update closes
+            // even that: a second redelivery now blocks until the first commits, then
+            // re-reads and correctly finds the row no longer eligible).
+            DB::transaction(function () use ($conversationId) {
+                $conversation = HelpScoutConversation::where('helpscout_conversation_id', $conversationId)
+                    ->whereNull('helpscout_sent_at')
+                    ->lockForUpdate()
+                    ->first();
 
-            if (! $conversation) {
-                Log::info('HelpScout webhook: no eligible conversation row (unknown id or already stamped)', [
-                    'conversation_id' => $conversationId,
-                ]);
-            } elseif (! Assignment::where('order_number', $conversation->order_number)->whereNotNull('submitted_at')->exists()) {
-                // This reply was created before any reader submitted coverage for the order —
-                // it's the order-creation ticket message (or similar), not the coverage delivery.
-                Log::info('HelpScout webhook: skipped — no submitted coverage yet for order', [
-                    'conversation_id' => $conversationId,
-                    'order_number'    => $conversation->order_number,
-                ]);
-            } else {
-                $conversation->update(['helpscout_sent_at' => now()]);
-
-                // The "goback ready at HelpScout" alert is keyed off helpscout_draft_sent_at —
-                // clear it now that the draft has actually been sent, so it disappears for everyone.
-                Assignment::where('order_number', $conversation->order_number)
-                    ->whereNotNull('helpscout_draft_sent_at')
-                    ->update([
-                        'helpscout_draft_sent_at'      => null,
-                        'helpscout_draft_dismissed_by' => null,
+                if (! $conversation) {
+                    Log::info('HelpScout webhook: no eligible conversation row (unknown id or already stamped)', [
+                        'conversation_id' => $conversationId,
                     ]);
+                } elseif (! Assignment::where('order_number', $conversation->order_number)->whereNotNull('submitted_at')->exists()) {
+                    // This reply was created before any reader submitted coverage for the order —
+                    // it's the order-creation ticket message (or similar), not the coverage delivery.
+                    Log::info('HelpScout webhook: skipped — no submitted coverage yet for order', [
+                        'conversation_id' => $conversationId,
+                        'order_number'    => $conversation->order_number,
+                    ]);
+                } else {
+                    $conversation->update(['helpscout_sent_at' => now()]);
 
-                Log::info('HelpScout webhook: processed', [
-                    'conversation_id' => $conversationId,
-                    'order_number'    => $conversation->order_number,
-                ]);
-            }
+                    // The "goback ready at HelpScout" alert is keyed off helpscout_draft_sent_at —
+                    // clear it now that the draft has actually been sent, so it disappears for everyone.
+                    Assignment::where('order_number', $conversation->order_number)
+                        ->whereNotNull('helpscout_draft_sent_at')
+                        ->update([
+                            'helpscout_draft_sent_at'      => null,
+                            'helpscout_draft_dismissed_by' => null,
+                        ]);
+
+                    Log::info('HelpScout webhook: processed', [
+                        'conversation_id' => $conversationId,
+                        'order_number'    => $conversation->order_number,
+                    ]);
+                }
+            });
         } else {
             Log::warning('HelpScout webhook: could not extract conversation id from payload');
         }

@@ -41,9 +41,9 @@ class HelpScoutConversationController extends Controller
         // Zapier may send the short conversation number (e.g. 9735) rather than
         // the large internal API ID (e.g. 3332513773). The web URL and API calls
         // both require the large ID, so resolve it via API if the value looks like
-        // a conversation number (heuristic: < 10,000,000).
+        // a conversation number (heuristic: < HelpScoutService::TICKET_NUMBER_MAX).
         $conversationId = $data['conversation_id'];
-        if (is_numeric($conversationId) && (int) $conversationId < 10_000_000) {
+        if (is_numeric($conversationId) && (int) $conversationId < HelpScoutService::TICKET_NUMBER_MAX) {
             try {
                 $resolved = app(HelpScoutService::class)->findConversationIdByTicketNumber($conversationId);
                 if ($resolved) {
