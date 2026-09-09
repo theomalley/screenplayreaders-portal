@@ -1,5 +1,11 @@
 <?php
 
+// v2.5 — 2026-09-09 | BUG FIX: the "strip paid flat-rate leftovers" logic only checked
+//                     for a *pending* flat rate before deciding to add a projected one —
+//                     a flat rate genuinely paid early for the current period got
+//                     stripped from paid_total, then double-counted again as a fresh
+//                     pending/projected amount, since no pending copy existed to stop
+//                     it. Now checks for any flat-rate entry (paid or pending).
 // v2.4 — 2026-07-17 | Scope $orders by editor_id = $user->id — previously showed every
 //                     editor's commission orders to whichever editor viewed the page.
 // v2.3 — 2026-06-23 | Add virtual flat rate as pending line item in current period
@@ -44,12 +50,23 @@ class EditorEarningsController extends Controller
         $current['label']       = PayPeriod::label($curStart);
         $current['payout_date'] = PayPeriod::nextPayoutDate();
 
-        // Paid flat-rate adjustments in the current period are leftovers from a
-        // previous markPaid() that timestamped them at the period boundary. Strip
-        // them so they don't inflate this period's "Paid Out" total.
-        $paidFlatAdjs = collect($current['adjustments'])->filter(
-            fn ($adj) => str_starts_with($adj->description, 'Weekly flat rate') && ! is_null($adj->editor_paid_at)
+        // Paid flat-rate adjustments landing in the current period used to include
+        // leftovers from a markPaid() bug that mistimestamped "past scope" payments
+        // (fixed in EditorPayController — see its changelog); strip any such paid
+        // entry from display so it doesn't inflate this period's "Paid Out" total.
+        // FIX: this used to check only the (already-reduced) adjustments list for a
+        // *pending* flat rate before deciding whether to add a projected one below —
+        // a flat rate genuinely paid early for the current period (scope='current')
+        // would be stripped from paid_total here, then, since no *pending* copy of it
+        // existed either, a fresh projected/pending flat_rate line would be added back
+        // in below — double-counting an already-paid amount as still owed. Now checks
+        // for ANY flat-rate entry (paid or pending) before stripping.
+        $flatAdjsThisPeriod = collect($current['adjustments'])->filter(
+            fn ($adj) => str_starts_with($adj->description, 'Weekly flat rate')
         );
+        $hasAnyFlatThisPeriod = $flatAdjsThisPeriod->isNotEmpty();
+
+        $paidFlatAdjs = $flatAdjsThisPeriod->filter(fn ($adj) => ! is_null($adj->editor_paid_at));
         foreach ($paidFlatAdjs as $adj) {
             $amt = (float) $adj->amount;
             $current['total']      -= $amt;
@@ -69,11 +86,7 @@ class EditorEarningsController extends Controller
             $periodWeeks = $schedule['frequency'] === 'biweekly' ? 2 : 1;
             $periodFlat  = round($weeklyFlat * $periodWeeks, 2);
 
-            $hasPendingFlat = collect($current['adjustments'])->contains(
-                fn ($adj) => str_starts_with($adj->description, 'Weekly flat rate') && is_null($adj->editor_paid_at)
-            );
-
-            if (! $hasPendingFlat) {
+            if (! $hasAnyFlatThisPeriod) {
                 $current['period_flat_rate'] = $periodFlat;
                 $current['period_weeks']     = $periodWeeks;
                 $current['total']           += $periodFlat;

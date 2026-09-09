@@ -60,6 +60,30 @@ class EditorPayControllerTest extends TestCase
         $this->assertDatabaseHas('editor_pay_adjustments', ['user_id' => $editor->id, 'description' => 'bonus']);
     }
 
+    public function test_mark_paid_does_not_double_pay_the_weekly_flat_rate_on_retry(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Separate editor per scope so each case's count isn't affected by the other.
+        foreach (['past', 'current'] as $scope) {
+            $editor = User::factory()->create(['role' => 'editor']);
+            $editor->editorProfile()->create([
+                'initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor',
+                'editor_weekly_flat' => 500,
+            ]);
+
+            // Call it twice — a double-click, a retry, or an admin re-running it before
+            // the period rolls should never create a second flat-rate adjustment.
+            $this->actingAs($admin)->post("/editor-pay/{$editor->id}/mark-paid", ['scope' => $scope])->assertRedirect();
+            $this->actingAs($admin)->post("/editor-pay/{$editor->id}/mark-paid", ['scope' => $scope])->assertRedirect();
+
+            $count = EditorPayAdjustment::where('user_id', $editor->id)
+                ->where('description', 'like', 'Weekly flat rate%')
+                ->count();
+            $this->assertSame(1, $count, "Expected exactly one flat-rate adjustment for scope={$scope}, got {$count}.");
+        }
+    }
+
     public function test_editor_cannot_mark_paid_clear_batch_or_add_adjustment(): void
     {
         $editor = $this->makeEditor();

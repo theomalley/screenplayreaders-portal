@@ -1,5 +1,14 @@
 <?php
 
+// v2.3 — 2026-09-09 | SECURITY/BUG FIX: markPaid()'s duplicate-flat-rate-adjustment guard
+//                     compared UTC-converted bounds against a naive LA-local created_at
+//                     (app.timezone/PHP default tz are both America/Los_Angeles — nothing
+//                     is ever actually stored in UTC), so the guard was effectively
+//                     always false; re-running "Mark Paid" reliably double-paid the
+//                     editor's weekly flat rate. Also fixed the "past" scope's reference
+//                     date landing outside the very period bounds the guard checked
+//                     against. Wrapped the check+insert in a transaction with a locking
+//                     read to close the remaining double-click race.
 // v2.2 — 2026-07-23 | Authorization moved to UserPolicy editorPay* abilities (app/Policies)
 //                     and two editor-pay.* Gate abilities (AppServiceProvider) for the
 //                     OrderRevenue/EditorPayAdjustment-targeted actions, replacing inline
@@ -34,6 +43,7 @@ use App\Models\User;
 use App\Support\PayPeriod;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EditorPayController extends Controller
 {
@@ -57,29 +67,53 @@ class EditorPayController extends Controller
 
             // The period being paid: the one that just closed (for "past"), or the
             // still-open current one (for "current", i.e. paying early).
-            $paidPeriodDate = $scope === 'past'
-                ? $currentPeriodStart->copy()->subMinute()
+            // FIX: was `subMinute()` for "past" — with the default 1-hour gap between
+            // periods (PayPeriod::end() = next period's start minus 1 hour), that landed
+            // AFTER the previous period's own end, so PayPeriod::bounds() on it resolved
+            // to bounds that didn't contain the timestamp we were about to save as
+            // created_at. subHours(2) safely lands inside the previous period regardless
+            // of how short the configured gap is.
+            $referenceDate = $scope === 'past'
+                ? $currentPeriodStart->copy()->subHours(2)
                 : $currentPeriodStart->copy();
-            [$paidStart, $paidEnd] = PayPeriod::bounds($paidPeriodDate);
+            [$paidStart, $paidEnd] = PayPeriod::bounds($referenceDate);
 
-            $alreadyExists = EditorPayAdjustment::where('user_id', $editor->id)
-                ->where('created_at', '>=', $paidStart->copy()->utc())
-                ->where('created_at', '<=', $paidEnd->copy()->utc())
-                ->where('description', 'like', 'Weekly flat rate%')
-                ->exists();
+            // FIX: PayPeriod's Carbon instances carry the America/Los_Angeles timezone
+            // (PayPeriod::TZ). app.timezone is also America/Los_Angeles and PHP's default
+            // timezone is set to match, so created_at is written and read back as a naive
+            // LA-local wall-clock string — no UTC conversion ever happens on either side.
+            // The previous ->utc() calls here shifted the comparison bounds by several
+            // hours away from what was actually stored, so this "already paid this
+            // period?" check was effectively always false, and re-running "Mark Paid"
+            // (a double-click, a retry, or running it again before the period rolls)
+            // inserted a second full-amount flat-rate adjustment every time.
+            //
+            // Wrapped in a transaction with a locking read so a genuinely concurrent
+            // double-click serializes on InnoDB's gap lock instead of both requests
+            // reading "not found" before either commits.
+            DB::transaction(function () use ($editor, $paidStart, $paidEnd, $periodFlatRate, $weeks) {
+                $alreadyExists = EditorPayAdjustment::where('user_id', $editor->id)
+                    ->where('created_at', '>=', $paidStart)
+                    ->where('created_at', '<=', $paidEnd)
+                    ->where('description', 'like', 'Weekly flat rate%')
+                    ->lockForUpdate()
+                    ->exists();
 
-            if (! $alreadyExists) {
-                $adj = new EditorPayAdjustment([
-                    'user_id'          => $editor->id,
-                    'amount'           => $periodFlatRate,
-                    'description'      => $weeks > 1
-                        ? "Weekly flat rate × {$weeks} weeks"
-                        : 'Weekly flat rate',
-                    'added_by_user_id' => auth()->id(),
-                ]);
-                $adj->created_at = $paidPeriodDate;
-                $adj->save();
-            }
+                if (! $alreadyExists) {
+                    $adj = new EditorPayAdjustment([
+                        'user_id'          => $editor->id,
+                        'amount'           => $periodFlatRate,
+                        'description'      => $weeks > 1
+                            ? "Weekly flat rate × {$weeks} weeks"
+                            : 'Weekly flat rate',
+                        'added_by_user_id' => auth()->id(),
+                    ]);
+                    // Set to the period's own start — guaranteed to fall within
+                    // [$paidStart, $paidEnd], unlike deriving it from an offset guess.
+                    $adj->created_at = $paidStart;
+                    $adj->save();
+                }
+            });
         }
 
         $ordersQuery = OrderRevenue::where('editor_id', $editor->id)
