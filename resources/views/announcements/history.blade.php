@@ -57,7 +57,7 @@
                                 {{ $annExpired ? 'opacity-70' : '' }}">
                         <div x-show="!editing">
                             <div class="flex items-start justify-between gap-4">
-                                <p class="text-sm text-gray-800 leading-relaxed flex-1">{{ $ann->body }}</p>
+                                <p class="text-sm text-gray-800 leading-relaxed flex-1 whitespace-pre-line">{{ $ann->body }}</p>
                                 <div class="flex items-center gap-2 shrink-0">
                                     @if(!$annExpired && !$wasDismissed)
                                         <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">Active</span>
