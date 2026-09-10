@@ -37,7 +37,7 @@
         <label class="block text-xs font-medium text-gray-700 mb-1">Discount</label>
         <div class="flex gap-2 items-center">
             <input type="number" name="coupon_amount" x-model.number="form.coupon_amount"
-                   min="0" max="100" step="0.01" placeholder="0"
+                   min="0" :max="form.coupon_discount_type === 'percent' ? 100 : null" step="0.01" placeholder="0"
                    class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
             <select name="coupon_discount_type" x-model="form.coupon_discount_type"
                     class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">

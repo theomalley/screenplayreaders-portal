@@ -5,6 +5,13 @@
 //                     actions) and the manage-partner-form-settings Gate ability
 //                     (AppServiceProvider), replacing inline abort_unless(...) calls.
 //                     Covered by tests/Feature/PartnerSiteControllerTest.php.
+// v1.2 — 2026-09-10 | extractLinks() now compares the actual href host against the
+//                     target domain instead of a raw substring match (a decoy href
+//                     like "?x=screenplayreaders.com" previously counted as a real
+//                     backlink). runCheck() now refuses to fetch a partner URL that
+//                     resolves to a private/loopback/link-local address, since the
+//                     URL can originate from the unauthenticated public application
+//                     form (PartnerApplicationController).
 
 namespace App\Http\Controllers\Marketing;
 
@@ -203,23 +210,28 @@ class PartnerSiteController extends Controller
         $errorMessage = null;
         $isUp = false;
 
-        try {
-            $response = Http::timeout(15)
-                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SRLinkMonitor/1.0)'])
-                ->get($site->url);
+        if (!self::isSafeCheckUrl($site->url)) {
+            $elapsed      = 0;
+            $errorMessage = 'Blocked: URL resolves to a private, loopback, or reserved address.';
+        } else {
+            try {
+                $response = Http::timeout(15)
+                    ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SRLinkMonitor/1.0)'])
+                    ->get($site->url);
 
-            $httpStatus = $response->status();
-            $elapsed    = (int) round((microtime(true) - $start) * 1000);
+                $httpStatus = $response->status();
+                $elapsed    = (int) round((microtime(true) - $start) * 1000);
 
-            if ($response->successful()) {
-                $links = self::extractLinks($response->body());
-                $isUp  = count($links) > 0;
-            } else {
-                $errorMessage = "HTTP {$httpStatus}";
+                if ($response->successful()) {
+                    $links = self::extractLinks($response->body());
+                    $isUp  = count($links) > 0;
+                } else {
+                    $errorMessage = "HTTP {$httpStatus}";
+                }
+            } catch (\Throwable $e) {
+                $elapsed      = (int) round((microtime(true) - $start) * 1000);
+                $errorMessage = $e->getMessage();
             }
-        } catch (\Throwable $e) {
-            $elapsed      = (int) round((microtime(true) - $start) * 1000);
-            $errorMessage = $e->getMessage();
         }
 
         $check = PartnerLinkCheck::create([
@@ -247,6 +259,40 @@ class PartnerSiteController extends Controller
             'links_found'      => $links,
             'error_message'    => $errorMessage,
         ];
+    }
+
+    /**
+     * True if $url's host resolves only to public, routable IP addresses.
+     *
+     * Partner URLs can originate from the unauthenticated /partner application
+     * form, so before the monitor fetches one server-side we refuse hosts that
+     * resolve to loopback, link-local, or private/reserved ranges (SSRF guard).
+     */
+    private static function isSafeCheckUrl(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!$host) return false;
+
+        $ips = [];
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            $ips[] = $host;
+        } else {
+            $records = @dns_get_record($host, DNS_A + DNS_AAAA);
+            foreach ($records ?: [] as $record) {
+                if (!empty($record['ip']))   $ips[] = $record['ip'];
+                if (!empty($record['ipv6'])) $ips[] = $record['ipv6'];
+            }
+        }
+
+        if (empty($ips)) return false;
+
+        foreach ($ips as $ip) {
+            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // -------------------------------------------------------------------------
@@ -401,7 +447,7 @@ class PartnerSiteController extends Controller
 
         foreach ($dom->getElementsByTagName('a') as $anchor) {
             $href = (string) $anchor->getAttribute('href');
-            if (!str_contains($href, self::TARGET_DOMAIN)) {
+            if (!self::hrefTargetsDomain($href)) {
                 continue;
             }
 
@@ -424,6 +470,25 @@ class PartnerSiteController extends Controller
         }
 
         return $links;
+    }
+
+    /**
+     * True if $href's actual host is TARGET_DOMAIN or a subdomain of it — not
+     * merely a string containing the domain name anywhere (query string, anchor
+     * fragment, decoy subdomain like "screenplayreaders.com.evil.net", etc.).
+     */
+    private static function hrefTargetsDomain(string $href): bool
+    {
+        $host = parse_url($href, PHP_URL_HOST);
+        if (!$host && str_starts_with($href, '//')) {
+            $host = parse_url('http:' . $href, PHP_URL_HOST);
+        }
+        if (!$host) return false;
+
+        $host   = strtolower($host);
+        $target = strtolower(self::TARGET_DOMAIN);
+
+        return $host === $target || str_ends_with($host, '.' . $target);
     }
 
     // -------------------------------------------------------------------------

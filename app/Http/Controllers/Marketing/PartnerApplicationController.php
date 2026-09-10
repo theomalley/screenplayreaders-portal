@@ -1,5 +1,9 @@
 <?php
 
+// v1.3 — 2026-09-10 | Actually create the WooCommerce coupon on application submit
+//                     (previously the applicant was shown a coupon code that was
+//                     never created in WooCommerce until an admin manually resaved
+//                     the record via the admin edit form).
 // v1.2 — 2026-06-24 | Notify admins on new partner application
 // v1.1 — 2026-06-23 | All form text admin-configurable via partner form settings
 
@@ -61,6 +65,8 @@ class PartnerApplicationController extends Controller
             'coupon_amount'           => $percent,
             'coupon_uptime_threshold' => $threshold > 0 ? $threshold : null,
         ]);
+
+        PartnerSiteController::syncWcCouponSettings($site);
 
         $adminIds = User::where('role', 'admin')->pluck('id');
         foreach ($adminIds as $adminId) {
