@@ -1546,7 +1546,9 @@
                      x-init="
                          $watch('tab', val => history.replaceState(null, '', '#tab-' + val));
                          setInterval(() => {
-                             if (tab === 'all' && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')) location.reload();
+                             if (tab === 'all'
+                                 && !document.querySelector('.fixed.inset-0.z-50:not([style*=\'display: none\'])')
+                                 && !document.querySelector('[data-has-unsaved-response=\'true\']')) location.reload();
                          }, {{ auth()->user()->getRefreshIntervalSeconds() * 1000 }})">
 
                     {{-- Tabs --}}

@@ -4,6 +4,7 @@
 --}}
 <div x-data="{ open: false, response: '', submitting: false, done: false, csrf: document.querySelector('meta[name=csrf-token]')?.content ?? '' }"
      x-show="!done"
+     :data-has-unsaved-response="(response.trim() !== '' || submitting) ? 'true' : 'false'"
      class="mb-3 rounded-lg border-2 {{ $fq->status === 'answered' ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50' }}">
 
     {{-- Row header (clickable) --}}
