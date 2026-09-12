@@ -493,7 +493,8 @@ class SettingController extends Controller
         $this->authorize('manage-settings-admin-only');
 
         try {
-            $conversationId = Setting::getTestHelpscoutConversationId();
+            $helpScout      = new HelpScoutService();
+            $conversationId = $this->resolveTestConversationId($helpScout, Setting::getTestHelpscoutConversationId());
 
             $testAssignment = Assignment::where('is_test', true)
                 ->whereNotNull('assigned_reader_id')
@@ -511,7 +512,6 @@ class SettingController extends Controller
 
             $followupUrl = FollowupToken::urlForOrder($orderNumber, $assignmentIds);
 
-            $helpScout = new HelpScoutService();
             $body      = Setting::getCompletionDraftBody();
             $body      = str_replace('{{script_title}}', $testAssignment->script_title ?? 'Sample Script Title', $body);
             $body      = str_replace('{{followup_url}}', $followupUrl, $body);
@@ -532,15 +532,15 @@ class SettingController extends Controller
         $this->authorize('manage-settings-admin-only');
 
         try {
-            $conversationId = Setting::getTestHelpscoutConversationId();
+            $helpScout      = new HelpScoutService();
+            $conversationId = $this->resolveTestConversationId($helpScout, Setting::getTestHelpscoutConversationId());
 
             $body = Setting::getFollowupResponseDraftBody();
             $body = str_replace('{{reader_initials}}', 'KD', $body);
             $body = str_replace('{{script_title}}', 'Sample Script Title', $body);
             $body = str_replace('{{reader_response}}', nl2br(e("Thank you for your questions. Here are my thoughts on your screenplay.\n\nThe pacing in Act 2 could benefit from tighter scene transitions, and the protagonist's motivation becomes clearer if you seed it earlier in Act 1.")), $body);
 
-            $helpScout = new HelpScoutService();
-            $body      = $helpScout->resolveBodyVariables($body, $conversationId);
+            $body = $helpScout->resolveBodyVariables($body, $conversationId);
 
             $helpScout->createDraftReply($conversationId, $body);
 
@@ -548,6 +548,23 @@ class SettingController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * The "Test HelpScout conversation ID" setting may hold either a short, human-facing
+     * conversation number or the large internal conversation ID that HelpScout's API
+     * requires — resolve the former to the latter so the test-draft lookup doesn't 404.
+     */
+    private function resolveTestConversationId(HelpScoutService $helpScout, string $conversationId): string
+    {
+        if (is_numeric($conversationId) && (int) $conversationId < HelpScoutService::TICKET_NUMBER_MAX) {
+            $resolved = $helpScout->findConversationIdByTicketNumber($conversationId);
+            if ($resolved) {
+                return $resolved;
+            }
+        }
+
+        return $conversationId;
     }
 
     /**
