@@ -121,6 +121,7 @@
                         <x-input-error :messages="$errors->get('test_helpscout_conversation_id')" class="mt-1" />
                         <p class="mt-1 text-xs text-gray-400">
                             Sandbox conversation used by "Send Test Draft" below — never a real customer ticket.
+                            Either test button uses whatever ID is currently in this field, saved or not.
                         </p>
                     </div>
 
@@ -131,7 +132,8 @@
                                         loading = true; error = '';
                                         fetch('{{ route('settings.completion-draft.test') }}', {
                                             method: 'POST',
-                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ test_helpscout_conversation_id: document.querySelector('[name=test_helpscout_conversation_id]').value })
                                         })
                                         .then(r => r.json())
                                         .then(d => { loading = false; if (d.url) window.open(d.url, '_blank'); else error = d.error ?? 'Unknown error'; })
@@ -248,7 +250,8 @@
                                         loading = true; error = '';
                                         fetch('{{ route('settings.followup-response-draft.test') }}', {
                                             method: 'POST',
-                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ test_helpscout_conversation_id: document.querySelector('[name=test_helpscout_conversation_id]').value })
                                         })
                                         .then(r => r.json())
                                         .then(d => { loading = false; if (d.url) window.open(d.url, '_blank'); else error = d.error ?? 'Unknown error'; })

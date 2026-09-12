@@ -1,5 +1,9 @@
 <?php
 
+// v2.23 — 2026-09-12 | testCompletionDraft()/testFollowupResponseDraft(): use the
+//                      test_helpscout_conversation_id sent by the "Send Test Draft" button
+//                      (the field's current value) instead of only the last-saved setting,
+//                      and resolve short conversation numbers to HelpScout's internal ID.
 // v2.22 — 2026-07-30 | Add updateQcCommissionPenalty() — admin on/off toggle for
 //                     EditorCommissionService::applyQcAdjustmentForOrder()'s QC-based
 //                     commission reduction; orders() passes the current flag to the view.
@@ -488,13 +492,13 @@ class SettingController extends Controller
      * previewed without running a real order through writing/QC. Uses an existing is_test
      * order for the followup link (if one exists) and attaches a placeholder PDF.
      */
-    public function testCompletionDraft(): JsonResponse
+    public function testCompletionDraft(Request $request): JsonResponse
     {
         $this->authorize('manage-settings-admin-only');
 
         try {
             $helpScout      = new HelpScoutService();
-            $conversationId = $this->resolveTestConversationId($helpScout, Setting::getTestHelpscoutConversationId());
+            $conversationId = $this->resolveTestConversationId($helpScout, $this->testConversationIdInput($request));
 
             $testAssignment = Assignment::where('is_test', true)
                 ->whereNotNull('assigned_reader_id')
@@ -527,13 +531,13 @@ class SettingController extends Controller
         }
     }
 
-    public function testFollowupResponseDraft(): JsonResponse
+    public function testFollowupResponseDraft(Request $request): JsonResponse
     {
         $this->authorize('manage-settings-admin-only');
 
         try {
             $helpScout      = new HelpScoutService();
-            $conversationId = $this->resolveTestConversationId($helpScout, Setting::getTestHelpscoutConversationId());
+            $conversationId = $this->resolveTestConversationId($helpScout, $this->testConversationIdInput($request));
 
             $body = Setting::getFollowupResponseDraftBody();
             $body = str_replace('{{reader_initials}}', 'KD', $body);
@@ -548,6 +552,18 @@ class SettingController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * The "Send Test Draft" buttons send whatever is currently typed into the conversation-ID
+     * field, even if it hasn't been saved yet — fall back to the saved setting only if the
+     * field was sent blank (e.g. a direct API call with no body).
+     */
+    private function testConversationIdInput(Request $request): string
+    {
+        $id = trim((string) $request->input('test_helpscout_conversation_id', ''));
+
+        return $id !== '' ? $id : Setting::getTestHelpscoutConversationId();
     }
 
     /**
