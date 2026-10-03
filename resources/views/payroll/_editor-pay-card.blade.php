@@ -2,6 +2,16 @@
 @php $editorId = $ed['editor_id']; $editor = $ed['editor']; @endphp
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" x-data="{ adjOpen: false }">
 
+    @php
+        $rangeLabel = $ed['period_range_label'];
+        $amountLabel = number_format($ed['total_owed'], 2);
+        $clearConfirm = ($ed['scope'] === 'past' ? 'overdue' : "this period's ({$rangeLabel})")
+            . " pending commissions and adjustments for {$ed['editor_name']}? This sets commissions to \$0 and removes pending adjustments.";
+        $markPaidConfirm = $ed['scope'] === 'past'
+            ? "Mark overdue pending pay for {$ed['editor_name']} ({$rangeLabel}) as paid (\${$amountLabel})?"
+            : "⚠️ This period ({$rangeLabel}) hasn't ended yet. Marking {$ed['editor_name']} paid now pays them early, before the week's work is complete (\${$amountLabel}). Pay early anyway?";
+    @endphp
+
     {{-- Header --}}
     <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-blue-200 bg-blue-50">
         <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
@@ -44,7 +54,7 @@
         @if(auth()->user()->isAdmin())
         <div class="flex items-center gap-2">
             <form method="POST" action="{{ route('editor-pay.clear-unpaid', $editorId) }}"
-                onsubmit="return confirm('Clear {{ $ed['scope'] === 'past' ? 'overdue' : "this period's" }} pending commissions and adjustments for {{ $ed['editor_name'] }}? This sets commissions to $0 and removes pending adjustments.')">
+                onsubmit="return confirm('Clear {{ $clearConfirm }}')">
                 @csrf
                 <input type="hidden" name="scope" value="{{ $ed['scope'] }}">
                 <button type="submit"
@@ -57,7 +67,7 @@
                 + Adjustment
             </button>
             <form method="POST" action="{{ route('editor-pay.mark-paid', $editorId) }}"
-                onsubmit="return confirm('Mark {{ $ed['scope'] === 'past' ? 'overdue' : "this period's" }} pending pay for {{ $ed['editor_name'] }} as paid (${{ number_format($ed['total_owed'], 2) }})?')">
+                onsubmit="return confirm('{{ $markPaidConfirm }}')">
                 @csrf
                 <input type="hidden" name="scope" value="{{ $ed['scope'] }}">
                 <button type="submit"

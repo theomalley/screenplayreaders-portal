@@ -259,12 +259,21 @@ class PayrollController extends Controller
 
             // Past-due card only appears when the editor is behind — anything still
             // unpaid from a pay period that's already closed. Collapses any number of
-            // overdue periods into a single card rather than one per period.
+            // overdue periods into a single card rather than one per period, so its
+            // range starts at the earliest still-unpaid date, not just one period back.
             if ($pastOrders->isNotEmpty() || $pastAdjustments->isNotEmpty()) {
+                $earliestPastDate = $pastOrders->pluck('ordered_at')
+                    ->merge($pastAdjustments->pluck('created_at'))
+                    ->min();
+                $pastStart = PayPeriod::bounds($earliestPastDate)[0];
+                $pastEnd   = PayPeriod::bounds($currentStart->copy()->subDay())[1];
+
                 $byEditor->push(array_merge($base, [
                     'scope'              => 'past',
                     'period_label'       => 'Overdue',
-                    'period_end'         => PayPeriod::bounds($currentStart->copy()->subDay())[1],
+                    'period_start'       => $pastStart,
+                    'period_end'         => $pastEnd,
+                    'period_range_label' => $pastStart->format('M j') . ' – ' . $pastEnd->format('M j, Y'),
                     'unpaid_orders'      => $pastOrders,
                     'unpaid_adjustments' => $pastAdjustments,
                     'total_owed'         => $pastTotal,
@@ -276,7 +285,9 @@ class PayrollController extends Controller
             $byEditor->push(array_merge($base, [
                 'scope'              => 'current',
                 'period_label'       => PayPeriod::label($currentStart),
+                'period_start'       => $currentStart,
                 'period_end'         => $currentEnd,
+                'period_range_label' => $currentStart->format('M j') . ' – ' . $currentEnd->format('M j, Y'),
                 'unpaid_orders'      => $curOrders,
                 'unpaid_adjustments' => $curAdjustments,
                 'total_owed'         => $curTotal,
