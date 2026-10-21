@@ -53,7 +53,7 @@
                 Write Coverage
             </a>
         @endcan
-        @if (\App\Support\Permission::check('script.download'))
+        @if (\App\Support\Permission::check('script.download') && !auth()->user()->isReader())
             <a href="{{ route('assignments.downloadScript', $assignment) }}"
                class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
         @endif
