@@ -1,5 +1,8 @@
 <?php
 
+// v1.15 — 2026-10-22 | Add watermark_enabled toggle to store()/update() — admin-configurable
+//                      per-reader setting controlling whether this reader's viewed/downloaded
+//                      scripts are watermarked. Defaults to enabled (checked) for new readers.
 // v1.14 — 2026-07-23 | Authorization moved to UserPolicy (app/Policies) abilities
 //                     (viewAnyReaders, createReader, editReader, deleteReader), replacing
 //                     inline abort_unless(canManageAssignments())/Permission::check() calls.
@@ -78,6 +81,7 @@ class ReaderProfileController extends Controller
         ]);
 
         $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
+        $data['watermark_enabled']        = $request->boolean('watermark_enabled');
 
         $user = User::create([
             'name'     => $data['name'],
@@ -92,6 +96,7 @@ class ReaderProfileController extends Controller
             'last_name'                  => $data['last_name'],
             'max_concurrent_assignments'  => $data['max_concurrent_assignments'] ?? null,
             'requests_bypass_capacity'    => $data['requests_bypass_capacity'],
+            'watermark_enabled'           => $data['watermark_enabled'],
             'paypal_email'                => $data['paypal_email'] ?? null,
             'photo'                       => $request->hasFile('photo') ? $request->file('photo')->store('reader-photos', 'public') : null,
             'about_photo'                 => $request->hasFile('about_photo') ? $request->file('about_photo')->store('reader-photos', 'public') : null,
@@ -192,6 +197,9 @@ class ReaderProfileController extends Controller
 
         $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
         $data['is_1099']                  = $request->boolean('is_1099');
+        if ($user->isReader()) {
+            $data['watermark_enabled'] = $request->boolean('watermark_enabled');
+        }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],

@@ -118,6 +118,12 @@
                                         class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                     <span class="text-sm text-gray-600">Requests don't count toward capacity</span>
                                 </label>
+                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                    <input type="checkbox" name="watermark_enabled" value="1"
+                                        {{ old('watermark_enabled', true) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <span class="text-sm text-gray-600">Watermark viewed/downloaded scripts</span>
+                                </label>
                             </div>
                             <div>
                                 <x-input-label for="paypal_email" value="PayPal Email" />

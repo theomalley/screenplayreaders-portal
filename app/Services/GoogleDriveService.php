@@ -1,5 +1,9 @@
 <?php
 
+// v1.11 — 2026-10-22 | watermarkPdf() takes a $drawWatermark flag — per-reader
+//                      watermark_enabled toggle lets an admin exempt a specific reader from
+//                      the visible watermark tiling while still applying the qpdf
+//                      print/copy/modify/annotate restriction to every reader download.
 // v1.10 — 2026-09-09 | SECURITY: removed the unused setViewOnly()/viewLink() methods.
 //                      setViewOnly() granted a Drive permission of type "anyone" (public,
 //                      no login) — the exact opposite of the "no public Drive permissions"
@@ -309,11 +313,12 @@ class GoogleDriveService
     }
 
     /**
-     * Flatten a local PDF, tile a rotated forensic watermark across every page, then apply
-     * qpdf permission restrictions (no print/copy/modify/annotate). Consumes (unlinks)
-     * $localPath. Returns the path to the watermarked+restricted output; caller must unlink it.
+     * Flatten a local PDF, optionally tile a rotated forensic watermark across every page,
+     * then apply qpdf permission restrictions (no print/copy/modify/annotate) regardless.
+     * Consumes (unlinks) $localPath. Returns the path to the restricted output; caller must
+     * unlink it.
      */
-    public function watermarkPdf(string $localPath, string $watermarkText): string
+    public function watermarkPdf(string $localPath, string $watermarkText, bool $drawWatermark = true): string
     {
         $source = $this->flattenForFpdi($localPath);
 
@@ -326,6 +331,10 @@ class GoogleDriveService
                 $size = $pdf->getTemplateSize($tpl);
                 $pdf->AddPage($size['width'] > $size['height'] ? 'L' : 'P', [$size['width'], $size['height']]);
                 $pdf->useTemplate($tpl);
+
+                if (!$drawWatermark) {
+                    continue;
+                }
 
                 $pdf->SetFont('Helvetica', '', 16);
                 $pdf->SetTextColor(190, 190, 190);

@@ -1,5 +1,9 @@
 <?php
 
+// v1.18 — 2026-10-22 | Add watermark_enabled — per-reader admin toggle for whether this
+//                      reader's viewed/downloaded scripts carry the forensic watermark.
+//                      Defaults to true (watermarked); AssignmentController/GoogleDriveService
+//                      read it instead of always watermarking readers.
 // v1.17 — 2026-07-31 | Invert capacity precedence: capacity_override is now the global
 //                      DEFAULT cap applied to every reader; max_concurrent_assignments is
 //                      now nullable and, when set, is a per-reader OVERRIDE of that default
@@ -59,6 +63,7 @@ class ReaderProfile extends Model
         'about_photo_rejection_note',
         'max_concurrent_assignments',
         'requests_bypass_capacity',
+        'watermark_enabled',
         'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',
@@ -84,6 +89,7 @@ class ReaderProfile extends Model
     protected $casts = [
         'is_1099'                  => 'boolean',
         'requests_bypass_capacity' => 'boolean',
+        'watermark_enabled'        => 'boolean',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',

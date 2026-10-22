@@ -1,5 +1,9 @@
 <?php
 
+// v2.33 — 2026-10-22 | streamScript()/downloadScriptForReader(): read the reader's
+//                      ReaderProfile::watermark_enabled flag (admin-configurable per reader,
+//                      defaults to true) instead of always watermarking. qpdf print/copy/
+//                      modify/annotate restrictions still apply either way.
 // v2.32 — 2026-09-09 | SECURITY audit fixes:
 //                      - streamScript(): a reader hitting this route directly got the
 //                        exact same clean, unrestricted PDF bytes the viewer renders
@@ -877,6 +881,8 @@ class AssignmentController extends Controller
                 $tmp = tempnam(sys_get_temp_dir(), 'sr_view_') . '.pdf';
                 file_put_contents($tmp, $contents);
 
+                $drawWatermark = auth()->user()->readerProfile?->watermark_enabled ?? true;
+
                 $wm    = Setting::getWatermarkSettings();
                 $parts = [];
                 if ($wm['watermark_custom_text'] !== '') {
@@ -893,7 +899,7 @@ class AssignmentController extends Controller
                 }
                 $watermarkText = $parts !== [] ? implode(' · ', $parts) : 'Screenplay Readers';
 
-                $output   = $drive->watermarkPdf($tmp, $watermarkText);
+                $output   = $drive->watermarkPdf($tmp, $watermarkText, $drawWatermark);
                 $contents = file_get_contents($output);
                 @unlink($output);
             }
@@ -993,6 +999,8 @@ class AssignmentController extends Controller
                 $tmpSource = $drive->downloadToTemp($assignment->drive_script_file_id);
             }
 
+            $drawWatermark = auth()->user()->readerProfile?->watermark_enabled ?? true;
+
             $wm = Setting::getWatermarkSettings();
 
             $parts = [];
@@ -1014,7 +1022,7 @@ class AssignmentController extends Controller
 
             $watermarkText = $parts !== [] ? implode(' · ', $parts) : 'Screenplay Readers';
 
-            $output = $drive->watermarkPdf($tmpSource, $watermarkText);
+            $output = $drive->watermarkPdf($tmpSource, $watermarkText, $drawWatermark);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e; // abort_unless() above — not a Drive/watermark failure
         } catch (\Throwable $e) {
