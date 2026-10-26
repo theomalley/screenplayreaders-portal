@@ -26,11 +26,8 @@ class CheckSessionTimeout
                     $request->session()->invalidate();
                     $request->session()->regenerateToken();
 
-                    if ($wasAdmin) {
-                        $quickLoginUrl = \App\Http\Controllers\QuickLoginController::quickLoginUrl();
-                        if ($quickLoginUrl) {
-                            return redirect($quickLoginUrl);
-                        }
+                    if ($wasAdmin && \App\Http\Controllers\QuickLoginController::loginConfiguredAdmin()) {
+                        return redirect()->route(\App\Http\Controllers\QuickLoginController::landingRoute());
                     }
 
                     return redirect()->route('login')

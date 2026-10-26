@@ -1,5 +1,10 @@
 <?php
 
+// v1.3 — 2026-10-26 | Session-timeout handling no longer redirects through the public
+//                     /ql/{token} URL (which put the permanent, un-expiring token in
+//                     every proxy/access log on every timeout). CheckSessionTimeout now
+//                     calls loginConfiguredAdmin()/landingRoute() directly, server-side,
+//                     so the plaintext token never has to appear in a URL for this path.
 // v1.2 — 2026-07-23 | Authorization moved to the manage-quick-login Gate ability
 //                     (AppServiceProvider), replacing inline abort_unless(isAdmin())
 //                     calls on saveLanding/generate/revoke. Covered by
@@ -83,12 +88,7 @@ class QuickLoginController extends Controller
         Auth::login($user, remember: true);
         request()->session()->regenerate();
 
-        $landing = Setting::getValue(self::LANDING_KEY, 'assignments.index');
-        if (! array_key_exists($landing, self::LANDING_OPTIONS)) {
-            $landing = 'assignments.index';
-        }
-
-        return redirect()->route($landing);
+        return redirect()->route(self::landingRoute());
     }
 
     /** Admin: save the landing-page preference. */
@@ -131,19 +131,40 @@ class QuickLoginController extends Controller
     }
 
     /**
-     * Return the full quick-login URL if a token is configured, null otherwise.
-     * Used by auth redirects so expired sessions land on the quick-login URL.
+     * Log the configured quick-login admin back in directly, server-side —
+     * no token is read from or written into a URL, so nothing sensitive
+     * reaches the browser bar, history, or access/proxy logs. Used by
+     * CheckSessionTimeout so a timed-out admin is restored without ever
+     * round-tripping through the public /ql/{token} endpoint.
      */
-    public static function quickLoginUrl(): ?string
+    public static function loginConfiguredAdmin(): bool
     {
-        $stored = Setting::getValue(self::TOKEN_KEY);
-        if (! $stored) return null;
-        try {
-            $plain = Crypt::decryptString($stored);
-            return url('/ql/' . $plain);
-        } catch (\Throwable) {
-            return null;
+        $userId = Setting::getValue(self::USER_ID_KEY);
+        if (! $userId) {
+            return false;
         }
+
+        $user = User::find($userId);
+        if (! $user || ! $user->isAdmin()) {
+            return false;
+        }
+
+        session()->forget('impersonator_id');
+        Auth::login($user, remember: true);
+        request()->session()->regenerate();
+
+        return true;
+    }
+
+    /** The route name the quick-login flow lands on. */
+    public static function landingRoute(): string
+    {
+        $landing = Setting::getValue(self::LANDING_KEY, 'assignments.index');
+        if (! array_key_exists($landing, self::LANDING_OPTIONS)) {
+            $landing = 'assignments.index';
+        }
+
+        return $landing;
     }
 
     /** Retrieve the plain token for display (null if not set). */
