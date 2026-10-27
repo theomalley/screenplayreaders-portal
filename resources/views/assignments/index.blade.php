@@ -392,7 +392,8 @@
                                     <form method="POST" action="{{ route('followups.update', $fq) }}" class="space-y-3">
                                         @csrf @method('PATCH')
 
-                                        <div x-data="{ showOriginal: false }">
+                                        <div x-data="{ showOriginal: false }"
+                                             x-effect="if (open) { $nextTick(() => { $refs.editedQuestions.style.height = 'auto'; $refs.editedQuestions.style.height = $refs.editedQuestions.scrollHeight + 'px'; }) }">
                                             <div class="flex items-center justify-between mb-1">
                                                 <label class="block text-xs font-medium text-gray-600">Edited questions shown to reader</label>
                                                 <button type="button"
@@ -403,7 +404,6 @@
                                             </div>
                                             <textarea x-ref="editedQuestions" name="edited_questions"
                                                       @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
-                                                      x-init="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                                                       class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
 
                                             <div x-show="showOriginal" x-cloak class="mt-2">
@@ -519,7 +519,8 @@
                                     <form method="POST" action="{{ route('followups.update', $fq) }}" class="space-y-3">
                                         @csrf @method('PATCH')
 
-                                        <div x-data="{ showOriginal: false }">
+                                        <div x-data="{ showOriginal: false }"
+                                             x-effect="if (open) { $nextTick(() => { $refs.editedQuestions.style.height = 'auto'; $refs.editedQuestions.style.height = $refs.editedQuestions.scrollHeight + 'px'; }) }">
                                             <div class="flex items-center justify-between mb-1">
                                                 <label class="block text-xs font-medium text-gray-600">Edited questions shown to reader</label>
                                                 <button type="button"
@@ -530,7 +531,6 @@
                                             </div>
                                             <textarea x-ref="editedQuestions" name="edited_questions"
                                                       @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
-                                                      x-init="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                                                       class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
 
                                             <div x-show="showOriginal" x-cloak class="mt-2">
