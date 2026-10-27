@@ -392,23 +392,24 @@
                                     <form method="POST" action="{{ route('followups.update', $fq) }}" class="space-y-3">
                                         @csrf @method('PATCH')
 
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">Customer's questions</label>
-                                            <div class="text-sm text-gray-700 whitespace-pre-line bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
-                                        </div>
-
-                                        <div x-data="{ editingQuestions: false }">
+                                        <div x-data="{ showOriginal: false }">
                                             <div class="flex items-center justify-between mb-1">
                                                 <label class="block text-xs font-medium text-gray-600">Edited questions shown to reader</label>
                                                 <button type="button"
-                                                        @click="editingQuestions = !editingQuestions; if (editingQuestions) $nextTick(() => { $refs.editedQuestions.style.height = 'auto'; $refs.editedQuestions.style.height = $refs.editedQuestions.scrollHeight + 'px'; })"
+                                                        @click="showOriginal = !showOriginal"
                                                         class="text-xs text-indigo-500 hover:text-indigo-700 underline">
-                                                    <span x-text="editingQuestions ? 'Hide' : 'Edit Questions'"></span>
+                                                    <span x-text="showOriginal ? 'Hide' : 'Show Original'"></span>
                                                 </button>
                                             </div>
-                                            <textarea x-show="editingQuestions" x-cloak x-ref="editedQuestions" name="edited_questions"
+                                            <textarea x-ref="editedQuestions" name="edited_questions"
                                                       @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+                                                      x-init="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                                                       class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
+
+                                            <div x-show="showOriginal" x-cloak class="mt-2">
+                                                <label class="block text-xs font-medium text-gray-400 mb-1">Original questions (as submitted by customer)</label>
+                                                <div class="text-sm text-gray-500 whitespace-pre-line bg-gray-50 border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
+                                            </div>
                                         </div>
 
                                         <div>
@@ -518,23 +519,24 @@
                                     <form method="POST" action="{{ route('followups.update', $fq) }}" class="space-y-3">
                                         @csrf @method('PATCH')
 
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">Customer's questions</label>
-                                            <div class="text-sm text-gray-700 whitespace-pre-line bg-white border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
-                                        </div>
-
-                                        <div x-data="{ editingQuestions: false }">
+                                        <div x-data="{ showOriginal: false }">
                                             <div class="flex items-center justify-between mb-1">
                                                 <label class="block text-xs font-medium text-gray-600">Edited questions shown to reader</label>
                                                 <button type="button"
-                                                        @click="editingQuestions = !editingQuestions; if (editingQuestions) $nextTick(() => { $refs.editedQuestions.style.height = 'auto'; $refs.editedQuestions.style.height = $refs.editedQuestions.scrollHeight + 'px'; })"
+                                                        @click="showOriginal = !showOriginal"
                                                         class="text-xs text-indigo-500 hover:text-indigo-700 underline">
-                                                    <span x-text="editingQuestions ? 'Hide' : 'Edit Questions'"></span>
+                                                    <span x-text="showOriginal ? 'Hide' : 'Show Original'"></span>
                                                 </button>
                                             </div>
-                                            <textarea x-show="editingQuestions" x-cloak x-ref="editedQuestions" name="edited_questions"
+                                            <textarea x-ref="editedQuestions" name="edited_questions"
                                                       @input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+                                                      x-init="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                                                       class="w-full text-sm border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none overflow-hidden">{{ old('edited_questions', $fq->edited_questions ?? $fq->customer_questions) }}</textarea>
+
+                                            <div x-show="showOriginal" x-cloak class="mt-2">
+                                                <label class="block text-xs font-medium text-gray-400 mb-1">Original questions (as submitted by customer)</label>
+                                                <div class="text-sm text-gray-500 whitespace-pre-line bg-gray-50 border border-gray-200 rounded px-2 py-1.5">{{ $fq->customer_questions ?? '—' }}</div>
+                                            </div>
                                         </div>
 
                                         <div>

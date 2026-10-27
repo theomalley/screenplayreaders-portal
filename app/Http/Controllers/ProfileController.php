@@ -72,7 +72,6 @@ class ProfileController extends Controller
                     'email_notify_any'       => $request->boolean('email_notify_any'),
                     'email_notify_rush'      => $request->boolean('email_notify_rush'),
                     'email_notify_requests'  => $request->boolean('email_notify_requests'),
-                    'email_notify_followup'  => $request->boolean('email_notify_followup'),
                     'sms_notify_followup'    => $request->boolean('sms_notify_followup'),
                     'notify_only_if_under_capacity' => $request->boolean('notify_only_if_under_capacity'),
                 ]

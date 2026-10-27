@@ -1,5 +1,12 @@
 <?php
 
+// v1.4 — 2026-10-27 | notifyReader() now always emails the reader when a followup is sent
+//                     to them — this is a time-boxed, action-required notification (10-day
+//                     reply deadline), not an opt-in preference, so readerProfile.
+//                     email_notify_followup is no longer read here (same reasoning as
+//                     QcController::sendBack() v1.13). A reader with it disabled had the
+//                     status change to "unanswered" with zero notice, making "Send to
+//                     reader" look broken.
 // v1.3 — 2026-07-23 | Authorization moved to FollowupQuestionPolicy/FollowupTokenPolicy
 //                     (app/Policies), replacing inline abort_unless(...) calls. Covered by
 //                     tests/Feature/FollowupQuestionControllerTest.php.
@@ -164,14 +171,11 @@ class FollowupQuestionController extends Controller
         $reader     = $assignment?->assignedReader;
         if (! $reader) return;
 
-        $profile = $reader->readerProfile;
-
-        if ($profile?->email_notify_followup) {
-            // Reuse existing mail infrastructure — simple notification mail
-            \Illuminate\Support\Facades\Mail::to($reader->email)->send(
-                new \App\Mail\FollowupQuestionNotification($followup, $reader)
-            );
-        }
+        // Mandatory — same reasoning as QcController::sendBack(): this is a time-boxed,
+        // action-required notification, not an opt-in preference.
+        \Illuminate\Support\Facades\Mail::to($reader->email)->send(
+            new \App\Mail\FollowupQuestionNotification($followup, $reader)
+        );
 
         // SMS notification handled by future Twilio integration using sms_notify_followup flag
     }

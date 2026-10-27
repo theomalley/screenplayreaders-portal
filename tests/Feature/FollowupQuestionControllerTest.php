@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Mail\FollowupQuestionNotification;
 use App\Models\Assignment;
 use App\Models\FollowupQuestion;
 use App\Models\FollowupToken;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class FollowupQuestionControllerTest extends TestCase
@@ -100,6 +102,30 @@ class FollowupQuestionControllerTest extends TestCase
         $this->actingAs($editor)->delete("/followup-tokens/{$followup->followup_token_id}")->assertForbidden();
         $this->actingAs($admin)->delete("/followup-tokens/{$followup->followup_token_id}")->assertRedirect();
         $this->assertDatabaseMissing('followup_tokens', ['id' => $followup->followup_token_id]);
+    }
+
+    public function test_sending_followup_to_reader_emails_them_even_with_notifications_opted_out(): void
+    {
+        Mail::fake();
+
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create([
+            'initials'              => 'XX',
+            'first_name'            => 'Test',
+            'last_name'             => 'Reader',
+            'email_notify_followup' => false,
+        ]);
+
+        $admin      = User::factory()->create(['role' => 'admin']);
+        $assignment = $this->makeAssignment($reader);
+        $followup   = $this->makeFollowup($assignment);
+
+        $this->actingAs($admin)
+            ->patch("/followups/{$followup->id}", ['status' => FollowupQuestion::STATUS_UNANSWERED])
+            ->assertRedirect();
+
+        $this->assertEquals(FollowupQuestion::STATUS_UNANSWERED, $followup->fresh()->status);
+        Mail::assertQueued(FollowupQuestionNotification::class, fn($mail) => $mail->hasTo($reader->email));
     }
 
     public function test_assigned_reader_can_respond_to_their_own_unanswered_followup(): void

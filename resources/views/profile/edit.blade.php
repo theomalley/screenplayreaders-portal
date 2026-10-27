@@ -764,7 +764,7 @@
                                 <li>{{ $profile->email_notify_any ? '✓' : '—' }} Any new assignment</li>
                                 <li>{{ ($profile->email_notify_any || $profile->email_notify_rush) ? '✓' : '—' }} Rush assignments</li>
                                 <li>{{ ($profile->email_notify_any || $profile->email_notify_requests) ? '✓' : '—' }} Reader requests</li>
-                                <li>{{ $profile->email_notify_followup ? '✓' : '—' }} Followup questions</li>
+                                <li>✓ Followup questions <span class="text-gray-400">(always on)</span></li>
                                 <li>✓ Coverage fails QC <span class="text-gray-400">(always on)</span></li>
                             </ul>
                             @endif
