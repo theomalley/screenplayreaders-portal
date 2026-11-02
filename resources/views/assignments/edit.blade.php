@@ -943,12 +943,12 @@
                         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Customer Upload Link</h3>
 
                         @if ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <input type="text" readonly
-                                       value="{{ $assignment->upload_link_url ?? 'Not yet looked up' }}"
-                                       onclick="this.select()"
-                                       class="flex-1 min-w-0 text-sm font-mono bg-gray-50 border-gray-300 rounded-md shadow-sm" />
-                                <form method="POST" action="{{ route('assignments.lookupUploadLink', $assignment) }}" class="shrink-0">
+                            <input type="text" readonly
+                                   value="{{ $assignment->upload_link_url ?? 'Not yet looked up' }}"
+                                   onclick="this.select()"
+                                   class="block w-full text-sm font-mono bg-gray-50 border-gray-300 rounded-md shadow-sm" />
+                            <div class="flex items-center gap-2 mt-2">
+                                <form method="POST" action="{{ route('assignments.lookupUploadLink', $assignment) }}">
                                     @csrf
                                     <button type="submit"
                                             class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition whitespace-nowrap">
@@ -956,8 +956,7 @@
                                     </button>
                                 </form>
                                 <form method="POST" action="{{ route('assignments.generateUploadLink', $assignment) }}"
-                                      onsubmit="return confirm('Generate a brand-new upload link for this order? The link the customer currently has (whether looked up here or not) will stop working.')"
-                                      class="shrink-0">
+                                      onsubmit="return confirm('Generate a brand-new upload link for this order? The link the customer currently has (whether looked up here or not) will stop working.')">
                                     @csrf
                                     <button type="submit"
                                             class="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition whitespace-nowrap">
