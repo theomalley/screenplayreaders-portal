@@ -215,8 +215,16 @@ class PartnerSiteController extends Controller
             $errorMessage = 'Blocked: URL resolves to a private, loopback, or reserved address.';
         } else {
             try {
+                // Use a real browser UA + the headers an actual browser sends — the previous
+                // "compatible; SRLinkMonitor/1.0" bot signature was being blocked outright by
+                // partner sites' own WAF/anti-bot rules (Cloudflare, Wordfence, etc.), which
+                // surfaced as a false "down" / HTTP 403 even though the backlink was still there.
                 $response = Http::timeout(15)
-                    ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; SRLinkMonitor/1.0)'])
+                    ->withHeaders([
+                        'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+                        'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Accept-Language' => 'en-US,en;q=0.9',
+                    ])
                     ->get($site->url);
 
                 $httpStatus = $response->status();
