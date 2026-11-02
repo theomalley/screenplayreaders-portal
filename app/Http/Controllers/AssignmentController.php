@@ -131,6 +131,7 @@ use App\Services\InvoiceService;
 use App\Services\GoogleDriveService;
 use App\Services\ReaderNotificationService;
 use App\Services\SpacesStorageService;
+use App\Services\WooCommerceService;
 use App\Support\FilenameGenerator;
 use App\Support\PayPeriod;
 use App\Support\Permission;
@@ -1093,6 +1094,39 @@ class AssignmentController extends Controller
         }
 
         return back()->with('success', 'Discount code regenerated.');
+    }
+
+    /**
+     * Generate a new customer upload link for this assignment's WooCommerce order via
+     * the theme's sr/v1 REST endpoint — same destructive regenerate-token action as the
+     * theme's own "Regenerate" button under Tools -> SR URL Builder. Invalidates any
+     * previously-issued link for the order.
+     */
+    public function generateUploadLink(Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        abort_unless(
+            $assignment->vendor === 'sr' && is_numeric($assignment->order_number),
+            422,
+            'This assignment has no WooCommerce order to generate an upload link for.'
+        );
+
+        try {
+            $url = app(WooCommerceService::class)->generateUploadLink(
+                (int) $assignment->order_number,
+                auth()->user()->name . ' (portal)'
+            );
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Could not generate upload link: ' . $e->getMessage());
+        }
+
+        $assignment->update([
+            'upload_link_url'          => $url,
+            'upload_link_generated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Upload link generated.');
     }
 
     public function edit(Assignment $assignment)

@@ -123,6 +123,8 @@ class Assignment extends Model
         'cancelled_dismissed_by',
         'cancellation_reason',
         'woo_discount_code',
+        'upload_link_url',
+        'upload_link_generated_at',
         'client_id',
         'reader_declined',
         'available_at',
@@ -163,6 +165,7 @@ class Assignment extends Model
             'exempt_from_capacity'      => 'boolean',
             'karen_alert'               => 'boolean',
             'take_me_enabled'           => 'boolean',
+            'upload_link_generated_at'  => 'datetime',
         ];
     }
 

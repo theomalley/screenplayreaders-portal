@@ -808,6 +808,169 @@
                         </div>
                     </div>
 
+                    {{-- Assignment File --}}
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5"
+                         x-data="{ showUpload: {{ $assignment->hasCloudScript() ? 'false' : 'true' }} }">
+                        @if ($assignment->hasCloudScript())
+                            @php
+                                $viewUrl = route('assignments.streamScript', $assignment);
+                            @endphp
+                            <div class="mb-4">
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignment File</p>
+                                <p class="text-sm text-gray-800 font-medium mb-2 break-all">{{ $assignment->drive_script_filename ?? 'script.pdf' }}</p>
+                                <div class="flex items-center gap-4" x-data="pdfViewer(@js($viewUrl))"
+                                     @sr-reload-pdf-edit.window="reloadPdf()">
+                                    <button @click="openViewer()" type="button"
+                                            class="text-sm text-indigo-600 hover:text-indigo-800">View</button>
+                                    @if (\App\Support\Permission::check('script.download'))
+                                        <a href="{{ route('assignments.downloadScript', $assignment) }}"
+                                           class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
+                                    @endif
+
+                                    {{-- Full-screen script preview modal --}}
+                                    <div x-show="open" x-cloak x-ref="modal"
+                                         @keydown.escape.window="open = false"
+                                         tabindex="-1"
+                                         class="fixed inset-0 z-50 flex flex-col bg-black/80">
+                                        <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
+                                            <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? 'Script' }}</span>
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                @if (\App\Support\Permission::check('script.download'))
+                                                    <a href="{{ route('assignments.downloadScript', $assignment) }}"
+                                                       class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
+                                                @endif
+                                                @if (\App\Support\Permission::check('script.print'))
+                                                    <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
+                                                       class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
+                                                @endif
+                                                <span x-show="pgStatus" x-cloak x-text="pgStatus" :class="pgError ? 'text-red-400' : 'text-green-400'" class="text-xs"></span>
+                                                <button type="button"
+                                                        @click="pdfAction('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.', 'Unlocking PDF — please wait…')"
+                                                        class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
+                                                    Unlock PDF
+                                                </button>
+                                                <button type="button"
+                                                        @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?', 'Removing title page — please wait…')"
+                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                                    Remove title page
+                                                </button>
+                                                <button type="button"
+                                                        @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?', 'Removing last page — please wait…')"
+                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
+                                                    Remove last page
+                                                </button>
+                                                <span class="flex items-center gap-1">
+                                                    <input type="text" x-model="pg" placeholder="pg #"
+                                                           class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
+                                                    <button type="button"
+                                                            @click="if (pg.trim()) pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page ' + pg + '?', 'Removing page ' + pg + ' — please wait…')"
+                                                            class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
+                                                        Remove
+                                                    </button>
+                                                </span>
+                                                <button @click="open = false" type="button"
+                                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-2 px-1">×</button>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
+                                            <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
+                                            <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
+                                                Go to page
+                                                <input type="number" min="1" :max="totalPages"
+                                                       @change="scrollToPage($event.target.value)"
+                                                       @keydown.enter.prevent="scrollToPage($event.target.value)"
+                                                       class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
+                                                / <span x-text="totalPages"></span>
+                                            </span>
+                                            <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400" title="Tip: Ctrl + scroll to zoom">
+                                                <button type="button" @click="zoomOut()"
+                                                        class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom out">−</button>
+                                                <button type="button" @click="resetZoom()" x-text="Math.round(zoomLevel * 100) + '%'"
+                                                        class="w-12 text-center hover:text-white" title="Reset zoom"></button>
+                                                <button type="button" @click="zoomIn()"
+                                                        class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom in">+</button>
+                                            </div>
+                                        </div>
+                                        <div x-ref="canvasWrap" @wheel="onWheelZoom($event)" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
+                                            <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                                <button type="button" @click="showUpload = !showUpload"
+                                        class="text-indigo-600 hover:text-indigo-800 underline">
+                                    Replace script file
+                                </button>
+                            </p>
+                        @endif
+                        <form method="POST"
+                              action="{{ route('assignments.uploadScript', $assignment) }}"
+                              enctype="multipart/form-data"
+                              x-data="{ fileName: '' }"
+                              x-show="showUpload">
+                            @csrf
+                            <input type="file" id="script_upload" name="script" accept="application/pdf" required
+                                   class="sr-only"
+                                   @change="fileName = $event.target.files[0]?.name || ''">
+
+                            <label for="script_upload"
+                                   class="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg px-6 py-6 cursor-pointer transition"
+                                   :class="fileName ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50'">
+                                <svg class="w-8 h-8 mb-2" :class="fileName ? 'text-indigo-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                          d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <p class="text-sm font-medium" :class="fileName ? 'text-indigo-700' : 'text-gray-500'"
+                                   x-text="fileName || 'Click to choose a PDF'"></p>
+                                <p class="text-xs text-gray-400 mt-1" x-show="!fileName">PDF only · max 5 MB</p>
+                            </label>
+
+                            <button type="submit"
+                                    x-show="fileName"
+                                    class="mt-3 w-full px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 transition">
+                                {{ $assignment->drive_script_file_id ? 'Replace Script' : 'Upload Script' }}
+                            </button>
+                        </form>
+                        @if ($errors->has('script'))
+                            <p class="mt-1 text-xs text-red-600">{{ $errors->first('script') }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Customer Upload Link --}}
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Customer Upload Link</h3>
+
+                        @if ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
+                            <div class="flex items-center gap-2">
+                                <input type="text" readonly
+                                       value="{{ $assignment->upload_link_url ?? 'Not yet generated' }}"
+                                       onclick="this.select()"
+                                       class="block w-full text-sm font-mono bg-gray-50 border-gray-300 rounded-md shadow-sm" />
+                                <form method="POST" action="{{ route('assignments.generateUploadLink', $assignment) }}"
+                                      onsubmit="return confirm('Generate a new upload link for this order? Any previously-sent link will stop working.')">
+                                    @csrf
+                                    <button type="submit"
+                                            class="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition whitespace-nowrap">
+                                        Generate
+                                    </button>
+                                </form>
+                            </div>
+                            @if ($assignment->upload_link_generated_at)
+                                <p class="mt-1.5 text-xs text-gray-400">
+                                    Last generated {{ $assignment->upload_link_generated_at->diffForHumans() }}. Generating a new one invalidates this link.
+                                </p>
+                            @else
+                                <p class="mt-1.5 text-xs text-gray-400">
+                                    Lets the customer (re-)upload their script for this order. Generating invalidates any link already sent to them.
+                                </p>
+                            @endif
+                        @else
+                            <p class="text-xs text-gray-400">No WooCommerce order on this assignment to generate an upload link for.</p>
+                        @endif
+                    </div>
+
                     {{-- Status & Workflow --}}
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 space-y-4">
                         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status &amp; Workflow</h3>
@@ -985,136 +1148,6 @@
                         <div class="pt-3 border-t border-gray-100 text-xs text-gray-400">
                             Invoice #{{ $activeInvoices->first()->invoice_number }} already generated for this assignment.
                         </div>
-                        @endif
-                    </div>
-
-                    {{-- Assignment File --}}
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5"
-                         x-data="{ showUpload: {{ $assignment->hasCloudScript() ? 'false' : 'true' }} }">
-                        @if ($assignment->hasCloudScript())
-                            @php
-                                $viewUrl = route('assignments.streamScript', $assignment);
-                            @endphp
-                            <div class="mb-4">
-                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assignment File</p>
-                                <p class="text-sm text-gray-800 font-medium mb-2 break-all">{{ $assignment->drive_script_filename ?? 'script.pdf' }}</p>
-                                <div class="flex items-center gap-4" x-data="pdfViewer(@js($viewUrl))"
-                                     @sr-reload-pdf-edit.window="reloadPdf()">
-                                    <button @click="openViewer()" type="button"
-                                            class="text-sm text-indigo-600 hover:text-indigo-800">View</button>
-                                    @if (\App\Support\Permission::check('script.download'))
-                                        <a href="{{ route('assignments.downloadScript', $assignment) }}"
-                                           class="text-sm text-indigo-600 hover:text-indigo-800">Download</a>
-                                    @endif
-
-                                    {{-- Full-screen script preview modal --}}
-                                    <div x-show="open" x-cloak x-ref="modal"
-                                         @keydown.escape.window="open = false"
-                                         tabindex="-1"
-                                         class="fixed inset-0 z-50 flex flex-col bg-black/80">
-                                        <div class="flex items-center justify-between px-4 py-2 bg-gray-900 shrink-0 gap-2 flex-wrap">
-                                            <span class="text-sm text-gray-200 font-medium truncate min-w-0">{{ $assignment->drive_script_filename ?? 'Script' }}</span>
-                                            <div class="flex items-center gap-2 shrink-0">
-                                                @if (\App\Support\Permission::check('script.download'))
-                                                    <a href="{{ route('assignments.downloadScript', $assignment) }}"
-                                                       class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Download</a>
-                                                @endif
-                                                @if (\App\Support\Permission::check('script.print'))
-                                                    <a href="{{ route('assignments.streamScript', $assignment) }}" target="_blank" rel="noopener"
-                                                       class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-white whitespace-nowrap">Print</a>
-                                                @endif
-                                                <span x-show="pgStatus" x-cloak x-text="pgStatus" :class="pgError ? 'text-red-400' : 'text-green-400'" class="text-xs"></span>
-                                                <button type="button"
-                                                        @click="pdfAction('{{ route('assignments.unlockScript', $assignment) }}', '', 'Unlock this PDF? The locked version will be replaced with an unlocked one.', 'Unlocking PDF — please wait…')"
-                                                        class="px-2 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-xs text-white whitespace-nowrap">
-                                                    Unlock PDF
-                                                </button>
-                                                <button type="button"
-                                                        @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=1', 'Remove title page (page 1)?', 'Removing title page — please wait…')"
-                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
-                                                    Remove title page
-                                                </button>
-                                                <button type="button"
-                                                        @click="pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=last', 'Remove last page?', 'Removing last page — please wait…')"
-                                                        class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white whitespace-nowrap">
-                                                    Remove last page
-                                                </button>
-                                                <span class="flex items-center gap-1">
-                                                    <input type="text" x-model="pg" placeholder="pg #"
-                                                           class="w-14 text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-1 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-400">
-                                                    <button type="button"
-                                                            @click="if (pg.trim()) pdfAction('{{ route('assignments.removePages', $assignment) }}', 'pages=' + encodeURIComponent(pg), 'Remove page ' + pg + '?', 'Removing page ' + pg + ' — please wait…')"
-                                                            class="px-2 py-1 bg-red-700 hover:bg-red-600 rounded text-xs text-white">
-                                                        Remove
-                                                    </button>
-                                                </span>
-                                                <button @click="open = false" type="button"
-                                                        class="text-gray-400 hover:text-white text-2xl leading-none ml-2 px-1">×</button>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-center gap-3 px-4 py-1.5 bg-gray-800 shrink-0 border-t border-gray-700">
-                                            <span x-show="loading" x-text="totalPages > 0 ? 'Rendering ' + currentPage + ' of ' + totalPages + '…' : 'Loading…'" class="text-xs text-gray-400"></span>
-                                            <span x-show="!loading && totalPages > 0" class="flex items-center gap-1.5 text-xs text-gray-400">
-                                                Go to page
-                                                <input type="number" min="1" :max="totalPages"
-                                                       @change="scrollToPage($event.target.value)"
-                                                       @keydown.enter.prevent="scrollToPage($event.target.value)"
-                                                       class="w-14 text-center bg-gray-700 border border-gray-600 rounded text-xs text-gray-200 px-1 py-0.5" />
-                                                / <span x-text="totalPages"></span>
-                                            </span>
-                                            <div x-show="!loading && totalPages > 0" x-cloak class="flex items-center gap-1 text-xs text-gray-400" title="Tip: Ctrl + scroll to zoom">
-                                                <button type="button" @click="zoomOut()"
-                                                        class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom out">−</button>
-                                                <button type="button" @click="resetZoom()" x-text="Math.round(zoomLevel * 100) + '%'"
-                                                        class="w-12 text-center hover:text-white" title="Reset zoom"></button>
-                                                <button type="button" @click="zoomIn()"
-                                                        class="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-700 hover:text-white leading-none" title="Zoom in">+</button>
-                                            </div>
-                                        </div>
-                                        <div x-ref="canvasWrap" @wheel="onWheelZoom($event)" class="flex-1 overflow-auto flex flex-col items-center gap-4 bg-gray-800 py-6 px-4">
-                                            <div x-show="loading && totalPages === 0" class="text-gray-400 text-sm mt-8">Loading…</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-                                <button type="button" @click="showUpload = !showUpload"
-                                        class="text-indigo-600 hover:text-indigo-800 underline">
-                                    Replace script file
-                                </button>
-                            </p>
-                        @endif
-                        <form method="POST"
-                              action="{{ route('assignments.uploadScript', $assignment) }}"
-                              enctype="multipart/form-data"
-                              x-data="{ fileName: '' }"
-                              x-show="showUpload">
-                            @csrf
-                            <input type="file" id="script_upload" name="script" accept="application/pdf" required
-                                   class="sr-only"
-                                   @change="fileName = $event.target.files[0]?.name || ''">
-
-                            <label for="script_upload"
-                                   class="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg px-6 py-6 cursor-pointer transition"
-                                   :class="fileName ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50'">
-                                <svg class="w-8 h-8 mb-2" :class="fileName ? 'text-indigo-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                          d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <p class="text-sm font-medium" :class="fileName ? 'text-indigo-700' : 'text-gray-500'"
-                                   x-text="fileName || 'Click to choose a PDF'"></p>
-                                <p class="text-xs text-gray-400 mt-1" x-show="!fileName">PDF only · max 5 MB</p>
-                            </label>
-
-                            <button type="submit"
-                                    x-show="fileName"
-                                    class="mt-3 w-full px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 transition">
-                                {{ $assignment->drive_script_file_id ? 'Replace Script' : 'Upload Script' }}
-                            </button>
-                        </form>
-                        @if ($errors->has('script'))
-                            <p class="mt-1 text-xs text-red-600">{{ $errors->first('script') }}</p>
                         @endif
                     </div>
 

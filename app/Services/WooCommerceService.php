@@ -1,5 +1,8 @@
 <?php
 
+// v1.3 — 2026-11-02 | Add generateUploadLink() — calls the theme's new sr/v1
+//                     generate-upload-link REST endpoint, backing the "Generate Upload
+//                     Link" button on each Assignment.
 // v1.2 — 2026-06-23 | createOrderDiscountCoupon() now reads from admin-configurable settings
 //                     (Settings → Discount Coupon) instead of hardcoded $10/30-day values.
 // v1.1 — 2026-06-12 | Add createOrderDiscountCoupon() — $10 single-use post-coverage discount,
@@ -118,6 +121,32 @@ class WooCommerceService
             $message = $response->json('message') ?: ('Failed to resend email (' . $response->status() . ').');
             throw new RuntimeException($message);
         }
+    }
+
+    /**
+     * Generate a new customer upload link for an order via the custom sr/v1 REST endpoint
+     * registered in woo_tweaks.php. Authenticated with WC_PORTAL_SECRET shared secret.
+     * Destructive — invalidates any previously-issued upload link for the order, same as
+     * the theme's own "Regenerate" button under Tools -> SR URL Builder.
+     */
+    public function generateUploadLink(int $orderId, string $triggeredBy): string
+    {
+        $response = Http::withHeaders(['X-SR-Portal-Secret' => $this->portalSecret])
+            ->post($this->baseUrl . "/wp-json/sr/v1/orders/{$orderId}/generate-upload-link", [
+                'triggered_by' => $triggeredBy,
+            ]);
+
+        if ($response->failed()) {
+            $message = $response->json('message') ?: ('Failed to generate upload link (' . $response->status() . ').');
+            throw new RuntimeException($message);
+        }
+
+        $url = $response->json('url');
+        if (! $url) {
+            throw new RuntimeException('Theme did not return an upload URL.');
+        }
+
+        return $url;
     }
 
     /**
