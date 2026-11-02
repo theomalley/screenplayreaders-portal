@@ -29,7 +29,6 @@ use App\Http\Controllers\Controller;
 use App\Jobs\UploadScriptToDrive;
 use App\Models\Assignment;
 use App\Models\Karen;
-use App\Models\Setting;
 use App\Models\Tier;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -114,7 +113,6 @@ class IncomingAssignmentController extends Controller
             }
         }
 
-        $rates        = Setting::ratesForForms();
         $pageCount    = (int) ($data['page_count'] ?? 0);
         $rush         = (bool) ($data['rush'] ?? false);
         $proofreading = (bool) ($data['proofreading'] ?? false);
@@ -139,6 +137,11 @@ class IncomingAssignmentController extends Controller
         $assignments = [];
         foreach ($slots as $i => $type) {
             try {
+                // Price this slot off the requested reader's own rates when one is known
+                // (a named reader request); open/first-available slots use the sitewide
+                // default until a reader actually accepts, at which point Assignment's
+                // saving() hook re-prices it against the real assigned reader.
+                $rates   = \App\Models\ReaderProfile::effectiveRateMap($readerIds[$i] ?? null);
                 $payRate = $this->computePayRate($rates, $type, $rush, $pageCount, $readerIds[$i] ?? null);
 
                 $assignments[] = Assignment::create([
@@ -201,33 +204,13 @@ class IncomingAssignmentController extends Controller
         ], 201);
     }
 
+    /**
+     * Thin wrapper — the formula itself lives on Assignment::calculatePayRate()
+     * (shared with AssignmentController and the Assignment saving() hook that
+     * re-prices an assignment once its actual reader is known).
+     */
     private function computePayRate(array $rates, string $type, bool $rush, int $pageCount, ?int $requestedReaderId): float
     {
-        $baseMap = [
-            'script_coverage' => $rates['rate_sr_script_coverage'],
-            'notes_only'      => $rates['rate_sr_notes_only'],
-            'deep_dive'       => $rates['rate_sr_deep_dive'],
-            'short'           => $rates['rate_sr_short'],
-            'budget'          => $rates['rate_sr_budget'],
-            'proofreading'    => $rates['rate_sr_proofreading'],
-            'formatting'      => 0.00,
-        ];
-
-        $total = (float) ($baseMap[$type] ?? 0);
-
-        if ($pageCount >= 121 && $pageCount <= 160) {
-            $total += (float) $rates['rate_sr_oversized_121_160'];
-        }
-
-        if ($rush) {
-            $total += (float) $rates['rate_sr_rush'];
-        }
-
-        // Advanced Script Coverage (deep_dive) includes a free reader request — never add the fee
-        if ($requestedReaderId && $type !== 'deep_dive') {
-            $total += (float) $rates['rate_sr_request'];
-        }
-
-        return round($total, 2);
+        return Assignment::calculatePayRate($rates, 'sr', $type, $rush, $pageCount, 0.0, $requestedReaderId);
     }
 }

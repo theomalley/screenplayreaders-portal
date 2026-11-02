@@ -244,7 +244,44 @@ class Assignment extends Model
                 $reader = User::find($assignment->assigned_reader_id);
                 if ($reader && $reader->isAdmin()) {
                     $assignment->pay_rate = '0.00';
+                    return;
                 }
+
+                // Re-price the assignment now that we know exactly who's doing it —
+                // the pay_rate set at creation time (incoming webhook / admin form) only
+                // had a requested reader's custom rate to go on, if any; most assignments
+                // sit open in the unassigned pool with no reader known yet, so they were
+                // priced off the sitewide default. Recompute whenever assigned_reader_id
+                // changes (self-accept or an admin assigning/reassigning) so pay_rate always
+                // reflects the actual assigned reader's own rates.
+                //
+                // Skipped above 160 pages: oversized fees past the 121-160 band are a
+                // manually-typed one-off dollar amount (not stored on this row), so we
+                // can't safely reconstruct the total here without clobbering it.
+                if ($assignment->isDirty('assigned_reader_id')
+                    && (int) $assignment->page_count <= 160
+                    && $assignment->vendor
+                    && $assignment->assignment_type
+                ) {
+                    $rates = \App\Models\ReaderProfile::effectiveRateMap($assignment->assigned_reader_id);
+                    $assignment->pay_rate = self::calculatePayRate(
+                        $rates,
+                        $assignment->vendor,
+                        $assignment->assignment_type,
+                        (bool) $assignment->rush,
+                        (int) $assignment->page_count,
+                        0.0,
+                        $assignment->requested_reader_id,
+                    );
+                }
+            }
+        });
+
+        // Re-sync this order's reader COGS on the revenue view now that a real reader is
+        // known — pay_rate above was just finalized in saving() for this exact case.
+        static::saved(function (Assignment $assignment) {
+            if ($assignment->order_number && $assignment->wasChanged('assigned_reader_id') && $assignment->assigned_reader_id) {
+                app(\App\Services\ReaderCogsService::class)->syncForOrder($assignment->order_number);
             }
         });
 
@@ -404,6 +441,63 @@ class Assignment extends Model
         static::where('order_number', $orderNumber)->update(['woo_discount_code' => $code]);
 
         return $code;
+    }
+
+    /**
+     * Single source of truth for the SR/WD reader pay-rate formula: a base rate for
+     * $type, plus the 121-160 oversized band, rush, and reader-request add-ons —
+     * all read from $rates (either the sitewide Ratebook defaults, or a specific
+     * reader's effective rates via ReaderProfile::effectiveRateMap()). Used both at
+     * assignment-creation time (AssignmentController, IncomingAssignmentController)
+     * and by the saving() hook above when the assigned reader becomes known.
+     *
+     * $customOversizedFee applies only above 160 pages (a manually-typed one-off
+     * amount, not in the rate table) and is passed through as-is — it is never
+     * reader-specific.
+     */
+    public static function calculatePayRate(
+        array $rates,
+        string $vendor,
+        string $type,
+        bool $rush,
+        int $pageCount,
+        float $customOversizedFee,
+        ?int $requestedReaderId,
+    ): float {
+        $baseMap = [
+            'sr' => [
+                'script_coverage'   => $rates['rate_sr_script_coverage'],
+                'notes_only'        => $rates['rate_sr_notes_only'],
+                'deep_dive'         => $rates['rate_sr_deep_dive'],
+                'short'             => $rates['rate_sr_short'],
+                'budget'            => $rates['rate_sr_budget'],
+                'proofreading'      => $rates['rate_sr_proofreading'],
+                'formatting'        => 0.00,
+            ],
+            'wd' => [
+                'coverage'          => $rates['rate_wd_coverage'],
+                'development_notes' => $rates['rate_wd_development_notes'],
+            ],
+        ];
+
+        $total = (float) ($baseMap[$vendor][$type] ?? 0);
+
+        if ($pageCount >= 121 && $pageCount <= 160) {
+            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_oversized_121_160'] : $rates['rate_wd_oversized_121_160']);
+        } elseif ($pageCount >= 161 && $customOversizedFee > 0) {
+            $total += $customOversizedFee;
+        }
+
+        if ($rush) {
+            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_rush'] : $rates['rate_wd_rush']);
+        }
+
+        // Advanced Script Coverage (deep_dive) includes a free reader request — never add the fee
+        if ($requestedReaderId && $type !== 'deep_dive') {
+            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_request'] : $rates['rate_wd_request']);
+        }
+
+        return round($total, 2);
     }
 
     /**

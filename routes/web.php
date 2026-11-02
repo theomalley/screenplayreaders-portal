@@ -137,6 +137,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/readers', [ReaderProfileController::class, 'store'])->name('readers.store');
     Route::get('/readers/{user}/edit', [ReaderProfileController::class, 'edit'])->name('readers.edit');
     Route::patch('/readers/{user}', [ReaderProfileController::class, 'update'])->name('readers.update');
+    Route::patch('/readers/{user}/rates', [ReaderProfileController::class, 'updateRates'])->name('readers.updateRates');
     Route::delete('/readers/{user}', [ReaderProfileController::class, 'destroy'])->name('readers.destroy');
 
     Route::get('/manual', [ManualController::class, 'show'])->name('manual.show');

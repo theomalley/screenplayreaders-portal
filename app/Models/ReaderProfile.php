@@ -1,5 +1,11 @@
 <?php
 
+// v1.19 — 2026-11-02 | Add per-reader SR pay-rate overrides (rate_script_coverage,
+//                      rate_notes_only, rate_deep_dive, rate_proofreading,
+//                      rate_oversized_121_160, rate_rush, rate_request) — each nullable,
+//                      blank = inherit the sitewide Ratebook default for that key.
+//                      effectiveRate() is the single source of truth callers must use
+//                      instead of reading the column directly (mirrors effectiveCap()).
 // v1.18 — 2026-10-22 | Add watermark_enabled — per-reader admin toggle for whether this
 //                      reader's viewed/downloaded scripts carry the forensic watermark.
 //                      Defaults to true (watermarked); AssignmentController/GoogleDriveService
@@ -62,6 +68,13 @@ class ReaderProfile extends Model
         'about_photo_pending',
         'about_photo_rejection_note',
         'max_concurrent_assignments',
+        'rate_script_coverage',
+        'rate_notes_only',
+        'rate_deep_dive',
+        'rate_proofreading',
+        'rate_oversized_121_160',
+        'rate_rush',
+        'rate_request',
         'requests_bypass_capacity',
         'watermark_enabled',
         'notify_only_if_under_capacity',
@@ -87,6 +100,13 @@ class ReaderProfile extends Model
     ];
 
     protected $casts = [
+        'rate_script_coverage'      => 'decimal:2',
+        'rate_notes_only'           => 'decimal:2',
+        'rate_deep_dive'            => 'decimal:2',
+        'rate_proofreading'         => 'decimal:2',
+        'rate_oversized_121_160'    => 'decimal:2',
+        'rate_rush'                 => 'decimal:2',
+        'rate_request'              => 'decimal:2',
         'is_1099'                  => 'boolean',
         'requests_bypass_capacity' => 'boolean',
         'watermark_enabled'        => 'boolean',
@@ -171,6 +191,69 @@ class ReaderProfile extends Model
         }
 
         return $query->count() >= $max;
+    }
+
+    /**
+     * Maps each per-reader rate override column to the sitewide Ratebook default key
+     * (Setting::RATE_DEFAULTS) it falls back to when the reader has no override set.
+     * Scoped to the 7 SR service types that support a per-reader custom rate — the
+     * WD vendor rates and the SR short/budget rates are not customizable per-reader.
+     */
+    public const RATE_KEYS = [
+        'rate_script_coverage'   => 'rate_sr_script_coverage',
+        'rate_notes_only'        => 'rate_sr_notes_only',
+        'rate_deep_dive'         => 'rate_sr_deep_dive',
+        'rate_proofreading'      => 'rate_sr_proofreading',
+        'rate_oversized_121_160' => 'rate_sr_oversized_121_160',
+        'rate_rush'              => 'rate_sr_rush',
+        'rate_request'           => 'rate_sr_request',
+    ];
+
+    /**
+     * This reader's effective rate for $column: their own override if set, otherwise
+     * the sitewide Ratebook default for the mapped Setting key. $column must be one
+     * of the keys in RATE_KEYS.
+     */
+    public function effectiveRate(string $column): float
+    {
+        $value = $this->{$column};
+        if ($value !== null) {
+            return (float) $value;
+        }
+
+        $settingKey = self::RATE_KEYS[$column] ?? null;
+        if ($settingKey === null) {
+            return 0.0;
+        }
+
+        return (float) (Setting::ratesForForms()[$settingKey] ?? 0);
+    }
+
+    /**
+     * Setting::ratesForForms(), with the SR per-reader overrides (RATE_KEYS) merged in
+     * for $readerUserId's own rates wherever they're set. $readerUserId may be null
+     * (reader not yet known — e.g. an open, unassigned slot) in which case this is
+     * just the sitewide defaults. Callers pass the result straight into
+     * Assignment::calculatePayRate() in place of the flat global rates array.
+     */
+    public static function effectiveRateMap(?int $readerUserId): array
+    {
+        $rates = Setting::ratesForForms();
+
+        if ($readerUserId === null) {
+            return $rates;
+        }
+
+        $profile = static::where('user_id', $readerUserId)->first();
+        if (! $profile) {
+            return $rates;
+        }
+
+        foreach (self::RATE_KEYS as $column => $settingKey) {
+            $rates[$settingKey] = $profile->effectiveRate($column);
+        }
+
+        return $rates;
     }
 
     /** The dynamic tiers (0 or more) this reader belongs to — see App\Support\TierAccess. */

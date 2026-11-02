@@ -1013,6 +1013,51 @@
             </div>
             @endif
 
+            {{-- Reader Rates (readers only, admin only) --}}
+            @if ($user->isReader())
+            @php
+                $globalRates = \App\Models\Setting::ratesForForms();
+                $readerRateFields = [
+                    'rate_script_coverage'   => ['label' => 'Script Coverage',               'default' => $globalRates['rate_sr_script_coverage']],
+                    'rate_notes_only'        => ['label' => 'Notes-Only Coverage',             'default' => $globalRates['rate_sr_notes_only']],
+                    'rate_deep_dive'         => ['label' => 'Advanced Script Coverage',        'default' => $globalRates['rate_sr_deep_dive']],
+                    'rate_proofreading'      => ['label' => 'Proofreading',                   'default' => $globalRates['rate_sr_proofreading']],
+                    'rate_oversized_121_160' => ['label' => 'Oversized (121-160 pages)',       'default' => $globalRates['rate_sr_oversized_121_160']],
+                    'rate_rush'              => ['label' => 'Rush (24h turnaround)',           'default' => $globalRates['rate_sr_rush']],
+                    'rate_request'           => ['label' => 'Reader Request',                 'default' => $globalRates['rate_sr_request']],
+                ];
+            @endphp
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                <div class="max-w-xl space-y-4">
+                    <h2 class="text-lg font-medium text-gray-900">Reader Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                    <p class="text-sm text-gray-600 -mt-2">Custom per-reader pay rates. Leave a field blank to use the sitewide Ratebook default shown as its placeholder.</p>
+                    <form method="POST" action="{{ route('readers.updateRates', $user) }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <div class="grid grid-cols-2 gap-4">
+                            @foreach ($readerRateFields as $key => $field)
+                                <div>
+                                    <x-input-label for="{{ $key }}" value="{{ $field['label'] }}" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <span class="text-gray-400 text-sm">$</span>
+                                        <x-text-input id="{{ $key }}" name="{{ $key }}" type="number"
+                                            class="block w-28 text-right"
+                                            value="{{ old($key, $profile?->{$key}) }}"
+                                            min="0" max="9999.99" step="0.01"
+                                            placeholder="{{ number_format((float) $field['default'], 2) }}" />
+                                    </div>
+                                    <x-input-error :messages="$errors->get($key)" class="mt-1" />
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Rates</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
         @endif
 
         </div>

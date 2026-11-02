@@ -305,6 +305,25 @@ class AssignmentController extends Controller
             ->orderBy('unassigned_at', 'asc')
             ->get();
 
+        // These are still genuinely unassigned (open to any eligible reader), so the
+        // pay_rate stored on the row is just the sitewide-default estimate from when
+        // the slot was created — not personalized to whoever's browsing. Show each
+        // viewing reader what THEY would actually be paid by computing a live preview
+        // off their own rates, without writing it back; the real pay_rate is only
+        // ever finalized once someone actually accepts (Assignment's saving() hook).
+        $myRates = \App\Models\ReaderProfile::effectiveRateMap($user->id);
+        foreach ($available as $a) {
+            $a->preview_pay_rate = Assignment::calculatePayRate(
+                $myRates,
+                $a->vendor,
+                $a->assignment_type,
+                (bool) $a->rush,
+                (int) $a->page_count,
+                0.0,
+                $a->requested_reader_id,
+            );
+        }
+
         $acceptedRequests = Assignment::acceptedRequests($user->id, $viewableGroups)
             ->with(['requestedReader.readerProfile', 'assignedReader.readerProfile'])
             ->get();
@@ -496,7 +515,6 @@ class AssignmentController extends Controller
             $firstAssignment      = Assignment::create($data);
             $createdAssignments[] = $firstAssignment;
         } else {
-            $rates              = Setting::ratesForForms();
             $pageCount          = (int) ($data['page_count'] ?? 0);
             $customOversizedFee = (float) $request->input('custom_oversized_fee', 0);
 
@@ -508,6 +526,10 @@ class AssignmentController extends Controller
             unset($base['assignment_type'], $base['pay_rate'], $base['requested_reader_id']);
 
             foreach ($types as $index => $type) {
+                // Rates resolved per-slot: when a specific reader is already picked for this
+                // slot, price it off their own rates; otherwise fall back to the sitewide default.
+                $rates = \App\Models\ReaderProfile::effectiveRateMap($readerIds[$index] ?? null);
+
                 $row = array_merge($base, [
                     'assignment_type'     => $type,
                     'requested_reader_id' => $readerIds[$index] ?? null,
@@ -569,6 +591,11 @@ class AssignmentController extends Controller
         return redirect()->route('assignments.index')->with('success', $label);
     }
 
+    /**
+     * Thin wrapper kept so existing call sites don't change — the formula itself
+     * now lives on Assignment::calculatePayRate() (shared with the saving() hook
+     * that re-prices an assignment once its actual reader is known).
+     */
     private function computePayRate(
         array $rates,
         string $vendor,
@@ -578,38 +605,7 @@ class AssignmentController extends Controller
         float $customOversizedFee,
         ?int $requestedReaderId,
     ): float {
-        $baseMap = [
-            'sr' => [
-                'script_coverage'   => $rates['rate_sr_script_coverage'],
-                'notes_only'        => $rates['rate_sr_notes_only'],
-                'deep_dive'         => $rates['rate_sr_deep_dive'],
-                'short'             => $rates['rate_sr_short'],
-                'budget'            => $rates['rate_sr_budget'],
-            ],
-            'wd' => [
-                'coverage'          => $rates['rate_wd_coverage'],
-                'development_notes' => $rates['rate_wd_development_notes'],
-            ],
-        ];
-
-        $total = (float) ($baseMap[$vendor][$type] ?? 0);
-
-        if ($pageCount >= 121 && $pageCount <= 160) {
-            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_oversized_121_160'] : $rates['rate_wd_oversized_121_160']);
-        } elseif ($pageCount >= 161 && $customOversizedFee > 0) {
-            $total += $customOversizedFee;
-        }
-
-        if ($rush) {
-            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_rush'] : $rates['rate_wd_rush']);
-        }
-
-        // Advanced Script Coverage (deep_dive) includes a free reader request — never add the fee
-        if ($requestedReaderId && $type !== 'deep_dive') {
-            $total += (float) ($vendor === 'sr' ? $rates['rate_sr_request'] : $rates['rate_wd_request']);
-        }
-
-        return round($total, 2);
+        return Assignment::calculatePayRate($rates, $vendor, $type, $rush, $pageCount, $customOversizedFee, $requestedReaderId);
     }
 
     public function removePages(Request $request, Assignment $assignment)

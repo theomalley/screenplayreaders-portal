@@ -211,6 +211,35 @@ class ReaderProfileController extends Controller
         return redirect()->route('readers.edit', $user)->with('success', 'Reader profile updated.');
     }
 
+    /**
+     * Per-reader SR pay-rate overrides (admin-only — mirrors EditorProfileController::
+     * updateRates()). Each field is nullable: blank clears the override and the reader
+     * falls back to the sitewide Ratebook default (see ReaderProfile::effectiveRate()).
+     */
+    public function updateRates(Request $request, User $user)
+    {
+        $this->authorize('updateReaderRates', User::class);
+        abort_unless($user->isReader(), 404);
+
+        $data = $request->validate([
+            'rate_script_coverage'   => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'rate_notes_only'        => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'rate_deep_dive'         => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'rate_proofreading'      => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'rate_oversized_121_160' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'rate_rush'              => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'rate_request'           => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+        ]);
+
+        foreach ($data as $key => $value) {
+            $data[$key] = ($value === '' || $value === null) ? null : $value;
+        }
+
+        $user->readerProfile()->updateOrCreate(['user_id' => $user->id], $data);
+
+        return redirect()->route('readers.edit', $user)->with('success', 'Rates updated.');
+    }
+
     public function destroy(User $user)
     {
         $this->authorize('deleteReader', User::class);

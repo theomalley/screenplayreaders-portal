@@ -1772,7 +1772,7 @@
                                                 data-sort-date="{{ $assignment->created_at?->timestamp ?? 0 }}"
                                                 data-sort-rush="{{ $assignment->rush ? 1 : 0 }}"
                                                 data-sort-type="{{ $assignment->assignment_type ?? '' }}"
-                                                data-sort-rate="{{ $assignment->pay_rate ?? 0 }}"
+                                                data-sort-rate="{{ $assignment->preview_pay_rate ?? $assignment->pay_rate ?? 0 }}"
                                                 data-sort-status="{{ $assignment->status ?? '' }}">
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="font-mono text-gray-700">{{ $assignment->order_number }}</span>
@@ -1833,7 +1833,7 @@
                                                         <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
-                                                    <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
+                                                    <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->preview_pay_rate ?? $assignment->pay_rate, 2) }}</div>
                                                     @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                                     @if ($isRequestedForMe)
                                                         <div class="flex items-center gap-1 mt-1">

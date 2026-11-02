@@ -76,6 +76,12 @@ class UserPolicy
         return Permission::check('readers.delete', $actor);
     }
 
+    /** Per-reader SR pay-rate overrides — admin-only, mirrors updateEditorRates(). */
+    public function updateReaderRates(User $actor): bool
+    {
+        return $actor->isAdmin();
+    }
+
     public function viewAnyTeam(User $actor): bool
     {
         return Permission::check('team', $actor);

@@ -122,4 +122,35 @@ class ReaderProfileControllerTest extends TestCase
         $this->assertStringContainsString('Coverage fails QC', $html);
         $this->assertStringContainsString('Only notify when under capacity (max 5)', $html);
     }
+
+    public function test_admin_can_update_a_readers_custom_rates(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}/rates", [
+                'rate_script_coverage' => '99.50',
+                'rate_notes_only'      => '',
+            ])
+            ->assertRedirect();
+
+        $reader->readerProfile->refresh();
+        $this->assertSame(99.50, (float) $reader->readerProfile->rate_script_coverage);
+        $this->assertNull($reader->readerProfile->rate_notes_only);
+    }
+
+    public function test_editor_and_reader_cannot_update_a_readers_custom_rates(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor']);
+        $reader = $this->makeReader();
+
+        $this->actingAs($editor)
+            ->patch("/readers/{$reader->id}/rates", ['rate_script_coverage' => '99.50'])
+            ->assertForbidden();
+
+        $this->actingAs($reader)
+            ->patch("/readers/{$reader->id}/rates", ['rate_script_coverage' => '99.50'])
+            ->assertForbidden();
+    }
 }
