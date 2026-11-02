@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * Covers the "Generate Upload Link" button on each SR Assignment, which calls the
- * theme's sr/v1 generate-upload-link REST endpoint via WooCommerceService.
+ * Covers the "Look Up Link" (non-destructive) and "Generate New Link" (destructive)
+ * actions on each SR Assignment, which call the theme's sr/v1 upload-link /
+ * generate-upload-link REST endpoints via WooCommerceService.
  */
 class AssignmentUploadLinkTest extends TestCase
 {
@@ -44,6 +45,51 @@ class AssignmentUploadLinkTest extends TestCase
         $assignment->refresh();
         $this->assertSame('https://screenplayreaders.com/upload/?order_id=123456&key=abc123', $assignment->upload_link_url);
         $this->assertNotNull($assignment->upload_link_generated_at);
+    }
+
+    public function test_admin_can_look_up_the_current_upload_link_without_invalidating_it(): void
+    {
+        Http::fake(fn () => Http::response(['success' => true, 'url' => 'https://screenplayreaders.com/upload/?order_id=123456&key=orderkey'], 200));
+
+        $admin      = User::factory()->create(['role' => 'admin']);
+        $assignment = $this->makeAssignment();
+
+        $this->actingAs($admin)
+            ->post("/assignments/{$assignment->id}/lookup-upload-link")
+            ->assertRedirect();
+
+        $assignment->refresh();
+        $this->assertSame('https://screenplayreaders.com/upload/?order_id=123456&key=orderkey', $assignment->upload_link_url);
+        // Lookup is non-destructive — it must never stamp upload_link_generated_at,
+        // which is reserved for tracking when a NEW (invalidating) link was issued.
+        $this->assertNull($assignment->upload_link_generated_at);
+
+        Http::assertSent(fn ($request) => $request->method() === 'GET'
+            && str_contains($request->url(), '/orders/123456/upload-link'));
+    }
+
+    public function test_lookup_upload_link_surfaces_a_theme_error(): void
+    {
+        Http::fake(fn () => Http::response(['message' => 'Order not found.'], 404));
+
+        $admin      = User::factory()->create(['role' => 'admin']);
+        $assignment = $this->makeAssignment();
+
+        $this->actingAs($admin)
+            ->post("/assignments/{$assignment->id}/lookup-upload-link")
+            ->assertRedirect();
+
+        $this->assertNull($assignment->fresh()->upload_link_url);
+    }
+
+    public function test_reader_cannot_look_up_an_upload_link(): void
+    {
+        $reader     = User::factory()->create(['role' => 'reader']);
+        $assignment = $this->makeAssignment();
+
+        $this->actingAs($reader)
+            ->post("/assignments/{$assignment->id}/lookup-upload-link")
+            ->assertForbidden();
     }
 
     public function test_generate_upload_link_surfaces_a_theme_error(): void

@@ -1102,6 +1102,35 @@ class AssignmentController extends Controller
      * theme's own "Regenerate" button under Tools -> SR URL Builder. Invalidates any
      * previously-issued link for the order.
      */
+    /**
+     * Look up this assignment's order's current, already-valid upload link —
+     * non-destructive, changes nothing on the theme side. Every order has a working
+     * upload link from the moment it's placed, so this is the normal way to see it;
+     * contrast with generateUploadLink() below, which invalidates the current link.
+     */
+    public function lookupUploadLink(Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        abort_unless(
+            $assignment->vendor === 'sr' && is_numeric($assignment->order_number),
+            422,
+            'This assignment has no WooCommerce order to look up an upload link for.'
+        );
+
+        try {
+            $url = app(WooCommerceService::class)->getUploadLink((int) $assignment->order_number);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Could not look up upload link: ' . $e->getMessage());
+        }
+
+        // Deliberately does not touch upload_link_generated_at — that timestamp tracks
+        // when a NEW (rotating) link was last issued via generateUploadLink(), not a lookup.
+        $assignment->update(['upload_link_url' => $url]);
+
+        return back()->with('success', 'Upload link looked up.');
+    }
+
     public function generateUploadLink(Assignment $assignment)
     {
         $this->authorize('update', $assignment);

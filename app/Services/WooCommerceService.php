@@ -1,8 +1,9 @@
 <?php
 
-// v1.3 — 2026-11-02 | Add generateUploadLink() — calls the theme's new sr/v1
-//                     generate-upload-link REST endpoint, backing the "Generate Upload
-//                     Link" button on each Assignment.
+// v1.3 — 2026-11-02 | Add getUploadLink() (non-destructive lookup) and
+//                     generateUploadLink() (destructive, invalidates the current link)
+//                     — call the theme's new sr/v1 upload-link REST endpoints, backing
+//                     the "Look Up Link" / "Generate New Link" actions on each Assignment.
 // v1.2 — 2026-06-23 | createOrderDiscountCoupon() now reads from admin-configurable settings
 //                     (Settings → Discount Coupon) instead of hardcoded $10/30-day values.
 // v1.1 — 2026-06-12 | Add createOrderDiscountCoupon() — $10 single-use post-coverage discount,
@@ -121,6 +122,30 @@ class WooCommerceService
             $message = $response->json('message') ?: ('Failed to resend email (' . $response->status() . ').');
             throw new RuntimeException($message);
         }
+    }
+
+    /**
+     * Look up an order's current, already-valid customer upload link via the custom
+     * sr/v1 REST endpoint registered in woo_tweaks.php. Non-destructive — every order
+     * has a working upload link from the moment it's placed (WooCommerce's own order
+     * key), so this just reads it back; nothing is invalidated or changed.
+     */
+    public function getUploadLink(int $orderId): string
+    {
+        $response = Http::withHeaders(['X-SR-Portal-Secret' => $this->portalSecret])
+            ->get($this->baseUrl . "/wp-json/sr/v1/orders/{$orderId}/upload-link");
+
+        if ($response->failed()) {
+            $message = $response->json('message') ?: ('Failed to look up upload link (' . $response->status() . ').');
+            throw new RuntimeException($message);
+        }
+
+        $url = $response->json('url');
+        if (! $url) {
+            throw new RuntimeException('Theme did not return an upload URL.');
+        }
+
+        return $url;
     }
 
     /**

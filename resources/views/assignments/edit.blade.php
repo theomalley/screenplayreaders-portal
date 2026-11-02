@@ -945,29 +945,36 @@
                         @if ($assignment->vendor === 'sr' && is_numeric($assignment->order_number))
                             <div class="flex items-center gap-2">
                                 <input type="text" readonly
-                                       value="{{ $assignment->upload_link_url ?? 'Not yet generated' }}"
+                                       value="{{ $assignment->upload_link_url ?? 'Not yet looked up' }}"
                                        onclick="this.select()"
                                        class="block w-full text-sm font-mono bg-gray-50 border-gray-300 rounded-md shadow-sm" />
+                                <form method="POST" action="{{ route('assignments.lookupUploadLink', $assignment) }}">
+                                    @csrf
+                                    <button type="submit"
+                                            class="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition whitespace-nowrap">
+                                        Look Up Link
+                                    </button>
+                                </form>
                                 <form method="POST" action="{{ route('assignments.generateUploadLink', $assignment) }}"
-                                      onsubmit="return confirm('Generate a new upload link for this order? Any previously-sent link will stop working.')">
+                                      onsubmit="return confirm('Generate a brand-new upload link for this order? The link the customer currently has (whether looked up here or not) will stop working.')">
                                     @csrf
                                     <button type="submit"
                                             class="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition whitespace-nowrap">
-                                        Generate
+                                        Generate New Link
                                     </button>
                                 </form>
                             </div>
                             @if ($assignment->upload_link_generated_at)
                                 <p class="mt-1.5 text-xs text-gray-400">
-                                    Last generated {{ $assignment->upload_link_generated_at->diffForHumans() }}. Generating a new one invalidates this link.
+                                    A new link was issued {{ $assignment->upload_link_generated_at->diffForHumans() }}, invalidating whatever the customer had before. "Generate New Link" always invalidates the current one — use "Look Up Link" just to see it.
                                 </p>
                             @else
                                 <p class="mt-1.5 text-xs text-gray-400">
-                                    Lets the customer (re-)upload their script for this order. Generating invalidates any link already sent to them.
+                                    Every order already has a working upload link from checkout — "Look Up Link" just shows it. Only use "Generate New Link" if the customer needs a fresh one (it invalidates whatever they currently have).
                                 </p>
                             @endif
                         @else
-                            <p class="text-xs text-gray-400">No WooCommerce order on this assignment to generate an upload link for.</p>
+                            <p class="text-xs text-gray-400">No WooCommerce order on this assignment to look up or generate an upload link for.</p>
                         @endif
                     </div>
 
