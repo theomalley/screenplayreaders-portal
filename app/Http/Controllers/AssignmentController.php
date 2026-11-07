@@ -1061,6 +1061,22 @@ class AssignmentController extends Controller
         ]);
     }
 
+    /** Proxies a video consulting call recording out of Spaces — never exposes the raw path. */
+    public function streamRecording(Assignment $assignment)
+    {
+        $this->authorize('streamRecording', $assignment);
+        abort_unless($assignment->video_consulting_recording_path, 404);
+
+        $contents = app(SpacesStorageService::class)->get($assignment->video_consulting_recording_path);
+        $ext = pathinfo($assignment->video_consulting_recording_path, PATHINFO_EXTENSION) ?: 'mp4';
+
+        return response($contents, 200, [
+            'Content-Type'    => $ext === 'webm' ? 'video/webm' : 'video/mp4',
+            'Cache-Control'   => 'private, no-store',
+            'X-Frame-Options' => 'SAMEORIGIN',
+        ]);
+    }
+
     /** Dismiss the "goback ready at HelpScout" notification for all admins/editors. */
     public function dismissHelpscoutDraft(Assignment $assignment)
     {
@@ -1450,6 +1466,11 @@ class AssignmentController extends Controller
             return request()->expectsJson()
                 ? response()->json(['message' => $error], 422)
                 : back()->with('error', $error);
+        }
+
+        $fresh = $assignment->fresh();
+        if ($fresh->assignment_type === Assignment::TYPE_VIDEO_CONSULTING) {
+            app(\App\Services\VideoConsultingCallService::class)->createRoomFor($fresh);
         }
 
         return request()->expectsJson()

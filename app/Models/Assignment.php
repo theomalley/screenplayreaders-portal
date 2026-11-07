@@ -1,5 +1,10 @@
 <?php
 
+// v1.31 — 2026-11-07 | Video consulting Phase 2 — add TYPE_VIDEO_CONSULTING,
+//                      video_consulting_hold_id/whereby_room_url/whereby_room_name/
+//                      video_consulting_recording_path/video_consulting_transcript, and guard
+//                      the saving() pay_rate recompute block against this type (its pay comes
+//                      from ReaderVideoConsultingRate, not calculatePayRate()'s rate table).
 // v1.30 — 2026-07-30 | Add take_me_enabled/take_me_style/take_me_text — admin/editor "Take Me"
 //                      attention-grabber for stale unassigned assignments; auto-cleared on
 //                      accept (AssignmentController::accept/updateStatus). takeMeDisplayText()
@@ -86,6 +91,9 @@ class Assignment extends Model
     public const STATUS_ON_HOLD_SR       = 'on_hold_sr';
     public const STATUS_NEEDS_ATTENTION  = 'needs_attention';
 
+    // Not a DB enum (assignment_type is free text) — this is the one video-consulting value.
+    public const TYPE_VIDEO_CONSULTING = 'video_consulting';
+
     protected $fillable = [
         'order_number',
         'vendor',
@@ -126,6 +134,11 @@ class Assignment extends Model
         'upload_link_url',
         'upload_link_generated_at',
         'client_id',
+        'video_consulting_hold_id',
+        'whereby_room_url',
+        'whereby_room_name',
+        'video_consulting_recording_path',
+        'video_consulting_transcript',
         'reader_declined',
         'available_at',
         'exempt_from_word_counts',
@@ -261,10 +274,16 @@ class Assignment extends Model
                 // Skipped above 160 pages: oversized fees past the 121-160 band are a
                 // manually-typed one-off dollar amount (not stored on this row), so we
                 // can't safely reconstruct the total here without clobbering it.
+                // Video consulting pay comes from ReaderVideoConsultingRate (snapshotted onto
+                // pay_rate when the booking/test-booking is created), not from the sitewide
+                // rate table calculatePayRate() reads — that table has no 'video_consulting'
+                // key, so running this block for it would silently zero pay_rate every time
+                // assigned_reader_id changes (e.g. on accept()).
                 if ($assignment->isDirty('assigned_reader_id')
                     && (int) $assignment->page_count <= 160
                     && $assignment->vendor
                     && $assignment->assignment_type
+                    && $assignment->assignment_type !== self::TYPE_VIDEO_CONSULTING
                 ) {
                     $rates = \App\Models\ReaderProfile::effectiveRateMap($assignment->assigned_reader_id);
                     $assignment->pay_rate = self::calculatePayRate(
@@ -545,6 +564,11 @@ class Assignment extends Model
     public function coverageSubmission(): HasOne
     {
         return $this->hasOne(CoverageSubmission::class);
+    }
+
+    public function videoConsultingHold(): BelongsTo
+    {
+        return $this->belongsTo(VideoConsultingHold::class, 'video_consulting_hold_id');
     }
 
     public function helpscoutConversation(): HasOne

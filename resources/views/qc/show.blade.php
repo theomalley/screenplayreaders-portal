@@ -220,7 +220,43 @@
                 </div>
             </div>
 
-            {{-- PDF preview --}}
+            {{-- Video consulting recording + manual transcript --}}
+            @if($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING)
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-4 py-2 border-b border-gray-100 bg-gray-50">
+                        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Call Recording</span>
+                    </div>
+                    @if($assignment->video_consulting_recording_path)
+                        <video controls class="w-full" style="max-height: 70vh;"
+                               src="{{ route('assignments.streamRecording', $assignment) }}">
+                        </video>
+                    @else
+                        <div class="px-4 py-3 text-sm text-amber-700 bg-amber-50">
+                            No recording yet — it lands here automatically once Whereby finishes processing it.
+                        </div>
+                    @endif
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                    <form method="POST" action="{{ route('qc.save-transcript', $assignment) }}" class="space-y-3">
+                        @csrf
+                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            Transcript (manual — no transcription vendor wired up yet)
+                        </label>
+                        <textarea name="transcript" rows="14"
+                                  class="block w-full border-gray-300 rounded-md shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500"
+                                  placeholder="Paste the call transcript here for review…">{{ old('transcript', $assignment->video_consulting_transcript) }}</textarea>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors">
+                                Save Transcript
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            {{-- PDF preview (not applicable to video consulting — handled above) --}}
+            @if($assignment->assignment_type !== \App\Models\Assignment::TYPE_VIDEO_CONSULTING)
             @if($assignment->drive_coverage_pdf_id)
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-gray-50">
@@ -246,12 +282,13 @@
                     No Google Doc found for this assignment. The coverage doc may have failed to generate — check the logs.
                 </div>
             @endif
+            @endif
 
 
         </div>
 
         {{-- Full-screen Google Docs editing overlay --}}
-        @if($assignment->drive_coverage_doc_id)
+        @if($assignment->assignment_type !== \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->drive_coverage_doc_id)
             <div x-show="editOpen" x-cloak
                 class="fixed inset-0 z-50 flex flex-col bg-white">
 

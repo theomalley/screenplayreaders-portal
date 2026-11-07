@@ -76,6 +76,11 @@ return [
         'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
     ],
 
+    'whereby' => [
+        'api_key'        => env('WHEREBY_API_KEY'),
+        'webhook_secret' => env('WHEREBY_WEBHOOK_SECRET'),
+    ],
+
     'mailersend' => [
         'api_key'                   => env('MAILERSEND_API_KEY'),
         'assignment_template_id'    => env('MAILERSEND_ASSIGNMENT_TEMPLATE_ID', 'neqvygm95xdl0p7w'),

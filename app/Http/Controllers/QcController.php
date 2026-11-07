@@ -323,6 +323,21 @@ class QcController extends Controller
             ->with('success', "#{$assignment->order_number} — {$assignment->script_title} sent back to reader.");
     }
 
+    /**
+     * Manual transcript entry for a video consulting call — stopgap until a transcription
+     * vendor is wired up (Deepgram/AssemblyAI/Whisper, not yet chosen).
+     */
+    public function saveTranscript(\Illuminate\Http\Request $request, Assignment $assignment)
+    {
+        abort_unless(Permission::check('qc'), 403);
+
+        $data = $request->validate(['transcript' => 'nullable|string|max:100000']);
+
+        $assignment->update(['video_consulting_transcript' => $data['transcript'] ?? null]);
+
+        return back()->with('success', 'Transcript saved.');
+    }
+
     // -------------------------------------------------------------------------
 
     private function generatePdfForAssignment(Assignment $assignment, ?string $existingPdfId = null): string

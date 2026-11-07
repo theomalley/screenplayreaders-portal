@@ -49,6 +49,24 @@ class AssignmentControllerExtraActionsTest extends TestCase
         $this->actingAs($reader)->get("/assignments/{$assignment->id}/coverage-pdf")->assertForbidden();
     }
 
+    public function test_admin_and_editor_are_not_forbidden_from_stream_recording(): void
+    {
+        $admin      = User::factory()->create(['role' => 'admin']);
+        $editor     = User::factory()->create(['role' => 'editor']);
+        $assignment = $this->makeAssignment();
+
+        $this->assertNotEquals(403, $this->actingAs($admin)->get("/assignments/{$assignment->id}/recording")->getStatusCode());
+        $this->assertNotEquals(403, $this->actingAs($editor)->get("/assignments/{$assignment->id}/recording")->getStatusCode());
+    }
+
+    public function test_reader_is_forbidden_from_stream_recording(): void
+    {
+        $reader     = User::factory()->create(['role' => 'reader']);
+        $assignment = $this->makeAssignment();
+
+        $this->actingAs($reader)->get("/assignments/{$assignment->id}/recording")->assertForbidden();
+    }
+
     public function test_admin_and_editor_can_dismiss_helpscout_draft(): void
     {
         $admin      = User::factory()->create(['role' => 'admin']);

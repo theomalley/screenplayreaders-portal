@@ -95,6 +95,62 @@
                 </form>
             </div>
 
+            {{-- Video Consulting test booking --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 space-y-4"
+                 x-data="{
+                    readers: {{ $videoConsultingReaders->toJson() }},
+                    readerId: '',
+                    get durations() {
+                        const r = this.readers.find(r => String(r.id) === String(this.readerId));
+                        return r ? r.durations : [];
+                    }
+                 }">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700">Create Test Video Consulting Booking</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        Creates a real booking (hold + assignment) requested for the chosen reader. Have them accept it
+                        from their assignments list to trigger the real Whereby room-creation flow.
+                    </p>
+                </div>
+
+                @if($videoConsultingReaders->isEmpty())
+                    <p class="text-xs text-amber-600">No readers currently offer any video consulting duration (Consulting &gt; Rate, reader side).</p>
+                @else
+                    <form method="POST" action="{{ route('test-data.video-consulting-booking') }}" class="flex items-end gap-3 flex-wrap">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Reader</label>
+                            <select name="reader_id" x-model="readerId" required
+                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Choose…</option>
+                                <template x-for="r in readers" :key="r.id">
+                                    <option :value="r.id" x-text="r.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Duration</label>
+                            <select name="duration_id" required :disabled="!readerId"
+                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Choose…</option>
+                                <template x-for="d in durations" :key="d.id">
+                                    <option :value="d.id" x-text="d.label"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Slot start (blank = now)</label>
+                            <input type="datetime-local" name="slot_start"
+                                   class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                        </div>
+                        <button type="submit"
+                                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors">
+                            Create Booking
+                        </button>
+                    </form>
+                @endif
+            </div>
+
             {{-- Reset --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 space-y-4">
                 <div>

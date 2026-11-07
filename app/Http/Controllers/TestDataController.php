@@ -7,9 +7,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\ReaderVideoConsultingRate;
 use App\Models\Setting;
+use App\Models\Tier;
+use App\Models\User;
+use App\Models\VideoConsultingHold;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TestDataController extends Controller
 {
@@ -49,7 +55,23 @@ class TestDataController extends Controller
         $testScriptId    = Setting::getValue('test_script_drive_file_id', '');
         $testScriptName  = Setting::getValue('test_script_drive_filename', '');
 
-        return view('admin.test-data', compact('testCount', 'pendingReset', 'autoReset', 'testScriptId', 'testScriptName'));
+        $videoConsultingReaders = User::where('role', 'reader')
+            ->whereHas('videoConsultingRates')
+            ->with(['videoConsultingRates.duration'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $reader) => [
+                'id'   => $reader->id,
+                'name' => $reader->name,
+                'durations' => $reader->videoConsultingRates
+                    ->filter(fn (ReaderVideoConsultingRate $rate) => $rate->duration)
+                    ->map(fn (ReaderVideoConsultingRate $rate) => ['id' => $rate->duration_id, 'label' => $rate->duration->label])
+                    ->values(),
+            ]);
+
+        return view('admin.test-data', compact(
+            'testCount', 'pendingReset', 'autoReset', 'testScriptId', 'testScriptName', 'videoConsultingReaders',
+        ));
     }
 
     public function seed(Request $request)
@@ -98,6 +120,70 @@ class TestDataController extends Controller
         return back()->with('success', "Created {$created} test assignment(s).");
     }
 
+    /**
+     * Creates a real VideoConsultingHold (pre-converted) + Assignment pair so a reader can
+     * accept it through the normal /assignments/{id}/accept flow — exercising the exact same
+     * room-creation hook (AssignmentController::accept() -> VideoConsultingCallService) a real
+     * future booking will use, without needing checkout to exist yet.
+     */
+    public function createTestVideoConsultingBooking(Request $request)
+    {
+        $this->authorize('manage-test-data');
+
+        $data = $request->validate([
+            'reader_id'   => ['required', 'integer', 'exists:users,id'],
+            'duration_id' => ['required', 'integer', 'exists:video_consulting_durations,id'],
+            'slot_start'  => ['nullable', 'date'],
+        ]);
+
+        $rate = ReaderVideoConsultingRate::where('reader_id', $data['reader_id'])
+            ->where('duration_id', $data['duration_id'])
+            ->with('duration')
+            ->first();
+
+        abort_unless($rate && $rate->duration, 422, 'This reader does not offer that duration.');
+
+        $reader = User::findOrFail($data['reader_id']);
+        $slotStart = ! empty($data['slot_start']) ? Carbon::parse($data['slot_start']) : now();
+        $slotEnd = $slotStart->copy()->addMinutes($rate->duration->minutes);
+
+        $hold = VideoConsultingHold::create([
+            'reader_id'   => $reader->id,
+            'duration_id' => $rate->duration_id,
+            'slot_start'  => $slotStart,
+            'slot_end'    => $slotEnd,
+            'hold_token'  => Str::random(64),
+            'status'      => VideoConsultingHold::STATUS_CONVERTED,
+            'expires_at'  => now(),
+        ]);
+
+        $assignment = Assignment::create([
+            'order_number'             => 'TEST-VC-' . strtoupper(substr(uniqid(), -6)),
+            'vendor'                   => 'sr',
+            'assignment_type'          => Assignment::TYPE_VIDEO_CONSULTING,
+            'script_title'             => "{$rate->duration->label} Video Consulting Call",
+            'writer_name'              => 'N/A (test booking)',
+            'pay_rate'                 => $rate->rate,
+            'status'                   => Assignment::STATUS_UNASSIGNED,
+            'requested_reader_id'      => $reader->id,
+            'is_test'                  => true,
+            'video_consulting_hold_id' => $hold->id,
+            'unassigned_at'            => now(),
+        ]);
+
+        $hold->update(['converted_assignment_id' => $assignment->id]);
+
+        // Every acceptable assignment needs at least one Tier attached (AssignmentPolicy::
+        // accept()'s tierMatch() requires it) — mirrors IncomingAssignmentController's real
+        // default-tier convention so this test booking behaves exactly like a real one.
+        $tierOne = Tier::where('is_onboarding', false)->orderBy('position')->first();
+        if ($tierOne) {
+            $assignment->tiers()->sync([$tierOne->id]);
+        }
+
+        return back()->with('success', "Test video consulting booking created for {$reader->name} — have them accept it from their assignments list.");
+    }
+
     public function reset()
     {
         $this->authorize('manage-test-data');
@@ -122,6 +208,10 @@ class TestDataController extends Controller
             'drive_coverage_pdf_id'   => null,
             'needs_attention_notes'   => null,
             'unassigned_at'           => now(),
+            'whereby_room_url'                 => null,
+            'whereby_room_name'                => null,
+            'video_consulting_recording_path'  => null,
+            'video_consulting_transcript'      => null,
         ]);
 
         $count = $testIds->count();
@@ -134,9 +224,11 @@ class TestDataController extends Controller
         $this->authorize('manage-test-data');
 
         $testIds = Assignment::where('is_test', true)->pluck('id');
+        $testHoldIds = Assignment::where('is_test', true)->whereNotNull('video_consulting_hold_id')->pluck('video_consulting_hold_id');
 
         DB::table('coverage_submissions')->whereIn('assignment_id', $testIds)->delete();
         Assignment::where('is_test', true)->delete();
+        VideoConsultingHold::whereIn('id', $testHoldIds)->delete();
 
         return back()->with('success', "Deleted all {$testIds->count()} test assignment(s).");
     }

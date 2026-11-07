@@ -133,6 +133,12 @@ class User extends Authenticatable
         return $this->hasMany(Assignment::class, 'assigned_reader_id');
     }
 
+    /** This reader's own per-duration video consulting pay rates. */
+    public function videoConsultingRates(): HasMany
+    {
+        return $this->hasMany(ReaderVideoConsultingRate::class, 'reader_id');
+    }
+
     /** Assignments where a customer specifically requested this reader */
     public function requestedAssignments(): HasMany
     {

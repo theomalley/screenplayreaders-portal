@@ -114,6 +114,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/script/download-link', [\App\Http\Controllers\ScriptDownloadController::class, 'store'])->name('script-downloads.store');
     Route::post('script-downloads/{scriptDownload}/reset', [\App\Http\Controllers\ScriptDownloadController::class, 'reset'])->name('script-downloads.reset');
     Route::get('assignments/{assignment}/coverage-pdf', [AssignmentController::class, 'streamCoverage'])->name('assignments.streamCoverage');
+    Route::get('assignments/{assignment}/recording', [AssignmentController::class, 'streamRecording'])->name('assignments.streamRecording');
     Route::post('assignments/{assignment}/script', [AssignmentController::class, 'uploadScript'])->name('assignments.uploadScript');
     Route::post('assignments/{assignment}/remove-pages', [AssignmentController::class, 'removePages'])->name('assignments.removePages');
     Route::post('assignments/{assignment}/script/unlock', [AssignmentController::class, 'unlockScript'])->name('assignments.unlockScript');
@@ -264,6 +265,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'index'])->name('test-data.index');
         Route::post('/admin/test-data/script', [\App\Http\Controllers\TestDataController::class, 'saveTestScript'])->name('test-data.script');
         Route::post('/admin/test-data/seed', [\App\Http\Controllers\TestDataController::class, 'seed'])->name('test-data.seed');
+        Route::post('/admin/test-data/video-consulting-booking', [\App\Http\Controllers\TestDataController::class, 'createTestVideoConsultingBooking'])->name('test-data.video-consulting-booking');
         Route::post('/admin/test-data/reset', [\App\Http\Controllers\TestDataController::class, 'reset'])->name('test-data.reset');
         Route::delete('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'destroy'])->name('test-data.destroy');
         Route::post('/admin/test-data/auto-reset', [\App\Http\Controllers\TestDataController::class, 'toggleAutoReset'])->name('test-data.auto-reset');
@@ -311,6 +313,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/regenerate-pdf', [QcController::class, 'regeneratePdf'])->name('qc.regenerate-pdf');
     Route::post('/qc/{assignment}/approve', [QcController::class, 'approve'])->name('qc.approve');
     Route::post('/qc/{assignment}/send-back', [QcController::class, 'sendBack'])->name('qc.send-back');
+    Route::post('/qc/{assignment}/transcript', [QcController::class, 'saveTranscript'])->name('qc.save-transcript');
     Route::post('/qc/{assignment}/draft-now', [QcController::class, 'draftNow'])->name('qc.draft-now');
     Route::post('/qc/{assignment}/draft-all', [QcController::class, 'draftAll'])->name('qc.draft-all');
 

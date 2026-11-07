@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\StaffProfileController;
 use App\Http\Controllers\Api\UploadSettingsController;
 use App\Http\Controllers\Api\VideoConsultingBookingController;
 use App\Http\Controllers\Api\VideoConsultingDurationController;
+use App\Http\Controllers\Api\WherebyWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // PORTAL INTEGRATION: called by WordPress sr-upload-system.php after customer checkout + script upload
@@ -46,6 +47,10 @@ Route::post('/helpscout-conversation', [HelpScoutConversationController::class, 
 // NOTE: authenticated via HMAC signature (X-HelpScout-Signature), not the shared portal
 // secret — this is a different provider/mechanism, so 'portal.secret' does not apply here.
 Route::post('/helpscout-webhook', [HelpScoutWebhookController::class, 'store'])->middleware('throttle:60,1');
+
+// WHEREBY INTEGRATION: webhook fired by Whereby when a video consulting call's cloud
+// recording finishes. Authenticated via its own Whereby-Signature header, not portal.secret.
+Route::post('/whereby-webhook', [WherebyWebhookController::class, 'store'])->middleware('throttle:60,1');
 
 // WOOCOMMERCE INTEGRATION: called by woo_order-financials.php (priority 15) on order completion — stores financials
 Route::post('/order-revenue', [OrderRevenueController::class, 'store'])->middleware(['throttle:30,1', 'portal.secret']);

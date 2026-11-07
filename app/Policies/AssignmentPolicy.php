@@ -185,6 +185,12 @@ class AssignmentPolicy
         return $user->canManageAssignments();
     }
 
+    /** Video consulting recording playback — same reviewer access as streamCoverage(). */
+    public function streamRecording(User $user, Assignment $assignment): bool
+    {
+        return $user->canManageAssignments();
+    }
+
     public function dismissHelpscoutDraft(User $user, Assignment $assignment): bool
     {
         return $user->canManageAssignments();

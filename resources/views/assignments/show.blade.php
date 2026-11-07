@@ -11,6 +11,12 @@
                         &middot; <span class="text-amber-600 font-medium">Rush</span>
                     @endif
                 </p>
+                @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->whereby_room_url)
+                    <a href="{{ $assignment->whereby_room_url }}" target="_blank"
+                       class="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
+                        Join Call ↗
+                    </a>
+                @endif
             </div>
             <a href="{{ route('assignments.index') }}"
                class="text-sm text-gray-500 hover:text-gray-700">&larr; Assignments</a>
