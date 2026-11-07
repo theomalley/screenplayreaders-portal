@@ -1,5 +1,8 @@
 <?php
 
+// v1.32 — 2026-11-09 | Video consulting Phase 3 — add video_consulting_customer_email/
+//                      video_consulting_needs_attention_reason and rescheduleOffers() relation
+//                      for reader-initiated cancel/no-show/reschedule.
 // v1.31 — 2026-11-07 | Video consulting Phase 2 — add TYPE_VIDEO_CONSULTING,
 //                      video_consulting_hold_id/whereby_room_url/whereby_room_name/
 //                      video_consulting_recording_path/video_consulting_transcript, and guard
@@ -139,6 +142,8 @@ class Assignment extends Model
         'whereby_room_name',
         'video_consulting_recording_path',
         'video_consulting_transcript',
+        'video_consulting_customer_email',
+        'video_consulting_needs_attention_reason',
         'reader_declined',
         'available_at',
         'exempt_from_word_counts',
@@ -569,6 +574,11 @@ class Assignment extends Model
     public function videoConsultingHold(): BelongsTo
     {
         return $this->belongsTo(VideoConsultingHold::class, 'video_consulting_hold_id');
+    }
+
+    public function rescheduleOffers(): HasMany
+    {
+        return $this->hasMany(VideoConsultingRescheduleOffer::class, 'assignment_id');
     }
 
     public function helpscoutConversation(): HasOne

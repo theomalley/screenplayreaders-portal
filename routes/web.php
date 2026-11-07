@@ -52,6 +52,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/followup/{token}',  [FollowupFormController::class, 'show'])->name('followup.show');
 Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->name('followup.submit');
 
+// Public video consulting reschedule offer — no auth required
+Route::get('/video-consulting-reschedule/{token}',           [\App\Http\Controllers\VideoConsultingRescheduleOfferController::class, 'show'])->name('video-consulting-reschedule-offer.show');
+Route::post('/video-consulting-reschedule/{token}',          [\App\Http\Controllers\VideoConsultingRescheduleOfferController::class, 'submit'])->name('video-consulting-reschedule-offer.submit');
+Route::get('/video-consulting-reschedule/{token}/confirmed', [\App\Http\Controllers\VideoConsultingRescheduleOfferController::class, 'confirmed'])->name('video-consulting-reschedule-offer.confirmed');
+
 // Tokenized admin quick-login (public, rate-limited)
 Route::get('/ql/{token}', [\App\Http\Controllers\QuickLoginController::class, 'login'])->name('quick-login');
 
@@ -127,6 +132,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/followup-reset', [AssignmentController::class, 'resetFollowupToken'])->name('assignments.followup-reset');
     Route::post('assignments/{assignment}/decline', [AssignmentController::class, 'decline'])->name('assignments.decline');
     Route::post('assignments/{assignment}/cancel', [AssignmentController::class, 'cancel'])->name('assignments.cancel');
+    Route::post('video-consulting-bookings/{assignment}/cancel', [\App\Http\Controllers\VideoConsultingCancellationController::class, 'store'])->name('video-consulting-booking.cancel');
+    Route::post('video-consulting-bookings/{assignment}/no-show', [\App\Http\Controllers\VideoConsultingNoShowController::class, 'report'])->name('video-consulting-booking.no-show.report');
+    Route::get('video-consulting-bookings/{assignment}/reschedule', [\App\Http\Controllers\VideoConsultingRescheduleController::class, 'create'])->name('video-consulting-reschedule.create');
+    Route::post('video-consulting-bookings/{assignment}/reschedule', [\App\Http\Controllers\VideoConsultingRescheduleController::class, 'store'])->name('video-consulting-reschedule.store');
     Route::patch('assignments/{assignment}/status', [AssignmentController::class, 'updateStatus'])->name('assignments.updateStatus');
     Route::patch('assignments/{assignment}/notes', [AssignmentController::class, 'updateNotes'])->name('assignments.updateNotes');
     Route::post('assignments/{assignment}/dismiss-helpscout-draft', [AssignmentController::class, 'dismissHelpscoutDraft'])->name('assignments.dismissHelpscoutDraft');
@@ -314,6 +323,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/qc/{assignment}/approve', [QcController::class, 'approve'])->name('qc.approve');
     Route::post('/qc/{assignment}/send-back', [QcController::class, 'sendBack'])->name('qc.send-back');
     Route::post('/qc/{assignment}/transcript', [QcController::class, 'saveTranscript'])->name('qc.save-transcript');
+    Route::post('/qc/{assignment}/video-consulting/no-show/confirm', [\App\Http\Controllers\VideoConsultingNoShowController::class, 'confirm'])->name('video-consulting-booking.no-show.confirm');
+    Route::post('/qc/{assignment}/video-consulting/no-show/dismiss', [\App\Http\Controllers\VideoConsultingNoShowController::class, 'dismiss'])->name('video-consulting-booking.no-show.dismiss');
     Route::post('/qc/{assignment}/draft-now', [QcController::class, 'draftNow'])->name('qc.draft-now');
     Route::post('/qc/{assignment}/draft-all', [QcController::class, 'draftAll'])->name('qc.draft-all');
 

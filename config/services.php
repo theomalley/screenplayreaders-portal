@@ -88,6 +88,10 @@ return [
         'budget_template_id'        => env('MAILERSEND_BUDGET_TEMPLATE_ID', ''),
         'registration_template_id'  => env('MAILERSEND_REGISTRATION_TEMPLATE_ID', 'pq3enl6dozrg2vwr'),
         'qc_needs_attention_template_id' => env('MAILERSEND_QC_NEEDS_ATTENTION_TEMPLATE_ID', 'pxkjn4138jqgz781'),
+        'video_consulting_cancelled_template_id'           => env('MAILERSEND_VIDEO_CONSULTING_CANCELLED_TEMPLATE_ID', ''),
+        'video_consulting_reschedule_offer_template_id'    => env('MAILERSEND_VIDEO_CONSULTING_RESCHEDULE_OFFER_TEMPLATE_ID', ''),
+        'video_consulting_reschedule_confirmed_template_id' => env('MAILERSEND_VIDEO_CONSULTING_RESCHEDULE_CONFIRMED_TEMPLATE_ID', ''),
+        'video_consulting_admin_alert_template_id'         => env('MAILERSEND_VIDEO_CONSULTING_ADMIN_ALERT_TEMPLATE_ID', ''),
     ],
 
 ];

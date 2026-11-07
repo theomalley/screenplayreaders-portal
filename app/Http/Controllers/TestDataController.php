@@ -131,9 +131,10 @@ class TestDataController extends Controller
         $this->authorize('manage-test-data');
 
         $data = $request->validate([
-            'reader_id'   => ['required', 'integer', 'exists:users,id'],
-            'duration_id' => ['required', 'integer', 'exists:video_consulting_durations,id'],
-            'slot_start'  => ['nullable', 'date'],
+            'reader_id'      => ['required', 'integer', 'exists:users,id'],
+            'duration_id'    => ['required', 'integer', 'exists:video_consulting_durations,id'],
+            'slot_start'     => ['nullable', 'date'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
         ]);
 
         $rate = ReaderVideoConsultingRate::where('reader_id', $data['reader_id'])
@@ -168,6 +169,7 @@ class TestDataController extends Controller
             'requested_reader_id'      => $reader->id,
             'is_test'                  => true,
             'video_consulting_hold_id' => $hold->id,
+            'video_consulting_customer_email' => $data['customer_email'] ?? null,
             'unassigned_at'            => now(),
         ]);
 
@@ -212,7 +214,11 @@ class TestDataController extends Controller
             'whereby_room_name'                => null,
             'video_consulting_recording_path'  => null,
             'video_consulting_transcript'      => null,
+            'video_consulting_needs_attention_reason' => null,
+            'cancellation_reason'              => null,
         ]);
+
+        DB::table('video_consulting_reschedule_offers')->whereIn('assignment_id', $testIds)->delete();
 
         $count = $testIds->count();
 

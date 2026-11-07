@@ -191,6 +191,30 @@ class AssignmentPolicy
         return $user->canManageAssignments();
     }
 
+    /** Reader (or admin/editor) cancelling their own accepted video-consulting booking. */
+    public function cancelVideoConsulting(User $user, Assignment $assignment): bool
+    {
+        return $assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING
+            && $assignment->status === Assignment::STATUS_ASSIGNED
+            && ($assignment->assigned_reader_id === $user->id || $user->canManageAssignments());
+    }
+
+    /** Reader (or admin/editor) reporting a video-consulting no-show or proposing a reschedule. */
+    public function manageVideoConsultingBooking(User $user, Assignment $assignment): bool
+    {
+        return $assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING
+            && $assignment->status === Assignment::STATUS_ASSIGNED
+            && ($assignment->assigned_reader_id === $user->id || $user->canManageAssignments());
+    }
+
+    /** Admin/editor confirming or dismissing a video-consulting Needs Attention item. */
+    public function resolveVideoConsultingAttention(User $user, Assignment $assignment): bool
+    {
+        return $user->canManageAssignments()
+            && $assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING
+            && $assignment->status === Assignment::STATUS_NEEDS_ATTENTION;
+    }
+
     public function dismissHelpscoutDraft(User $user, Assignment $assignment): bool
     {
         return $user->canManageAssignments();

@@ -36,3 +36,7 @@ Schedule::command('tiers:escalate-timeouts')->hourly()->withoutOverlapping();
 // Release expired, unconverted video consulting slot holds (TTL backstop).
 Schedule::command('video-consulting:release-expired-holds')->everyMinute()->withoutOverlapping();
 // 2026-11-07
+
+// Flag video-consulting bookings whose reschedule offer expired without a customer response.
+Schedule::command('video-consulting:escalate-reschedule-deadlines')->hourly()->withoutOverlapping();
+// 2026-11-09

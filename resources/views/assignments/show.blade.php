@@ -370,6 +370,33 @@
                         Submit Coverage
                     </a>
                 @endcan
+
+                @can('manageVideoConsultingBooking', $assignment)
+                    <a href="{{ route('video-consulting-reschedule.create', $assignment) }}"
+                       class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50">
+                        Reschedule
+                    </a>
+
+                    <form method="POST" action="{{ route('video-consulting-booking.cancel', $assignment) }}">
+                        @csrf
+                        <button type="submit"
+                                onclick="return confirm('Cancel this video consulting call? The customer will be notified.')"
+                                class="px-4 py-2 bg-red-50 text-red-700 text-sm font-medium rounded hover:bg-red-100">
+                            Cancel This Call
+                        </button>
+                    </form>
+
+                    @if ($assignment->videoConsultingHold?->slot_end?->isPast())
+                        <form method="POST" action="{{ route('video-consulting-booking.no-show.report', $assignment) }}">
+                            @csrf
+                            <button type="submit"
+                                    onclick="return confirm('Report that the customer did not join this call?')"
+                                    class="px-4 py-2 bg-orange-50 text-orange-700 text-sm font-medium rounded hover:bg-orange-100">
+                                Report No-Show
+                            </button>
+                        </form>
+                    @endif
+                @endcan
             </div>
         @endif
 

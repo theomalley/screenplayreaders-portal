@@ -10,6 +10,11 @@
                 QC Review — #{{ $assignment->order_number }}
                 @if($assignment->status === \App\Models\Assignment::STATUS_NEEDS_ATTENTION)
                     <span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 tracking-wide">NEEDS ATTENTION</span>
+                    @if($assignment->video_consulting_needs_attention_reason === 'no_show_reported_by_reader')
+                        <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 tracking-wide">NO-SHOW REPORTED</span>
+                    @elseif($assignment->video_consulting_needs_attention_reason === 'reschedule_deadline_expired')
+                        <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 tracking-wide">RESCHEDULE EXPIRED</span>
+                    @endif
                 @endif
                 @if($assignment->rush)
                     <span class="ml-2 text-sm font-bold text-amber-600 uppercase tracking-wide">Rush</span>
@@ -147,8 +152,8 @@
 
                 <div class="flex-1"></div>
 
-                {{-- Send Back to Reader (only from the QC queue — an already-returned coverage is sent back via re-editing the notes below) --}}
-                @if($assignment->status === \App\Models\Assignment::STATUS_QC)
+                {{-- Send Back to Reader (only from the QC queue — an already-returned coverage is sent back via re-editing the notes below). Not applicable to video consulting — there's no "revise and resubmit" for a call recording. --}}
+                @if($assignment->status === \App\Models\Assignment::STATUS_QC && $assignment->assignment_type !== \App\Models\Assignment::TYPE_VIDEO_CONSULTING)
                     <button type="button" @click="sendBackOpen = true"
                         class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,18 +163,37 @@
                     </button>
                 @endif
 
-                {{-- Approve (also delivers directly when reviewing/editing a Needs Attention item yourself) --}}
-                <form method="POST" action="{{ route('qc.approve', $assignment) }}"
-                    @submit="if (!confirm('Approve #{{ $assignment->order_number }} and mark as complete?')) { $event.preventDefault(); return; } approving = true">
-                    @csrf
-                    <button type="submit"
-                        class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        {{ $assignment->status === \App\Models\Assignment::STATUS_NEEDS_ATTENTION ? 'Approve & Deliver' : 'Approve' }}
-                    </button>
-                </form>
+                {{-- Video consulting Needs Attention (no-show report / expired reschedule offer): confirm or dismiss instead of Approve --}}
+                @if($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->status === \App\Models\Assignment::STATUS_NEEDS_ATTENTION)
+                    <form method="POST" action="{{ route('video-consulting-booking.no-show.dismiss', $assignment) }}">
+                        @csrf
+                        <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors">
+                            Dismiss — Back to Assigned
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('video-consulting-booking.no-show.confirm', $assignment) }}">
+                        @csrf
+                        <button type="submit"
+                            onclick="return confirm('Confirm no-show? This cancels the booking and zeroes the reader\'s pay for it. You will still need to update the reader\'s tiers by hand if suspension is warranted.')"
+                            class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors">
+                            Confirm No-Show
+                        </button>
+                    </form>
+                @else
+                    {{-- Approve (also delivers directly when reviewing/editing a Needs Attention item yourself) --}}
+                    <form method="POST" action="{{ route('qc.approve', $assignment) }}"
+                        @submit="if (!confirm('Approve #{{ $assignment->order_number }} and mark as complete?')) { $event.preventDefault(); return; } approving = true">
+                        @csrf
+                        <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {{ $assignment->status === \App\Models\Assignment::STATUS_NEEDS_ATTENTION ? 'Approve & Deliver' : 'Approve' }}
+                        </button>
+                    </form>
+                @endif
             </div>
 
             {{-- Send Back modal --}}
