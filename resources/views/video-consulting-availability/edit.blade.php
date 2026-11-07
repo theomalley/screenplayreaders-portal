@@ -5,6 +5,14 @@
 
     @php
         $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        $timeOptions = [];
+        for ($h = 0; $h < 24; $h++) {
+            foreach ([0, 15, 30, 45] as $m) {
+                $value = sprintf('%02d:%02d', $h, $m);
+                $timeOptions[$value] = \Carbon\Carbon::createFromFormat('H:i', $value)->format('g:i A');
+            }
+        }
     @endphp
 
     <div class="py-6">
@@ -34,7 +42,13 @@
                     <p class="text-sm text-gray-500">Weekly recurring hours you're available for video consulting calls.</p>
 
                     @foreach ($dayNames as $dayOfWeek => $dayName)
-                        @php $rule = $rules->get($dayOfWeek); @endphp
+                        @php
+                            $rule = $rules->get($dayOfWeek);
+                            $startVal = old("days.$dayOfWeek.start_time", $rule?->start_time);
+                            $startVal = $startVal ? substr($startVal, 0, 5) : '';
+                            $endVal = old("days.$dayOfWeek.end_time", $rule?->end_time);
+                            $endVal = $endVal ? substr($endVal, 0, 5) : '';
+                        @endphp
                         <div class="flex items-center gap-3">
                             <label class="flex items-center gap-2 w-32 cursor-pointer">
                                 <input type="checkbox" name="days[{{ $dayOfWeek }}][enabled]" value="1"
@@ -42,13 +56,21 @@
                                        class="rounded text-indigo-600 focus:ring-indigo-500" />
                                 <span class="text-sm font-medium text-gray-700">{{ $dayName }}</span>
                             </label>
-                            <input type="time" name="days[{{ $dayOfWeek }}][start_time]" step="900"
-                                   value="{{ old("days.$dayOfWeek.start_time", $rule?->start_time) }}"
-                                   class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            <select name="days[{{ $dayOfWeek }}][start_time]"
+                                    class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">--:--</option>
+                                @foreach ($timeOptions as $val => $label)
+                                    <option value="{{ $val }}" {{ $startVal === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
                             <span class="text-gray-400 text-sm">to</span>
-                            <input type="time" name="days[{{ $dayOfWeek }}][end_time]" step="900"
-                                   value="{{ old("days.$dayOfWeek.end_time", $rule?->end_time) }}"
-                                   class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            <select name="days[{{ $dayOfWeek }}][end_time]"
+                                    class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">--:--</option>
+                                @foreach ($timeOptions as $val => $label)
+                                    <option value="{{ $val }}" {{ $endVal === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     @endforeach
 
