@@ -6,13 +6,11 @@
     @php
         $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-        $timeOptions = [];
+        $hourOptions = [];
         for ($h = 0; $h < 24; $h++) {
-            foreach ([0, 15, 30, 45] as $m) {
-                $value = sprintf('%02d:%02d', $h, $m);
-                $timeOptions[$value] = \Carbon\Carbon::createFromFormat('H:i', $value)->format('g:i A');
-            }
+            $hourOptions[$h] = \Carbon\Carbon::createFromTime($h, 0)->format('g A');
         }
+        $minuteOptions = ['00' => ':00', '15' => ':15', '30' => ':30', '45' => ':45'];
     @endphp
 
     <div class="py-6">
@@ -44,33 +42,64 @@
                     @foreach ($dayNames as $dayOfWeek => $dayName)
                         @php
                             $rule = $rules->get($dayOfWeek);
+
                             $startVal = old("days.$dayOfWeek.start_time", $rule?->start_time);
                             $startVal = $startVal ? substr($startVal, 0, 5) : '';
+                            [$startHourRaw, $startMinute] = $startVal ? explode(':', $startVal) : ['', ''];
+                            $startHour = $startHourRaw !== '' ? (int) $startHourRaw : '';
+
                             $endVal = old("days.$dayOfWeek.end_time", $rule?->end_time);
                             $endVal = $endVal ? substr($endVal, 0, 5) : '';
+                            [$endHourRaw, $endMinute] = $endVal ? explode(':', $endVal) : ['', ''];
+                            $endHour = $endHourRaw !== '' ? (int) $endHourRaw : '';
                         @endphp
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 flex-wrap">
                             <label class="flex items-center gap-2 w-32 cursor-pointer">
                                 <input type="checkbox" name="days[{{ $dayOfWeek }}][enabled]" value="1"
                                        {{ old("days.$dayOfWeek.enabled", $rule?->enabled ? '1' : '') ? 'checked' : '' }}
                                        class="rounded text-indigo-600 focus:ring-indigo-500" />
                                 <span class="text-sm font-medium text-gray-700">{{ $dayName }}</span>
                             </label>
-                            <select name="days[{{ $dayOfWeek }}][start_time]"
-                                    class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">--:--</option>
-                                @foreach ($timeOptions as $val => $label)
-                                    <option value="{{ $val }}" {{ $startVal === $val ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
+
+                            <input type="hidden" name="days[{{ $dayOfWeek }}][start_time]" value="{{ $startVal }}"
+                                   class="svc-avail-hidden" data-day="{{ $dayOfWeek }}" data-field="start" />
+                            <div class="flex items-center gap-1">
+                                <select class="svc-avail-hour border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        data-day="{{ $dayOfWeek }}" data-field="start">
+                                    <option value="">--</option>
+                                    @foreach ($hourOptions as $val => $label)
+                                        <option value="{{ $val }}" {{ $startHour === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <select class="svc-avail-minute border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        data-day="{{ $dayOfWeek }}" data-field="start">
+                                    <option value="">--</option>
+                                    @foreach ($minuteOptions as $val => $label)
+                                        <option value="{{ $val }}" {{ $startMinute === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <span class="text-gray-400 text-sm">to</span>
-                            <select name="days[{{ $dayOfWeek }}][end_time]"
-                                    class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">--:--</option>
-                                @foreach ($timeOptions as $val => $label)
-                                    <option value="{{ $val }}" {{ $endVal === $val ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
+
+                            <input type="hidden" name="days[{{ $dayOfWeek }}][end_time]" value="{{ $endVal }}"
+                                   class="svc-avail-hidden" data-day="{{ $dayOfWeek }}" data-field="end" />
+                            <div class="flex items-center gap-1">
+                                <select class="svc-avail-hour border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        data-day="{{ $dayOfWeek }}" data-field="end">
+                                    <option value="">--</option>
+                                    @foreach ($hourOptions as $val => $label)
+                                        <option value="{{ $val }}" {{ $endHour === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <select class="svc-avail-minute border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        data-day="{{ $dayOfWeek }}" data-field="end">
+                                    <option value="">--</option>
+                                    @foreach ($minuteOptions as $val => $label)
+                                        <option value="{{ $val }}" {{ $endMinute === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                     @endforeach
 
@@ -127,4 +156,27 @@
             </div>
         </div>
     </div>
+
+    <script>
+    (function(){
+        function syncField(day, field) {
+            var hourSel = document.querySelector('.svc-avail-hour[data-day="' + day + '"][data-field="' + field + '"]');
+            var minSel  = document.querySelector('.svc-avail-minute[data-day="' + day + '"][data-field="' + field + '"]');
+            var hidden  = document.querySelector('.svc-avail-hidden[data-day="' + day + '"][data-field="' + field + '"]');
+            if (!hourSel || !minSel || !hidden) return;
+
+            if (hourSel.value === '' || minSel.value === '') {
+                hidden.value = '';
+                return;
+            }
+            hidden.value = ('0' + hourSel.value).slice(-2) + ':' + minSel.value;
+        }
+
+        document.querySelectorAll('.svc-avail-hour, .svc-avail-minute').forEach(function(sel){
+            sel.addEventListener('change', function(){
+                syncField(sel.dataset.day, sel.dataset.field);
+            });
+        });
+    })();
+    </script>
 </x-app-layout>
