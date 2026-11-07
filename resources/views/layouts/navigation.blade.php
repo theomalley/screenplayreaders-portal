@@ -248,6 +248,12 @@
                             <x-nav-link :href="route('reader-earnings.index')" :active="request()->routeIs('reader-earnings.*')">
                                 {{ __('Earnings') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('video-consulting-rate.edit')" :active="request()->routeIs('video-consulting-rate.*')">
+                                {{ __('Consulting Rate') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('video-consulting-availability.edit')" :active="request()->routeIs('video-consulting-availability.*')">
+                                {{ __('Consulting Availability') }}
+                            </x-nav-link>
                         @endif
                         @if(\App\Support\Permission::check('ratebook'))
                             <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
@@ -428,6 +434,12 @@
                 @if(auth()->user()?->isReader())
                     <x-responsive-nav-link :href="route('reader-earnings.index')" :active="request()->routeIs('reader-earnings.*')">
                         {{ __('Earnings') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('video-consulting-rate.edit')" :active="request()->routeIs('video-consulting-rate.*')">
+                        {{ __('Consulting Rate') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('video-consulting-availability.edit')" :active="request()->routeIs('video-consulting-availability.*')">
+                        {{ __('Consulting Availability') }}
                     </x-responsive-nav-link>
                 @endif
                 @if(\App\Support\Permission::check('ratebook'))

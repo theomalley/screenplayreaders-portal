@@ -37,6 +37,8 @@ use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\KarenController;
 use App\Http\Controllers\UrlBuilderController;
+use App\Http\Controllers\VideoConsultingAvailabilityController;
+use App\Http\Controllers\VideoConsultingRateController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReadCreditController;
 use App\Http\Controllers\BudgetOrderController;
@@ -91,6 +93,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/availability', [AvailabilityController::class, 'edit'])->name('availability.edit');
     Route::patch('/availability', [AvailabilityController::class, 'update'])->name('availability.update');
+
+    Route::get('/video-consulting-rate', [VideoConsultingRateController::class, 'edit'])->name('video-consulting-rate.edit');
+    Route::patch('/video-consulting-rate', [VideoConsultingRateController::class, 'update'])->name('video-consulting-rate.update');
+
+    Route::get('/video-consulting-availability', [VideoConsultingAvailabilityController::class, 'edit'])->name('video-consulting-availability.edit');
+    Route::patch('/video-consulting-availability', [VideoConsultingAvailabilityController::class, 'update'])->name('video-consulting-availability.update');
+    Route::post('/video-consulting-availability/blackouts', [VideoConsultingAvailabilityController::class, 'storeBlackout'])->name('video-consulting-availability.blackouts.store');
+    Route::delete('/video-consulting-availability/blackouts/{blackout}', [VideoConsultingAvailabilityController::class, 'destroyBlackout'])->name('video-consulting-availability.blackouts.destroy');
 
     Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
     Route::get('assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');

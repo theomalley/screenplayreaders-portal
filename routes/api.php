@@ -8,10 +8,29 @@ use App\Http\Controllers\Api\ReadCreditApiController;
 use App\Http\Controllers\Api\ReadersController;
 use App\Http\Controllers\Api\StaffProfileController;
 use App\Http\Controllers\Api\UploadSettingsController;
+use App\Http\Controllers\Api\VideoConsultingBookingController;
+use App\Http\Controllers\Api\VideoConsultingDurationController;
 use Illuminate\Support\Facades\Route;
 
 // PORTAL INTEGRATION: called by WordPress sr-upload-system.php after customer checkout + script upload
 Route::post('/incoming-assignment', [IncomingAssignmentController::class, 'store'])->middleware(['throttle:30,1', 'portal.secret']);
+
+// PORTAL INTEGRATION: called by the theme's "Tools -> SR Video Consulting" admin page (Phase 4)
+Route::middleware(['throttle:60,1', 'portal.secret'])->prefix('video-consulting/admin/durations')->group(function () {
+    Route::get('/', [VideoConsultingDurationController::class, 'index']);
+    Route::post('/', [VideoConsultingDurationController::class, 'store']);
+    Route::patch('/{duration}', [VideoConsultingDurationController::class, 'update']);
+    Route::delete('/{duration}', [VideoConsultingDurationController::class, 'destroy']);
+});
+
+// PORTAL INTEGRATION: called server-side by the theme's video consulting booking widget (Phase 5)
+Route::middleware(['throttle:60,1', 'portal.secret'])->prefix('video-consulting')->group(function () {
+    Route::get('/durations', [VideoConsultingBookingController::class, 'durations']);
+    Route::get('/readers/{reader}/rates', [VideoConsultingBookingController::class, 'readerRates']);
+    Route::get('/available-slots', [VideoConsultingBookingController::class, 'availableSlots']);
+    Route::post('/holds', [VideoConsultingBookingController::class, 'createHold'])->middleware('throttle:20,1');
+    Route::delete('/holds/{holdToken}', [VideoConsultingBookingController::class, 'releaseHold']);
+});
 
 // PORTAL INTEGRATION: called by WordPress sr-upload-system.php to populate the reader dropdown
 Route::get('/readers', [ReadersController::class, 'index'])->middleware(['throttle:60,1', 'portal.secret']);

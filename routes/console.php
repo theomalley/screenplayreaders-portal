@@ -32,3 +32,7 @@ Schedule::command('helpscout:reconcile-conversation-ids')->daily()->withoutOverl
 // Transfer unaccepted assignments to their configured next tier once a tier's timeout elapses.
 Schedule::command('tiers:escalate-timeouts')->hourly()->withoutOverlapping();
 // 2026-07-20
+
+// Release expired, unconverted video consulting slot holds (TTL backstop).
+Schedule::command('video-consulting:release-expired-holds')->everyMinute()->withoutOverlapping();
+// 2026-11-07
