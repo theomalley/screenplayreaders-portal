@@ -63,8 +63,9 @@
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Video Consulting</h3>
                 <p class="text-xs text-gray-500 mb-4">
-                    Sitewide on/off switch for the video consulting feature. Turning this off hides the
-                    Consulting tab for every reader, regardless of their own per-reader setting (Readers &gt; edit profile).
+                    Sitewide default for the video consulting feature. Turning this off hides the Consulting
+                    tab for every reader <strong>except</strong> ones an admin has explicitly set to "Always enabled"
+                    on their profile (Readers &gt; edit profile) — that per-reader override always wins over this setting.
                 </p>
                 <form method="POST" action="{{ route('settings.video-consulting') }}">
                     @csrf

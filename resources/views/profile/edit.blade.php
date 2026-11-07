@@ -675,12 +675,20 @@
                                         class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                     <span class="text-sm text-gray-600">Watermark viewed/downloaded scripts</span>
                                 </label>
-                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                                    <input type="checkbox" name="video_consulting_enabled" value="1"
-                                        {{ old('video_consulting_enabled', $profile?->video_consulting_enabled ?? true) ? 'checked' : '' }}
-                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
-                                    <span class="text-sm text-gray-600">Video consulting enabled for this reader</span>
-                                </label>
+                                @php
+                                    $videoConsultingOverride = match ($profile?->video_consulting_enabled) {
+                                        true => 'enabled', false => 'disabled', default => 'default',
+                                    };
+                                @endphp
+                                <div class="mt-2">
+                                    <label for="video_consulting_enabled" class="block text-xs text-gray-600 mb-1">Video consulting</label>
+                                    <select id="video_consulting_enabled" name="video_consulting_enabled"
+                                            class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        <option value="default" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'default')>Follow sitewide setting</option>
+                                        <option value="enabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'enabled')>Always enabled (overrides sitewide setting)</option>
+                                        <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Always disabled (overrides sitewide setting)</option>
+                                    </select>
+                                </div>
                             </div>
                             <div>
                                 <x-input-label for="paypal_email" value="PayPal Email" />

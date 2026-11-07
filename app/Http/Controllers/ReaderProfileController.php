@@ -1,5 +1,9 @@
 <?php
 
+// v1.17 — 2026-11-08 | video_consulting_enabled is now a tri-state override (null/true/false)
+//                      parsed from a 3-way select, not a checkbox — null means "follow the
+//                      sitewide setting" instead of being AND'd with it. See
+//                      App\Support\VideoConsultingAccess::enabledFor().
 // v1.16 — 2026-11-07 | Add video_consulting_enabled toggle to store()/update() — admin-only
 //                      per-reader kill switch for the video consulting feature. Defaults to
 //                      enabled for new readers. See App\Support\VideoConsultingAccess.
@@ -85,7 +89,7 @@ class ReaderProfileController extends Controller
 
         $data['requests_bypass_capacity']  = $request->boolean('requests_bypass_capacity');
         $data['watermark_enabled']         = $request->boolean('watermark_enabled');
-        $data['video_consulting_enabled']  = $request->boolean('video_consulting_enabled');
+        $data['video_consulting_enabled']  = $this->parseVideoConsultingOverride($request);
 
         $user = User::create([
             'name'     => $data['name'],
@@ -204,7 +208,7 @@ class ReaderProfileController extends Controller
         $data['is_1099']                  = $request->boolean('is_1099');
         if ($user->isReader()) {
             $data['watermark_enabled']        = $request->boolean('watermark_enabled');
-            $data['video_consulting_enabled'] = $request->boolean('video_consulting_enabled');
+            $data['video_consulting_enabled'] = $this->parseVideoConsultingOverride($request);
         }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(
@@ -262,5 +266,15 @@ class ReaderProfileController extends Controller
         $user->delete();
 
         return redirect()->route('team.index')->with('success', 'Reader deleted.');
+    }
+
+    /** 'default'|'enabled'|'disabled' select -> null|true|false for ReaderProfile::video_consulting_enabled. */
+    private function parseVideoConsultingOverride(Request $request): ?bool
+    {
+        return match ($request->input('video_consulting_enabled')) {
+            'enabled'  => true,
+            'disabled' => false,
+            default    => null,
+        };
     }
 }
