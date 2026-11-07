@@ -1,5 +1,9 @@
 <?php
 
+// v1.20 — 2026-11-07 | Add video_consulting_enabled — admin-only per-reader kill switch for the
+//                      video consulting feature. Defaults to true. See
+//                      App\Support\VideoConsultingAccess::enabledFor() for the combined
+//                      per-reader + sitewide check.
 // v1.19 — 2026-11-02 | Add per-reader SR pay-rate overrides (rate_script_coverage,
 //                      rate_notes_only, rate_deep_dive, rate_proofreading,
 //                      rate_oversized_121_160, rate_rush, rate_request) — each nullable,
@@ -77,6 +81,7 @@ class ReaderProfile extends Model
         'rate_request',
         'requests_bypass_capacity',
         'watermark_enabled',
+        'video_consulting_enabled',
         'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',
@@ -110,6 +115,7 @@ class ReaderProfile extends Model
         'is_1099'                  => 'boolean',
         'requests_bypass_capacity' => 'boolean',
         'watermark_enabled'        => 'boolean',
+        'video_consulting_enabled' => 'boolean',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',

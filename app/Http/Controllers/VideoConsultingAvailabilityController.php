@@ -9,6 +9,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReaderAvailabilityRule;
 use App\Models\ReaderBlackoutDate;
+use App\Support\VideoConsultingAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -18,7 +19,7 @@ class VideoConsultingAvailabilityController extends Controller
     public function edit(): View
     {
         $reader = auth()->user();
-        abort_unless($reader->isReader(), 404);
+        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
 
         $rules = ReaderAvailabilityRule::where('reader_id', $reader->id)->get()->keyBy('day_of_week');
         $blackouts = ReaderBlackoutDate::where('reader_id', $reader->id)->orderBy('start_at')->get();
@@ -29,7 +30,7 @@ class VideoConsultingAvailabilityController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $reader = auth()->user();
-        abort_unless($reader->isReader(), 404);
+        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
 
         $data = $request->validate([
             'days'              => ['array'],
@@ -65,7 +66,7 @@ class VideoConsultingAvailabilityController extends Controller
     public function storeBlackout(Request $request): RedirectResponse
     {
         $reader = auth()->user();
-        abort_unless($reader->isReader(), 404);
+        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
 
         $data = $request->validate([
             'start_at' => ['required', 'date'],

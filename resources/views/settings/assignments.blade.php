@@ -59,6 +59,29 @@
                 </form>
             </div>
 
+            {{-- Video Consulting --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Video Consulting</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Sitewide on/off switch for the video consulting feature. Turning this off hides the
+                    Consulting tab for every reader, regardless of their own per-reader setting (Readers &gt; edit profile).
+                </p>
+                <form method="POST" action="{{ route('settings.video-consulting') }}">
+                    @csrf
+                    @method('PATCH')
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="video_consulting_enabled" value="0" />
+                        <input type="checkbox" name="video_consulting_enabled" value="1"
+                               {{ $videoConsultingEnabled ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-700">Video consulting enabled sitewide</span>
+                    </label>
+                    <div class="mt-3">
+                        <x-primary-button>Save</x-primary-button>
+                    </div>
+                </form>
+            </div>
+
             @if($isAdmin)
 
             {{-- Assignment Age Colour Thresholds --}}

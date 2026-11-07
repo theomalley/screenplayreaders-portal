@@ -1,5 +1,9 @@
 <?php
 
+// v2.24 — 2026-11-07 | Add updateVideoConsultingEnabled() — sitewide on/off toggle for the
+//                     video consulting feature (combined with the per-reader toggle via
+//                     App\Support\VideoConsultingAccess); assignments() passes the current
+//                     flag to the view.
 // v2.23 — 2026-09-12 | testCompletionDraft()/testFollowupResponseDraft(): use the
 //                      test_helpscout_conversation_id sent by the "Send Test Draft" button
 //                      (the field's current value) instead of only the last-saved setting,
@@ -106,6 +110,7 @@ class SettingController extends Controller
         $capacityOverride                     = (int) Setting::getValue('capacity_override', 0);
         $capacityOverrideEffective             = \App\Models\ReaderProfile::globalDefaultCap();
         $capacityOverrideExcludesRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
+        $videoConsultingEnabled = \App\Support\VideoConsultingAccess::enabledGlobally();
         $ageThresholds     = Setting::getAgeThresholds();
         $ageThresholdTypes = Setting::AGE_THRESHOLD_TYPES;
         $watermarkSettings = $isAdmin ? Setting::getWatermarkSettings() : null;
@@ -122,6 +127,7 @@ class SettingController extends Controller
 
         return view('settings.assignments', compact(
             'isAdmin', 'capacityOverride', 'capacityOverrideEffective', 'capacityOverrideExcludesRushRequests',
+            'videoConsultingEnabled',
             'ageThresholds', 'ageThresholdTypes', 'watermarkSettings', 'filenameSuffixes',
             'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts', 'blockedReaderLimits',
         ));
@@ -263,6 +269,16 @@ class SettingController extends Controller
 
         return redirect()->route('settings.assignments')->with('success',
             "Default capacity set to {$effective} assignment" . ($effective === 1 ? '' : 's') . ' for all readers (individual overrides still apply).');
+    }
+
+    /** Sitewide kill switch for video consulting — see App\Support\VideoConsultingAccess. */
+    public function updateVideoConsultingEnabled(Request $request): RedirectResponse
+    {
+        $this->authorize('manage-settings');
+
+        Setting::setValue('video_consulting_enabled', $request->boolean('video_consulting_enabled') ? '1' : '0');
+
+        return redirect()->route('settings.assignments')->with('success', 'Video consulting setting updated.');
     }
 
     public function updateSessionTimeout(Request $request): RedirectResponse

@@ -10,6 +10,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReaderVideoConsultingRate;
 use App\Models\VideoConsultingDuration;
+use App\Support\VideoConsultingAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -19,7 +20,7 @@ class VideoConsultingRateController extends Controller
     public function edit(): View
     {
         $reader = auth()->user();
-        abort_unless($reader->isReader(), 404);
+        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
 
         $durations = VideoConsultingDuration::active()->get();
         $myRates = ReaderVideoConsultingRate::where('reader_id', $reader->id)->pluck('rate', 'duration_id');
@@ -30,7 +31,7 @@ class VideoConsultingRateController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $reader = auth()->user();
-        abort_unless($reader->isReader(), 404);
+        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
 
         $durations = VideoConsultingDuration::active()->get()->keyBy('id');
         $submitted = $request->input('rates', []);

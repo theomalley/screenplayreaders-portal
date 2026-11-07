@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\VideoConsultingDuration;
 use App\Models\VideoConsultingHold;
 use App\Services\VideoConsultingAvailabilityService;
+use App\Support\VideoConsultingAccess;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -34,6 +35,10 @@ class VideoConsultingBookingController extends Controller
     public function readerRates(User $reader): JsonResponse
     {
         abort_unless($reader->isReader(), 404);
+
+        if (! VideoConsultingAccess::enabledFor($reader)) {
+            return response()->json([]);
+        }
 
         $rates = ReaderVideoConsultingRate::where('reader_id', $reader->id)
             ->with('duration')
@@ -61,6 +66,11 @@ class VideoConsultingBookingController extends Controller
             'to'          => ['required', 'date', 'after:from'],
         ]);
 
+        $reader = User::find($data['reader_id']);
+        if (! VideoConsultingAccess::enabledFor($reader)) {
+            return response()->json([]);
+        }
+
         $slots = $availability->generateSlots(
             (int) $data['reader_id'],
             (int) $data['duration_id'],
@@ -85,6 +95,10 @@ class VideoConsultingBookingController extends Controller
         $duration = VideoConsultingDuration::active()->find($data['duration_id']);
         if (! $duration) {
             return response()->json(['message' => 'Duration is not available.'], 422);
+        }
+
+        if (! VideoConsultingAccess::enabledFor(User::find($data['reader_id']))) {
+            return response()->json(['message' => 'This reader is not currently accepting video consulting bookings.'], 422);
         }
 
         $hasRate = ReaderVideoConsultingRate::where('reader_id', $data['reader_id'])

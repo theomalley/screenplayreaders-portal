@@ -251,6 +251,7 @@
 
                             {{-- Video consulting dropdown --}}
                             @php $consultingActive = request()->routeIs('video-consulting-rate.*') || request()->routeIs('video-consulting-availability.*'); @endphp
+                            @if(\App\Support\VideoConsultingAccess::enabledFor(auth()->user()))
                             <div class="relative flex items-center"
                                  x-data="{ consultingOpen: false }"
                                  @mouseenter="consultingOpen = true"
@@ -274,6 +275,7 @@
                                     </a>
                                 </div>
                             </div>
+                            @endif
                         @endif
                         @if(\App\Support\Permission::check('ratebook'))
                             <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
@@ -455,12 +457,14 @@
                     <x-responsive-nav-link :href="route('reader-earnings.index')" :active="request()->routeIs('reader-earnings.*')">
                         {{ __('Earnings') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('video-consulting-rate.edit')" :active="request()->routeIs('video-consulting-rate.*')">
-                        {{ __('Consulting Rate') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('video-consulting-availability.edit')" :active="request()->routeIs('video-consulting-availability.*')">
-                        {{ __('Consulting Availability') }}
-                    </x-responsive-nav-link>
+                    @if(\App\Support\VideoConsultingAccess::enabledFor(auth()->user()))
+                        <x-responsive-nav-link :href="route('video-consulting-rate.edit')" :active="request()->routeIs('video-consulting-rate.*')">
+                            {{ __('Consulting Rate') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('video-consulting-availability.edit')" :active="request()->routeIs('video-consulting-availability.*')">
+                            {{ __('Consulting Availability') }}
+                        </x-responsive-nav-link>
+                    @endif
                 @endif
                 @if(\App\Support\Permission::check('ratebook'))
                     <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">

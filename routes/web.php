@@ -166,6 +166,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/settings/coverage-success', [SettingController::class, 'editCoverageSuccess'])->name('settings.coverage-success');
     Route::patch('/settings/coverage-success', [SettingController::class, 'updateCoverageSuccess'])->name('settings.coverage-success.update');
     Route::patch('/settings/capacity-override', [SettingController::class, 'updateCapacityOverride'])->name('settings.capacity-override');
+    Route::patch('/settings/video-consulting', [SettingController::class, 'updateVideoConsultingEnabled'])->name('settings.video-consulting');
     Route::patch('/settings/session-timeout', [SettingController::class, 'updateSessionTimeout'])->name('settings.session-timeout');
     Route::patch('/settings/invoice', [SettingController::class, 'updateInvoiceSettings'])->name('settings.invoice');
     Route::patch('/settings/theme', [SettingController::class, 'updateTheme'])->name('settings.theme');

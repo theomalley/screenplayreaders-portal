@@ -675,6 +675,12 @@
                                         class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                     <span class="text-sm text-gray-600">Watermark viewed/downloaded scripts</span>
                                 </label>
+                                <label class="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                                    <input type="checkbox" name="video_consulting_enabled" value="1"
+                                        {{ old('video_consulting_enabled', $profile?->video_consulting_enabled ?? true) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <span class="text-sm text-gray-600">Video consulting enabled for this reader</span>
+                                </label>
                             </div>
                             <div>
                                 <x-input-label for="paypal_email" value="PayPal Email" />

@@ -27,6 +27,7 @@ class SettingControllerTest extends TestCase
             'emails'                 => ['GET', '/settings/emails'],
             'orders'                 => ['GET', '/settings/orders'],
             'capacity-override'      => ['PATCH', '/settings/capacity-override'],
+            'video-consulting'       => ['PATCH', '/settings/video-consulting'],
             'theme'                  => ['PATCH', '/settings/theme'],
             'email-all-readers'      => ['POST', '/settings/email-all-readers'],
         ];

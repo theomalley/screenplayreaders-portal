@@ -1,5 +1,8 @@
 <?php
 
+// v1.16 — 2026-11-07 | Add video_consulting_enabled toggle to store()/update() — admin-only
+//                      per-reader kill switch for the video consulting feature. Defaults to
+//                      enabled for new readers. See App\Support\VideoConsultingAccess.
 // v1.15 — 2026-10-22 | Add watermark_enabled toggle to store()/update() — admin-configurable
 //                      per-reader setting controlling whether this reader's viewed/downloaded
 //                      scripts are watermarked. Defaults to enabled (checked) for new readers.
@@ -80,8 +83,9 @@ class ReaderProfileController extends Controller
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
-        $data['watermark_enabled']        = $request->boolean('watermark_enabled');
+        $data['requests_bypass_capacity']  = $request->boolean('requests_bypass_capacity');
+        $data['watermark_enabled']         = $request->boolean('watermark_enabled');
+        $data['video_consulting_enabled']  = $request->boolean('video_consulting_enabled');
 
         $user = User::create([
             'name'     => $data['name'],
@@ -97,6 +101,7 @@ class ReaderProfileController extends Controller
             'max_concurrent_assignments'  => $data['max_concurrent_assignments'] ?? null,
             'requests_bypass_capacity'    => $data['requests_bypass_capacity'],
             'watermark_enabled'           => $data['watermark_enabled'],
+            'video_consulting_enabled'    => $data['video_consulting_enabled'],
             'paypal_email'                => $data['paypal_email'] ?? null,
             'photo'                       => $request->hasFile('photo') ? $request->file('photo')->store('reader-photos', 'public') : null,
             'about_photo'                 => $request->hasFile('about_photo') ? $request->file('about_photo')->store('reader-photos', 'public') : null,
@@ -198,7 +203,8 @@ class ReaderProfileController extends Controller
         $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
         $data['is_1099']                  = $request->boolean('is_1099');
         if ($user->isReader()) {
-            $data['watermark_enabled'] = $request->boolean('watermark_enabled');
+            $data['watermark_enabled']        = $request->boolean('watermark_enabled');
+            $data['video_consulting_enabled'] = $request->boolean('video_consulting_enabled');
         }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(
