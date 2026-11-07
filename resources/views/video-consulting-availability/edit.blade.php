@@ -42,11 +42,11 @@
                                        class="rounded text-indigo-600 focus:ring-indigo-500" />
                                 <span class="text-sm font-medium text-gray-700">{{ $dayName }}</span>
                             </label>
-                            <input type="time" name="days[{{ $dayOfWeek }}][start_time]"
+                            <input type="time" name="days[{{ $dayOfWeek }}][start_time]" step="900"
                                    value="{{ old("days.$dayOfWeek.start_time", $rule?->start_time) }}"
                                    class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                             <span class="text-gray-400 text-sm">to</span>
-                            <input type="time" name="days[{{ $dayOfWeek }}][end_time]"
+                            <input type="time" name="days[{{ $dayOfWeek }}][end_time]" step="900"
                                    value="{{ old("days.$dayOfWeek.end_time", $rule?->end_time) }}"
                                    class="border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                         </div>
