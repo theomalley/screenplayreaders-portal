@@ -47,11 +47,17 @@
                             $startVal = $startVal ? substr($startVal, 0, 5) : '';
                             [$startHourRaw, $startMinute] = $startVal ? explode(':', $startVal) : ['', ''];
                             $startHour = $startHourRaw !== '' ? (int) $startHourRaw : '';
+                            // Default the minute dropdown to :00 rather than the "--" placeholder —
+                            // otherwise picking only an hour and leaving minute untouched left the
+                            // hidden start_time/end_time field blank and the whole row silently
+                            // failed to save (syncField() below requires both hour AND minute set).
+                            if ($startMinute === '') $startMinute = '00';
 
                             $endVal = old("days.$dayOfWeek.end_time", $rule?->end_time);
                             $endVal = $endVal ? substr($endVal, 0, 5) : '';
                             [$endHourRaw, $endMinute] = $endVal ? explode(':', $endVal) : ['', ''];
                             $endHour = $endHourRaw !== '' ? (int) $endHourRaw : '';
+                            if ($endMinute === '') $endMinute = '00';
                         @endphp
                         <div class="flex items-center gap-3 flex-wrap">
                             <label class="flex items-center gap-2 w-32 cursor-pointer">
