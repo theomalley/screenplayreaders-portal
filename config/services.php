@@ -51,6 +51,12 @@ return [
         'registration_template_id'       => env('GOOGLE_REGISTRATION_TEMPLATE_ID', '1qgeRv6I4HaMP6xozm_0bjyxuJ7kayXk3ZJsd5azNN7Q'),
         'registration_output_folder_id'  => env('GOOGLE_REGISTRATION_OUTPUT_FOLDER_ID', '15Ny6X-HNWMLWW5UUrlC8IFYfBjeM8Zv2'),
         'order_log_sheet_id'             => env('GOOGLE_ORDER_LOG_SHEET_ID', '1n3e9F-3dITPVDC_CNqg06aJDm1HdUhIY0b6WZ7JRmNE'),
+        // The actual tab in that spreadsheet AppendOrderToSheet appends to — was hardcoded as
+        // "Sheet1" (which doesn't exist in this spreadsheet at all; its tabs are "Orders and
+        // Revenue", "SR Orders Log Backup", etc.), so every append failed with "Unable to parse
+        // range" even once the domain-wide-delegation auth issue was fixed. Configurable since a
+        // tab rename is far more likely than the file itself changing.
+        'order_log_sheet_tab'            => env('GOOGLE_ORDER_LOG_SHEET_TAB', 'Orders and Revenue'),
     ],
 
     'portal' => [

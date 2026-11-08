@@ -1,6 +1,11 @@
 <?php
 
-// v1.2 — 2026-11-09 | FIX: the service account has no direct access of its own to the sheet —
+// v1.3 — 2026-11-09 | FIX #2: the hardcoded range 'Sheet1!A:AG' doesn't exist in this
+//                      spreadsheet at all — its tabs are "Orders and Revenue", "SR Orders Log
+//                      Backup", etc. — so even with the DWD fix below, every append would still
+//                      have failed with "Unable to parse range". Made the tab name a config
+//                      value (default "Orders and Revenue") instead of a second hardcoded guess.
+// v1.2 — 2026-11-09 | FIX #1: the service account has no direct access of its own to the sheet —
 //                      it only has access via domain-wide delegation, impersonating a real
 //                      Workspace user (see GoogleDocsService/BudgetFileService, which both call
 //                      setSubject()). This job never did, so every single run since it was
@@ -94,9 +99,11 @@ class AppendOrderToSheet implements ShouldQueue
         $row[] = $bud['xlsx_url']         ?? '';
 
         try {
+            $tab = config('services.google.order_log_sheet_tab');
+
             $sheets->spreadsheets_values->append(
                 $spreadsheetId,
-                'Sheet1!A:AG',
+                "'{$tab}'!A:AG",
                 new ValueRange(['values' => [$row]]),
                 ['valueInputOption' => 'USER_ENTERED']
             );
