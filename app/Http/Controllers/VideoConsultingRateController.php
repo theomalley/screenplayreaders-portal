@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-11-09 | Rate + availability merged onto one "Consulting" page
+//                      (VideoConsultingSettingsController) — edit() now just redirects there
+//                      so any existing bookmark/link to this standalone page still lands
+//                      somewhere valid instead of 404ing.
 // v1.0 — 2026-11-07 | Video consulting Phase 1 — reader self-service pay rate per duration.
 //                      First self-serve rate page in the app; every other reader rate
 //                      (ReaderProfile::RATE_KEYS) is admin-only via ReaderProfileController.
@@ -13,19 +17,12 @@ use App\Models\VideoConsultingDuration;
 use App\Support\VideoConsultingAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 
 class VideoConsultingRateController extends Controller
 {
-    public function edit(): View
+    public function edit(): RedirectResponse
     {
-        $reader = auth()->user();
-        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
-
-        $durations = VideoConsultingDuration::active()->get();
-        $myRates = ReaderVideoConsultingRate::where('reader_id', $reader->id)->pluck('rate', 'duration_id');
-
-        return view('video-consulting-rate.edit', compact('durations', 'myRates'));
+        return redirect()->route('video-consulting.edit');
     }
 
     public function update(Request $request): RedirectResponse
@@ -80,6 +77,6 @@ class VideoConsultingRateController extends Controller
             }
         }
 
-        return redirect()->route('video-consulting-rate.edit')->with('success', 'Video consulting rates updated.');
+        return redirect()->route('video-consulting.edit')->with('success', 'Video consulting rates updated.');
     }
 }

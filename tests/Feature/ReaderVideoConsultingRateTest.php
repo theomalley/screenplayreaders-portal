@@ -31,7 +31,7 @@ class ReaderVideoConsultingRateTest extends TestCase
 
         $this->actingAs($reader)
             ->patch('/video-consulting-rate', ['rates' => [$duration->id => '45.00']])
-            ->assertRedirect(route('video-consulting-rate.edit'));
+            ->assertRedirect(route('video-consulting.edit'));
 
         $this->assertDatabaseHas('reader_video_consulting_rates', [
             'reader_id' => $reader->id, 'duration_id' => $duration->id, 'rate' => 45.00,

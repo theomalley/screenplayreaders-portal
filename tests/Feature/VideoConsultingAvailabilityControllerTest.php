@@ -21,7 +21,7 @@ class VideoConsultingAvailabilityControllerTest extends TestCase
 
         $this->actingAs($reader)->patch('/video-consulting-availability', [
             'days' => [1 => ['enabled' => '1', 'start_time' => '09:00', 'end_time' => '17:00']],
-        ])->assertRedirect(route('video-consulting-availability.edit'));
+        ])->assertRedirect(route('video-consulting.edit'));
 
         $this->assertDatabaseHas('reader_availability_rules', [
             'reader_id' => $reader->id, 'day_of_week' => 1, 'enabled' => true,
@@ -57,14 +57,14 @@ class VideoConsultingAvailabilityControllerTest extends TestCase
             'start_at' => now()->addDays(5)->format('Y-m-d H:i:s'),
             'end_at'   => now()->addDays(6)->format('Y-m-d H:i:s'),
             'reason'   => 'Vacation',
-        ])->assertRedirect(route('video-consulting-availability.edit'));
+        ])->assertRedirect(route('video-consulting.edit'));
 
         $blackout = ReaderBlackoutDate::where('reader_id', $reader->id)->first();
         $this->assertNotNull($blackout);
 
         $this->actingAs($reader)
             ->delete("/video-consulting-availability/blackouts/{$blackout->id}")
-            ->assertRedirect(route('video-consulting-availability.edit'));
+            ->assertRedirect(route('video-consulting.edit'));
 
         $this->assertDatabaseMissing('reader_blackout_dates', ['id' => $blackout->id]);
     }

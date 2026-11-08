@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-11-09 | Rate + availability merged onto one "Consulting" page
+//                      (VideoConsultingSettingsController) — edit() now just redirects there
+//                      so any existing bookmark/link to this standalone page still lands
+//                      somewhere valid instead of 404ing.
 // v1.0 — 2026-11-07 | Video consulting Phase 1 — reader self-service weekly availability +
 //                      blackout dates. v1 UI supports exactly one window per day-of-week; the
 //                      underlying ReaderAvailabilityRule table isn't limited to that, so a
@@ -12,19 +16,12 @@ use App\Models\ReaderBlackoutDate;
 use App\Support\VideoConsultingAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 
 class VideoConsultingAvailabilityController extends Controller
 {
-    public function edit(): View
+    public function edit(): RedirectResponse
     {
-        $reader = auth()->user();
-        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
-
-        $rules = ReaderAvailabilityRule::where('reader_id', $reader->id)->get()->keyBy('day_of_week');
-        $blackouts = ReaderBlackoutDate::where('reader_id', $reader->id)->orderBy('start_at')->get();
-
-        return view('video-consulting-availability.edit', compact('rules', 'blackouts'));
+        return redirect()->route('video-consulting.edit');
     }
 
     public function update(Request $request): RedirectResponse
@@ -60,7 +57,7 @@ class VideoConsultingAvailabilityController extends Controller
             );
         }
 
-        return redirect()->route('video-consulting-availability.edit')->with('success', 'Availability updated.');
+        return redirect()->route('video-consulting.edit')->with('success', 'Availability updated.');
     }
 
     public function storeBlackout(Request $request): RedirectResponse
@@ -81,7 +78,7 @@ class VideoConsultingAvailabilityController extends Controller
             'reason'    => $data['reason'] ?? null,
         ]);
 
-        return redirect()->route('video-consulting-availability.edit')->with('success', 'Blackout added.');
+        return redirect()->route('video-consulting.edit')->with('success', 'Blackout added.');
     }
 
     public function destroyBlackout(ReaderBlackoutDate $blackout): RedirectResponse
@@ -90,6 +87,6 @@ class VideoConsultingAvailabilityController extends Controller
 
         $blackout->delete();
 
-        return redirect()->route('video-consulting-availability.edit')->with('success', 'Blackout removed.');
+        return redirect()->route('video-consulting.edit')->with('success', 'Blackout removed.');
     }
 }

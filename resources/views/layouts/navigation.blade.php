@@ -249,32 +249,10 @@
                                 {{ __('Earnings') }}
                             </x-nav-link>
 
-                            {{-- Video consulting dropdown --}}
-                            @php $consultingActive = request()->routeIs('video-consulting-rate.*') || request()->routeIs('video-consulting-availability.*'); @endphp
                             @if(\App\Support\VideoConsultingAccess::enabledFor(auth()->user()))
-                            <div class="relative flex items-center"
-                                 x-data="{ consultingOpen: false }"
-                                 @mouseenter="consultingOpen = true"
-                                 @mouseleave="consultingOpen = false">
-                                <button type="button"
-                                    class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out {{ $consultingActive ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
-                                    Consulting
-                                    <svg class="w-3 h-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </button>
-                                <div x-show="consultingOpen" x-cloak
-                                     class="absolute top-full left-0 mt-0 w-44 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
-                                    <a href="{{ route('video-consulting-rate.edit') }}"
-                                       class="block px-4 py-2 text-sm {{ request()->routeIs('video-consulting-rate.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                        Rate
-                                    </a>
-                                    <a href="{{ route('video-consulting-availability.edit') }}"
-                                       class="block px-4 py-2 text-sm {{ request()->routeIs('video-consulting-availability.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                        Availability
-                                    </a>
-                                </div>
-                            </div>
+                                <x-nav-link :href="route('video-consulting.edit')" :active="request()->routeIs('video-consulting.*')">
+                                    {{ __('Consulting') }}
+                                </x-nav-link>
                             @endif
                         @endif
                         @if(\App\Support\Permission::check('ratebook'))
@@ -458,11 +436,8 @@
                         {{ __('Earnings') }}
                     </x-responsive-nav-link>
                     @if(\App\Support\VideoConsultingAccess::enabledFor(auth()->user()))
-                        <x-responsive-nav-link :href="route('video-consulting-rate.edit')" :active="request()->routeIs('video-consulting-rate.*')">
-                            {{ __('Consulting Rate') }}
-                        </x-responsive-nav-link>
-                        <x-responsive-nav-link :href="route('video-consulting-availability.edit')" :active="request()->routeIs('video-consulting-availability.*')">
-                            {{ __('Consulting Availability') }}
+                        <x-responsive-nav-link :href="route('video-consulting.edit')" :active="request()->routeIs('video-consulting.*')">
+                            {{ __('Consulting') }}
                         </x-responsive-nav-link>
                     @endif
                 @endif

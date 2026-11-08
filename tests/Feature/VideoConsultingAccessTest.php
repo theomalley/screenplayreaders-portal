@@ -102,8 +102,7 @@ class VideoConsultingAccessTest extends TestCase
         $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
         Setting::setValue('video_consulting_enabled', '0');
 
-        $this->actingAs($reader)->get('/video-consulting-rate')->assertNotFound();
-        $this->actingAs($reader)->get('/video-consulting-availability')->assertNotFound();
+        $this->actingAs($reader)->get('/video-consulting')->assertNotFound();
     }
 
     public function test_self_serve_pages_404_when_disabled_for_that_reader(): void
@@ -114,8 +113,7 @@ class VideoConsultingAccessTest extends TestCase
             'video_consulting_enabled' => false,
         ]);
 
-        $this->actingAs($reader)->get('/video-consulting-rate')->assertNotFound();
-        $this->actingAs($reader)->get('/video-consulting-availability')->assertNotFound();
+        $this->actingAs($reader)->get('/video-consulting')->assertNotFound();
     }
 
     public function test_consulting_nav_item_stays_visible_when_the_reader_has_an_enabled_override(): void
@@ -128,7 +126,7 @@ class VideoConsultingAccessTest extends TestCase
         Setting::setValue('video_consulting_enabled', '0');
 
         $this->actingAs($reader)->get('/assignments')->assertSee('Consulting');
-        $this->actingAs($reader)->get('/video-consulting-rate')->assertOk();
+        $this->actingAs($reader)->get('/video-consulting')->assertOk();
     }
 
     public function test_admin_can_toggle_the_global_setting(): void

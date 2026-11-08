@@ -39,6 +39,7 @@ use App\Http\Controllers\KarenController;
 use App\Http\Controllers\UrlBuilderController;
 use App\Http\Controllers\VideoConsultingAvailabilityController;
 use App\Http\Controllers\VideoConsultingRateController;
+use App\Http\Controllers\VideoConsultingSettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReadCreditController;
 use App\Http\Controllers\BudgetOrderController;
@@ -98,6 +99,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/availability', [AvailabilityController::class, 'edit'])->name('availability.edit');
     Route::patch('/availability', [AvailabilityController::class, 'update'])->name('availability.update');
+
+    Route::get('/video-consulting', [VideoConsultingSettingsController::class, 'edit'])->name('video-consulting.edit');
 
     Route::get('/video-consulting-rate', [VideoConsultingRateController::class, 'edit'])->name('video-consulting-rate.edit');
     Route::patch('/video-consulting-rate', [VideoConsultingRateController::class, 'update'])->name('video-consulting-rate.update');
