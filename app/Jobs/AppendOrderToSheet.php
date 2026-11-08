@@ -1,5 +1,13 @@
 <?php
 
+// v1.2 — 2026-11-09 | FIX: the service account has no direct access of its own to the sheet —
+//                      it only has access via domain-wide delegation, impersonating a real
+//                      Workspace user (see GoogleDocsService/BudgetFileService, which both call
+//                      setSubject()). This job never did, so every single run since it was
+//                      written authenticated as the bare service account and failed with
+//                      "The caller does not have permission" (403) — 171 failed jobs
+//                      accumulated in failed_jobs, none of them ever actually reaching the
+//                      sheet. Added the same setSubject() call the other Google jobs use.
 // v1.1 — 2026-06-26 | Add registration + budget columns (W–AG) with document URLs.
 // v1.0 — 2026-06-26 | Queued job: append a single order row to the Google Sheets order log.
 
@@ -34,6 +42,7 @@ class AppendOrderToSheet implements ShouldQueue
 
         $client = new Client();
         $client->useApplicationDefaultCredentials();
+        $client->setSubject(config('services.google.impersonate_user'));
         $client->addScope(Sheets::SPREADSHEETS);
         $sheets = new Sheets($client);
 
