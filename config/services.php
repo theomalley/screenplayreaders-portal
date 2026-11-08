@@ -92,6 +92,8 @@ return [
         'video_consulting_reschedule_offer_template_id'    => env('MAILERSEND_VIDEO_CONSULTING_RESCHEDULE_OFFER_TEMPLATE_ID', ''),
         'video_consulting_reschedule_confirmed_template_id' => env('MAILERSEND_VIDEO_CONSULTING_RESCHEDULE_CONFIRMED_TEMPLATE_ID', ''),
         'video_consulting_admin_alert_template_id'         => env('MAILERSEND_VIDEO_CONSULTING_ADMIN_ALERT_TEMPLATE_ID', ''),
+        'video_consulting_booking_confirmed_template_id'   => env('MAILERSEND_VIDEO_CONSULTING_BOOKING_CONFIRMED_TEMPLATE_ID', ''),
+        'video_consulting_call_link_template_id'           => env('MAILERSEND_VIDEO_CONSULTING_CALL_LINK_TEMPLATE_ID', ''),
     ],
 
 ];

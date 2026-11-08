@@ -24,13 +24,16 @@ Route::middleware(['throttle:60,1', 'portal.secret'])->prefix('video-consulting/
     Route::delete('/{duration}', [VideoConsultingDurationController::class, 'destroy']);
 });
 
-// PORTAL INTEGRATION: called server-side by the theme's video consulting booking widget (Phase 5)
+// PORTAL INTEGRATION: called server-side by the theme's video consulting checkout upgrade
+// (Phase 6) and /upload/ slot picker — see woo_video-consulting.php / sr-upload-system.php.
 Route::middleware(['throttle:60,1', 'portal.secret'])->prefix('video-consulting')->group(function () {
     Route::get('/durations', [VideoConsultingBookingController::class, 'durations']);
+    Route::get('/readers', [VideoConsultingBookingController::class, 'readers']);
     Route::get('/readers/{reader}/rates', [VideoConsultingBookingController::class, 'readerRates']);
     Route::get('/available-slots', [VideoConsultingBookingController::class, 'availableSlots']);
     Route::post('/holds', [VideoConsultingBookingController::class, 'createHold'])->middleware('throttle:20,1');
     Route::delete('/holds/{holdToken}', [VideoConsultingBookingController::class, 'releaseHold']);
+    Route::post('/bookings', [VideoConsultingBookingController::class, 'createBooking'])->middleware('throttle:20,1');
 });
 
 // PORTAL INTEGRATION: called by WordPress sr-upload-system.php to populate the reader dropdown

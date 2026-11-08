@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-11-09 | Video consulting Phase 6 — add notifyCustomerBookingConfirmed() (checkout
+//                      upgrade + slot pick) and notifyCustomerCallLinkReady() (reader accepted,
+//                      Whereby room exists) — stopgap customer notifications until Phase 7's
+//                      polished call page exists.
 // v1.0 — 2026-11-09 | Video consulting Phase 3 — kept separate from ReaderNotificationService
 //                      (scoped to ordinary coverage assignments) since these are a different
 //                      audience (customer-facing) and a different trigger shape entirely.
@@ -9,6 +13,8 @@
 namespace App\Services;
 
 use App\Mail\VideoConsultingAdminAlertMail;
+use App\Mail\VideoConsultingBookingConfirmedMail;
+use App\Mail\VideoConsultingCallLinkMail;
 use App\Mail\VideoConsultingCancelledMail;
 use App\Mail\VideoConsultingRescheduleConfirmedMail;
 use App\Mail\VideoConsultingRescheduleOfferMail;
@@ -19,6 +25,22 @@ use Illuminate\Support\Facades\Mail;
 
 class VideoConsultingNotificationService
 {
+    public function notifyCustomerBookingConfirmed(Assignment $assignment): void
+    {
+        if ($assignment->video_consulting_customer_email) {
+            Mail::to($assignment->video_consulting_customer_email)
+                ->send(new VideoConsultingBookingConfirmedMail($assignment));
+        }
+    }
+
+    public function notifyCustomerCallLinkReady(Assignment $assignment): void
+    {
+        if ($assignment->video_consulting_customer_email) {
+            Mail::to($assignment->video_consulting_customer_email)
+                ->send(new VideoConsultingCallLinkMail($assignment));
+        }
+    }
+
     public function notifyCancellation(Assignment $assignment): void
     {
         if ($assignment->video_consulting_customer_email) {

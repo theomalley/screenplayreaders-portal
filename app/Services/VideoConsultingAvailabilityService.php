@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-11-09 | Video consulting Phase 6 — add availabilitySummaryFor(), a weekly
+//                      pattern summary (not real slots) for the checkout upgrade's reader picker.
 // v1.0 — 2026-11-07 | Video consulting Phase 1 — turns a reader's recurring
 //                      ReaderAvailabilityRule windows, minus ReaderBlackoutDate overlaps and
 //                      active VideoConsultingHold slots, into actual bookable start times.
@@ -34,6 +36,69 @@ class VideoConsultingAvailabilityService
         }
 
         return false;
+    }
+
+    /**
+     * Collapses a reader's weekly ReaderAvailabilityRule windows into a short human string
+     * (e.g. "Mon–Fri: 9:00 AM–5:00 PM") for the checkout upgrade's reader picker — a pattern
+     * summary, not a list of actual bookable slots (that's generateSlots()/available-slots).
+     */
+    public function availabilitySummaryFor(int $readerId): string
+    {
+        $rules = ReaderAvailabilityRule::where('reader_id', $readerId)->enabled()->get();
+        if ($rules->isEmpty()) {
+            return '';
+        }
+
+        $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        $daysByWindow = [];
+        foreach ($rules as $rule) {
+            $window = $this->formatTimeRange($rule->start_time, $rule->end_time);
+            $daysByWindow[$window][] = (int) $rule->day_of_week;
+        }
+
+        $parts = [];
+        foreach ($daysByWindow as $window => $days) {
+            $parts[] = $this->collapseDaysToRanges($days, $dayNames) . ': ' . $window;
+        }
+
+        return implode('; ', $parts);
+    }
+
+    private function formatTimeRange(string $start, string $end): string
+    {
+        // Carbon::parse (not createFromFormat) since the time column can come back as
+        // either "H:i" or "H:i:s" depending on driver/factory input.
+        $format = fn (string $time) => Carbon::parse($time)->format('g:i A');
+
+        return $format($start) . '–' . $format($end);
+    }
+
+    /** Collapses e.g. [1, 2, 3, 5] into "Mon–Wed, Fri". */
+    private function collapseDaysToRanges(array $days, array $dayNames): string
+    {
+        sort($days);
+
+        $ranges = [];
+        $start = $prev = $days[0];
+
+        foreach (array_slice($days, 1) as $day) {
+            if ($day === $prev + 1) {
+                $prev = $day;
+                continue;
+            }
+            $ranges[] = [$start, $prev];
+            $start = $prev = $day;
+        }
+        $ranges[] = [$start, $prev];
+
+        return implode(', ', array_map(
+            fn (array $range) => $range[0] === $range[1]
+                ? $dayNames[$range[0]]
+                : $dayNames[$range[0]] . '–' . $dayNames[$range[1]],
+            $ranges
+        ));
     }
 
     /**

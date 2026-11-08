@@ -1,5 +1,8 @@
 <?php
 
+// v1.1 — 2026-11-09 | Video consulting Phase 6 — email the customer the Whereby link once the
+//                      room is created. Phase 7's polished call page doesn't exist yet, so this
+//                      is the only way the customer ever learns the room exists.
 // v1.0 — 2026-11-07 | Video consulting Phase 2 — creates the Whereby room for a
 //                      video-consulting Assignment once a reader accepts it. Called from
 //                      exactly one place (AssignmentController::accept()) so both a real
@@ -12,8 +15,10 @@ use Illuminate\Support\Facades\Log;
 
 class VideoConsultingCallService
 {
-    public function __construct(private readonly WherebyService $whereby)
-    {
+    public function __construct(
+        private readonly WherebyService $whereby,
+        private readonly VideoConsultingNotificationService $notifications,
+    ) {
     }
 
     public function createRoomFor(Assignment $assignment): void
@@ -41,5 +46,7 @@ class VideoConsultingCallService
             'assignment_id' => $assignment->id,
             'room_name'     => $room['roomName'],
         ]);
+
+        $this->notifications->notifyCustomerCallLinkReady($assignment->fresh());
     }
 }

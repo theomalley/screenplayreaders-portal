@@ -1,5 +1,10 @@
 <?php
 
+// v1.1 — 2026-11-09 | Video consulting Phase 6 — add readers() (the checkout upgrade's reader
+//                      picker: who offers video consulting + their weekly availability pattern)
+//                      and createBooking() (converts a paid-for hold into the real Assignment,
+//                      called from the theme's /upload/ slot picker once the customer confirms
+//                      a time — see routes/api.php).
 // v1.0 — 2026-11-07 | Video consulting Phase 1 — public-facing durations/rates/availability/
 //                      hold endpoints. PORTAL INTEGRATION: called by the theme's (Phase 5)
 //                      booking widget, server-side from the theme's own PHP — the theme
@@ -9,11 +14,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Assignment;
 use App\Models\ReaderVideoConsultingRate;
+use App\Models\Tier;
 use App\Models\User;
 use App\Models\VideoConsultingDuration;
 use App\Models\VideoConsultingHold;
+use App\Services\ReaderNotificationService;
 use App\Services\VideoConsultingAvailabilityService;
+use App\Services\VideoConsultingNotificationService;
 use App\Support\VideoConsultingAccess;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -30,6 +39,46 @@ class VideoConsultingBookingController extends Controller
         return response()->json(
             VideoConsultingDuration::active()->get(['id', 'minutes', 'label', 'base_rate'])
         );
+    }
+
+    /**
+     * Readers who actually offer video consulting today (access enabled + at least one
+     * configured rate), with their weekly availability pattern — the checkout upgrade's
+     * reader picker shows this, not a list of real bookable slots (see available-slots).
+     */
+    public function readers(VideoConsultingAvailabilityService $availability): JsonResponse
+    {
+        $readers = User::where('role', 'reader')
+            ->whereHas('videoConsultingRates')
+            ->with(['videoConsultingRates.duration'])
+            ->get()
+            ->filter(fn (User $reader) => VideoConsultingAccess::enabledFor($reader))
+            ->map(function (User $reader) use ($availability) {
+                $durations = $reader->videoConsultingRates
+                    ->filter(fn (ReaderVideoConsultingRate $rate) => $rate->duration && $rate->duration->enabled)
+                    ->map(fn (ReaderVideoConsultingRate $rate) => [
+                        'duration_id' => $rate->duration_id,
+                        'minutes'     => $rate->duration->minutes,
+                        'label'       => $rate->duration->label,
+                        'price'       => (float) $rate->duration->base_rate + (float) $rate->rate,
+                    ])
+                    ->values();
+
+                if ($durations->isEmpty()) {
+                    return null;
+                }
+
+                return [
+                    'id'                   => $reader->id,
+                    'name'                 => $reader->name,
+                    'availability_summary' => $availability->availabilitySummaryFor($reader->id),
+                    'durations'            => $durations,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        return response()->json($readers);
     }
 
     public function readerRates(User $reader): JsonResponse
@@ -148,5 +197,88 @@ class VideoConsultingBookingController extends Controller
             ->delete();
 
         return response()->json(['status' => 'released']);
+    }
+
+    /**
+     * Converts a held slot into the real Assignment, once the theme's /upload/ slot picker
+     * has already placed the hold (createHold() above) and the customer confirmed it.
+     * Payment already happened before this call — this endpoint only turns a hold the
+     * customer paid for into a bookable Assignment, mirroring BudgetWebhookController's
+     * exists()-then-create() idempotency shape (see migration
+     * 2026_11_09_000003_add_unique_index_to_assignments_video_consulting_hold_id).
+     */
+    public function createBooking(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'hold_token'     => ['required', 'string'],
+            'order_number'   => ['required', 'string', 'max:64'],
+            'customer_name'  => ['nullable', 'string', 'max:255'],
+            'customer_email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $hold = VideoConsultingHold::with('duration')->where('hold_token', $data['hold_token'])->first();
+        if (! $hold) {
+            return response()->json(['message' => 'Hold not found.'], 404);
+        }
+
+        // Idempotency fast path — the real guarantee is the unique index on
+        // assignments.video_consulting_hold_id, caught below; this is just the fast path
+        // for an obvious repeat (a retried request, a double-click).
+        if ($hold->status === VideoConsultingHold::STATUS_CONVERTED) {
+            return response()->json(['status' => 'already_exists', 'assignment_id' => $hold->converted_assignment_id], 200);
+        }
+
+        if (! $hold->isActive()) {
+            return response()->json(['message' => 'This hold has expired. Please pick another time.'], 409);
+        }
+
+        $rate = ReaderVideoConsultingRate::where('reader_id', $hold->reader_id)
+            ->where('duration_id', $hold->duration_id)
+            ->first();
+        if (! $rate) {
+            return response()->json(['message' => 'This reader no longer offers that duration.'], 422);
+        }
+
+        try {
+            $assignment = Assignment::create([
+                'order_number'                    => $data['order_number'],
+                'vendor'                          => 'sr',
+                'assignment_type'                 => Assignment::TYPE_VIDEO_CONSULTING,
+                'script_title'                     => "{$hold->duration->label} Video Consulting Call",
+                'writer_name'                     => $data['customer_name'] ?? 'N/A (video consulting)',
+                'pay_rate'                        => $rate->rate,
+                'status'                          => Assignment::STATUS_UNASSIGNED,
+                'requested_reader_id'             => $hold->reader_id,
+                'video_consulting_hold_id'        => $hold->id,
+                'video_consulting_customer_email' => $data['customer_email'],
+                'unassigned_at'                   => now(),
+            ]);
+        } catch (QueryException $e) {
+            // Race: a concurrent request for this same hold already converted it between
+            // our status check above and this create() — the unique index is what actually
+            // caught it.
+            if ((int) ($e->errorInfo[1] ?? 0) === 1062 || str_contains($e->getMessage(), 'Unique')) {
+                $hold->refresh();
+
+                return response()->json(['status' => 'already_exists', 'assignment_id' => $hold->converted_assignment_id], 200);
+            }
+
+            throw $e;
+        }
+
+        $hold->update(['status' => VideoConsultingHold::STATUS_CONVERTED, 'converted_assignment_id' => $assignment->id]);
+
+        // Every acceptable assignment needs at least one Tier attached (AssignmentPolicy::
+        // accept()'s tierMatch() requires it) — mirrors TestDataController's/
+        // IncomingAssignmentController's default-tier convention.
+        $tierOne = Tier::where('is_onboarding', false)->orderBy('position')->first();
+        if ($tierOne) {
+            $assignment->tiers()->sync([$tierOne->id]);
+        }
+
+        app(ReaderNotificationService::class)->notifyNewAssignment($assignment->fresh());
+        app(VideoConsultingNotificationService::class)->notifyCustomerBookingConfirmed($assignment->fresh());
+
+        return response()->json(['status' => 'accepted', 'assignment_id' => $assignment->id], 201);
     }
 }

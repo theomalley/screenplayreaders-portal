@@ -1,5 +1,8 @@
 <?php
 
+// v1.5 — 2026-11-09 | Video consulting Phase 6 — script_details previously always built from
+//                      writer_name/page_count, which reads as nonsense for a video-consulting
+//                      request ("N/A (video consulting) ( pages)"). Branch on assignment_type.
 // v1.4 — 2026-05-30 | Fix trait: MailerSendTrait (v3 rename from MailerSendModelMixin; namespace MailerSend not Mailersend)
 // v1.3 — 2026-05-30 | Add subject line variants from Settings
 // v1.2 — 2026-05-30 | Read header/body text from Settings (admin-editable)
@@ -47,11 +50,15 @@ class NewAssignmentMail extends Mailable implements ShouldQueue
             default             => $texts['email_notif_header_new'],
         };
 
-        $script_details = $this->assignment->script_title
-            . ' by ' . $this->assignment->writer_name
-            . ' (' . $this->assignment->page_count . ' pages'
-            . ($rush ? ', RUSH' : '')
-            . ')  Pay: $' . number_format((float) $this->assignment->pay_rate, 2);
+        $script_details = $this->assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING
+            ? $this->assignment->script_title
+                . ' — ' . ($this->assignment->videoConsultingHold?->slot_start?->format('l, F j, Y \a\t g:i A T') ?? 'time to be scheduled')
+                . '  Pay: $' . number_format((float) $this->assignment->pay_rate, 2)
+            : $this->assignment->script_title
+                . ' by ' . $this->assignment->writer_name
+                . ' (' . $this->assignment->page_count . ' pages'
+                . ($rush ? ', RUSH' : '')
+                . ')  Pay: $' . number_format((float) $this->assignment->pay_rate, 2);
 
         $body_message = $requested
             ? $texts['email_notif_body_request']
