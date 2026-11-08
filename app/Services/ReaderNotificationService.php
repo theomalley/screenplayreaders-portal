@@ -66,11 +66,7 @@ class ReaderNotificationService
             if (
                 $requested &&
                 Gate::forUser($requested)->allows('accept', $assignment) &&
-                $requested->readerProfile?->email_notifications &&
-                (
-                    $requested->readerProfile?->email_notify_any ||
-                    $requested->readerProfile?->email_notify_requests
-                ) &&
+                $this->requestNotificationEnabled($requested->readerProfile, $assignment) &&
                 ! $this->skipForCapacity($requested->readerProfile, true) &&
                 $this->claimNotification($assignment->order_number, $requested->id)
             ) {
@@ -124,6 +120,24 @@ class ReaderNotificationService
             Mail::to($reader->email)
                 ->send(new NewAssignmentMail($assignment, $reader, $context));
         }
+    }
+
+    /**
+     * Whether the specifically-requested reader should be emailed about this request.
+     * Video consulting is mandatory once a reader has opted into offering calls — gated
+     * solely on email_notify_video_consulting (server-enforced true in ProfileController::
+     * updateNotifications() for any reader with a rate set), not the general email_notifications
+     * master switch or email_notify_any/email_notify_requests those readers may have off.
+     * Every other request type keeps the existing opt-in behavior.
+     */
+    private function requestNotificationEnabled(?ReaderProfile $profile, Assignment $assignment): bool
+    {
+        if ($assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING) {
+            return (bool) $profile?->email_notify_video_consulting;
+        }
+
+        return (bool) $profile?->email_notifications
+            && ((bool) $profile?->email_notify_any || (bool) $profile?->email_notify_requests);
     }
 
     /**

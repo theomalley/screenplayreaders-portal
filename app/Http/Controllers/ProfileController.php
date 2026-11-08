@@ -61,6 +61,12 @@ class ProfileController extends Controller
         abort_unless($user->isReader() || $user->isAdmin(), 403);
 
         if ($user->isReader()) {
+            // A reader who has opted into offering video consulting calls (set a rate for at
+            // least one duration) must be notified by email when one comes in — forced true
+            // here regardless of what was submitted, not just disabled client-side, since the
+            // checkbox being un-interactive in the form is a UX signal, not the real guarantee.
+            $offersVideoConsulting = \App\Models\ReaderVideoConsultingRate::where('reader_id', $user->id)->exists();
+
             $user->readerProfile()->updateOrCreate(
                 ['user_id' => $user->id],
                 [
@@ -72,6 +78,7 @@ class ProfileController extends Controller
                     'email_notify_any'       => $request->boolean('email_notify_any'),
                     'email_notify_rush'      => $request->boolean('email_notify_rush'),
                     'email_notify_requests'  => $request->boolean('email_notify_requests'),
+                    'email_notify_video_consulting' => $offersVideoConsulting ? true : $request->boolean('email_notify_video_consulting'),
                     'sms_notify_followup'    => $request->boolean('sms_notify_followup'),
                     'notify_only_if_under_capacity' => $request->boolean('notify_only_if_under_capacity'),
                 ]

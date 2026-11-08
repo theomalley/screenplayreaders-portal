@@ -33,6 +33,7 @@ class VideoConsultingBookingApiTest extends TestCase
         $reader->readerProfile()->create([
             'initials' => 'JR', 'first_name' => 'Jamie', 'last_name' => 'Reader',
             'email_notifications' => $notifiable, 'email_notify_requests' => $notifiable,
+            'email_notify_video_consulting' => $notifiable,
         ]);
         $duration = VideoConsultingDuration::create([
             'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,

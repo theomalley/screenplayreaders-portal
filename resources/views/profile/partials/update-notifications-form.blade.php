@@ -105,6 +105,22 @@
                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed" />
                     Reader requests (when I'm specifically requested)
                 </label>
+                @if (auth()->user()->videoConsultingRates()->exists())
+                    <label class="flex items-center gap-2 text-sm text-gray-400 cursor-not-allowed">
+                        <input type="hidden" name="email_notify_video_consulting" value="1" />
+                        <input type="checkbox" checked disabled
+                               class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" />
+                        Consulting calls
+                    </label>
+                    <p class="text-xs text-gray-400 ml-0">You've opted into offering video consulting calls, so this one can't be turned off.</p>
+                @else
+                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" name="email_notify_video_consulting" value="1"
+                               {{ auth()->user()->readerProfile?->email_notify_video_consulting ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                        Consulting calls
+                    </label>
+                @endif
                 <p class="text-xs text-gray-400">You'll always be emailed about a followup question from a customer, or if a coverage you submitted doesn't pass QC and is sent back for revisions — those aren't optional.</p>
             </div>
         </div>
