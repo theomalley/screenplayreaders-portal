@@ -40,6 +40,31 @@ class VideoConsultingAvailabilityControllerTest extends TestCase
         $this->assertDatabaseMissing('reader_availability_rules', ['reader_id' => $reader->id, 'day_of_week' => 1]);
     }
 
+    public function test_reader_can_set_their_minimum_lead_time(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
+
+        $this->actingAs($reader)->patch('/video-consulting-availability', [
+            'days' => [], 'min_lead_hours' => '24',
+        ])->assertRedirect(route('video-consulting.edit'));
+
+        $this->assertSame(24, $reader->fresh('readerProfile')->readerProfile->video_consulting_min_lead_hours);
+    }
+
+    public function test_omitting_min_lead_hours_saves_it_as_zero(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create([
+            'initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader',
+            'video_consulting_min_lead_hours' => 24,
+        ]);
+
+        $this->actingAs($reader)->patch('/video-consulting-availability', ['days' => []]);
+
+        $this->assertSame(0, $reader->fresh('readerProfile')->readerProfile->video_consulting_min_lead_hours);
+    }
+
     public function test_end_time_before_start_time_is_rejected(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);

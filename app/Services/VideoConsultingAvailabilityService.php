@@ -1,5 +1,11 @@
 <?php
 
+// v1.2 — 2026-11-09 | Video consulting — enforce each reader's own minimum lead time
+//                      (ReaderProfile.video_consulting_min_lead_hours) in generateSlots(), not
+//                      just "must be in the future" — gives the reader time to actually read
+//                      the script and compile notes before the call. Server-side/authoritative;
+//                      a customer can never see or pick a slot sooner than this regardless of
+//                      what the theme happens to display.
 // v1.1 — 2026-11-09 | Video consulting Phase 6 — add availabilitySummaryFor(), a weekly
 //                      pattern summary (not real slots) for the checkout upgrade's reader picker.
 // v1.0 — 2026-11-07 | Video consulting Phase 1 — turns a reader's recurring
@@ -14,6 +20,7 @@ namespace App\Services;
 
 use App\Models\ReaderAvailabilityRule;
 use App\Models\ReaderBlackoutDate;
+use App\Models\User;
 use App\Models\VideoConsultingDuration;
 use App\Models\VideoConsultingHold;
 use Carbon\Carbon;
@@ -113,6 +120,9 @@ class VideoConsultingAvailabilityService
 
         $minutes = (int) $duration->minutes;
 
+        $leadHours = (int) (User::find($readerId)?->readerProfile?->video_consulting_min_lead_hours ?? 0);
+        $earliestAllowed = now()->addHours($leadHours);
+
         $rulesByDay = ReaderAvailabilityRule::where('reader_id', $readerId)
             ->enabled()
             ->get()
@@ -154,7 +164,7 @@ class VideoConsultingAvailabilityService
                         if (
                             $slotStart->gte($from)
                             && $slotStart->lte($to)
-                            && $slotStart->isFuture()
+                            && $slotStart->gte($earliestAllowed)
                             && ! in_array($slotStart->timestamp, $heldStarts, true)
                         ) {
                             $slots[] = ['start' => $slotStart->copy(), 'end' => $slotEnd->copy()];

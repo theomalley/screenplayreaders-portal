@@ -70,6 +70,18 @@ class VideoConsultingBookingApiTest extends TestCase
         $this->assertStringContainsString('9:00 AM', $payload[0]['availability_summary']);
         $this->assertSame($duration->id, $payload[0]['durations'][0]['duration_id']);
         $this->assertEquals(70.0, $payload[0]['durations'][0]['price']); // base_rate 20 + reader_rate 50
+        $this->assertSame(0, $payload[0]['min_lead_hours']); // default from makeBookableReader()
+    }
+
+    public function test_readers_endpoint_includes_the_readers_min_lead_hours(): void
+    {
+        [$reader] = $this->makeBookableReader();
+        $reader->readerProfile->update(['video_consulting_min_lead_hours' => 48]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $this->assertSame(48, $response->json('0.min_lead_hours'));
     }
 
     public function test_readers_endpoint_excludes_a_reader_with_no_rates(): void

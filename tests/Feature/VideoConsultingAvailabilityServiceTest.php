@@ -118,6 +118,53 @@ class VideoConsultingAvailabilityServiceTest extends TestCase
         $this->assertContains('09:30', $starts);
     }
 
+    public function test_reader_min_lead_hours_excludes_slots_sooner_than_that(): void
+    {
+        [$reader, $day] = $this->makeReaderWithRule();
+        $reader->readerProfile()->create([
+            'initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader',
+            'video_consulting_min_lead_hours' => 24,
+        ]);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+
+        // The rule's day is 14 days out, so a 24-hour lead time doesn't exclude anything there —
+        // confirm slots on that far-out day are unaffected...
+        $farSlots = (new VideoConsultingAvailabilityService())->generateSlots(
+            $reader->id, $duration->id, $day->copy(), $day->copy()->endOfDay()
+        );
+        $this->assertNotEmpty($farSlots);
+
+        // ...but a second rule on TODAY (within the 24h lead window) should be fully excluded.
+        ReaderAvailabilityRule::create([
+            'reader_id' => $reader->id, 'day_of_week' => now()->dayOfWeek,
+            'start_time' => now()->addHour()->format('H:i'), 'end_time' => now()->addHours(3)->format('H:i'),
+            'enabled' => true,
+        ]);
+
+        $todaySlots = (new VideoConsultingAvailabilityService())->generateSlots(
+            $reader->id, $duration->id, now()->startOfDay(), now()->endOfDay()
+        );
+        $this->assertEmpty($todaySlots);
+    }
+
+    public function test_zero_min_lead_hours_is_the_default_and_only_excludes_past_slots(): void
+    {
+        [$reader, $day] = $this->makeReaderWithRule();
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+
+        // No readerProfile at all — confirms the default (0) doesn't block anything beyond
+        // the existing "must be in the future" rule.
+        $slots = (new VideoConsultingAvailabilityService())->generateSlots(
+            $reader->id, $duration->id, $day->copy(), $day->copy()->endOfDay()
+        );
+
+        $this->assertNotEmpty($slots);
+    }
+
     public function test_is_slot_available_matches_generate_slots(): void
     {
         [$reader, $day] = $this->makeReaderWithRule();

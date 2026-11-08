@@ -163,6 +163,18 @@
                         </div>
                     @endforeach
 
+                    <div class="pt-3 border-t border-gray-100">
+                        <x-input-label for="min_lead_hours" value="Minimum notice before a call (hours)" />
+                        <input type="number" id="min_lead_hours" name="min_lead_hours" min="0" max="336" step="1"
+                               value="{{ old('min_lead_hours', $minLeadHours) }}"
+                               class="mt-1 block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        <p class="mt-1 text-sm text-gray-500">
+                            Calls won't be offered to customers sooner than this, so you have time to read the
+                            script and compile your notes first. 0 = no minimum beyond being in the future.
+                        </p>
+                        <x-input-error :messages="$errors->get('min_lead_hours')" class="mt-1" />
+                    </div>
+
                     <div class="flex justify-end pt-2 border-t border-gray-100">
                         <x-primary-button>Save Availability</x-primary-button>
                     </div>

@@ -1,5 +1,10 @@
 <?php
 
+// v1.2 — 2026-11-09 | readers() now includes min_lead_hours (ReaderProfile.
+//                      video_consulting_min_lead_hours) — the theme stamps it onto the order
+//                      line item at checkout purely for display ("requires N hours notice") on
+//                      the /upload/ slot picker; the actual slot filtering is enforced
+//                      authoritatively in VideoConsultingAvailabilityService::generateSlots().
 // v1.1 — 2026-11-09 | Video consulting Phase 6 — add readers() (the checkout upgrade's reader
 //                      picker: who offers video consulting + their weekly availability pattern)
 //                      and createBooking() (converts a paid-for hold into the real Assignment,
@@ -50,7 +55,7 @@ class VideoConsultingBookingController extends Controller
     {
         $readers = User::where('role', 'reader')
             ->whereHas('videoConsultingRates')
-            ->with(['videoConsultingRates.duration'])
+            ->with(['videoConsultingRates.duration', 'readerProfile'])
             ->get()
             ->filter(fn (User $reader) => VideoConsultingAccess::enabledFor($reader))
             ->map(function (User $reader) use ($availability) {
@@ -72,6 +77,7 @@ class VideoConsultingBookingController extends Controller
                     'id'                   => $reader->id,
                     'name'                 => $reader->name,
                     'availability_summary' => $availability->availabilitySummaryFor($reader->id),
+                    'min_lead_hours'       => (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0),
                     'durations'            => $durations,
                 ];
             })

@@ -1,5 +1,9 @@
 <?php
 
+// v1.2 — 2026-11-09 | update() now also saves min_lead_hours (ReaderProfile.
+//                      video_consulting_min_lead_hours) — the minimum notice a reader requires
+//                      before a call, enforced in VideoConsultingAvailabilityService::
+//                      generateSlots() so customers are never offered a slot sooner than this.
 // v1.1 — 2026-11-09 | Rate + availability merged onto one "Consulting" page
 //                      (VideoConsultingSettingsController) — edit() now just redirects there
 //                      so any existing bookmark/link to this standalone page still lands
@@ -34,7 +38,14 @@ class VideoConsultingAvailabilityController extends Controller
             'days.*.enabled'    => ['nullable', 'boolean'],
             'days.*.start_time' => ['nullable', 'date_format:H:i'],
             'days.*.end_time'   => ['nullable', 'date_format:H:i'],
+            'min_lead_hours'    => ['nullable', 'integer', 'min:0', 'max:336'],
         ]);
+
+        if ($reader->readerProfile) {
+            $reader->readerProfile->update([
+                'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? 0),
+            ]);
+        }
 
         foreach (range(0, 6) as $dayOfWeek) {
             $day = $data['days'][$dayOfWeek] ?? null;

@@ -1,5 +1,8 @@
 <?php
 
+// v1.1 — 2026-11-09 | Pass minLeadHours (ReaderProfile.video_consulting_min_lead_hours) to the
+//                      view — the minimum notice a reader requires before a call, saved via
+//                      VideoConsultingAvailabilityController::update() alongside the weekly hours.
 // v1.0 — 2026-11-09 | Reader self-service rate + availability merged onto one "Consulting"
 //                      page instead of two separate nav items. Each section's form still posts
 //                      to its own existing route (VideoConsultingRateController::update() /
@@ -28,7 +31,8 @@ class VideoConsultingSettingsController extends Controller
 
         $rules = ReaderAvailabilityRule::where('reader_id', $reader->id)->get()->keyBy('day_of_week');
         $blackouts = ReaderBlackoutDate::where('reader_id', $reader->id)->orderBy('start_at')->get();
+        $minLeadHours = (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0);
 
-        return view('video-consulting.edit', compact('durations', 'myRates', 'rules', 'blackouts'));
+        return view('video-consulting.edit', compact('durations', 'myRates', 'rules', 'blackouts', 'minLeadHours'));
     }
 }
