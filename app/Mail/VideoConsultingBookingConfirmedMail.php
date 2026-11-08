@@ -1,5 +1,8 @@
 <?php
 
+// v1.1 — 2026-11-09 | Send from support@screenplayreaders.com (not the portal-wide default
+//                      portal@screenplayreaders.com) — this is a customer-facing email, matching
+//                      the existing support@ address used for Help Scout customer conversations.
 // v1.0 — 2026-11-09 | Video consulting Phase 6 — sent right after checkout upgrade + slot pick,
 //                      before the reader has accepted. Follows the house mailersend()+
 //                      template_id convention (see VideoConsultingCancelledMail) — falls back
@@ -26,6 +29,7 @@ class VideoConsultingBookingConfirmedMail extends Mailable implements ShouldQueu
     {
         $subject = 'Your video consulting call is booked';
         $this->subject($subject);
+        $this->from('support@screenplayreaders.com', 'Screenplay Readers');
 
         $templateId = config('services.mailersend.video_consulting_booking_confirmed_template_id');
 
