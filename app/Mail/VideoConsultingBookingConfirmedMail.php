@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-09 | Add customer_first_name/reader_first_name/reader_last_name to the
+//                      MailerSend personalization payload — the template needs to address the
+//                      customer by name and say who they're booked with; neither was being sent.
 // v1.1 — 2026-11-09 | Send from support@screenplayreaders.com (not the portal-wide default
 //                      portal@screenplayreaders.com) — this is a customer-facing email, matching
 //                      the existing support@ address used for Help Scout customer conversations.
@@ -34,6 +37,19 @@ class VideoConsultingBookingConfirmedMail extends Mailable implements ShouldQueu
         $templateId = config('services.mailersend.video_consulting_booking_confirmed_template_id');
 
         if ($templateId) {
+            $customerFirstName = explode(' ', trim((string) $this->assignment->writer_name))[0] ?? '';
+
+            $reader = $this->assignment->requestedReader;
+            $readerProfile = $reader?->readerProfile;
+            if ($readerProfile?->first_name || $readerProfile?->last_name) {
+                $readerFirstName = $readerProfile->first_name ?? '';
+                $readerLastName = $readerProfile->last_name ?? '';
+            } else {
+                $readerNameParts = explode(' ', trim((string) ($reader?->name ?? '')), 2);
+                $readerFirstName = $readerNameParts[0] ?? '';
+                $readerLastName = $readerNameParts[1] ?? '';
+            }
+
             $this->mailersend(
                 template_id: $templateId,
                 personalization: [
@@ -44,6 +60,9 @@ class VideoConsultingBookingConfirmedMail extends Mailable implements ShouldQueu
                             'script_title' => $this->assignment->script_title,
                             'order_number' => $this->assignment->order_number,
                             'slot_time' => $this->assignment->videoConsultingHold?->slot_start?->format('l, F j, Y \a\t g:i A T'),
+                            'customer_first_name' => $customerFirstName,
+                            'reader_first_name' => $readerFirstName,
+                            'reader_last_name' => $readerLastName,
                         ],
                     ],
                 ],
