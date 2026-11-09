@@ -56,7 +56,7 @@ return [
         // Revenue", "SR Orders Log Backup", etc.), so every append failed with "Unable to parse
         // range" even once the domain-wide-delegation auth issue was fixed. Configurable since a
         // tab rename is far more likely than the file itself changing.
-        'order_log_sheet_tab'            => env('GOOGLE_ORDER_LOG_SHEET_TAB', 'Orders and Revenue'),
+        'order_log_sheet_tab'            => env('GOOGLE_ORDER_LOG_SHEET_TAB', 'Order Log'),
     ],
 
     'portal' => [
