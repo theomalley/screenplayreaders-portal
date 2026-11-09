@@ -1,5 +1,8 @@
 <?php
 
+// v1.4 — 2026-11-09 | Insert new rows at the top (row 2, right under the header) instead of
+//                      appending at the bottom, so the sheet stays newest-first — user request
+//                      after the full backfill was sorted newest-first by hand.
 // v1.3 — 2026-11-09 | FIX #2: the hardcoded range 'Sheet1!A:AG' doesn't exist in this
 //                      spreadsheet at all — its tabs are "Orders and Revenue", "SR Orders Log
 //                      Backup", etc. — so even with the DWD fix below, every append would still
@@ -100,15 +103,32 @@ class AppendOrderToSheet implements ShouldQueue
 
         try {
             $tab = config('services.google.order_log_sheet_tab');
+            $sheetId = $this->resolveSheetId($sheets, $spreadsheetId, $tab);
 
-            $sheets->spreadsheets_values->append(
+            // Insert a blank row right under the header (row 2), then write into it, so the
+            // newest order always lands at the top instead of the bottom of the sheet.
+            $sheets->spreadsheets->batchUpdate($spreadsheetId, new \Google\Service\Sheets\BatchUpdateSpreadsheetRequest([
+                'requests' => [[
+                    'insertDimension' => [
+                        'range' => [
+                            'sheetId'    => $sheetId,
+                            'dimension'  => 'ROWS',
+                            'startIndex' => 1,
+                            'endIndex'   => 2,
+                        ],
+                        'inheritFromBefore' => false,
+                    ],
+                ]],
+            ]));
+
+            $sheets->spreadsheets_values->update(
                 $spreadsheetId,
-                "'{$tab}'!A:AG",
+                "'{$tab}'!A2:AF2",
                 new ValueRange(['values' => [$row]]),
                 ['valueInputOption' => 'USER_ENTERED']
             );
 
-            Log::info('AppendOrderToSheet: row appended', ['order_number' => $orderNum]);
+            Log::info('AppendOrderToSheet: row inserted at top', ['order_number' => $orderNum]);
         } catch (\Throwable $e) {
             Log::error('AppendOrderToSheet: failed', [
                 'order_number' => $orderNum,
@@ -116,6 +136,18 @@ class AppendOrderToSheet implements ShouldQueue
             ]);
             throw $e;
         }
+    }
+
+    private function resolveSheetId(Sheets $sheets, string $spreadsheetId, string $tabName): int
+    {
+        $meta = $sheets->spreadsheets->get($spreadsheetId);
+        foreach ($meta->getSheets() as $sheet) {
+            if ($sheet->getProperties()->getTitle() === $tabName) {
+                return $sheet->getProperties()->getSheetId();
+            }
+        }
+
+        throw new \RuntimeException("AppendOrderToSheet: tab '{$tabName}' not found in spreadsheet {$spreadsheetId}");
     }
 
     private function lookupRegistration($orderId, $orderNum): array
