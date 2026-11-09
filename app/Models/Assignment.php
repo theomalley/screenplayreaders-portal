@@ -1,5 +1,14 @@
 <?php
 
+// v1.33 — 2026-11-09 | scopeAvailable(): include assignments directly requested for this
+//                      reader even when they fall outside their reachable tier groups —
+//                      matches AssignmentPolicy::view()/accept()'s same bypass (a directly
+//                      requested reader is already authorized by the booking itself, tier
+//                      membership is irrelevant). Previously the policy fix alone wasn't
+//                      enough — this query is what actually populates the reader's visible
+//                      list, so a video-consulting booking auto-tiered outside the reader's
+//                      own tier was invisible in their Available pool even though the policy
+//                      would've let them accept it via a direct URL.
 // v1.32 — 2026-11-09 | Video consulting Phase 3 — add video_consulting_customer_email/
 //                      video_consulting_needs_attention_reason and rescheduleOffers() relation
 //                      for reader-initiated cancel/no-show/reschedule.
@@ -663,7 +672,13 @@ class Assignment extends Model
     public function scopeAvailable($query, int $userId, array $tierGroups)
     {
         return $query->where('status', self::STATUS_UNASSIGNED)
-            ->matchingTierGroups($tierGroups)
+            ->where(function ($q) use ($userId, $tierGroups) {
+                $q->where('requested_reader_id', $userId);
+
+                if (! empty($tierGroups)) {
+                    $q->orWhere(fn ($inner) => $inner->matchingTierGroups($tierGroups));
+                }
+            })
             ->notHiddenFrom($userId);
     }
 
