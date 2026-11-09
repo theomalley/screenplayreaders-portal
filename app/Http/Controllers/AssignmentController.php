@@ -1470,12 +1470,58 @@ class AssignmentController extends Controller
 
         $fresh = $assignment->fresh();
         if ($fresh->assignment_type === Assignment::TYPE_VIDEO_CONSULTING) {
-            app(\App\Services\VideoConsultingCallService::class)->createRoomFor($fresh);
+            try {
+                app(\App\Services\VideoConsultingCallService::class)->createRoomFor($fresh);
+            } catch (\Throwable $e) {
+                // Acceptance itself already committed above — don't leave the reader staring at a
+                // raw 500 believing nothing happened. The assignment stays assigned; room creation
+                // can be retried from the assignment page (retryCallRoom()) without re-accepting.
+                Log::error('AssignmentController::accept: Whereby room creation failed after acceptance', [
+                    'assignment_id' => $fresh->id,
+                    'error'         => $e->getMessage(),
+                ]);
+
+                $warning = 'Assignment accepted, but we could not set up the call room automatically. Our team has been notified and will finish setting it up shortly.';
+
+                return request()->expectsJson()
+                    ? response()->json(['success' => true, 'warning' => $warning])
+                    : back()->with('warning', $warning);
+            }
         }
 
         return request()->expectsJson()
             ? response()->json(['success' => true])
             : back()->with('success', 'Assignment accepted.');
+    }
+
+    /**
+     * Retries Whereby room creation for a video-consulting assignment that was accepted but
+     * whose room creation failed (see the try/catch in accept() above). Admin/editor only —
+     * idempotent via createRoomFor()'s own whereby_room_url guard, so safe to click more than once.
+     */
+    public function retryCallRoom(Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        abort_unless($assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING, 404);
+        abort_unless($assignment->status === Assignment::STATUS_ASSIGNED, 422, 'Assignment must be accepted first.');
+
+        if ($assignment->whereby_room_url) {
+            return back()->with('success', 'Call room already exists for this assignment.');
+        }
+
+        try {
+            app(\App\Services\VideoConsultingCallService::class)->createRoomFor($assignment);
+        } catch (\Throwable $e) {
+            Log::error('AssignmentController::retryCallRoom failed', [
+                'assignment_id' => $assignment->id,
+                'error'         => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Still could not create the call room: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Call room created successfully.');
     }
 
     /** Admin/editor toggle the playful "Take Me" attention-grabber (outline + text shown to everyone). */

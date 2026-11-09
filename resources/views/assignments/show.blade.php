@@ -16,6 +16,14 @@
                        class="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
                         Join Call ↗
                     </a>
+                @elseif ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->status === \App\Models\Assignment::STATUS_ASSIGNED && auth()->user()->canManageAssignments())
+                    <form action="{{ route('assignments.retry-call-room', $assignment) }}" method="POST" class="inline mt-2">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors">
+                            Retry Call Room Creation
+                        </button>
+                    </form>
                 @endif
             </div>
             <a href="{{ route('assignments.index') }}"
