@@ -1839,6 +1839,11 @@
                                                         <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                                    @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->videoConsultingHold?->slot_start)
+                                                        <div class="text-[10px] text-indigo-600 font-medium mt-0.5">
+                                                            📅 {{ $assignment->videoConsultingHold->slot_start->format('l, M j, Y \a\t g:i A T') }}
+                                                        </div>
+                                                    @endif
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->preview_pay_rate ?? $assignment->pay_rate, 2) }}</div>
                                                     @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                                     @if ($isRequestedForMe)
@@ -2167,6 +2172,11 @@
                                                         <div class="font-medium text-gray-900 max-w-xs">{{ $assignment->script_title }}</div>
                                                     @endif
                                                     <div class="text-xs text-gray-500">{{ $assignment->writer_name }}</div>
+                                                    @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->videoConsultingHold?->slot_start)
+                                                        <div class="text-[10px] text-indigo-600 font-medium mt-0.5">
+                                                            📅 {{ $assignment->videoConsultingHold->slot_start->format('l, M j, Y \a\t g:i A T') }}
+                                                        </div>
+                                                    @endif
                                                     <div class="text-[10px] text-gray-400 tabular-nums">{{ $assignment->page_count }}p · ${{ number_format($assignment->pay_rate, 2) }}</div>
                                                     @include('assignments.partials.blocked-readers-badge', ['assignment' => $assignment])
                                                     <div class="mt-1.5">

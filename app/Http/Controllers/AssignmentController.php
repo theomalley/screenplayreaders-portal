@@ -301,7 +301,7 @@ class AssignmentController extends Controller
         }
 
         $available = Assignment::available($user->id, $viewableGroups)
-            ->with(['requestedReader.readerProfile'])
+            ->with(['requestedReader.readerProfile', 'videoConsultingHold'])
             ->orderByRaw('rush DESC')
             ->orderBy('unassigned_at', 'asc')
             ->get();
@@ -334,7 +334,7 @@ class AssignmentController extends Controller
         [$periodStart, $periodEnd] = PayPeriod::current();
 
         $mine = Assignment::forReader($user->id)
-            ->with(['requestedReader.readerProfile', 'coverageSubmission'])
+            ->with(['requestedReader.readerProfile', 'coverageSubmission', 'videoConsultingHold'])
             ->orderBy('accepted_at', 'desc')
             ->get();
 
