@@ -1,5 +1,14 @@
 <?php
 
+// v1.10 — 2026-11-09 | view/accept: a reader directly requested for an assignment
+//                      (requested_reader_id === the reader) now bypasses tier matching
+//                      entirely — the customer already chose that exact reader, so tier
+//                      membership is irrelevant. Previously a requested reader whose tier
+//                      wasn't whichever one gets auto-attached to new bookings (currently
+//                      "first non-onboarding tier by position" — see
+//                      VideoConsultingBookingController::createBooking() and
+//                      IncomingAssignmentController) could be silently unable to view or
+//                      accept their own requested booking.
 // v1.9 — 2026-09-09 | Added dismissCancelled() — AssignmentController::dismissCancelled()
 //                     had no authorize() call at all (any authenticated user could
 //                     dismiss any assignment's cancelled notice by ID). (An audit also
@@ -54,11 +63,12 @@ class AssignmentPolicy
         }
 
         if ($user->isReader()) {
-            $tierMatch = $this->tierMatch($user, $assignment, forAccept: false);
+            $isDirectlyRequested = $assignment->requested_reader_id === $user->id;
+            $tierMatch = $isDirectlyRequested || $this->tierMatch($user, $assignment, forAccept: false);
 
             $openToMe = $assignment->isAvailable()
                 && ! $assignment->isHiddenFromReader($user->id)
-                && (is_null($assignment->requested_reader_id) || $assignment->requested_reader_id === $user->id)
+                && (is_null($assignment->requested_reader_id) || $isDirectlyRequested)
                 && $tierMatch;
 
             return $openToMe || $assignment->assigned_reader_id === $user->id;
@@ -110,7 +120,8 @@ class AssignmentPolicy
     /** Reader, editor, or admin self-assigning an unassigned assignment */
     public function accept(User $user, Assignment $assignment): bool
     {
-        $tierMatch = $user->canManageAssignments() || $this->tierMatch($user, $assignment, forAccept: true);
+        $isDirectlyRequested = $assignment->requested_reader_id === $user->id;
+        $tierMatch = $user->canManageAssignments() || $isDirectlyRequested || $this->tierMatch($user, $assignment, forAccept: true);
 
         return $assignment->isAvailable()
             && ($user->isReader() || $user->canManageAssignments())
