@@ -48,8 +48,7 @@ class GoogleDriveService
     public function __construct()
     {
         $client = new Client();
-        // Reads GOOGLE_APPLICATION_CREDENTIALS env var automatically
-        $client->useApplicationDefaultCredentials();
+        $client->setAuthConfig(config('services.google.credentials_path'));
         $client->addScope(Drive::DRIVE);
         $this->drive = new Drive($client);
     }

@@ -48,7 +48,7 @@ class GoogleDocsService
     public function __construct()
     {
         $client = new Client();
-        $client->useApplicationDefaultCredentials();
+        $client->setAuthConfig(config('services.google.credentials_path'));
         $client->setSubject(config('services.google.impersonate_user'));
         $client->addScope(Drive::DRIVE);
         $client->addScope(Docs::DOCUMENTS);

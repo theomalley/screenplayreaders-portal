@@ -27,7 +27,7 @@ class BudgetFileService
     public function __construct()
     {
         $client = new Client();
-        $client->useApplicationDefaultCredentials();
+        $client->setAuthConfig(config('services.google.credentials_path'));
         $client->addScope(Drive::DRIVE);
         $client->addScope(Sheets::SPREADSHEETS);
 

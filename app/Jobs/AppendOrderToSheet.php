@@ -49,7 +49,7 @@ class AppendOrderToSheet implements ShouldQueue
         }
 
         $client = new Client();
-        $client->useApplicationDefaultCredentials();
+        $client->setAuthConfig(config('services.google.credentials_path'));
         $client->setSubject(config('services.google.impersonate_user'));
         $client->addScope(Sheets::SPREADSHEETS);
         $sheets = new Sheets($client);
