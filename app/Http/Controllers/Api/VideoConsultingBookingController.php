@@ -250,7 +250,7 @@ class VideoConsultingBookingController extends Controller
                 'order_number'                    => $data['order_number'],
                 'vendor'                          => 'sr',
                 'assignment_type'                 => Assignment::TYPE_VIDEO_CONSULTING,
-                'script_title'                     => "{$hold->duration->label} Video Consulting Call",
+                'script_title'                     => "{$hold->duration->label} Script Consultation",
                 'writer_name'                     => $data['customer_name'] ?? 'N/A (video consulting)',
                 'pay_rate'                        => $rate->rate,
                 'status'                          => Assignment::STATUS_UNASSIGNED,
