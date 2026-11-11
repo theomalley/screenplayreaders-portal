@@ -1,5 +1,9 @@
 <?php
 
+// v1.11 — 2026-11-11 | Add joinVideoConsultingCall() — gates the reader-facing portal call
+//                      page (Phase 7 partial). Deliberately also allows NEEDS_ATTENTION (not
+//                      just ASSIGNED) so a reader flagged mid-dispute can still reach the room
+//                      right up until an admin resolves it.
 // v1.10 — 2026-11-09 | view/accept: a reader directly requested for an assignment
 //                      (requested_reader_id === the reader) now bypasses tier matching
 //                      entirely — the customer already chose that exact reader, so tier
@@ -215,6 +219,14 @@ class AssignmentPolicy
     {
         return $assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING
             && $assignment->status === Assignment::STATUS_ASSIGNED
+            && ($assignment->assigned_reader_id === $user->id || $user->canManageAssignments());
+    }
+
+    /** Reader (or admin/editor) opening the portal-hosted Join Call page for their own booking. */
+    public function joinVideoConsultingCall(User $user, Assignment $assignment): bool
+    {
+        return $assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING
+            && in_array($assignment->status, [Assignment::STATUS_ASSIGNED, Assignment::STATUS_NEEDS_ATTENTION], true)
             && ($assignment->assigned_reader_id === $user->id || $user->canManageAssignments());
     }
 

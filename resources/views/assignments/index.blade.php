@@ -2230,11 +2230,19 @@
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right">
                                                     <div class="flex items-center justify-end gap-2">
-                                                        @can('submitCoverage', $assignment)
-                                                            <a href="{{ route('coverage.show', $assignment) }}"
-                                                               class="inline-flex items-center px-2.5 py-1 bg-indigo-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-indigo-500 transition whitespace-nowrap">
-                                                                {{ $assignment->coverageSubmission ? 'Continue Coverage' : 'Write Coverage' }}
+                                                        @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->whereby_room_url)
+                                                            <a href="{{ route('video-consulting-call.reader', $assignment) }}"
+                                                               class="inline-flex items-center px-2.5 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-green-500 transition whitespace-nowrap">
+                                                                Join Call ↗
                                                             </a>
+                                                        @endif
+                                                        @can('submitCoverage', $assignment)
+                                                            @if ($assignment->assignment_type !== \App\Models\Assignment::TYPE_VIDEO_CONSULTING)
+                                                                <a href="{{ route('coverage.show', $assignment) }}"
+                                                                   class="inline-flex items-center px-2.5 py-1 bg-indigo-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-indigo-500 transition whitespace-nowrap">
+                                                                    {{ $assignment->coverageSubmission ? 'Continue Coverage' : 'Write Coverage' }}
+                                                                </a>
+                                                            @endif
                                                         @endcan
                                                         @can('cancel', $assignment)
                                                             <form method="POST" action="{{ route('assignments.cancel', $assignment) }}">

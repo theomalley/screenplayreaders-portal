@@ -53,6 +53,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/followup/{token}',  [FollowupFormController::class, 'show'])->name('followup.show');
 Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->name('followup.submit');
 
+// Public video consulting Join Call page — no auth required
+Route::get('/video-consulting-call/{token}', [\App\Http\Controllers\VideoConsultingCallController::class, 'showPublic'])->name('video-consulting-call.public');
+
 // Public video consulting reschedule offer — no auth required
 Route::get('/video-consulting-reschedule/{token}',           [\App\Http\Controllers\VideoConsultingRescheduleOfferController::class, 'show'])->name('video-consulting-reschedule-offer.show');
 Route::post('/video-consulting-reschedule/{token}',          [\App\Http\Controllers\VideoConsultingRescheduleOfferController::class, 'submit'])->name('video-consulting-reschedule-offer.submit');
@@ -136,6 +139,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/followup-reset', [AssignmentController::class, 'resetFollowupToken'])->name('assignments.followup-reset');
     Route::post('assignments/{assignment}/decline', [AssignmentController::class, 'decline'])->name('assignments.decline');
     Route::post('assignments/{assignment}/cancel', [AssignmentController::class, 'cancel'])->name('assignments.cancel');
+    Route::get('video-consulting-bookings/{assignment}/call', [\App\Http\Controllers\VideoConsultingCallController::class, 'showForReader'])->name('video-consulting-call.reader');
     Route::post('video-consulting-bookings/{assignment}/cancel', [\App\Http\Controllers\VideoConsultingCancellationController::class, 'store'])->name('video-consulting-booking.cancel');
     Route::post('video-consulting-bookings/{assignment}/no-show', [\App\Http\Controllers\VideoConsultingNoShowController::class, 'report'])->name('video-consulting-booking.no-show.report');
     Route::get('video-consulting-bookings/{assignment}/reschedule', [\App\Http\Controllers\VideoConsultingRescheduleController::class, 'create'])->name('video-consulting-reschedule.create');

@@ -1,5 +1,9 @@
 <?php
 
+// v1.34 — 2026-11-11 | Video consulting Phase 7 (partial) — add video_consulting_call_token
+//                      (backs the portal-hosted Join Call page) and
+//                      video_consulting_reminder_24h_sent_at (idempotent marker for the new
+//                      call-reminder sweep).
 // v1.33 — 2026-11-09 | scopeAvailable(): include assignments directly requested for this
 //                      reader even when they fall outside their reachable tier groups —
 //                      matches AssignmentPolicy::view()/accept()'s same bypass (a directly
@@ -149,6 +153,8 @@ class Assignment extends Model
         'video_consulting_hold_id',
         'whereby_room_url',
         'whereby_room_name',
+        'video_consulting_call_token',
+        'video_consulting_reminder_24h_sent_at',
         'video_consulting_recording_path',
         'video_consulting_transcript',
         'video_consulting_customer_email',
@@ -193,6 +199,7 @@ class Assignment extends Model
             'karen_alert'               => 'boolean',
             'take_me_enabled'           => 'boolean',
             'upload_link_generated_at'  => 'datetime',
+            'video_consulting_reminder_24h_sent_at' => 'datetime',
         ];
     }
 

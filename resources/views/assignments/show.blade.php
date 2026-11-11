@@ -12,7 +12,7 @@
                     @endif
                 </p>
                 @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->whereby_room_url)
-                    <a href="{{ $assignment->whereby_room_url }}" target="_blank"
+                    <a href="{{ route('video-consulting-call.reader', $assignment) }}"
                        class="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
                         Join Call ↗
                     </a>

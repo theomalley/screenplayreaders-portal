@@ -1,5 +1,10 @@
 <?php
 
+// v1.2 — 2026-11-11 | Video consulting Phase 7 (partial) — generate video_consulting_call_token
+//                      alongside the room so both the customer email and the reader's portal
+//                      link can point at the new portal-hosted call page instead of handing out
+//                      the raw Whereby URL directly. Reused across reschedule's room
+//                      regeneration too (token stays stable — only the room is recreated).
 // v1.1 — 2026-11-09 | Video consulting Phase 6 — email the customer the Whereby link once the
 //                      room is created. Phase 7's polished call page doesn't exist yet, so this
 //                      is the only way the customer ever learns the room exists.
@@ -38,8 +43,9 @@ class VideoConsultingCallService
         $room = $this->whereby->createRoom($slotEnd);
 
         $assignment->update([
-            'whereby_room_url'  => $room['roomUrl'],
-            'whereby_room_name' => $room['roomName'],
+            'whereby_room_url'            => $room['roomUrl'],
+            'whereby_room_name'           => $room['roomName'],
+            'video_consulting_call_token' => $assignment->video_consulting_call_token ?? bin2hex(random_bytes(32)),
         ]);
 
         Log::info('VideoConsultingCallService: room created', [

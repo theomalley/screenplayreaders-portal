@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-11 | call_url now points at the portal-hosted Join Call page
+//                      (video-consulting-call.public) instead of handing out the raw Whereby
+//                      room URL directly — see VideoConsultingCallController.
 // v1.1 — 2026-11-09 | Send from support@screenplayreaders.com (not the portal-wide default
 //                      portal@screenplayreaders.com) — this is a customer-facing email, matching
 //                      the existing support@ address used for Help Scout customer conversations.
@@ -45,7 +48,7 @@ class VideoConsultingCallLinkMail extends Mailable implements ShouldQueue
                             'script_title' => $this->assignment->script_title,
                             'order_number' => $this->assignment->order_number,
                             'slot_time' => $this->assignment->videoConsultingHold?->slot_start?->format('l, F j, Y \a\t g:i A T'),
-                            'call_url' => $this->assignment->whereby_room_url,
+                            'call_url' => route('video-consulting-call.public', $this->assignment->video_consulting_call_token),
                         ],
                     ],
                 ],
