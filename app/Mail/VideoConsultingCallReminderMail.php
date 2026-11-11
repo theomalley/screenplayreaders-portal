@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-11-11 | Added customer_first_name (derived from Assignment.writer_name) for a
+//                      "{{customer_first_name}}" greeting.
 // v1.0 — 2026-11-11 | Video consulting Phase 7 (partial) — 24h pre-call reminder to the
 //                      customer. Sent by App\Console\Commands\SendVideoConsultingCallReminders.
 //                      Follows the house mailersend()+template_id convention (see
@@ -39,6 +41,7 @@ class VideoConsultingCallReminderMail extends Mailable implements ShouldQueue
                         'email' => $this->assignment->video_consulting_customer_email,
                         'data' => [
                             'subject' => $subject,
+                            'customer_first_name' => $this->customerFirstName(),
                             'script_title' => $this->assignment->script_title,
                             'order_number' => $this->assignment->order_number,
                             'slot_time' => $this->assignment->videoConsultingHold?->slot_start?->format('l, F j, Y \a\t g:i A T'),
@@ -48,9 +51,21 @@ class VideoConsultingCallReminderMail extends Mailable implements ShouldQueue
                 ],
             );
         } else {
-            $this->view('emails.video-consulting.call-reminder');
+            $this->view('emails.video-consulting.call-reminder')
+                ->with(['customerFirstName' => $this->customerFirstName()]);
         }
 
         return $this;
+    }
+
+    private function customerFirstName(): string
+    {
+        $name = $this->assignment->writer_name;
+
+        if (! $name || str_starts_with($name, 'N/A')) {
+            return 'there';
+        }
+
+        return trim(strtok($name, ' '));
     }
 }

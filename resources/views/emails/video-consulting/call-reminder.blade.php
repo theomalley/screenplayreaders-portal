@@ -2,7 +2,7 @@
 <html>
 <body style="font-family: -apple-system, Helvetica, Arial, sans-serif; color: #1f2937; max-width: 560px; margin: 0 auto; padding: 24px;">
     <h2 style="margin: 0 0 16px;">Reminder: your call is in 24 hours</h2>
-    <p>Your video consulting call (order #{{ $assignment->order_number }}) is scheduled for:</p>
+    <p>Hi {{ $customerFirstName }}, your video consulting call (order #{{ $assignment->order_number }}) is scheduled for:</p>
     <p style="font-size: 18px; font-weight: 600; margin: 16px 0;">
         {{ $assignment->videoConsultingHold?->slot_start?->format('l, F j, Y \a\t g:i A T') }}
     </p>

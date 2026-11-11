@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-11 | Added customer_first_name (derived from Assignment.writer_name) so the
+//                      template can say "your call with {{customer_first_name}}" — reader_first_name
+//                      alone wasn't enough to name the other party on the call.
 // v1.1 — 2026-11-11 | Added assignment_url (links to the reader's normal authenticated
 //                      assignments.show page, distinct from call_url's call-page shortcut, so the
 //                      reader can see the script before the call) and renamed reader_name ->
@@ -46,6 +49,7 @@ class VideoConsultingReaderCallReminderMail extends Mailable implements ShouldQu
                         'data' => [
                             'subject' => $subject,
                             'reader_first_name' => $this->reader->readerProfile?->first_name ?? $this->reader->name,
+                            'customer_first_name' => $this->customerFirstName(),
                             'script_title' => $this->assignment->script_title,
                             'order_number' => $this->assignment->order_number,
                             'slot_time' => $this->assignment->videoConsultingHold?->slot_start?->format('l, F j, Y \a\t g:i A T'),
@@ -56,9 +60,21 @@ class VideoConsultingReaderCallReminderMail extends Mailable implements ShouldQu
                 ],
             );
         } else {
-            $this->view('emails.video-consulting.reader-call-reminder');
+            $this->view('emails.video-consulting.reader-call-reminder')
+                ->with(['customerFirstName' => $this->customerFirstName()]);
         }
 
         return $this;
+    }
+
+    private function customerFirstName(): string
+    {
+        $name = $this->assignment->writer_name;
+
+        if (! $name || str_starts_with($name, 'N/A')) {
+            return 'your customer';
+        }
+
+        return trim(strtok($name, ' '));
     }
 }
