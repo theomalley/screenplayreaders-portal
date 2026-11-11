@@ -1,5 +1,10 @@
 <?php
 
+// v1.1 — 2026-11-11 | recording.startTrigger changed 'automatic' -> 'automatic-2nd-participant'
+//                      so a reader previewing the room solo (e.g. ahead of the scheduled call)
+//                      never starts a recording — Whereby only starts recording once a second
+//                      participant (the customer) actually joins. Confirmed via Whereby's own
+//                      OpenAPI spec enum: ["none","prompt","automatic","automatic-2nd-participant"].
 // v1.0 — 2026-11-07 | Video consulting Phase 2 — thin wrapper over Whereby's REST API
 //                      (https://api.whereby.dev/v1). Shapes confirmed against Whereby's own
 //                      OpenAPI spec: createMeeting's recording.destination.provider must be
@@ -27,7 +32,7 @@ class WherebyService
                 'recording' => [
                     'type' => 'cloud',
                     'destination' => ['provider' => 'whereby'],
-                    'startTrigger' => 'automatic',
+                    'startTrigger' => 'automatic-2nd-participant',
                 ],
             ])
             ->throw();

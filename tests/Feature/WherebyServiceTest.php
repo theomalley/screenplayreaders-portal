@@ -41,7 +41,7 @@ class WherebyServiceTest extends TestCase
                 && $request->hasHeader('Authorization', 'Bearer test-api-key')
                 && $request['recording']['type'] === 'cloud'
                 && $request['recording']['destination']['provider'] === 'whereby'
-                && $request['recording']['startTrigger'] === 'automatic';
+                && $request['recording']['startTrigger'] === 'automatic-2nd-participant';
         });
     }
 
