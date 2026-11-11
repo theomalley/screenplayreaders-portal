@@ -40,3 +40,7 @@ Schedule::command('video-consulting:release-expired-holds')->everyMinute()->with
 // Flag video-consulting bookings whose reschedule offer expired without a customer response.
 Schedule::command('video-consulting:escalate-reschedule-deadlines')->hourly()->withoutOverlapping();
 // 2026-11-09
+
+// Remind both the customer and reader of an upcoming video-consulting call, 24h out.
+Schedule::command('video-consulting:send-call-reminders')->everyThirtyMinutes()->withoutOverlapping();
+// 2026-11-11

@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-11 | Video consulting Phase 7 (partial) — add notifyCallReminder() (24h
+//                      pre-call reminder to both customer and reader, sent by the new
+//                      video-consulting:send-call-reminders sweep).
 // v1.1 — 2026-11-09 | Video consulting Phase 6 — add notifyCustomerBookingConfirmed() (checkout
 //                      upgrade + slot pick) and notifyCustomerCallLinkReady() (reader accepted,
 //                      Whereby room exists) — stopgap customer notifications until Phase 7's
@@ -15,7 +18,9 @@ namespace App\Services;
 use App\Mail\VideoConsultingAdminAlertMail;
 use App\Mail\VideoConsultingBookingConfirmedMail;
 use App\Mail\VideoConsultingCallLinkMail;
+use App\Mail\VideoConsultingCallReminderMail;
 use App\Mail\VideoConsultingCancelledMail;
+use App\Mail\VideoConsultingReaderCallReminderMail;
 use App\Mail\VideoConsultingRescheduleConfirmedMail;
 use App\Mail\VideoConsultingRescheduleOfferMail;
 use App\Models\Assignment;
@@ -38,6 +43,19 @@ class VideoConsultingNotificationService
         if ($assignment->video_consulting_customer_email) {
             Mail::to($assignment->video_consulting_customer_email)
                 ->send(new VideoConsultingCallLinkMail($assignment));
+        }
+    }
+
+    public function notifyCallReminder(Assignment $assignment): void
+    {
+        if ($assignment->video_consulting_customer_email) {
+            Mail::to($assignment->video_consulting_customer_email)
+                ->send(new VideoConsultingCallReminderMail($assignment));
+        }
+
+        if ($assignment->assignedReader) {
+            Mail::to($assignment->assignedReader->email)
+                ->send(new VideoConsultingReaderCallReminderMail($assignment, $assignment->assignedReader));
         }
     }
 
