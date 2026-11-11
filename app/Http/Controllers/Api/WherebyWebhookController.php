@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-11-11 | Fix: dedupe by recordingId (video_consulting_last_recording_id), not by
+//                      "a recording path already exists" — the old check permanently dropped a
+//                      real call's recording whenever an earlier test/early-join recording had
+//                      already landed. See DownloadWherebyRecording for the matching fix.
 // v1.0 — 2026-11-07 | Video consulting Phase 2 — receives Whereby's recording.finished
 //                      webhook. Signature scheme confirmed against Whereby's own docs:
 //                      header "Whereby-Signature: t=<unix>,v1=<hex>", HMAC-SHA256 of
@@ -51,7 +55,7 @@ class WherebyWebhookController extends Controller
             return response()->json(['status' => 'ignored']);
         }
 
-        if ($assignment->video_consulting_recording_path) {
+        if ($assignment->video_consulting_last_recording_id === $recordingId) {
             return response()->json(['status' => 'already_processed']);
         }
 

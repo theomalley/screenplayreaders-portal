@@ -156,6 +156,7 @@ class Assignment extends Model
         'video_consulting_call_token',
         'video_consulting_reminder_24h_sent_at',
         'video_consulting_recording_path',
+        'video_consulting_last_recording_id',
         'video_consulting_transcript',
         'video_consulting_customer_email',
         'video_consulting_needs_attention_reason',

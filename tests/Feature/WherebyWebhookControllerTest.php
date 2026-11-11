@@ -93,7 +93,11 @@ class WherebyWebhookControllerTest extends TestCase
     {
         config(['services.whereby.webhook_secret' => 'test-secret']);
         Queue::fake();
-        $this->makeAssignment(['video_consulting_recording_path' => 'video-consulting/already/there.mp4']);
+        $this->makeAssignment([
+            'whereby_room_name'                   => '/room-abc',
+            'video_consulting_recording_path'     => 'video-consulting/already/there.mp4',
+            'video_consulting_last_recording_id'  => 'rec-1',
+        ]);
 
         $payload = json_encode([
             'type' => 'recording.finished',
@@ -106,5 +110,29 @@ class WherebyWebhookControllerTest extends TestCase
         ], $payload)->assertOk();
 
         Queue::assertNothingPushed();
+    }
+
+    public function test_a_different_recording_id_for_the_same_room_is_not_blocked_by_an_earlier_one(): void
+    {
+        config(['services.whereby.webhook_secret' => 'test-secret']);
+        Queue::fake();
+        $assignment = $this->makeAssignment([
+            'video_consulting_recording_path'    => 'video-consulting/early-test/there.mp4',
+            'video_consulting_last_recording_id' => 'rec-early-test',
+        ]);
+
+        $payload = json_encode([
+            'type' => 'recording.finished',
+            'data' => ['roomName' => '/room-abc', 'recordingId' => 'rec-real-call', 'filename' => 'call2.mp4'],
+        ]);
+
+        $this->call('POST', '/api/whereby-webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_Whereby-Signature' => $this->sign($payload),
+        ], $payload)->assertOk();
+
+        Queue::assertPushed(DownloadWherebyRecording::class, function ($job) use ($assignment) {
+            return $job->assignmentId === $assignment->id && $job->recordingId === 'rec-real-call';
+        });
     }
 }
