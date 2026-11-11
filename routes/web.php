@@ -53,7 +53,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/followup/{token}',  [FollowupFormController::class, 'show'])->name('followup.show');
 Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->name('followup.submit');
 
-// Public video consulting Join Call page — no auth required
+// Public video consulting Join Call page — no auth required. The literal /preview route must
+// stay registered before the {token} wildcard below, or "preview" would be swallowed as a token.
+Route::get('/video-consulting-call/preview', [\App\Http\Controllers\VideoConsultingCallController::class, 'showPreview'])->name('video-consulting-call.preview');
 Route::get('/video-consulting-call/{token}', [\App\Http\Controllers\VideoConsultingCallController::class, 'showPublic'])->name('video-consulting-call.public');
 
 // Public video consulting reschedule offer — no auth required

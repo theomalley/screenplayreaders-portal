@@ -21,12 +21,11 @@
         </a>
     @else
         <p class="call-not-ready">
-            Your room isn't set up yet — check back closer to your call time.
+            {{ $callPageSettings['call_page_not_ready_text'] }}
         </p>
     @endif
 
     <p class="call-consent">
-        This call may be recorded for quality purposes with both parties' consent, obtained at
-        booking.
+        {{ $callPageSettings['call_page_consent_text'] }}
     </p>
 </div>

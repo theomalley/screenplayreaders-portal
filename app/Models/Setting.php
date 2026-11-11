@@ -1,5 +1,9 @@
 <?php
 
+// v1.20 — 2026-11-11 | Add CALL_PAGE_DEFAULTS and getCallPageSettings() — admin-editable
+//                      heading/consent/not-ready text + logo for the video-consulting call page
+//                      (customer-facing call-public.blade.php and the shared call-details
+//                      partial), set via the theme's Tools -> SR Video Consulting page.
 // v1.19 — 2026-07-17 | Add 'editor' to ORDER_LOG_COLUMNS and default_editor_id setting for
 //                      multi-editor commission attribution.
 // v1.18 — 2026-07-17 | Add retailPricesForForms()/setRetailPrice() — admin-editable retail price
@@ -272,6 +276,27 @@ class Setting extends Model
 
         $result = [];
         foreach (self::EMAIL_NOTIFICATION_DEFAULTS as $key => $default) {
+            $result[$key] = $stored[$key] ?? $default;
+        }
+
+        return $result;
+    }
+
+    /** Video-consulting call page content — consumed by VideoConsultingCallController's views. */
+    public const CALL_PAGE_DEFAULTS = [
+        'call_page_heading'        => 'Your Upcoming Call',
+        'call_page_consent_text'   => "This call may be recorded for quality purposes with both parties' consent, obtained at booking.",
+        'call_page_not_ready_text' => "Your room isn't set up yet — check back closer to your call time.",
+        'call_page_logo_url'       => '',
+    ];
+
+    public static function getCallPageSettings(): array
+    {
+        $keys   = array_keys(self::CALL_PAGE_DEFAULTS);
+        $stored = static::whereIn('key', $keys)->pluck('value', 'key');
+
+        $result = [];
+        foreach (self::CALL_PAGE_DEFAULTS as $key => $default) {
             $result[$key] = $stored[$key] ?? $default;
         }
 

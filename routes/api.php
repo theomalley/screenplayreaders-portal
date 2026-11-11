@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ReadersController;
 use App\Http\Controllers\Api\StaffProfileController;
 use App\Http\Controllers\Api\UploadSettingsController;
 use App\Http\Controllers\Api\VideoConsultingBookingController;
+use App\Http\Controllers\Api\VideoConsultingCallPageSettingsController;
 use App\Http\Controllers\Api\VideoConsultingDurationController;
 use App\Http\Controllers\Api\WherebyWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,13 @@ Route::middleware(['throttle:60,1', 'portal.secret'])->prefix('video-consulting/
     Route::post('/', [VideoConsultingDurationController::class, 'store']);
     Route::patch('/{duration}', [VideoConsultingDurationController::class, 'update']);
     Route::delete('/{duration}', [VideoConsultingDurationController::class, 'destroy']);
+});
+
+// PORTAL INTEGRATION: called by the theme's "Tools -> SR Video Consulting" admin page —
+// admin-editable heading/consent/not-ready text + logo for the call page (Phase 7).
+Route::middleware(['throttle:60,1', 'portal.secret'])->prefix('video-consulting/admin/call-page-settings')->group(function () {
+    Route::get('/', [VideoConsultingCallPageSettingsController::class, 'index']);
+    Route::patch('/', [VideoConsultingCallPageSettingsController::class, 'update']);
 });
 
 // PORTAL INTEGRATION: called server-side by the theme's video consulting checkout upgrade

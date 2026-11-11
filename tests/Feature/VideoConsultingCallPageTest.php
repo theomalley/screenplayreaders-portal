@@ -65,7 +65,7 @@ class VideoConsultingCallPageTest extends TestCase
 
         $this->get("/video-consulting-call/{$assignment->video_consulting_call_token}")
             ->assertOk()
-            ->assertSee("isn't set up yet", false);
+            ->assertSee("isn&#039;t set up yet", false);
     }
 
     public function test_assigned_reader_can_view_their_own_call_page(): void
@@ -96,5 +96,28 @@ class VideoConsultingCallPageTest extends TestCase
         $this->actingAs($admin)
             ->get("/video-consulting-bookings/{$assignment->id}/call")
             ->assertOk();
+    }
+
+    public function test_preview_page_renders_sample_content_without_a_real_assignment(): void
+    {
+        $before = \App\Models\Assignment::count();
+
+        $this->get('/video-consulting-call/preview')
+            ->assertOk()
+            ->assertSee('The Great American Screenplay (Sample)')
+            ->assertSee('Jane Reader', false);
+
+        $this->assertSame($before, \App\Models\Assignment::count());
+    }
+
+    public function test_preview_page_reflects_saved_call_page_settings(): void
+    {
+        \App\Models\Setting::setValue('call_page_heading', 'Custom Preview Heading');
+        \App\Models\Setting::setValue('call_page_logo_url', 'https://example.com/logo.png');
+
+        $this->get('/video-consulting-call/preview')
+            ->assertOk()
+            ->assertSee('Custom Preview Heading')
+            ->assertSee('https://example.com/logo.png', false);
     }
 }

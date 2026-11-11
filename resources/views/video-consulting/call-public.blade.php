@@ -22,12 +22,16 @@
         .call-join-btn:hover { background: #1e2f40; }
         .call-not-ready { margin-top: 1.25rem; font-size: 0.9rem; color: #8a6d00; background: #fff8e1; border: 1px solid #f0dfa0; border-radius: 6px; padding: 0.75rem 1rem; }
         .call-consent { margin-top: 1.5rem; font-size: 0.8rem; color: #888; }
+        .page-header .logo { max-height: 60px; max-width: 100%; margin: 0 auto 1.25rem; display: block; }
     </style>
 </head>
 <body>
 <div class="wrap">
     <div class="page-header">
-        <h1>Your Upcoming Call</h1>
+        @if (! empty($callPageSettings['call_page_logo_url']))
+            <img class="logo" src="{{ $callPageSettings['call_page_logo_url'] }}" alt="Screenplay Readers">
+        @endif
+        <h1>{{ $callPageSettings['call_page_heading'] }}</h1>
         <p class="order-num">Order #{{ $assignment->order_number }}</p>
     </div>
 
