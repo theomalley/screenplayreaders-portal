@@ -1,5 +1,8 @@
 <?php
 
+// v1.3 — 2026-11-11 | Add reader_first_name/customer_first_name — the template was edited to
+//                      use {{reader_first_name}} but this mailable never sent that key, so it
+//                      rendered blank. Matches the merge-var convention from the 24h reminders.
 // v1.2 — 2026-11-11 | call_url now points at the portal-hosted Join Call page
 //                      (video-consulting-call.public) instead of handing out the raw Whereby
 //                      room URL directly — see VideoConsultingCallController.
@@ -45,6 +48,8 @@ class VideoConsultingCallLinkMail extends Mailable implements ShouldQueue
                         'email' => $this->assignment->video_consulting_customer_email,
                         'data' => [
                             'subject' => $subject,
+                            'reader_first_name' => $this->readerFirstName(),
+                            'customer_first_name' => $this->customerFirstName(),
                             'script_title' => $this->assignment->script_title,
                             'order_number' => $this->assignment->order_number,
                             'slot_time' => $this->assignment->videoConsultingHold?->slot_start?->format('l, F j, Y \a\t g:i A T'),
@@ -54,9 +59,36 @@ class VideoConsultingCallLinkMail extends Mailable implements ShouldQueue
                 ],
             );
         } else {
-            $this->view('emails.video-consulting.call-link');
+            $this->view('emails.video-consulting.call-link')
+                ->with([
+                    'readerFirstName' => $this->readerFirstName(),
+                    'customerFirstName' => $this->customerFirstName(),
+                ]);
         }
 
         return $this;
+    }
+
+    private function readerFirstName(): string
+    {
+        $reader = $this->assignment->assignedReader;
+        $profile = $reader?->readerProfile;
+
+        if ($profile?->first_name) {
+            return $profile->first_name;
+        }
+
+        return $reader?->name ?? 'your reader';
+    }
+
+    private function customerFirstName(): string
+    {
+        $name = $this->assignment->writer_name;
+
+        if (! $name || str_starts_with($name, 'N/A')) {
+            return 'there';
+        }
+
+        return trim(strtok($name, ' '));
     }
 }
