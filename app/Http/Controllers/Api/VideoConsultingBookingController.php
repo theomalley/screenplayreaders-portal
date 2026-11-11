@@ -1,5 +1,11 @@
 <?php
 
+// v1.3 — 2026-11-11 | createBooking() now accepts the customer's real script_title + an uploaded
+//                      script file (previously hardcoded script_title to "{duration} Script
+//                      Consultation" and carried no script at all) — stored and dispatched to
+//                      Drive the same way IncomingAssignmentController::store() does, so the
+//                      existing type-agnostic script-download UI on assignments/show.blade.php
+//                      picks it up automatically once drive_script_file_id is set.
 // v1.2 — 2026-11-09 | readers() now includes min_lead_hours (ReaderProfile.
 //                      video_consulting_min_lead_hours) — the theme stamps it onto the order
 //                      line item at checkout purely for display ("requires N hours notice") on
@@ -19,6 +25,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\UploadScriptToDrive;
 use App\Models\Assignment;
 use App\Models\ReaderVideoConsultingRate;
 use App\Models\Tier;
@@ -33,6 +40,7 @@ use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class VideoConsultingBookingController extends Controller
@@ -220,6 +228,8 @@ class VideoConsultingBookingController extends Controller
             'order_number'   => ['required', 'string', 'max:64'],
             'customer_name'  => ['nullable', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
+            'script_title'   => ['required', 'string', 'max:255'],
+            'script'         => ['required', 'file', 'mimes:pdf,docx', 'max:5120'],
         ]);
 
         $hold = VideoConsultingHold::with('duration')->where('hold_token', $data['hold_token'])->first();
@@ -250,7 +260,7 @@ class VideoConsultingBookingController extends Controller
                 'order_number'                    => $data['order_number'],
                 'vendor'                          => 'sr',
                 'assignment_type'                 => Assignment::TYPE_VIDEO_CONSULTING,
-                'script_title'                     => "{$hold->duration->label} Script Consultation",
+                'script_title'                     => $data['script_title'],
                 'writer_name'                     => $data['customer_name'] ?? 'N/A (video consulting)',
                 'pay_rate'                        => $rate->rate,
                 'status'                          => Assignment::STATUS_UNASSIGNED,
@@ -273,6 +283,18 @@ class VideoConsultingBookingController extends Controller
         }
 
         $hold->update(['status' => VideoConsultingHold::STATUS_CONVERTED, 'converted_assignment_id' => $assignment->id]);
+
+        // Stash the script and dispatch an async Drive upload — same convention as
+        // IncomingAssignmentController::store() (storeAs() with the client's original
+        // extension, since store() guesses a MIME-based one like 'zip' for .fadein).
+        $clientExt   = strtolower($request->file('script')->getClientOriginalExtension());
+        $storageName = Str::random(40) . ($clientExt !== '' ? '.' . $clientExt : '');
+        $storagePath = $request->file('script')->storeAs('incoming-scripts', $storageName, 'local');
+        if ($storagePath !== false) {
+            UploadScriptToDrive::dispatch($assignment->id, $storagePath);
+        } else {
+            Log::error('VideoConsultingBooking: file store failed', ['assignment_id' => $assignment->id]);
+        }
 
         // Every acceptable assignment needs at least one Tier attached (AssignmentPolicy::
         // accept()'s tierMatch() requires it) — mirrors TestDataController's/

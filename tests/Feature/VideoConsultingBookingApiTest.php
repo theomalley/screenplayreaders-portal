@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\UploadScriptToDrive;
 use App\Mail\NewAssignmentMail;
 use App\Mail\VideoConsultingBookingConfirmedMail;
 use App\Models\Assignment;
@@ -13,18 +14,40 @@ use App\Models\VideoConsultingDuration;
 use App\Models\VideoConsultingHold;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class VideoConsultingBookingApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('local');
+        Queue::fake();
+    }
+
     private function authHeaders(): array
     {
         config(['services.portal.webhook_secret' => 'test-secret']);
 
-        return ['Authorization' => 'Bearer test-secret'];
+        // Needed for plain post() (file-upload tests can't use postJson()) to get a JSON
+        // validation-error response instead of a redirect-back.
+        return ['Authorization' => 'Bearer test-secret', 'Accept' => 'application/json'];
+    }
+
+    /** Required booking fields a real customer-confirmed booking always carries now. */
+    private function bookingExtras(array $overrides = []): array
+    {
+        return array_merge([
+            'script_title' => 'My Great Screenplay',
+            'script'       => UploadedFile::fake()->create('script.pdf', 100, 'application/pdf'),
+        ], $overrides);
     }
 
     private function makeBookableReader(bool $notifiable = false): array
@@ -117,12 +140,12 @@ class VideoConsultingBookingApiTest extends TestCase
         $reader->readerProfile->tiers()->sync([$tier->id]);
         $hold = $this->makeHold($reader, $duration, now()->addDay());
 
-        $response = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/bookings', [
+        $response = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', array_merge([
             'hold_token' => $hold->hold_token,
             'order_number' => '#5001',
             'customer_name' => 'Pat Customer',
             'customer_email' => 'pat@example.com',
-        ]);
+        ], $this->bookingExtras(['script_title' => 'My Great Screenplay'])));
 
         $response->assertStatus(201);
         $response->assertJsonStructure(['status', 'assignment_id']);
@@ -134,6 +157,7 @@ class VideoConsultingBookingApiTest extends TestCase
         $this->assertSame('pat@example.com', $assignment->video_consulting_customer_email);
         $this->assertEquals(50, $assignment->pay_rate);
         $this->assertSame('#5001', $assignment->order_number);
+        $this->assertSame('My Great Screenplay', $assignment->script_title);
 
         $hold->refresh();
         $this->assertSame(VideoConsultingHold::STATUS_CONVERTED, $hold->status);
@@ -141,6 +165,39 @@ class VideoConsultingBookingApiTest extends TestCase
 
         Mail::assertQueued(VideoConsultingBookingConfirmedMail::class, fn ($m) => $m->hasTo('pat@example.com'));
         Mail::assertQueued(NewAssignmentMail::class);
+        Queue::assertPushed(UploadScriptToDrive::class, fn ($job) => $job->assignmentId === $assignment->id);
+    }
+
+    public function test_create_booking_rejects_a_request_missing_the_script_file(): void
+    {
+        [$reader, $duration] = $this->makeBookableReader();
+        $hold = $this->makeHold($reader, $duration, now()->addDay());
+
+        $response = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', [
+            'hold_token' => $hold->hold_token,
+            'order_number' => '#5001',
+            'customer_email' => 'pat@example.com',
+            'script_title' => 'My Great Screenplay',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('script');
+    }
+
+    public function test_create_booking_rejects_a_request_missing_the_script_title(): void
+    {
+        [$reader, $duration] = $this->makeBookableReader();
+        $hold = $this->makeHold($reader, $duration, now()->addDay());
+
+        $response = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', [
+            'hold_token' => $hold->hold_token,
+            'order_number' => '#5001',
+            'customer_email' => 'pat@example.com',
+            'script' => UploadedFile::fake()->create('script.pdf', 100, 'application/pdf'),
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('script_title');
     }
 
     public function test_create_booking_syncs_a_default_tier_so_the_reader_can_accept(): void
@@ -150,11 +207,11 @@ class VideoConsultingBookingApiTest extends TestCase
         [$reader, $duration] = $this->makeBookableReader();
         $hold = $this->makeHold($reader, $duration, now()->addDay());
 
-        $response = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/bookings', [
+        $response = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', array_merge([
             'hold_token' => $hold->hold_token,
             'order_number' => '#5002',
             'customer_email' => 'pat@example.com',
-        ]);
+        ], $this->bookingExtras()));
 
         $assignment = Assignment::find($response->json('assignment_id'));
         $this->assertTrue($assignment->tiers->contains($tier->id));
@@ -166,18 +223,18 @@ class VideoConsultingBookingApiTest extends TestCase
         [$reader, $duration] = $this->makeBookableReader();
         $hold = $this->makeHold($reader, $duration, now()->addDay());
 
-        $first = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/bookings', [
+        $first = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', array_merge([
             'hold_token' => $hold->hold_token,
             'order_number' => '#5003',
             'customer_email' => 'pat@example.com',
-        ]);
+        ], $this->bookingExtras()));
         $first->assertStatus(201);
 
-        $second = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/bookings', [
+        $second = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', array_merge([
             'hold_token' => $hold->hold_token,
             'order_number' => '#5003',
             'customer_email' => 'pat@example.com',
-        ]);
+        ], $this->bookingExtras()));
 
         $second->assertStatus(200);
         $second->assertJson(['status' => 'already_exists', 'assignment_id' => $first->json('assignment_id')]);
@@ -190,22 +247,22 @@ class VideoConsultingBookingApiTest extends TestCase
         $hold = $this->makeHold($reader, $duration, now()->addDay());
         $hold->update(['expires_at' => now()->subMinute()]);
 
-        $response = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/bookings', [
+        $response = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', array_merge([
             'hold_token' => $hold->hold_token,
             'order_number' => '#5004',
             'customer_email' => 'pat@example.com',
-        ]);
+        ], $this->bookingExtras()));
 
         $response->assertStatus(409);
     }
 
     public function test_create_booking_rejects_an_unknown_hold_token(): void
     {
-        $response = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/bookings', [
+        $response = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', array_merge([
             'hold_token' => 'does-not-exist',
             'order_number' => '#5005',
             'customer_email' => 'pat@example.com',
-        ]);
+        ], $this->bookingExtras()));
 
         $response->assertStatus(404);
     }
@@ -216,11 +273,11 @@ class VideoConsultingBookingApiTest extends TestCase
         $hold = $this->makeHold($reader, $duration, now()->addDay());
         $rate->delete();
 
-        $response = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/bookings', [
+        $response = $this->withHeaders($this->authHeaders())->post('/api/video-consulting/bookings', array_merge([
             'hold_token' => $hold->hold_token,
             'order_number' => '#5006',
             'customer_email' => 'pat@example.com',
-        ]);
+        ], $this->bookingExtras()));
 
         $response->assertStatus(422);
     }

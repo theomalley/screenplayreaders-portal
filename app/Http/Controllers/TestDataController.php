@@ -162,7 +162,7 @@ class TestDataController extends Controller
             'order_number'             => 'TEST-VC-' . strtoupper(substr(uniqid(), -6)),
             'vendor'                   => 'sr',
             'assignment_type'          => Assignment::TYPE_VIDEO_CONSULTING,
-            'script_title'             => "{$rate->duration->label} Script Consultation",
+            'script_title'             => 'Test Script',
             'writer_name'              => 'N/A (test booking)',
             'pay_rate'                 => $rate->rate,
             'status'                   => Assignment::STATUS_UNASSIGNED,
