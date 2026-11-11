@@ -110,20 +110,24 @@ class DownloadWherebyRecordingTest extends TestCase
         $this->assertNotNull($assignment->fresh()->video_consulting_recording_path);
     }
 
-    public function test_an_early_recording_days_before_the_scheduled_call_does_not_complete_the_booking(): void
+    public function test_a_recording_well_before_the_scheduled_call_still_completes_the_booking(): void
     {
+        // Recording can only exist at all if two real participants were in the room together
+        // (WherebyService uses recording.startTrigger = automatic-2nd-participant) — so even a
+        // recording that lands days before the scheduled slot reflects a real conversation and
+        // must still reach QC for review (contact-info/transcript monitoring happens there).
         $this->fakeWherebyDownload();
 
         $assignment = $this->makeAssignmentWithSlot(now()->addDays(6));
 
-        (new DownloadWherebyRecording($assignment->id, 'rec-early-test', 'call.mp4'))
+        (new DownloadWherebyRecording($assignment->id, 'rec-early-real-call', 'call.mp4'))
             ->handle(app(WherebyService::class), app(SpacesStorageService::class));
 
         $fresh = $assignment->fresh();
-        $this->assertSame(Assignment::STATUS_ASSIGNED, $fresh->status);
-        $this->assertNull($fresh->submitted_at);
+        $this->assertSame(Assignment::STATUS_QC, $fresh->status);
+        $this->assertNotNull($fresh->submitted_at);
         $this->assertNotNull($fresh->video_consulting_recording_path);
-        $this->assertSame('rec-early-test', $fresh->video_consulting_last_recording_id);
+        $this->assertSame('rec-early-real-call', $fresh->video_consulting_last_recording_id);
     }
 
     public function test_a_recording_at_the_scheduled_call_time_does_complete_the_booking(): void
@@ -140,31 +144,35 @@ class DownloadWherebyRecordingTest extends TestCase
         $this->assertNotNull($fresh->submitted_at);
     }
 
-    public function test_a_later_real_recording_overwrites_an_earlier_test_recording_and_completes_the_booking(): void
+    public function test_a_later_recording_overwrites_an_earlier_ones_stored_file_without_disturbing_an_already_completed_status(): void
     {
         $this->fakeWherebyDownload();
 
         $assignment = $this->makeAssignmentWithSlot(now()->addHour());
 
-        // Early/test join: recording finishes well before the scheduled call.
-        (new DownloadWherebyRecording($assignment->id, 'rec-early-test', 'call.mp4'))
+        // First session: already completes the booking (any recording now means two real
+        // participants were present, per the automatic-2nd-participant trigger).
+        (new DownloadWherebyRecording($assignment->id, 'rec-first', 'call.mp4'))
             ->handle(app(WherebyService::class), app(SpacesStorageService::class));
 
         $midway = $assignment->fresh();
-        $this->assertSame(Assignment::STATUS_ASSIGNED, $midway->status);
-        $this->assertSame('rec-early-test', $midway->video_consulting_last_recording_id);
+        $this->assertSame(Assignment::STATUS_QC, $midway->status);
+        $firstSubmittedAt = $midway->submitted_at;
+        $this->assertSame('rec-first', $midway->video_consulting_last_recording_id);
 
-        // The real call happens later; travel to right around slot_start and process the real recording.
+        // A second, later recording for the same assignment (e.g. they reconnected) overwrites
+        // the stored file/recording id, but doesn't re-stamp completion — status already moved
+        // past STATUS_ASSIGNED, matching test_does_not_overwrite_a_status_that_already_moved_past_assigned.
         $this->travelTo($assignment->videoConsultingHold->slot_start->copy()->addMinutes(2));
 
-        (new DownloadWherebyRecording($assignment->id, 'rec-real-call', 'call2.mp4'))
+        (new DownloadWherebyRecording($assignment->id, 'rec-second', 'call2.mp4'))
             ->handle(app(WherebyService::class), app(SpacesStorageService::class));
 
         $final = $assignment->fresh();
-        $this->assertSame('rec-real-call', $final->video_consulting_last_recording_id);
+        $this->assertSame('rec-second', $final->video_consulting_last_recording_id);
         $this->assertNotNull($final->video_consulting_recording_path);
         $this->assertSame(Assignment::STATUS_QC, $final->status);
-        $this->assertNotNull($final->submitted_at);
+        $this->assertEquals($firstSubmittedAt, $final->submitted_at);
         Http::assertSentCount(4); // 2 downloads (access-link + body fetch) x 2 recordings
 
         $this->travelBack();
