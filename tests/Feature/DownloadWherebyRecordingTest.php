@@ -159,10 +159,10 @@ class DownloadWherebyRecordingTest extends TestCase
         $this->assertSame(Assignment::STATUS_QC, $midway->status);
         $firstSubmittedAt = $midway->submitted_at;
         $this->assertSame('rec-first', $midway->video_consulting_last_recording_id);
+        $firstPath = $midway->video_consulting_recording_path;
 
-        // A second, later recording for the same assignment (e.g. they reconnected) overwrites
-        // the stored file/recording id, but doesn't re-stamp completion — status already moved
-        // past STATUS_ASSIGNED, matching test_does_not_overwrite_a_status_that_already_moved_past_assigned.
+        // A second, later recording for the same assignment (e.g. they reconnected) must NOT
+        // destroy the first recording's file — each recording gets its own storage path now.
         $this->travelTo($assignment->videoConsultingHold->slot_start->copy()->addMinutes(2));
 
         (new DownloadWherebyRecording($assignment->id, 'rec-second', 'call2.mp4'))
@@ -171,8 +171,11 @@ class DownloadWherebyRecordingTest extends TestCase
         $final = $assignment->fresh();
         $this->assertSame('rec-second', $final->video_consulting_last_recording_id);
         $this->assertNotNull($final->video_consulting_recording_path);
+        $this->assertNotSame($firstPath, $final->video_consulting_recording_path);
         $this->assertSame(Assignment::STATUS_QC, $final->status);
         $this->assertEquals($firstSubmittedAt, $final->submitted_at);
+        Storage::disk('do_spaces')->assertExists($firstPath);
+        Storage::disk('do_spaces')->assertExists($final->video_consulting_recording_path);
         Http::assertSentCount(4); // 2 downloads (access-link + body fetch) x 2 recordings
 
         $this->travelBack();

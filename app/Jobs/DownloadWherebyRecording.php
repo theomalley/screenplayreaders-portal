@@ -1,5 +1,13 @@
 <?php
 
+// v1.3 — 2026-11-11 | Storage path now includes the recordingId. It previously keyed only on
+//                      assignment id, so a second recording for the same assignment (e.g. the
+//                      pair reconnects after an earlier real-but-early session already completed
+//                      the booking) would silently overwrite the first recording's file in Spaces
+//                      — destroying it. Each recording now gets its own file; also logs a warning
+//                      when a recording lands for an assignment that already left STATUS_ASSIGNED,
+//                      since the single `video_consulting_recording_path` column only ever points
+//                      at the latest one and an earlier file could otherwise go unnoticed.
 // v1.2 — 2026-11-11 | Removed the slot_start timing gate on QC routing added in v1.1. Once
 //                      WherebyService switched recording.startTrigger to
 //                      'automatic-2nd-participant' (same day), a recording can only ever exist
@@ -71,13 +79,24 @@ class DownloadWherebyRecording implements ShouldQueue
         }
 
         $ext = pathinfo($this->filename, PATHINFO_EXTENSION) ?: 'mp4';
-        $path = "video-consulting/{$assignment->order_number}/{$assignment->id}-recording.{$ext}";
+        $safeRecordingId = preg_replace('/[^A-Za-z0-9_-]/', '', $this->recordingId);
+        $path = "video-consulting/{$assignment->order_number}/{$assignment->id}-{$safeRecordingId}.{$ext}";
 
         $spaces->store($path, $response->body(), match ($ext) {
             'mp4'  => 'video/mp4',
             'webm' => 'video/webm',
             default => 'application/octet-stream',
         });
+
+        if ($assignment->status !== Assignment::STATUS_ASSIGNED && $assignment->video_consulting_last_recording_id) {
+            Log::warning('DownloadWherebyRecording: a later recording arrived for an assignment that already left STATUS_ASSIGNED — the stored recording_path column will only point at this newest file, the earlier one is kept in Spaces but no longer referenced by this column', [
+                'assignment_id'          => $assignment->id,
+                'previous_recording_id'  => $assignment->video_consulting_last_recording_id,
+                'previous_recording_path' => $assignment->video_consulting_recording_path,
+                'new_recording_id'       => $this->recordingId,
+                'new_recording_path'     => $path,
+            ]);
+        }
 
         DB::transaction(function () use ($assignment, $path) {
             $fresh = Assignment::lockForUpdate()->findOrFail($assignment->id);
