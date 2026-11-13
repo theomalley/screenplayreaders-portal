@@ -3,6 +3,9 @@
     $slotStart = $hold?->slot_start;
     $slotEnd = $hold?->slot_end;
     $durationMinutes = $slotStart && $slotEnd ? $slotStart->diffInMinutes($slotEnd) : null;
+    $joinUrl = $assignment->whereby_room_url
+        ? $assignment->whereby_room_url . (str_contains($assignment->whereby_room_url, '?') ? '&' : '?') . 'chat=off'
+        : null;
 @endphp
 
 <div class="call-card">
@@ -15,8 +18,8 @@
         <p class="call-meta">{{ $durationMinutes }} minutes with {{ $counterpart }}</p>
     @endif
 
-    @if ($assignment->whereby_room_url)
-        <a href="{{ $assignment->whereby_room_url }}" target="_blank" rel="noopener" class="call-join-btn">
+    @if ($joinUrl)
+        <a href="{{ $joinUrl }}" target="_blank" rel="noopener" class="call-join-btn">
             Join Call ↗
         </a>
     @else
