@@ -262,18 +262,6 @@
                 </div>
 
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-                    @if($assignment->video_consulting_contact_info_flag === true)
-                        <div class="px-4 py-3 mb-4 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md">
-                            <strong>⚠ Possible contact-info exchange detected</strong>
-                            @if($assignment->video_consulting_contact_info_evidence)
-                                <p class="mt-1 whitespace-pre-wrap">{{ $assignment->video_consulting_contact_info_evidence }}</p>
-                            @endif
-                        </div>
-                    @elseif($assignment->video_consulting_contact_info_flag === false)
-                        <div class="px-4 py-2 mb-4 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md">
-                            No contact-info exchange detected by automated review.
-                        </div>
-                    @endif
                     <form method="POST" action="{{ route('qc.save-transcript', $assignment) }}" class="space-y-3">
                         @csrf
                         <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide">

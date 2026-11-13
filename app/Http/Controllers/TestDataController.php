@@ -215,8 +215,6 @@ class TestDataController extends Controller
             'video_consulting_recording_path'  => null,
             'video_consulting_transcript'      => null,
             'video_consulting_transcription_id' => null,
-            'video_consulting_contact_info_flag'     => null,
-            'video_consulting_contact_info_evidence' => null,
             'video_consulting_needs_attention_reason' => null,
             'cancellation_reason'              => null,
         ]);

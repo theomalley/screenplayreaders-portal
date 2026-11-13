@@ -92,10 +92,6 @@ return [
         'webhook_secret' => env('ASSEMBLYAI_WEBHOOK_SECRET'),
     ],
 
-    'anthropic' => [
-        'api_key' => env('ANTHROPIC_API_KEY'),
-    ],
-
     'mailersend' => [
         'api_key'                   => env('MAILERSEND_API_KEY'),
         'assignment_template_id'    => env('MAILERSEND_ASSIGNMENT_TEMPLATE_ID', 'neqvygm95xdl0p7w'),
