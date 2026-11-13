@@ -108,6 +108,27 @@ class VideoConsultingBookingApiTest extends TestCase
         $this->assertSame(48, $response->json('0.min_lead_hours'));
     }
 
+    public function test_readers_endpoint_includes_photo_url_when_the_reader_has_a_photo(): void
+    {
+        [$reader] = $this->makeBookableReader();
+        $reader->readerProfile->update(['photo' => 'reader-photos/jamie.jpg']);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $this->assertStringContainsString('reader-photos/jamie.jpg', $response->json('0.photo_url'));
+    }
+
+    public function test_readers_endpoint_photo_url_is_null_when_the_reader_has_no_photo(): void
+    {
+        $this->makeBookableReader();
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $this->assertNull($response->json('0.photo_url'));
+    }
+
     public function test_readers_endpoint_excludes_a_reader_with_no_rates(): void
     {
         User::factory()->create(['role' => 'reader']);

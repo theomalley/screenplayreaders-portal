@@ -1,5 +1,8 @@
 <?php
 
+// v1.4 — 2026-11-13 | readers() now includes photo_url (ReaderProfile.photo) so the theme can
+//                      show the booked reader's photo in place of the generic product image on
+//                      cart/checkout/order-detail line items.
 // v1.3 — 2026-11-11 | createBooking() now accepts the customer's real script_title + an uploaded
 //                      script file (previously hardcoded script_title to "{duration} Script
 //                      Consultation" and carried no script at all) — stored and dispatched to
@@ -81,9 +84,12 @@ class VideoConsultingBookingController extends Controller
                     return null;
                 }
 
+                $photo = $reader->readerProfile?->photo;
+
                 return [
                     'id'                   => $reader->id,
                     'name'                 => $reader->name,
+                    'photo_url'            => $photo ? asset('storage/' . $photo) : null,
                     'availability_summary' => $availability->availabilitySummaryFor($reader->id),
                     'min_lead_hours'       => (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0),
                     'durations'            => $durations,
