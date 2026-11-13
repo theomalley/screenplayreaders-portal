@@ -56,15 +56,25 @@ class QcController extends Controller
     {
         abort_unless(Permission::check('qc'), 403);
 
-        $assignments = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
-            ->where('status', Assignment::STATUS_QC)
-            ->orderByDesc('submitted_at')
-            ->paginate(50, ['*'], 'page');
+        $canQcVideoConsulting = Permission::check('qc.video_consulting');
 
-        $needsAttention = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
-            ->where('status', Assignment::STATUS_NEEDS_ATTENTION)
-            ->orderByDesc('updated_at')
-            ->paginate(50, ['*'], 'attention_page');
+        $assignmentsQuery = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
+            ->where('status', Assignment::STATUS_QC);
+        $needsAttentionQuery = Assignment::with(['assignedReader.readerProfile', 'coverageSubmission'])
+            ->where('status', Assignment::STATUS_NEEDS_ATTENTION);
+
+        if (! $canQcVideoConsulting) {
+            // assignment_type is nullable — plain coverage assignments are often NULL, and
+            // SQL's `!=` is never true against NULL, so exclude only the video-consulting rows
+            // explicitly rather than filtering everything else out by accident.
+            $excludeVideoConsulting = fn ($q) => $q->where('assignment_type', '!=', Assignment::TYPE_VIDEO_CONSULTING)
+                ->orWhereNull('assignment_type');
+            $assignmentsQuery->where($excludeVideoConsulting);
+            $needsAttentionQuery->where($excludeVideoConsulting);
+        }
+
+        $assignments = $assignmentsQuery->orderByDesc('submitted_at')->paginate(50, ['*'], 'page');
+        $needsAttention = $needsAttentionQuery->orderByDesc('updated_at')->paginate(50, ['*'], 'attention_page');
 
         return view('qc.index', compact('assignments', 'needsAttention'));
     }
@@ -72,6 +82,7 @@ class QcController extends Controller
     public function show(Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
+        $this->abortUnlessCanQcVideoConsulting($assignment);
         abort_unless(
             in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_NEEDS_ATTENTION], true),
             404
@@ -117,6 +128,7 @@ class QcController extends Controller
     public function approve(Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
+        $this->abortUnlessCanQcVideoConsulting($assignment);
         abort_unless(
             in_array($assignment->status, [Assignment::STATUS_QC, Assignment::STATUS_NEEDS_ATTENTION], true),
             422
@@ -304,6 +316,7 @@ class QcController extends Controller
     public function sendBack(Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
+        $this->abortUnlessCanQcVideoConsulting($assignment);
         abort_unless($assignment->status === Assignment::STATUS_QC, 422);
 
         $notes = trim(request()->input('notes', ''));
@@ -330,6 +343,7 @@ class QcController extends Controller
     public function saveTranscript(\Illuminate\Http\Request $request, Assignment $assignment)
     {
         abort_unless(Permission::check('qc'), 403);
+        $this->abortUnlessCanQcVideoConsulting($assignment);
 
         $data = $request->validate(['transcript' => 'nullable|string|max:100000']);
 
@@ -339,6 +353,18 @@ class QcController extends Controller
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Separate from the base 'qc' permission — lets an admin allow a role (e.g. editor) into
+     * the general QC queue while still excluding video-consulting calls specifically, via the
+     * admin.permissions grid (Permission::FEATURES['qc.video_consulting']).
+     */
+    private function abortUnlessCanQcVideoConsulting(Assignment $assignment): void
+    {
+        if ($assignment->assignment_type === Assignment::TYPE_VIDEO_CONSULTING) {
+            abort_unless(Permission::check('qc.video_consulting'), 403);
+        }
+    }
 
     private function generatePdfForAssignment(Assignment $assignment, ?string $existingPdfId = null): string
     {
