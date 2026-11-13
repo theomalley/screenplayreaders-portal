@@ -94,10 +94,11 @@ class SettingController extends Controller
 
         $faviconMetaFile = storage_path('app/portal-favicon-path.txt');
         $faviconUrl      = is_readable($faviconMetaFile) ? asset('storage/' . trim(file_get_contents($faviconMetaFile))) : null;
+        $permissionsGrid = $isAdmin ? Permission::all() : null;
 
         return view('settings.general', compact(
             'isAdmin', 'portalTheme', 'appTimezone', 'sessionTimeout',
-            'logoUrl', 'loginLogoUrl', 'faviconUrl',
+            'logoUrl', 'loginLogoUrl', 'faviconUrl', 'permissionsGrid',
         ));
     }
 
@@ -166,7 +167,6 @@ class SettingController extends Controller
         $srInvoiceAddress = Setting::getValue('sr_invoice_address', '');
         $invoiceEmailBody = Setting::getValue('invoice_email_body', '');
         $discountCoupon   = $isAdmin ? Setting::getDiscountCouponSettings() : null;
-        $permissionsGrid  = $isAdmin ? Permission::all() : null;
         $orderLogEditorSettings = $isAdmin ? Setting::getOrderLogEditorSettings() : null;
         $orderLogColumns  = Setting::ORDER_LOG_COLUMNS;
         $editors          = $isAdmin ? User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get() : null;
@@ -178,7 +178,7 @@ class SettingController extends Controller
         return view('settings.orders', compact(
             'isAdmin', 'appTimezone', 'payPeriod', 'payoutSchedule', 'nextPayout',
             'srInvoiceAddress', 'invoiceEmailBody', 'discountCoupon',
-            'permissionsGrid', 'orderLogEditorSettings', 'orderLogColumns',
+            'orderLogEditorSettings', 'orderLogColumns',
             'editors', 'defaultEditorId', 'qcCommissionPenaltyEnabled',
         ));
     }
