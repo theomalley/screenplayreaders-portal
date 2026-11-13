@@ -158,6 +158,9 @@ class Assignment extends Model
         'video_consulting_recording_path',
         'video_consulting_last_recording_id',
         'video_consulting_transcript',
+        'video_consulting_transcription_id',
+        'video_consulting_contact_info_flag',
+        'video_consulting_contact_info_evidence',
         'video_consulting_customer_email',
         'video_consulting_needs_attention_reason',
         'reader_declined',
@@ -201,6 +204,7 @@ class Assignment extends Model
             'take_me_enabled'           => 'boolean',
             'upload_link_generated_at'  => 'datetime',
             'video_consulting_reminder_24h_sent_at' => 'datetime',
+            'video_consulting_contact_info_flag'    => 'boolean',
         ];
     }
 

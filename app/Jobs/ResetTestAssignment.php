@@ -57,6 +57,9 @@ class ResetTestAssignment implements ShouldQueue
             'whereby_room_name'                 => null,
             'video_consulting_recording_path'   => null,
             'video_consulting_transcript'       => null,
+            'video_consulting_transcription_id' => null,
+            'video_consulting_contact_info_flag'     => null,
+            'video_consulting_contact_info_evidence' => null,
         ]);
 
         Log::info('Test assignment auto-reset', ['assignment_id' => $this->assignmentId]);

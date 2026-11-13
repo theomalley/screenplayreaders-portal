@@ -29,4 +29,9 @@ class SpacesStorageService
     {
         return Storage::disk('do_spaces')->exists($path);
     }
+
+    public function temporaryUrl(string $path, \DateTimeInterface $expiresAt): string
+    {
+        return Storage::disk('do_spaces')->temporaryUrl($path, $expiresAt);
+    }
 }

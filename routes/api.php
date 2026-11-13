@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\UploadSettingsController;
 use App\Http\Controllers\Api\VideoConsultingBookingController;
 use App\Http\Controllers\Api\VideoConsultingCallPageSettingsController;
 use App\Http\Controllers\Api\VideoConsultingDurationController;
+use App\Http\Controllers\Api\AssemblyAiWebhookController;
 use App\Http\Controllers\Api\WherebyWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,6 +63,11 @@ Route::post('/helpscout-webhook', [HelpScoutWebhookController::class, 'store'])-
 // WHEREBY INTEGRATION: webhook fired by Whereby when a video consulting call's cloud
 // recording finishes. Authenticated via its own Whereby-Signature header, not portal.secret.
 Route::post('/whereby-webhook', [WherebyWebhookController::class, 'store'])->middleware('throttle:60,1');
+
+// ASSEMBLYAI INTEGRATION: webhook fired by AssemblyAI when a video-consulting call's
+// transcription job finishes. Authenticated via the custom header we registered at submission
+// time (X-AssemblyAI-Webhook-Secret) — AssemblyAI has no HMAC signature scheme, not portal.secret.
+Route::post('/assemblyai-webhook', [AssemblyAiWebhookController::class, 'store'])->middleware('throttle:60,1');
 
 // WOOCOMMERCE INTEGRATION: called by woo_order-financials.php (priority 15) on order completion — stores financials
 Route::post('/order-revenue', [OrderRevenueController::class, 'store'])->middleware(['throttle:30,1', 'portal.secret']);

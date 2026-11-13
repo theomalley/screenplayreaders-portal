@@ -1,5 +1,9 @@
 <?php
 
+// v1.4 — 2026-11-13 | Dispatches TranscribeVideoConsultingRecording once the recording is
+//                      stored, so every recording gets submitted to AssemblyAI for transcription
+//                      (previously the only path to a transcript was a human pasting one in
+//                      manually on the QC page).
 // v1.3 — 2026-11-11 | Storage path now includes the recordingId. It previously keyed only on
 //                      assignment id, so a second recording for the same assignment (e.g. the
 //                      pair reconnects after an earlier real-but-early session already completed
@@ -119,5 +123,7 @@ class DownloadWherebyRecording implements ShouldQueue
             'spaces_path'   => $path,
             'recording_id'  => $this->recordingId,
         ]);
+
+        TranscribeVideoConsultingRecording::dispatch($assignment->id, $this->recordingId, $path);
     }
 }

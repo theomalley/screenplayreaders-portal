@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\DownloadWherebyRecording;
+use App\Jobs\TranscribeVideoConsultingRecording;
 use App\Models\Assignment;
 use App\Models\User;
 use App\Models\VideoConsultingDuration;
@@ -11,6 +12,7 @@ use App\Services\SpacesStorageService;
 use App\Services\WherebyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -61,6 +63,10 @@ class DownloadWherebyRecordingTest extends TestCase
             'api.whereby.dev/v1/recordings/*' => Http::response(['accessLink' => 'https://example.com/signed.mp4', 'expires' => 9999999999999], 200),
             'example.com/*' => Http::response('fake-video-bytes', 200),
         ]);
+        // TranscribeVideoConsultingRecording is dispatched at the end of handle() — faking the
+        // queue keeps these tests scoped to DownloadWherebyRecording's own behavior instead of
+        // also exercising (and needing credentials for) the transcription pipeline it kicks off.
+        Queue::fake();
     }
 
     public function test_downloads_stores_to_spaces_and_routes_to_qc(): void
@@ -78,6 +84,12 @@ class DownloadWherebyRecordingTest extends TestCase
         $this->assertSame(Assignment::STATUS_QC, $fresh->status);
         $this->assertNotNull($fresh->submitted_at);
         Storage::disk('do_spaces')->assertExists($fresh->video_consulting_recording_path);
+
+        Queue::assertPushed(TranscribeVideoConsultingRecording::class, function ($job) use ($fresh) {
+            return $job->assignmentId === $fresh->id
+                && $job->recordingId === 'rec-1'
+                && $job->recordingPath === $fresh->video_consulting_recording_path;
+        });
     }
 
     public function test_is_idempotent_once_this_exact_recording_id_is_already_processed(): void
