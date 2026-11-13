@@ -2230,7 +2230,7 @@
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-right">
                                                     <div class="flex items-center justify-end gap-2">
-                                                        @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->whereby_room_url)
+                                                        @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->whereby_room_url && $assignment->status === \App\Models\Assignment::STATUS_ASSIGNED)
                                                             <a href="{{ route('video-consulting-call.reader', $assignment) }}"
                                                                class="inline-flex items-center px-2.5 py-1 bg-green-600 border border-transparent rounded text-xs font-semibold text-white hover:bg-green-500 transition whitespace-nowrap">
                                                                 Join Call ↗

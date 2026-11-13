@@ -11,7 +11,7 @@
                         &middot; <span class="text-amber-600 font-medium">Rush</span>
                     @endif
                 </p>
-                @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->whereby_room_url)
+                @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && $assignment->whereby_room_url && $assignment->status === \App\Models\Assignment::STATUS_ASSIGNED)
                     <a href="{{ route('video-consulting-call.reader', $assignment) }}"
                        class="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
                         Join Call ↗
@@ -286,6 +286,19 @@
                 </div>
             @endif
         </div>
+
+        {{-- Video call transcript — the QC editing page (/qc/{id}) stops being reachable once an
+             assignment leaves QC/Needs Attention, so this is the only place to see it afterward. --}}
+        @if ($assignment->assignment_type === \App\Models\Assignment::TYPE_VIDEO_CONSULTING && auth()->user()->isAdminOrEditor() && $assignment->video_consulting_transcript)
+            <div class="bg-white rounded-lg shadow mb-6 overflow-hidden">
+                <div class="px-5 py-3 border-b border-gray-100">
+                    <span class="text-sm font-medium text-gray-700">Call Transcript</span>
+                </div>
+                <div class="p-5">
+                    <pre class="text-sm text-gray-700 whitespace-pre-wrap font-mono">{{ $assignment->video_consulting_transcript }}</pre>
+                </div>
+            </div>
+        @endif
 
         {{-- PDF viewer --}}
         <div class="bg-white rounded-lg shadow mb-6 overflow-hidden">
