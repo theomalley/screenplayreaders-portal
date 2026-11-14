@@ -1,5 +1,12 @@
 <?php
 
+// v1.19 — 2026-11-14 | Admins can now create a new call-length duration (minutes/label/base
+//                      rate/rate bounds) right from a reader's edit page (storeVideoConsultingDuration())
+//                      instead of needing the theme's separate "Tools -> SR Video Consulting"
+//                      page just to add one before they can set a reader's rate for it. The
+//                      duration itself is still sitewide (shared across every reader, same as
+//                      VideoConsultingDurationController's API-side create) — this just saves a
+//                      trip when the duration an admin wants doesn't exist yet.
 // v1.18 — 2026-11-14 | Admins can now set a reader's per-duration video consulting rate
 //                      directly from this edit page (updateVideoConsultingRates()) — previously
 //                      only the reader's own self-serve /video-consulting-rate page could set
@@ -322,6 +329,37 @@ class ReaderProfileController extends Controller
         }
 
         return redirect()->route('readers.edit', $user)->with('success', 'Video consulting rates updated.');
+    }
+
+    /**
+     * Admin-only: create a new sitewide call-length duration right from a reader's edit page,
+     * mirroring VideoConsultingDurationController::store()'s validation. $user is only used to
+     * redirect back to the page the admin started from — the duration itself is shared across
+     * every reader, same as one created via the theme's "Tools -> SR Video Consulting" page.
+     */
+    public function storeVideoConsultingDuration(Request $request, User $user)
+    {
+        $this->authorize('manage-settings-admin-only');
+
+        $data = $request->validate([
+            'minutes'         => ['required', 'integer', 'min:1', 'max:600'],
+            'label'           => ['required', 'string', 'max:255'],
+            'base_rate'       => ['required', 'numeric', 'min:0', 'max:9999.99'],
+            'min_reader_rate' => ['required', 'numeric', 'min:0', 'max:9999.99'],
+            'max_reader_rate' => ['required', 'numeric', 'min:0', 'max:9999.99', 'gte:min_reader_rate'],
+        ], [], [
+            'minutes'         => 'duration (minutes)',
+            'label'           => 'label',
+            'base_rate'       => 'base rate',
+            'min_reader_rate' => 'minimum reader rate',
+            'max_reader_rate' => 'maximum reader rate',
+        ]);
+
+        $data['sort_order'] = (int) (VideoConsultingDuration::max('sort_order') ?? -1) + 1;
+
+        VideoConsultingDuration::create($data);
+
+        return redirect()->route('readers.edit', $user)->with('success', 'Call length added.');
     }
 
     public function destroy(User $user)
