@@ -118,6 +118,24 @@ class ProfileController extends Controller
         return back()->with('status', 'custom-message-updated');
     }
 
+    public function updateFavorites(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isReader(), 403);
+
+        $data = $request->validate([
+            'favorite_genres' => 'nullable|string|max:300',
+            'favorite_films'  => 'nullable|string|max:300',
+        ]);
+
+        $user->readerProfile()->updateOrCreate(['user_id' => $user->id], [
+            'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? null),
+            'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? null),
+        ]);
+
+        return back()->with('status', 'favorites-updated');
+    }
+
     public function updateRefreshInterval(Request $request): RedirectResponse
     {
         $data = $request->validate([

@@ -183,6 +183,8 @@ class ReaderProfileController extends Controller
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
             'bio'                        => ['nullable', 'string', 'max:5000'],
+            'favorite_genres'            => ['nullable', 'string', 'max:300'],
+            'favorite_films'             => ['nullable', 'string', 'max:300'],
             'custom_message'             => ['nullable', 'string', 'max:200'],
         ]);
 
@@ -209,6 +211,9 @@ class ReaderProfileController extends Controller
         $data['bio'] = auth()->user()->isAdmin()
             ? Html::sanitizeBioHtml($data['bio'] ?? null)
             : Html::sanitizeBioPlainText($data['bio'] ?? null);
+
+        $data['favorite_genres'] = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? null);
+        $data['favorite_films']  = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? null);
 
         $userUpdate = [
             'name'  => $data['first_name'] . ' ' . $data['last_name'],

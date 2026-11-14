@@ -321,6 +321,39 @@
                 </div>
             </div>
 
+            @if ($user->isReader())
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
+                    <p class="text-sm text-gray-600 mb-4">Shown on the Script Consulting page. Up to 5 each, separated by commas.</p>
+                    <form method="POST" action="{{ route('profile.favorites') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <x-input-label for="favorite_genres" value="Favorite Genres" />
+                            <x-text-input id="favorite_genres" name="favorite_genres" type="text" class="mt-1 block w-full"
+                                value="{{ old('favorite_genres', implode(', ', $profile?->favorite_genres ?? [])) }}"
+                                placeholder="e.g. Drama, Comedy, Thriller" />
+                            <x-input-error :messages="$errors->get('favorite_genres')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="favorite_films" value="Favorite Films/Shows" />
+                            <x-text-input id="favorite_films" name="favorite_films" type="text" class="mt-1 block w-full"
+                                value="{{ old('favorite_films', implode(', ', $profile?->favorite_films ?? [])) }}"
+                                placeholder="e.g. Chinatown, The Wire, Parasite" />
+                            <x-input-error :messages="$errors->get('favorite_films')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-primary-button>Save</x-primary-button>
+                            @if (session('status') === 'favorites-updated')
+                                <span class="ml-3 text-sm text-green-600">Saved.</span>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">My Current Logline</h2>
@@ -543,6 +576,30 @@
                         </div>
                     </div>
                 </div>
+
+                @if ($user->isReader())
+                {{-- Favorite Genres & Films (admin override) --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl space-y-4">
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
+                        <p class="text-sm text-gray-600 -mt-2">Shown on the Script Consulting page. Up to 5 each, separated by commas.</p>
+                        <div>
+                            <x-input-label for="favorite_genres" value="Favorite Genres" />
+                            <x-text-input id="favorite_genres" name="favorite_genres" type="text" class="mt-1 block w-full"
+                                value="{{ old('favorite_genres', implode(', ', $profile?->favorite_genres ?? [])) }}"
+                                placeholder="e.g. Drama, Comedy, Thriller" />
+                            <x-input-error :messages="$errors->get('favorite_genres')" class="mt-1" />
+                        </div>
+                        <div>
+                            <x-input-label for="favorite_films" value="Favorite Films/Shows" />
+                            <x-text-input id="favorite_films" name="favorite_films" type="text" class="mt-1 block w-full"
+                                value="{{ old('favorite_films', implode(', ', $profile?->favorite_films ?? [])) }}"
+                                placeholder="e.g. Chinatown, The Wire, Parasite" />
+                            <x-input-error :messages="$errors->get('favorite_films')" class="mt-1" />
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 {{-- Logline (admin override) --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">

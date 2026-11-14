@@ -92,6 +92,8 @@ class VideoConsultingBookingController extends Controller
                     'photo_url'            => $photo ? asset('storage/' . $photo) : null,
                     'availability_summary' => $availability->availabilitySummaryFor($reader->id),
                     'min_lead_hours'       => (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0),
+                    'favorite_genres'      => $reader->readerProfile?->favorite_genres ?? [],
+                    'favorite_films'       => $reader->readerProfile?->favorite_films ?? [],
                     'durations'            => $durations,
                 ];
             })

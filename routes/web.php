@@ -99,6 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto'])->name('profile.photo');
     Route::post('/profile/about-photo', [ProfileController::class, 'uploadAboutPhoto'])->name('profile.about-photo');
     Route::patch('/profile/bio', [ProfileController::class, 'updateBio'])->name('profile.bio');
+    Route::patch('/profile/favorites', [ProfileController::class, 'updateFavorites'])->name('profile.favorites');
     Route::patch('/profile/custom-message', [ProfileController::class, 'updateCustomMessage'])->name('profile.custom-message');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 

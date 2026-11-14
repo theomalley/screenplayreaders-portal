@@ -1,5 +1,10 @@
 <?php
 
+// v1.21 — 2026-11-14 | Add favorite_genres/favorite_films (json arrays, up to 5 each) — shown
+//                      on the Script Consulting page's reader rows. Reader self-serve editable
+//                      (ProfileController::updateFavorites()), admin-overridable
+//                      (ReaderProfileController::update()), no approval queue. parseFavoritesInput()
+//                      is the shared comma-separated-string -> capped array parser both use.
 // v1.20 — 2026-11-07 | Add video_consulting_enabled — admin-only per-reader kill switch for the
 //                      video consulting feature. Defaults to true. See
 //                      App\Support\VideoConsultingAccess::enabledFor() for the combined
@@ -62,6 +67,8 @@ class ReaderProfile extends Model
         'last_name',
         'title',
         'bio',
+        'favorite_genres',
+        'favorite_films',
         'custom_message',
         'bio_pending',
         'bio_rejection_note',
@@ -133,11 +140,32 @@ class ReaderProfile extends Model
         'sms_notify_followup'   => 'boolean',
         'email_notify_qc_fail'  => 'boolean',
         'sms_notify_qc_fail'    => 'boolean',
+        'favorite_genres'       => 'array',
+        'favorite_films'        => 'array',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * "Drama, Comedy, Thriller" -> ['Drama', 'Comedy', 'Thriller'] — trims, drops empties,
+     * caps at 5. Shared by the reader self-serve form and the admin override form so both
+     * enforce the same limit the exact same way.
+     */
+    public static function parseFavoritesInput(?string $raw): array
+    {
+        if (! $raw) {
+            return [];
+        }
+
+        return collect(explode(',', $raw))
+            ->map(fn (string $s) => trim($s))
+            ->filter()
+            ->take(5)
+            ->values()
+            ->all();
     }
 
     /** Assignments currently held by this reader */
