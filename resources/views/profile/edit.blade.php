@@ -1106,46 +1106,6 @@
                         </div>
                     </form>
                     @endif
-
-                    <details class="pt-2 border-t border-gray-200">
-                        <summary class="text-sm text-indigo-600 cursor-pointer select-none">+ Add a new call length</summary>
-                        <p class="text-xs text-gray-500 mt-2 mb-3">This creates a sitewide call length every reader can be given a rate for — not just this one.</p>
-                        <form method="POST" action="{{ route('readers.storeVideoConsultingDuration', $user) }}" class="space-y-3">
-                            @csrf
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <x-input-label for="new_duration_label" value="Label" />
-                                    <x-text-input id="new_duration_label" name="label" type="text" class="mt-1 block w-full" placeholder="e.g. 30 Minute" />
-                                </div>
-                                <div>
-                                    <x-input-label for="new_duration_minutes" value="Minutes" />
-                                    <x-text-input id="new_duration_minutes" name="minutes" type="number" class="mt-1 block w-full" min="1" max="600" placeholder="30" />
-                                </div>
-                                <div>
-                                    <x-input-label for="new_duration_base_rate" value="Base Rate ($)" />
-                                    <x-text-input id="new_duration_base_rate" name="base_rate" type="number" class="mt-1 block w-full" min="0" max="9999.99" step="0.01" />
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <x-input-label for="new_duration_min_rate" value="Min Reader Rate ($)" />
-                                        <x-text-input id="new_duration_min_rate" name="min_reader_rate" type="number" class="mt-1 block w-full" min="0" max="9999.99" step="0.01" />
-                                    </div>
-                                    <div>
-                                        <x-input-label for="new_duration_max_rate" value="Max Reader Rate ($)" />
-                                        <x-text-input id="new_duration_max_rate" name="max_reader_rate" type="number" class="mt-1 block w-full" min="0" max="9999.99" step="0.01" />
-                                    </div>
-                                </div>
-                            </div>
-                            <x-input-error :messages="$errors->get('label')" class="mt-1" />
-                            <x-input-error :messages="$errors->get('minutes')" class="mt-1" />
-                            <x-input-error :messages="$errors->get('base_rate')" class="mt-1" />
-                            <x-input-error :messages="$errors->get('min_reader_rate')" class="mt-1" />
-                            <x-input-error :messages="$errors->get('max_reader_rate')" class="mt-1" />
-                            <div class="flex justify-end">
-                                <x-secondary-button>Add Call Length</x-secondary-button>
-                            </div>
-                        </form>
-                    </details>
                 </div>
             </div>
             @endif

@@ -171,7 +171,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/readers/{user}', [ReaderProfileController::class, 'update'])->name('readers.update');
     Route::patch('/readers/{user}/rates', [ReaderProfileController::class, 'updateRates'])->name('readers.updateRates');
     Route::patch('/readers/{user}/video-consulting-rates', [ReaderProfileController::class, 'updateVideoConsultingRates'])->name('readers.updateVideoConsultingRates');
-    Route::post('/readers/{user}/video-consulting-durations', [ReaderProfileController::class, 'storeVideoConsultingDuration'])->name('readers.storeVideoConsultingDuration');
     Route::delete('/readers/{user}', [ReaderProfileController::class, 'destroy'])->name('readers.destroy');
 
     Route::get('/manual', [ManualController::class, 'show'])->name('manual.show');
