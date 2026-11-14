@@ -97,21 +97,22 @@
                         @php
                             $rule = $rules->get($dayOfWeek);
 
+                            // A day with no saved rule yet (and no old() input from a failed submit)
+                            // defaults to 9 AM–5 PM instead of a blank "--" placeholder, so a reader
+                            // doesn't have to manually set the hour AND minute on both ends of every
+                            // single day — they just check the days they want and adjust from there.
+                            // The hidden start_time/end_time field is pre-filled from this same
+                            // default too (not just the dropdown's `selected` option), so it submits
+                            // correctly even if the reader never touches these dropdowns at all.
                             $startVal = old("days.$dayOfWeek.start_time", $rule?->start_time);
-                            $startVal = $startVal ? substr($startVal, 0, 5) : '';
-                            [$startHourRaw, $startMinute] = $startVal ? explode(':', $startVal) : ['', ''];
-                            $startHour = $startHourRaw !== '' ? (int) $startHourRaw : '';
-                            // Default the minute dropdown to :00 rather than the "--" placeholder —
-                            // otherwise picking only an hour and leaving minute untouched left the
-                            // hidden start_time/end_time field blank and the whole row silently
-                            // failed to save (syncField() below requires both hour AND minute set).
-                            if ($startMinute === '') $startMinute = '00';
+                            $startVal = $startVal ? substr($startVal, 0, 5) : '09:00';
+                            [$startHourRaw, $startMinute] = explode(':', $startVal);
+                            $startHour = (int) $startHourRaw;
 
                             $endVal = old("days.$dayOfWeek.end_time", $rule?->end_time);
-                            $endVal = $endVal ? substr($endVal, 0, 5) : '';
-                            [$endHourRaw, $endMinute] = $endVal ? explode(':', $endVal) : ['', ''];
-                            $endHour = $endHourRaw !== '' ? (int) $endHourRaw : '';
-                            if ($endMinute === '') $endMinute = '00';
+                            $endVal = $endVal ? substr($endVal, 0, 5) : '17:00';
+                            [$endHourRaw, $endMinute] = explode(':', $endVal);
+                            $endHour = (int) $endHourRaw;
                         @endphp
                         <div class="flex items-center gap-3 flex-wrap">
                             <label class="flex items-center gap-2 w-32 cursor-pointer">
