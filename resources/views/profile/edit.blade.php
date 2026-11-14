@@ -606,6 +606,23 @@
                     </div>
                 </div>
 
+                @if ($user->isReader())
+                {{-- Video Consulting Availability (admin override) --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl">
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Availability <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls — shown here instead of its own "Consulting" page.</p>
+                        @include('partials.video-consulting-availability', [
+                            'rules' => $videoConsultingRules ?? collect(),
+                            'blackouts' => $videoConsultingBlackouts ?? collect(),
+                            'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                            'updateAction' => route('readers.updateVideoConsultingAvailability', $user),
+                            'blackoutStoreAction' => route('readers.videoConsultingAvailability.blackouts.store', $user),
+                        ])
+                    </div>
+                </div>
+                @endif
+
                 {{-- Bio --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
@@ -679,23 +696,6 @@
                         <div class="flex justify-end">
                             <x-primary-button>Save Favorites</x-primary-button>
                         </div>
-                    </div>
-                </div>
-                @endif
-
-                @if ($user->isReader())
-                {{-- Video Consulting Availability (admin override) --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Availability <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls — shown here instead of its own "Consulting" page.</p>
-                        @include('partials.video-consulting-availability', [
-                            'rules' => $videoConsultingRules ?? collect(),
-                            'blackouts' => $videoConsultingBlackouts ?? collect(),
-                            'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
-                            'updateAction' => route('readers.updateVideoConsultingAvailability', $user),
-                            'blackoutStoreAction' => route('readers.videoConsultingAvailability.blackouts.store', $user),
-                        ])
                     </div>
                 </div>
                 @endif
@@ -964,26 +964,6 @@
                     </div>
                 </div>
 
-                {{-- Test account toggle — admin only --}}
-                @if(auth()->user()->isAdmin())
-                <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Test Account <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="hidden" name="is_test" value="0">
-                            <input type="checkbox" name="is_test" value="1"
-                                   {{ old('is_test', $user->is_test) ? 'checked' : '' }}
-                                   class="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
-                            <span class="text-sm text-gray-700">Mark as test account</span>
-                        </label>
-                        <p class="text-xs text-gray-400">Test accounts are excluded from payroll and commission calculations.</p>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save</x-primary-button>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
             </form>{{-- end admin-form --}}
 
             @if (auth()->user()->isAdmin() && !$user->isAdmin())
@@ -1242,6 +1222,29 @@
                         </div>
                     </form>
                     @endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Test account toggle — admin only. Lives outside <form id="admin-form"> now (moved
+                 to sit just above Delete) but its controls still submit with that form via the
+                 HTML form="admin-form" attribute, since update() still expects is_test alongside
+                 the form's other required fields (name/email/availability/etc). --}}
+            @if(auth()->user()->isAdmin())
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                <div class="max-w-xl space-y-4">
+                    <h2 class="text-lg font-medium text-gray-900">Test Account <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="hidden" name="is_test" value="0" form="admin-form">
+                        <input type="checkbox" name="is_test" value="1" form="admin-form"
+                               {{ old('is_test', $user->is_test) ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
+                        <span class="text-sm text-gray-700">Mark as test account</span>
+                    </label>
+                    <p class="text-xs text-gray-400">Test accounts are excluded from payroll and commission calculations.</p>
+                    <div class="flex justify-end">
+                        <x-primary-button form="admin-form">Save</x-primary-button>
+                    </div>
                 </div>
             </div>
             @endif
