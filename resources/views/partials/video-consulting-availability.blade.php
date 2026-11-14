@@ -11,6 +11,21 @@
       $minLeadHours        — int
       $updateAction        — route() for the weekly-schedule form
       $blackoutStoreAction — route() for adding a blackout
+    Optional prop:
+      $formId — pass this when including the partial somewhere already inside another <form>
+                (the admin reader-edit page's single shared admin-form). HTML forms can't
+                nest — a browser silently discards a nested <form> start tag, merging its
+                fields into the OUTER form instead, which is exactly the bug this guards
+                against (a "Save Availability" click was actually submitting the whole
+                admin-form to the wrong endpoint, surfacing as bogus "Identity" field errors).
+                When set, this partial renders its fields as plain <div>s with an explicit
+                form="{{ $formId }}" attribute on every actual form control instead of a real
+                <form> wrapper, and pushes the real (empty-bodied) <form id="{{ $formId }}">
+                tags onto the 'late-forms' stack so the CALLER can render them — via
+                @stack('late-forms') — somewhere that is NOT nested inside another form.
+                Omit $formId entirely for the self-edit usage, which isn't nested in anything
+                and keeps its own self-contained <form> tags exactly as before.
+
     Blackout removal always posts to the same video-consulting-availability.blackouts.destroy
     route regardless of caller — ReaderBlackoutDatePolicy::delete() allows both the owning
     reader and any admin/editor.
@@ -23,11 +38,29 @@
         $hourOptions[$h] = \Carbon\Carbon::createFromTime($h, 0)->format('g A');
     }
     $minuteOptions = ['00' => ':00', '15' => ':15', '30' => ':30', '45' => ':45'];
+
+    $vcFormId = $formId ?? null;
+    $scheduleFormAttr = $vcFormId ? ' form="' . e($vcFormId) . '"' : '';
+    $storeFormId = $vcFormId ? $vcFormId . '-store' : null;
+    $storeFormAttr = $storeFormId ? ' form="' . e($storeFormId) . '"' : '';
 @endphp
 
-<form method="POST" action="{{ $updateAction }}" class="space-y-4">
-    @csrf
-    @method('PATCH')
+@if ($vcFormId)
+    @push('late-forms')
+        <form id="{{ $vcFormId }}" method="POST" action="{{ $updateAction }}">
+            @csrf
+            @method('PATCH')
+        </form>
+    @endpush
+@endif
+
+@if ($vcFormId)
+    <div class="space-y-4">
+@else
+    <form method="POST" action="{{ $updateAction }}" class="space-y-4">
+        @csrf
+        @method('PATCH')
+@endif
 
     @if ($errors->any() && $errors->hasAny(collect(range(0, 6))->flatMap(fn ($d) => ["days.{$d}.start_time", "days.{$d}.end_time"])->all()))
         <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
@@ -65,13 +98,13 @@
         @endphp
         <div class="flex items-center gap-3 flex-wrap">
             <label class="flex items-center gap-2 w-32 cursor-pointer">
-                <input type="checkbox" name="days[{{ $dayOfWeek }}][enabled]" value="1"
+                <input type="checkbox" name="days[{{ $dayOfWeek }}][enabled]" value="1"{!! $scheduleFormAttr !!}
                        {{ old("days.$dayOfWeek.enabled", $rule?->enabled ? '1' : '') ? 'checked' : '' }}
                        class="rounded text-indigo-600 focus:ring-indigo-500" />
                 <span class="text-sm font-medium text-gray-700">{{ $dayName }}</span>
             </label>
 
-            <input type="hidden" name="days[{{ $dayOfWeek }}][start_time]" value="{{ $startVal }}"
+            <input type="hidden" name="days[{{ $dayOfWeek }}][start_time]" value="{{ $startVal }}"{!! $scheduleFormAttr !!}
                    class="svc-avail-hidden" data-day="{{ $dayOfWeek }}" data-field="start" />
             <div class="flex items-center gap-1">
                 <select class="svc-avail-hour border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -92,7 +125,7 @@
 
             <span class="text-gray-400 text-sm">to</span>
 
-            <input type="hidden" name="days[{{ $dayOfWeek }}][end_time]" value="{{ $endVal }}"
+            <input type="hidden" name="days[{{ $dayOfWeek }}][end_time]" value="{{ $endVal }}"{!! $scheduleFormAttr !!}
                    class="svc-avail-hidden" data-day="{{ $dayOfWeek }}" data-field="end" />
             <div class="flex items-center gap-1">
                 <select class="svc-avail-hour border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -115,7 +148,7 @@
 
     <div class="pt-3 border-t border-gray-100">
         <x-input-label value="Minimum notice before a call (hours)" />
-        <input type="number" name="min_lead_hours" min="0" max="336" step="1"
+        <input type="number" name="min_lead_hours" min="0" max="336" step="1"{!! $scheduleFormAttr !!}
                value="{{ old('min_lead_hours', $minLeadHours) }}"
                class="mt-1 block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
         <p class="mt-1 text-sm text-gray-500">
@@ -126,15 +159,34 @@
     </div>
 
     <div class="flex justify-end pt-2 border-t border-gray-100">
-        <x-primary-button>Save Availability</x-primary-button>
+        @if ($vcFormId)
+            <x-primary-button form="{{ $vcFormId }}">Save Availability</x-primary-button>
+        @else
+            <x-primary-button>Save Availability</x-primary-button>
+        @endif
     </div>
-</form>
+@if ($vcFormId)
+    </div>
+@else
+    </form>
+@endif
 
 <div class="space-y-4 pt-6 mt-6 border-t border-gray-200">
     <h3 class="font-semibold text-gray-800">Blackout Dates</h3>
     <p class="text-sm text-gray-500">One-off times unavailable, even during the normal hours above.</p>
 
     @forelse ($blackouts as $blackout)
+        @php
+            $destroyFormId = $vcFormId ? $vcFormId . '-destroy-' . $blackout->id : null;
+        @endphp
+        @if ($destroyFormId)
+            @push('late-forms')
+                <form id="{{ $destroyFormId }}" method="POST" action="{{ route('video-consulting-availability.blackouts.destroy', $blackout) }}">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endpush
+        @endif
         <div class="flex items-center justify-between border border-gray-100 rounded-md px-3 py-2 text-sm">
             <div>
                 <span class="font-medium text-gray-700">{{ $blackout->start_at->format('M j, Y g:ia') }}</span>
@@ -144,35 +196,59 @@
                     <span class="text-gray-400">— {{ $blackout->reason }}</span>
                 @endif
             </div>
-            <form method="POST" action="{{ route('video-consulting-availability.blackouts.destroy', $blackout) }}">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="text-red-600 hover:text-red-800 text-xs font-medium">Remove</button>
-            </form>
+            @if ($destroyFormId)
+                <button type="submit" form="{{ $destroyFormId }}" class="text-red-600 hover:text-red-800 text-xs font-medium">Remove</button>
+            @else
+                <form method="POST" action="{{ route('video-consulting-availability.blackouts.destroy', $blackout) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-red-600 hover:text-red-800 text-xs font-medium">Remove</button>
+                </form>
+            @endif
         </div>
     @empty
         <p class="text-sm text-gray-400">No blackout dates set.</p>
     @endforelse
 
-    <form method="POST" action="{{ $blackoutStoreAction }}" class="flex flex-wrap items-end gap-3 pt-3 border-t border-gray-100">
-        @csrf
+    @if ($storeFormId)
+        @push('late-forms')
+            <form id="{{ $storeFormId }}" method="POST" action="{{ $blackoutStoreAction }}">
+                @csrf
+            </form>
+        @endpush
+    @endif
+
+    @if ($vcFormId)
+        <div class="flex flex-wrap items-end gap-3 pt-3 border-t border-gray-100">
+    @else
+        <form method="POST" action="{{ $blackoutStoreAction }}" class="flex flex-wrap items-end gap-3 pt-3 border-t border-gray-100">
+            @csrf
+    @endif
         <div>
             <x-input-label value="Starts" />
-            <input type="datetime-local" name="start_at" required
+            <input type="datetime-local" name="start_at" required{!! $storeFormAttr !!}
                    class="mt-1 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
         <div>
             <x-input-label value="Ends" />
-            <input type="datetime-local" name="end_at" required
+            <input type="datetime-local" name="end_at" required{!! $storeFormAttr !!}
                    class="mt-1 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
         <div class="flex-1 min-w-[10rem]">
             <x-input-label value="Reason (optional)" />
-            <input type="text" name="reason" maxlength="255"
+            <input type="text" name="reason" maxlength="255"{!! $storeFormAttr !!}
                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
         </div>
-        <x-primary-button>Add</x-primary-button>
-    </form>
+        @if ($storeFormId)
+            <x-primary-button form="{{ $storeFormId }}">Add</x-primary-button>
+        @else
+            <x-primary-button>Add</x-primary-button>
+        @endif
+    @if ($vcFormId)
+        </div>
+    @else
+        </form>
+    @endif
 </div>
 
 <script>

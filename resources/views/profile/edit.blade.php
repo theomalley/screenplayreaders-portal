@@ -618,6 +618,12 @@
                             'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
                             'updateAction' => route('readers.updateVideoConsultingAvailability', $user),
                             'blackoutStoreAction' => route('readers.videoConsultingAvailability.blackouts.store', $user),
+                            // This card sits inside <form id="admin-form"> below — a nested <form> is
+                            // invalid HTML and gets silently merged into the outer one by the browser,
+                            // which is what broke this save. formId makes the partial render plain
+                            // form="..."-tagged fields here instead, with the real (empty) <form> tags
+                            // pushed onto 'late-forms' and rendered just after admin-form closes.
+                            'formId' => 'vc-availability-admin',
                         ])
                     </div>
                 </div>
@@ -965,6 +971,11 @@
                 </div>
 
             </form>{{-- end admin-form --}}
+
+            {{-- Real (empty-bodied) <form> tags for any card above that had to render its
+                 visible fields nested inside admin-form via form="..." cross-references
+                 instead of its own <form> wrapper — see partials/video-consulting-availability. --}}
+            @stack('late-forms')
 
             @if (auth()->user()->isAdmin() && !$user->isAdmin())
             {{-- Role Change (admin only) --}}
