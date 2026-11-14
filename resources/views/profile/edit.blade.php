@@ -1072,6 +1072,44 @@
             </div>
             @endif
 
+            {{-- Video Consulting Rates (readers only, admin only) --}}
+            @if ($user->isReader())
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                <div class="max-w-xl space-y-4">
+                    <h2 class="text-lg font-medium text-gray-900">Video Consulting Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                    <p class="text-sm text-gray-600 -mt-2">What this reader is paid for a video consulting call of each length. Leave a field blank to opt this reader out of that call length. A reader needs at least one rate set here (or via their own self-serve page) before they appear as bookable on the checkout upgrade or the Script Consulting page.</p>
+                    @if ($videoConsultingDurations->isEmpty())
+                        <p class="text-sm text-gray-500 italic">No call-length durations are configured yet — add some under Settings first.</p>
+                    @else
+                    <form method="POST" action="{{ route('readers.updateVideoConsultingRates', $user) }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <div class="grid grid-cols-2 gap-4">
+                            @foreach ($videoConsultingDurations as $duration)
+                                <div>
+                                    <x-input-label for="vc_rate_{{ $duration->id }}" value="{{ $duration->label }}" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <span class="text-gray-400 text-sm">$</span>
+                                        <x-text-input id="vc_rate_{{ $duration->id }}" name="vc_rates[{{ $duration->id }}]" type="number"
+                                            class="block w-28 text-right"
+                                            value="{{ old('vc_rates.' . $duration->id, $videoConsultingRates[$duration->id] ?? '') }}"
+                                            min="{{ $duration->min_reader_rate }}" max="{{ $duration->max_reader_rate }}" step="0.01"
+                                            placeholder="blank = opt out" />
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
+                                    <x-input-error :messages="$errors->get('vc_rates.' . $duration->id)" class="mt-1" />
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Video Consulting Rates</x-primary-button>
+                        </div>
+                    </form>
+                    @endif
+                </div>
+            </div>
+            @endif
+
         @endif
 
         </div>

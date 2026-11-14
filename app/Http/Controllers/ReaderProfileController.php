@@ -1,5 +1,12 @@
 <?php
 
+// v1.18 — 2026-11-14 | Admins can now set a reader's per-duration video consulting rate
+//                      directly from this edit page (updateVideoConsultingRates()) — previously
+//                      only the reader's own self-serve /video-consulting-rate page could set
+//                      it, so an admin enabling a reader via video_consulting_enabled had no way
+//                      to make them actually bookable without the reader separately logging in
+//                      and setting a rate themselves. Same per-duration min/max bounds as the
+//                      self-serve form (VideoConsultingRateController::update()).
 // v1.17 — 2026-11-08 | video_consulting_enabled is now a tri-state override (null/true/false)
 //                      parsed from a 3-way select, not a checkbox — null means "follow the
 //                      sitewide setting" instead of being AND'd with it. See
@@ -35,7 +42,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\ReaderVideoConsultingRate;
 use App\Models\User;
+use App\Models\VideoConsultingDuration;
 use App\Support\Html;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -126,11 +135,13 @@ class ReaderProfileController extends Controller
         $profile = $user->readerProfile;
 
         return view('profile.edit', [
-            'user'                 => $user,
-            'profile'              => $profile,
-            'isSelf'               => false,
-            'pendingAboutPhotoUrl' => $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null,
-            'pendingBioContent'    => $profile?->bio_pending,
+            'user'                      => $user,
+            'profile'                   => $profile,
+            'isSelf'                    => false,
+            'pendingAboutPhotoUrl'      => $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null,
+            'pendingBioContent'         => $profile?->bio_pending,
+            'videoConsultingDurations'  => VideoConsultingDuration::active()->orderBy('minutes')->get(),
+            'videoConsultingRates'      => ReaderVideoConsultingRate::where('reader_id', $user->id)->pluck('rate', 'duration_id'),
         ]);
     }
 
@@ -248,6 +259,69 @@ class ReaderProfileController extends Controller
         $user->readerProfile()->updateOrCreate(['user_id' => $user->id], $data);
 
         return redirect()->route('readers.edit', $user)->with('success', 'Rates updated.');
+    }
+
+    /**
+     * Admin-set per-duration video consulting rate override, mirroring the reader's own
+     * self-serve form (VideoConsultingRateController::update()) field-for-field — same
+     * per-duration min/max bounds, same blank-clears-the-rate behavior — just operating on
+     * $user instead of auth()->user(). Lets an admin make a reader actually bookable the
+     * moment they flip video_consulting_enabled, without waiting on the reader to log in and
+     * set their own rate.
+     */
+    public function updateVideoConsultingRates(Request $request, User $user)
+    {
+        $this->authorize('updateReaderRates', User::class);
+        abort_unless($user->isReader(), 404);
+
+        $durations = VideoConsultingDuration::active()->get()->keyBy('id');
+        $submitted = $request->input('vc_rates', []);
+
+        $errors = [];
+        $toSave = [];
+
+        foreach ($submitted as $durationId => $rawRate) {
+            $duration = $durations->get((int) $durationId);
+            if (! $duration) {
+                continue;
+            }
+
+            $rawRate = trim((string) $rawRate);
+            if ($rawRate === '') {
+                $toSave[$duration->id] = null; // opt out of this duration
+                continue;
+            }
+
+            if (! is_numeric($rawRate)) {
+                $errors["vc_rates.{$durationId}"] = "Enter a valid number for {$duration->label}.";
+                continue;
+            }
+
+            $rate = round((float) $rawRate, 2);
+            if ($rate < (float) $duration->min_reader_rate || $rate > (float) $duration->max_reader_rate) {
+                $errors["vc_rates.{$durationId}"] = "{$duration->label} rate must be between \${$duration->min_reader_rate} and \${$duration->max_reader_rate}.";
+                continue;
+            }
+
+            $toSave[$duration->id] = $rate;
+        }
+
+        if (! empty($errors)) {
+            return back()->withErrors($errors)->withInput();
+        }
+
+        foreach ($toSave as $durationId => $rate) {
+            if ($rate === null) {
+                ReaderVideoConsultingRate::where('reader_id', $user->id)->where('duration_id', $durationId)->delete();
+            } else {
+                ReaderVideoConsultingRate::updateOrCreate(
+                    ['reader_id' => $user->id, 'duration_id' => $durationId],
+                    ['rate' => $rate]
+                );
+            }
+        }
+
+        return redirect()->route('readers.edit', $user)->with('success', 'Video consulting rates updated.');
     }
 
     public function destroy(User $user)
