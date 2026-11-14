@@ -1,5 +1,9 @@
 <?php
 
+// v1.3 — 2026-11-14 | The "Consulting" page/nav tab is retired entirely — Rate and
+//                      Availability both now live on the reader's main Profile page (see
+//                      profile/edit.blade.php). edit() is kept only as a redirect so any old
+//                      bookmark/link to /video-consulting still lands somewhere valid.
 // v1.2 — 2026-11-14 | Availability (weekly schedule + blackout dates) moved off this page onto
 //                      the reader's main Profile instead — this now only aggregates data for
 //                      the Rate section. See profile/edit.blade.php + ReaderProfileController.
@@ -15,21 +19,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ReaderVideoConsultingRate;
-use App\Models\VideoConsultingDuration;
-use App\Support\VideoConsultingAccess;
-use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class VideoConsultingSettingsController extends Controller
 {
-    public function edit(): View
+    public function edit(): RedirectResponse
     {
-        $reader = auth()->user();
-        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
-
-        $durations = VideoConsultingDuration::active()->get();
-        $myRates = ReaderVideoConsultingRate::where('reader_id', $reader->id)->pluck('rate', 'duration_id');
-
-        return view('video-consulting.edit', compact('durations', 'myRates'));
+        return redirect()->route('profile.edit');
     }
 }

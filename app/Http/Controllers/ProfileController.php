@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\ReaderAvailabilityRule;
 use App\Models\ReaderBlackoutDate;
+use App\Models\ReaderVideoConsultingRate;
+use App\Models\VideoConsultingDuration;
 use App\Support\Html;
 use App\Support\VideoConsultingAccess;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +26,8 @@ class ProfileController extends Controller
         $videoConsultingData = [];
         if ($user->isReader() && VideoConsultingAccess::enabledFor($user)) {
             $videoConsultingData = [
+                'videoConsultingDurations'    => VideoConsultingDuration::active()->get(),
+                'videoConsultingMyRates'      => ReaderVideoConsultingRate::where('reader_id', $user->id)->pluck('rate', 'duration_id'),
                 'videoConsultingRules'        => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
                 'videoConsultingBlackouts'    => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
                 'videoConsultingMinLeadHours' => (int) ($profile?->video_consulting_min_lead_hours ?? 0),

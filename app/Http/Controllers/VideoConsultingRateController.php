@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-14 | The "Consulting" page/nav tab is retired — Rate now lives on the
+//                      reader's main Profile page (see profile/edit.blade.php). edit() and
+//                      update()'s redirect both now point at profile.edit instead.
 // v1.1 — 2026-11-09 | Rate + availability merged onto one "Consulting" page
 //                      (VideoConsultingSettingsController) — edit() now just redirects there
 //                      so any existing bookmark/link to this standalone page still lands
@@ -22,7 +25,7 @@ class VideoConsultingRateController extends Controller
 {
     public function edit(): RedirectResponse
     {
-        return redirect()->route('video-consulting.edit');
+        return redirect()->route('profile.edit');
     }
 
     public function update(Request $request): RedirectResponse
@@ -77,6 +80,6 @@ class VideoConsultingRateController extends Controller
             }
         }
 
-        return redirect()->route('video-consulting.edit')->with('success', 'Video consulting rates updated.');
+        return redirect()->route('profile.edit')->with('success', 'Video consulting rates updated.');
     }
 }

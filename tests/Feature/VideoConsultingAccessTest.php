@@ -73,50 +73,34 @@ class VideoConsultingAccessTest extends TestCase
         $this->assertFalse(VideoConsultingAccess::enabledFor($admin));
     }
 
-    public function test_consulting_nav_item_is_hidden_when_disabled_globally(): void
+    public function test_consulting_nav_item_no_longer_exists_regardless_of_access(): void
     {
+        // The standalone "Consulting" page/nav tab is retired — Rate and Availability both
+        // live on the reader's main Profile page now (see VideoConsultingSettingsControllerTest).
+        // "Consulting" should never appear in nav, whatever the access state.
         $reader = User::factory()->create(['role' => 'reader']);
         $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
-
-        $this->actingAs($reader)->get('/assignments')->assertSee('Consulting');
-
-        Setting::setValue('video_consulting_enabled', '0');
-
         $this->actingAs($reader)->get('/assignments')->assertDontSee('Consulting');
-    }
 
-    public function test_consulting_nav_item_is_hidden_when_disabled_for_that_reader_only(): void
-    {
-        $reader = User::factory()->create(['role' => 'reader']);
-        $reader->readerProfile()->create([
+        $reader2 = User::factory()->create(['role' => 'reader']);
+        $reader2->readerProfile()->create([
             'initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader',
-            'video_consulting_enabled' => false,
+            'video_consulting_enabled' => true,
         ]);
-
-        $this->actingAs($reader)->get('/assignments')->assertDontSee('Consulting');
+        Setting::setValue('video_consulting_enabled', '0');
+        $this->actingAs($reader2)->get('/assignments')->assertDontSee('Consulting');
     }
 
-    public function test_self_serve_pages_404_when_disabled_globally(): void
+    public function test_old_consulting_page_always_redirects_to_profile_regardless_of_access(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);
         $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
         Setting::setValue('video_consulting_enabled', '0');
 
-        $this->actingAs($reader)->get('/video-consulting')->assertNotFound();
+        $this->actingAs($reader)->get('/video-consulting')->assertRedirect(route('profile.edit'));
     }
 
-    public function test_self_serve_pages_404_when_disabled_for_that_reader(): void
-    {
-        $reader = User::factory()->create(['role' => 'reader']);
-        $reader->readerProfile()->create([
-            'initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader',
-            'video_consulting_enabled' => false,
-        ]);
-
-        $this->actingAs($reader)->get('/video-consulting')->assertNotFound();
-    }
-
-    public function test_consulting_nav_item_stays_visible_when_the_reader_has_an_enabled_override(): void
+    public function test_old_consulting_page_redirects_even_with_an_enabled_override(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);
         $reader->readerProfile()->create([
@@ -125,8 +109,7 @@ class VideoConsultingAccessTest extends TestCase
         ]);
         Setting::setValue('video_consulting_enabled', '0');
 
-        $this->actingAs($reader)->get('/assignments')->assertSee('Consulting');
-        $this->actingAs($reader)->get('/video-consulting')->assertOk();
+        $this->actingAs($reader)->get('/video-consulting')->assertRedirect(route('profile.edit'));
     }
 
     public function test_admin_can_toggle_the_global_setting(): void

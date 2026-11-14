@@ -1,5 +1,8 @@
 <?php
 
+// v1.3 — 2026-11-14 | The "Consulting" page/nav tab is retired — Availability now lives on the
+//                      reader's main Profile page (see profile/edit.blade.php). Every redirect
+//                      here now points at profile.edit instead of the retired video-consulting.edit.
 // v1.2 — 2026-11-09 | update() now also saves min_lead_hours (ReaderProfile.
 //                      video_consulting_min_lead_hours) — the minimum notice a reader requires
 //                      before a call, enforced in VideoConsultingAvailabilityService::
@@ -25,7 +28,7 @@ class VideoConsultingAvailabilityController extends Controller
 {
     public function edit(): RedirectResponse
     {
-        return redirect()->route('video-consulting.edit');
+        return redirect()->route('profile.edit');
     }
 
     public function update(Request $request): RedirectResponse
@@ -68,7 +71,7 @@ class VideoConsultingAvailabilityController extends Controller
             );
         }
 
-        return redirect()->route('video-consulting.edit')->with('success', 'Availability updated.');
+        return redirect()->route('profile.edit')->with('success', 'Availability updated.');
     }
 
     public function storeBlackout(Request $request): RedirectResponse
@@ -89,7 +92,7 @@ class VideoConsultingAvailabilityController extends Controller
             'reason'    => $data['reason'] ?? null,
         ]);
 
-        return redirect()->route('video-consulting.edit')->with('success', 'Blackout added.');
+        return redirect()->route('profile.edit')->with('success', 'Blackout added.');
     }
 
     public function destroyBlackout(ReaderBlackoutDate $blackout): RedirectResponse
@@ -98,6 +101,6 @@ class VideoConsultingAvailabilityController extends Controller
 
         $blackout->delete();
 
-        return redirect()->route('video-consulting.edit')->with('success', 'Blackout removed.');
+        return redirect()->route('profile.edit')->with('success', 'Blackout removed.');
     }
 }

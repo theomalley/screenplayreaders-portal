@@ -365,8 +365,55 @@
             @if ($user->isReader() && \App\Support\VideoConsultingAccess::enabledFor($user))
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Rate</h2>
+                    <p class="text-sm text-gray-600 mb-4">What you want to be paid per video consulting call. Leave a field blank if you don't want to offer that call length.</p>
+
+                    @php $vcDurations = $videoConsultingDurations ?? collect(); @endphp
+                    @if ($errors->any() && $errors->hasAny($vcDurations->map(fn ($d) => "rates.{$d->id}")->all()))
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 mb-4">
+                            <ul class="list-disc list-inside space-y-0.5">
+                                @foreach ($vcDurations as $duration)
+                                    @foreach ($errors->get("rates.{$duration->id}") as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('video-consulting-rate.update') }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        @forelse ($vcDurations as $duration)
+                            <div>
+                                <x-input-label for="rate_{{ $duration->id }}" value="{{ $duration->label }}" />
+                                <div class="mt-1 flex items-center gap-2">
+                                    <span class="text-sm text-gray-500">$</span>
+                                    <input type="text" id="rate_{{ $duration->id }}" name="rates[{{ $duration->id }}]"
+                                           value="{{ old('rates.' . $duration->id, ($videoConsultingMyRates ?? collect())[$duration->id] ?? '') }}"
+                                           class="block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                    <span class="text-xs text-gray-400">
+                                        (${{ number_format($duration->min_reader_rate, 2) }} – ${{ number_format($duration->max_reader_rate, 2) }})
+                                    </span>
+                                </div>
+                                <x-input-error :messages="$errors->get('rates.' . $duration->id)" class="mt-1" />
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-400">No video consulting durations have been set up yet.</p>
+                        @endforelse
+
+                        <div class="flex justify-end pt-2 border-t border-gray-100">
+                            <x-primary-button>Save Rate</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Availability</h2>
-                    <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls — shown here instead of its own "Consulting" page.</p>
+                    <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls.</p>
                     @include('partials.video-consulting-availability', [
                         'rules' => $videoConsultingRules ?? collect(),
                         'blackouts' => $videoConsultingBlackouts ?? collect(),

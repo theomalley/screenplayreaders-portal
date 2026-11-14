@@ -248,12 +248,6 @@
                             <x-nav-link :href="route('reader-earnings.index')" :active="request()->routeIs('reader-earnings.*')">
                                 {{ __('Earnings') }}
                             </x-nav-link>
-
-                            @if(\App\Support\VideoConsultingAccess::enabledFor(auth()->user()))
-                                <x-nav-link :href="route('video-consulting.edit')" :active="request()->routeIs('video-consulting.*')">
-                                    {{ __('Consulting') }}
-                                </x-nav-link>
-                            @endif
                         @endif
                         @if(\App\Support\Permission::check('ratebook'))
                             <x-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
@@ -435,11 +429,6 @@
                     <x-responsive-nav-link :href="route('reader-earnings.index')" :active="request()->routeIs('reader-earnings.*')">
                         {{ __('Earnings') }}
                     </x-responsive-nav-link>
-                    @if(\App\Support\VideoConsultingAccess::enabledFor(auth()->user()))
-                        <x-responsive-nav-link :href="route('video-consulting.edit')" :active="request()->routeIs('video-consulting.*')">
-                            {{ __('Consulting') }}
-                        </x-responsive-nav-link>
-                    @endif
                 @endif
                 @if(\App\Support\Permission::check('ratebook'))
                     <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
