@@ -597,6 +597,9 @@
                                 placeholder="e.g. Chinatown, The Wire, Parasite" />
                             <x-input-error :messages="$errors->get('favorite_films')" class="mt-1" />
                         </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Favorites</x-primary-button>
+                        </div>
                     </div>
                 </div>
                 @endif
