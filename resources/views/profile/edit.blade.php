@@ -362,6 +362,22 @@
             </div>
             @endif
 
+            @if ($user->isReader() && \App\Support\VideoConsultingAccess::enabledFor($user))
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Availability</h2>
+                    <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls — shown here instead of its own "Consulting" page.</p>
+                    @include('partials.video-consulting-availability', [
+                        'rules' => $videoConsultingRules ?? collect(),
+                        'blackouts' => $videoConsultingBlackouts ?? collect(),
+                        'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                        'updateAction' => route('video-consulting-availability.update'),
+                        'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
+                    ])
+                </div>
+            </div>
+            @endif
+
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">My Current Logline</h2>
@@ -616,6 +632,23 @@
                         <div class="flex justify-end">
                             <x-primary-button>Save Favorites</x-primary-button>
                         </div>
+                    </div>
+                </div>
+                @endif
+
+                @if ($user->isReader())
+                {{-- Video Consulting Availability (admin override) --}}
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl">
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Availability <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls — shown here instead of its own "Consulting" page.</p>
+                        @include('partials.video-consulting-availability', [
+                            'rules' => $videoConsultingRules ?? collect(),
+                            'blackouts' => $videoConsultingBlackouts ?? collect(),
+                            'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                            'updateAction' => route('readers.updateVideoConsultingAvailability', $user),
+                            'blackoutStoreAction' => route('readers.videoConsultingAvailability.blackouts.store', $user),
+                        ])
                     </div>
                 </div>
                 @endif
@@ -940,26 +973,6 @@
             </div>
             @endif
 
-            {{-- Delete (separate form — DELETE method) --}}
-            @if (auth()->user()->isAdmin() && !$user->isAdmin())
-            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-red-700 mb-1">Delete {{ $isEditingReader ? 'Reader' : 'Editor' }} <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                    <p class="text-sm text-gray-600 mb-4">Permanently removes this account. This cannot be undone.</p>
-                    <form method="POST"
-                          action="{{ $isEditingReader ? route('readers.destroy', $user) : route('admin.editors.destroy', $user) }}"
-                          onsubmit="return confirm('Permanently delete {{ addslashes($user->name) }}? This cannot be undone.')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit"
-                                class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
-                            Delete {{ $isEditingReader ? 'Reader' : 'Editor' }}
-                        </button>
-                    </form>
-                </div>
-            </div>
-            @endif
-
             {{-- Editor Rates + Commission Config (editors only, own forms) --}}
             @if ($user->isEditor())
             <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
@@ -1182,6 +1195,26 @@
                         </div>
                     </form>
                     @endif
+                </div>
+            </div>
+            @endif
+
+            {{-- Delete — kept as the very last card on the page (separate form — DELETE method) --}}
+            @if (auth()->user()->isAdmin() && !$user->isAdmin())
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-red-700 mb-1">Delete {{ $isEditingReader ? 'Reader' : 'Editor' }} <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                    <p class="text-sm text-gray-600 mb-4">Permanently removes this account. This cannot be undone.</p>
+                    <form method="POST"
+                          action="{{ $isEditingReader ? route('readers.destroy', $user) : route('admin.editors.destroy', $user) }}"
+                          onsubmit="return confirm('Permanently delete {{ addslashes($user->name) }}? This cannot be undone.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 rounded text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                            Delete {{ $isEditingReader ? 'Reader' : 'Editor' }}
+                        </button>
+                    </form>
                 </div>
             </div>
             @endif

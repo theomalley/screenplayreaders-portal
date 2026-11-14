@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-14 | Availability (weekly schedule + blackout dates) moved off this page onto
+//                      the reader's main Profile instead — this now only aggregates data for
+//                      the Rate section. See profile/edit.blade.php + ReaderProfileController.
 // v1.1 — 2026-11-09 | Pass minLeadHours (ReaderProfile.video_consulting_min_lead_hours) to the
 //                      view — the minimum notice a reader requires before a call, saved via
 //                      VideoConsultingAvailabilityController::update() alongside the weekly hours.
@@ -12,8 +15,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ReaderAvailabilityRule;
-use App\Models\ReaderBlackoutDate;
 use App\Models\ReaderVideoConsultingRate;
 use App\Models\VideoConsultingDuration;
 use App\Support\VideoConsultingAccess;
@@ -29,10 +30,6 @@ class VideoConsultingSettingsController extends Controller
         $durations = VideoConsultingDuration::active()->get();
         $myRates = ReaderVideoConsultingRate::where('reader_id', $reader->id)->pluck('rate', 'duration_id');
 
-        $rules = ReaderAvailabilityRule::where('reader_id', $reader->id)->get()->keyBy('day_of_week');
-        $blackouts = ReaderBlackoutDate::where('reader_id', $reader->id)->orderBy('start_at')->get();
-        $minLeadHours = (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0);
-
-        return view('video-consulting.edit', compact('durations', 'myRates', 'rules', 'blackouts', 'minLeadHours'));
+        return view('video-consulting.edit', compact('durations', 'myRates'));
     }
 }

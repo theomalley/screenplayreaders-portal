@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\ReaderAvailabilityRule;
+use App\Models\ReaderBlackoutDate;
 use App\Support\Html;
+use App\Support\VideoConsultingAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,11 +21,20 @@ class ProfileController extends Controller
         $user    = $request->user();
         $profile = $user->isAdminOrEditor() ? $user->editorProfile : $user->readerProfile;
 
-        return view('profile.edit', [
+        $videoConsultingData = [];
+        if ($user->isReader() && VideoConsultingAccess::enabledFor($user)) {
+            $videoConsultingData = [
+                'videoConsultingRules'        => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
+                'videoConsultingBlackouts'    => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
+                'videoConsultingMinLeadHours' => (int) ($profile?->video_consulting_min_lead_hours ?? 0),
+            ];
+        }
+
+        return view('profile.edit', array_merge([
             'user'    => $user,
             'profile' => $profile,
             'isSelf'  => true,
-        ]);
+        ], $videoConsultingData));
     }
 
     public function update(ProfileUpdateRequest $request): RedirectResponse

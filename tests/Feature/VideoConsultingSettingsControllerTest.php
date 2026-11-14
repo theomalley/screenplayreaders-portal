@@ -10,14 +10,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Combined "Consulting" page (rate + availability merged onto one view, replacing the two
- * separate video-consulting-rate.edit / video-consulting-availability.edit pages).
+ * The "Consulting" page now shows only the Rate section — Availability (weekly schedule +
+ * blackout dates) moved onto the reader's main Profile page instead of a separate tab (see
+ * ProfileController::edit() / resources/views/partials/video-consulting-availability.blade.php).
  */
 class VideoConsultingSettingsControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reader_sees_both_rate_and_availability_on_one_page(): void
+    public function test_reader_sees_rate_but_not_availability_on_the_consulting_page(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);
         $duration = VideoConsultingDuration::create([
@@ -32,7 +33,8 @@ class VideoConsultingSettingsControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Your Rate');
-        $response->assertSee('Your Availability');
+        $response->assertDontSee('Your Availability');
+        $response->assertDontSee('Blackout Dates');
         $response->assertSee('30 Minutes');
     }
 

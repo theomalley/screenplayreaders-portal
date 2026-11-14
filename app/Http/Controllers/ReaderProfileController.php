@@ -1,5 +1,14 @@
 <?php
 
+// v1.20 — 2026-11-14 | Admin/editor can now also edit a reader's video consulting weekly
+//                      availability + blackout dates from this edit page
+//                      (updateVideoConsultingAvailability()/storeVideoConsultingBlackout()) —
+//                      previously only the reader's own self-serve "Consulting" page could set
+//                      these. That page's Availability section moved entirely onto this one
+//                      (see profile/edit.blade.php + resources/views/partials/
+//                      video-consulting-availability.blade.php, shared by both contexts);
+//                      blackout removal reuses the existing destroy route/policy for both,
+//                      with ReaderBlackoutDatePolicy now also allowing admin/editor.
 // v1.19 — 2026-11-14 | CORRECTION: Removed storeVideoConsultingDuration() (added in v1.19 earlier
 //                      today) — creating/editing a duration's sitewide base_rate/min/max/label
 //                      belongs solely in the admin video consulting settings (the theme's
@@ -49,11 +58,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\ReaderAvailabilityRule;
+use App\Models\ReaderBlackoutDate;
 use App\Models\ReaderVideoConsultingRate;
 use App\Models\User;
 use App\Models\VideoConsultingDuration;
 use App\Support\Html;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
@@ -149,6 +161,9 @@ class ReaderProfileController extends Controller
             'pendingBioContent'         => $profile?->bio_pending,
             'videoConsultingDurations'  => VideoConsultingDuration::active()->orderBy('minutes')->get(),
             'videoConsultingRates'      => ReaderVideoConsultingRate::where('reader_id', $user->id)->pluck('rate', 'duration_id'),
+            'videoConsultingRules'      => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
+            'videoConsultingBlackouts'  => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
+            'videoConsultingMinLeadHours' => (int) ($profile?->video_consulting_min_lead_hours ?? 0),
         ]);
     }
 
@@ -336,6 +351,80 @@ class ReaderProfileController extends Controller
         }
 
         return redirect()->route('readers.edit', $user)->with('success', 'Video consulting rates updated.');
+    }
+
+    /**
+     * Admin/editor override of a reader's weekly video consulting availability, mirroring
+     * VideoConsultingAvailabilityController::update() field-for-field but targeting $user
+     * instead of auth()->user() — same 9 AM-5 PM default-for-an-unset-day behavior, same
+     * delete-the-rule-if-disabled-or-incomplete behavior.
+     */
+    public function updateVideoConsultingAvailability(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('editReader', User::class);
+        abort_unless($user->isReader(), 404);
+
+        $data = $request->validate([
+            'days'              => ['array'],
+            'days.*.enabled'    => ['nullable', 'boolean'],
+            'days.*.start_time' => ['nullable', 'date_format:H:i'],
+            'days.*.end_time'   => ['nullable', 'date_format:H:i'],
+            'min_lead_hours'    => ['nullable', 'integer', 'min:0', 'max:336'],
+        ]);
+
+        $user->readerProfile()->updateOrCreate(['user_id' => $user->id], [
+            'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? 0),
+        ]);
+
+        foreach (range(0, 6) as $dayOfWeek) {
+            $day = $data['days'][$dayOfWeek] ?? null;
+            $enabled = (bool) ($day['enabled'] ?? false);
+            $start = $day['start_time'] ?? null;
+            $end = $day['end_time'] ?? null;
+
+            if (! $enabled || ! $start || ! $end) {
+                ReaderAvailabilityRule::where('reader_id', $user->id)->where('day_of_week', $dayOfWeek)->delete();
+                continue;
+            }
+
+            if ($start >= $end) {
+                return back()->withErrors(["days.{$dayOfWeek}.end_time" => 'End time must be after start time.'])->withInput();
+            }
+
+            ReaderAvailabilityRule::updateOrCreate(
+                ['reader_id' => $user->id, 'day_of_week' => $dayOfWeek],
+                ['start_time' => $start, 'end_time' => $end, 'enabled' => true]
+            );
+        }
+
+        return redirect()->route('readers.edit', $user)->with('success', 'Availability updated.');
+    }
+
+    /**
+     * Admin/editor override — add a blackout date on behalf of a reader, mirroring
+     * VideoConsultingAvailabilityController::storeBlackout() but setting reader_id from $user
+     * instead of auth()->user(). Removal reuses that controller's existing destroyBlackout()/
+     * route unchanged — ReaderBlackoutDatePolicy::delete() already allows any admin/editor.
+     */
+    public function storeVideoConsultingBlackout(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('editReader', User::class);
+        abort_unless($user->isReader(), 404);
+
+        $data = $request->validate([
+            'start_at' => ['required', 'date'],
+            'end_at'   => ['required', 'date', 'after:start_at'],
+            'reason'   => ['nullable', 'string', 'max:255'],
+        ]);
+
+        ReaderBlackoutDate::create([
+            'reader_id' => $user->id,
+            'start_at'  => $data['start_at'],
+            'end_at'    => $data['end_at'],
+            'reason'    => $data['reason'] ?? null,
+        ]);
+
+        return redirect()->route('readers.edit', $user)->with('success', 'Blackout added.');
     }
 
     public function destroy(User $user)
