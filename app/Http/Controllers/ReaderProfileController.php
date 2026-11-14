@@ -183,8 +183,10 @@ class ReaderProfileController extends Controller
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
             'bio'                        => ['nullable', 'string', 'max:5000'],
-            'favorite_genres'            => ['nullable', 'string', 'max:300'],
-            'favorite_films'             => ['nullable', 'string', 'max:300'],
+            'favorite_genres'            => ['nullable', 'array', 'max:5'],
+            'favorite_genres.*'          => ['nullable', 'string', 'max:60'],
+            'favorite_films'             => ['nullable', 'array', 'max:5'],
+            'favorite_films.*'           => ['nullable', 'string', 'max:60'],
             'custom_message'             => ['nullable', 'string', 'max:200'],
         ]);
 
@@ -212,8 +214,8 @@ class ReaderProfileController extends Controller
             ? Html::sanitizeBioHtml($data['bio'] ?? null)
             : Html::sanitizeBioPlainText($data['bio'] ?? null);
 
-        $data['favorite_genres'] = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? null);
-        $data['favorite_films']  = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? null);
+        $data['favorite_genres'] = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []);
+        $data['favorite_films']  = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []);
 
         $userUpdate = [
             'name'  => $data['first_name'] . ' ' . $data['last_name'],

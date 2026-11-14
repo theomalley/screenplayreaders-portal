@@ -124,13 +124,15 @@ class ProfileController extends Controller
         abort_unless($user->isReader(), 403);
 
         $data = $request->validate([
-            'favorite_genres' => 'nullable|string|max:300',
-            'favorite_films'  => 'nullable|string|max:300',
+            'favorite_genres'   => 'nullable|array|max:5',
+            'favorite_genres.*' => 'nullable|string|max:60',
+            'favorite_films'    => 'nullable|array|max:5',
+            'favorite_films.*'  => 'nullable|string|max:60',
         ]);
 
         $user->readerProfile()->updateOrCreate(['user_id' => $user->id], [
-            'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? null),
-            'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? null),
+            'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []),
+            'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []),
         ]);
 
         return back()->with('status', 'favorites-updated');

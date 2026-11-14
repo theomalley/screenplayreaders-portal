@@ -1,10 +1,12 @@
 <?php
 
+// v1.22 — 2026-11-14 | parseFavoritesInput() now takes the raw array straight from 5 separate
+//                      input fields per list (not one comma-separated field the reader could
+//                      cram anything into) — same trim/filter-empty/cap-at-5 behavior either way.
 // v1.21 — 2026-11-14 | Add favorite_genres/favorite_films (json arrays, up to 5 each) — shown
 //                      on the Script Consulting page's reader rows. Reader self-serve editable
 //                      (ProfileController::updateFavorites()), admin-overridable
-//                      (ReaderProfileController::update()), no approval queue. parseFavoritesInput()
-//                      is the shared comma-separated-string -> capped array parser both use.
+//                      (ReaderProfileController::update()), no approval queue.
 // v1.20 — 2026-11-07 | Add video_consulting_enabled — admin-only per-reader kill switch for the
 //                      video consulting feature. Defaults to true. See
 //                      App\Support\VideoConsultingAccess::enabledFor() for the combined
@@ -150,18 +152,14 @@ class ReaderProfile extends Model
     }
 
     /**
-     * "Drama, Comedy, Thriller" -> ['Drama', 'Comedy', 'Thriller'] — trims, drops empties,
-     * caps at 5. Shared by the reader self-serve form and the admin override form so both
-     * enforce the same limit the exact same way.
+     * ['Drama', '', 'Thriller', '', ''] -> ['Drama', 'Thriller'] — trims, drops empties, caps
+     * at 5. Shared by the reader self-serve form and the admin override form (each rendered as
+     * 5 separate fields, not one comma-separated field) so both enforce the limit identically.
      */
-    public static function parseFavoritesInput(?string $raw): array
+    public static function parseFavoritesInput(array $raw): array
     {
-        if (! $raw) {
-            return [];
-        }
-
-        return collect(explode(',', $raw))
-            ->map(fn (string $s) => trim($s))
+        return collect($raw)
+            ->map(fn ($s) => trim((string) $s))
             ->filter()
             ->take(5)
             ->values()

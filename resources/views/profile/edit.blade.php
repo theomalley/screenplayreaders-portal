@@ -325,23 +325,31 @@
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
-                    <p class="text-sm text-gray-600 mb-4">Shown on the Script Consulting page. Up to 5 each, separated by commas.</p>
+                    <p class="text-sm text-gray-600 mb-4">Shown on the Script Consulting page. Up to 5 each — leave any blank to skip.</p>
                     <form method="POST" action="{{ route('profile.favorites') }}" class="space-y-4">
                         @csrf
                         @method('PATCH')
                         <div>
-                            <x-input-label for="favorite_genres" value="Favorite Genres" />
-                            <x-text-input id="favorite_genres" name="favorite_genres" type="text" class="mt-1 block w-full"
-                                value="{{ old('favorite_genres', implode(', ', $profile?->favorite_genres ?? [])) }}"
-                                placeholder="e.g. Drama, Comedy, Thriller" />
-                            <x-input-error :messages="$errors->get('favorite_genres')" class="mt-1" />
+                            <x-input-label value="Favorite Genres" />
+                            <div class="mt-1 space-y-2">
+                                @for ($i = 0; $i < 5; $i++)
+                                    <x-text-input name="favorite_genres[]" type="text" class="block w-full"
+                                        value="{{ old('favorite_genres.' . $i, $profile?->favorite_genres[$i] ?? '') }}"
+                                        placeholder="Genre {{ $i + 1 }}" />
+                                @endfor
+                            </div>
+                            <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label for="favorite_films" value="Favorite Films/Shows" />
-                            <x-text-input id="favorite_films" name="favorite_films" type="text" class="mt-1 block w-full"
-                                value="{{ old('favorite_films', implode(', ', $profile?->favorite_films ?? [])) }}"
-                                placeholder="e.g. Chinatown, The Wire, Parasite" />
-                            <x-input-error :messages="$errors->get('favorite_films')" class="mt-1" />
+                            <x-input-label value="Favorite Films/Shows" />
+                            <div class="mt-1 space-y-2">
+                                @for ($i = 0; $i < 5; $i++)
+                                    <x-text-input name="favorite_films[]" type="text" class="block w-full"
+                                        value="{{ old('favorite_films.' . $i, $profile?->favorite_films[$i] ?? '') }}"
+                                        placeholder="Film/Show {{ $i + 1 }}" />
+                                @endfor
+                            </div>
+                            <x-input-error :messages="$errors->get('favorite_films.*')" class="mt-1" />
                         </div>
                         <div>
                             <x-primary-button>Save</x-primary-button>
@@ -582,20 +590,28 @@
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
-                        <p class="text-sm text-gray-600 -mt-2">Shown on the Script Consulting page. Up to 5 each, separated by commas.</p>
+                        <p class="text-sm text-gray-600 -mt-2">Shown on the Script Consulting page. Up to 5 each — leave any blank to skip.</p>
                         <div>
-                            <x-input-label for="favorite_genres" value="Favorite Genres" />
-                            <x-text-input id="favorite_genres" name="favorite_genres" type="text" class="mt-1 block w-full"
-                                value="{{ old('favorite_genres', implode(', ', $profile?->favorite_genres ?? [])) }}"
-                                placeholder="e.g. Drama, Comedy, Thriller" />
-                            <x-input-error :messages="$errors->get('favorite_genres')" class="mt-1" />
+                            <x-input-label value="Favorite Genres" />
+                            <div class="mt-1 space-y-2">
+                                @for ($i = 0; $i < 5; $i++)
+                                    <x-text-input name="favorite_genres[]" type="text" class="block w-full"
+                                        value="{{ old('favorite_genres.' . $i, $profile?->favorite_genres[$i] ?? '') }}"
+                                        placeholder="Genre {{ $i + 1 }}" />
+                                @endfor
+                            </div>
+                            <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label for="favorite_films" value="Favorite Films/Shows" />
-                            <x-text-input id="favorite_films" name="favorite_films" type="text" class="mt-1 block w-full"
-                                value="{{ old('favorite_films', implode(', ', $profile?->favorite_films ?? [])) }}"
-                                placeholder="e.g. Chinatown, The Wire, Parasite" />
-                            <x-input-error :messages="$errors->get('favorite_films')" class="mt-1" />
+                            <x-input-label value="Favorite Films/Shows" />
+                            <div class="mt-1 space-y-2">
+                                @for ($i = 0; $i < 5; $i++)
+                                    <x-text-input name="favorite_films[]" type="text" class="block w-full"
+                                        value="{{ old('favorite_films.' . $i, $profile?->favorite_films[$i] ?? '') }}"
+                                        placeholder="Film/Show {{ $i + 1 }}" />
+                                @endfor
+                            </div>
+                            <x-input-error :messages="$errors->get('favorite_films.*')" class="mt-1" />
                         </div>
                         <div class="flex justify-end">
                             <x-primary-button>Save Favorites</x-primary-button>
