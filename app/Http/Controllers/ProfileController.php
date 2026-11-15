@@ -31,6 +31,7 @@ class ProfileController extends Controller
                 'videoConsultingRules'        => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
                 'videoConsultingBlackouts'    => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
                 'videoConsultingMinLeadHours' => (int) ($profile?->video_consulting_min_lead_hours ?? 0),
+                'videoConsultingLeadHoursBounds' => \App\Models\Setting::getVideoConsultingLeadHoursBounds(),
             ];
         }
 

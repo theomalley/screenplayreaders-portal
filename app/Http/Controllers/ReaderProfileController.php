@@ -164,6 +164,7 @@ class ReaderProfileController extends Controller
             'videoConsultingRules'      => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
             'videoConsultingBlackouts'  => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
             'videoConsultingMinLeadHours' => (int) ($profile?->video_consulting_min_lead_hours ?? 0),
+            'videoConsultingLeadHoursBounds' => \App\Models\Setting::getVideoConsultingLeadHoursBounds(),
         ]);
     }
 
@@ -364,16 +365,18 @@ class ReaderProfileController extends Controller
         $this->authorize('editReader', User::class);
         abort_unless($user->isReader(), 404);
 
+        $leadHoursBounds = \App\Models\Setting::getVideoConsultingLeadHoursBounds();
+
         $data = $request->validate([
             'days'              => ['array'],
             'days.*.enabled'    => ['nullable', 'boolean'],
             'days.*.start_time' => ['nullable', 'date_format:H:i'],
             'days.*.end_time'   => ['nullable', 'date_format:H:i'],
-            'min_lead_hours'    => ['nullable', 'integer', 'min:0', 'max:336'],
+            'min_lead_hours'    => ['nullable', 'integer', "min:{$leadHoursBounds['min']}", "max:{$leadHoursBounds['max']}"],
         ]);
 
         $user->readerProfile()->updateOrCreate(['user_id' => $user->id], [
-            'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? 0),
+            'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
         ]);
 
         foreach (range(0, 6) as $dayOfWeek) {

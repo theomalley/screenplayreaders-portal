@@ -1,5 +1,8 @@
 <?php
 
+// v1.21 — 2026-11-15 | Add VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS and
+//                      getVideoConsultingLeadHoursBounds() — admin-configurable min/max for how
+//                      much lead time a reader can require before their first bookable slot.
 // v1.20 — 2026-11-11 | Add CALL_PAGE_DEFAULTS and getCallPageSettings() — admin-editable
 //                      heading/consent/not-ready text + logo for the video-consulting call page
 //                      (customer-facing call-public.blade.php and the shared call-details
@@ -525,6 +528,23 @@ HTML;
         $value = static::where('key', 'notification_history_retention_days')->value('value');
 
         return $value !== null ? (int) $value : self::NOTIFICATION_HISTORY_RETENTION_DEFAULT;
+    }
+
+    /**
+     * Admin-configurable bounds for ReaderProfile.video_consulting_min_lead_hours — how much
+     * notice a reader can require between a customer ordering a call and the reader's first
+     * offered slot. Enforced wherever a reader (or an admin editing a reader) sets that value:
+     * VideoConsultingAvailabilityController::update() and
+     * ReaderProfileController::updateVideoConsultingAvailability().
+     */
+    public const VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS = ['min' => 0, 'max' => 336];
+
+    public static function getVideoConsultingLeadHoursBounds(): array
+    {
+        return [
+            'min' => (int) (static::where('key', 'video_consulting_lead_hours_min')->value('value') ?? self::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS['min']),
+            'max' => (int) (static::where('key', 'video_consulting_lead_hours_max')->value('value') ?? self::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS['max']),
+        ];
     }
 
     /** All possible columns in the unified order log, keyed by slug. */

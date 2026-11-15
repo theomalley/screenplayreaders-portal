@@ -11,7 +11,10 @@
       $minLeadHours        — int
       $updateAction        — route() for the weekly-schedule form
       $blackoutStoreAction — route() for adding a blackout
-    Optional prop:
+    Optional props:
+      $leadHoursBounds — ['min' => int, 'max' => int], admin-configurable (Tools > Settings >
+                Assignments > Video Consulting); defaults to Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS
+                when omitted.
       $formId — pass this when including the partial somewhere already inside another <form>
                 (the admin reader-edit page's single shared admin-form). HTML forms can't
                 nest — a browser silently discards a nested <form> start tag, merging its
@@ -38,6 +41,8 @@
         $hourOptions[$h] = \Carbon\Carbon::createFromTime($h, 0)->format('g A');
     }
     $minuteOptions = ['00' => ':00', '15' => ':15', '30' => ':30', '45' => ':45'];
+
+    $leadHoursBounds = $leadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS;
 
     $vcFormId = $formId ?? null;
     $scheduleFormAttr = $vcFormId ? ' form="' . e($vcFormId) . '"' : '';
@@ -148,12 +153,13 @@
 
     <div class="pt-3 border-t border-gray-100">
         <x-input-label value="Minimum notice before a call (hours)" />
-        <input type="number" name="min_lead_hours" min="0" max="336" step="1"{!! $scheduleFormAttr !!}
+        <input type="number" name="min_lead_hours" min="{{ $leadHoursBounds['min'] }}" max="{{ $leadHoursBounds['max'] }}" step="1"{!! $scheduleFormAttr !!}
                value="{{ old('min_lead_hours', $minLeadHours) }}"
                class="mt-1 block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
         <p class="mt-1 text-sm text-gray-500">
             Calls won't be offered to customers sooner than this, so there's time to read the
-            script and compile notes first. 0 = no minimum beyond being in the future.
+            script and compile notes first. Must be between {{ $leadHoursBounds['min'] }} and
+            {{ $leadHoursBounds['max'] }} hours (set by an admin).
         </p>
         <x-input-error :messages="$errors->get('min_lead_hours')" class="mt-1" />
     </div>

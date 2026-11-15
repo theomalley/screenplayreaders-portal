@@ -65,6 +65,29 @@ class VideoConsultingAvailabilityControllerTest extends TestCase
         $this->assertSame(0, $reader->fresh('readerProfile')->readerProfile->video_consulting_min_lead_hours);
     }
 
+    public function test_min_lead_hours_is_rejected_outside_the_admin_configured_bounds(): void
+    {
+        \App\Models\Setting::setValue('video_consulting_lead_hours_min', 12);
+        \App\Models\Setting::setValue('video_consulting_lead_hours_max', 72);
+
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
+
+        $this->actingAs($reader)->patch('/video-consulting-availability', [
+            'days' => [], 'min_lead_hours' => '6',
+        ])->assertSessionHasErrors('min_lead_hours');
+
+        $this->actingAs($reader)->patch('/video-consulting-availability', [
+            'days' => [], 'min_lead_hours' => '96',
+        ])->assertSessionHasErrors('min_lead_hours');
+
+        $this->actingAs($reader)->patch('/video-consulting-availability', [
+            'days' => [], 'min_lead_hours' => '48',
+        ])->assertRedirect(route('profile.edit'));
+
+        $this->assertSame(48, $reader->fresh('readerProfile')->readerProfile->video_consulting_min_lead_hours);
+    }
+
     public function test_end_time_before_start_time_is_rejected(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);

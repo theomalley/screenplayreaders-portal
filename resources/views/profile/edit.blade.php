@@ -418,6 +418,7 @@
                         'rules' => $videoConsultingRules ?? collect(),
                         'blackouts' => $videoConsultingBlackouts ?? collect(),
                         'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                        'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
                         'updateAction' => route('video-consulting-availability.update'),
                         'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
                     ])
@@ -616,6 +617,7 @@
                             'rules' => $videoConsultingRules ?? collect(),
                             'blackouts' => $videoConsultingBlackouts ?? collect(),
                             'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                            'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
                             'updateAction' => route('readers.updateVideoConsultingAvailability', $user),
                             'blackoutStoreAction' => route('readers.videoConsultingAvailability.blackouts.store', $user),
                             // This card sits inside <form id="admin-form"> below — a nested <form> is

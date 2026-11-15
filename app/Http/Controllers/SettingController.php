@@ -1,5 +1,8 @@
 <?php
 
+// v2.25 — 2026-11-15 | updateVideoConsultingEnabled() also saves admin-configurable min/max
+//                      bounds (Setting::getVideoConsultingLeadHoursBounds()) on how much lead
+//                      time a reader can require before their first bookable call slot.
 // v2.24 — 2026-11-07 | Add updateVideoConsultingEnabled() — sitewide on/off toggle for the
 //                     video consulting feature (combined with the per-reader toggle via
 //                     App\Support\VideoConsultingAccess); assignments() passes the current
@@ -112,6 +115,7 @@ class SettingController extends Controller
         $capacityOverrideEffective             = \App\Models\ReaderProfile::globalDefaultCap();
         $capacityOverrideExcludesRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
         $videoConsultingEnabled = \App\Support\VideoConsultingAccess::enabledGlobally();
+        $videoConsultingLeadHoursBounds = Setting::getVideoConsultingLeadHoursBounds();
         $ageThresholds     = Setting::getAgeThresholds();
         $ageThresholdTypes = Setting::AGE_THRESHOLD_TYPES;
         $watermarkSettings = $isAdmin ? Setting::getWatermarkSettings() : null;
@@ -128,7 +132,7 @@ class SettingController extends Controller
 
         return view('settings.assignments', compact(
             'isAdmin', 'capacityOverride', 'capacityOverrideEffective', 'capacityOverrideExcludesRushRequests',
-            'videoConsultingEnabled',
+            'videoConsultingEnabled', 'videoConsultingLeadHoursBounds',
             'ageThresholds', 'ageThresholdTypes', 'watermarkSettings', 'filenameSuffixes',
             'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts', 'blockedReaderLimits',
         ));
@@ -271,12 +275,25 @@ class SettingController extends Controller
             "Default capacity set to {$effective} assignment" . ($effective === 1 ? '' : 's') . ' for all readers (individual overrides still apply).');
     }
 
-    /** Sitewide kill switch for video consulting — see App\Support\VideoConsultingAccess. */
+    /**
+     * Sitewide kill switch for video consulting (see App\Support\VideoConsultingAccess), plus
+     * the admin-configurable min/max bounds on how much lead time a reader can require before
+     * their first bookable slot (ReaderProfile.video_consulting_min_lead_hours) — enforced in
+     * VideoConsultingAvailabilityController::update() and
+     * ReaderProfileController::updateVideoConsultingAvailability().
+     */
     public function updateVideoConsultingEnabled(Request $request): RedirectResponse
     {
         $this->authorize('manage-settings');
 
+        $data = $request->validate([
+            'lead_hours_min' => ['nullable', 'integer', 'min:0', 'max:720'],
+            'lead_hours_max' => ['nullable', 'integer', 'min:0', 'max:720', 'gte:lead_hours_min'],
+        ]);
+
         Setting::setValue('video_consulting_enabled', $request->boolean('video_consulting_enabled') ? '1' : '0');
+        Setting::setValue('video_consulting_lead_hours_min', $data['lead_hours_min'] ?? Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS['min']);
+        Setting::setValue('video_consulting_lead_hours_max', $data['lead_hours_max'] ?? Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS['max']);
 
         return redirect()->route('settings.assignments')->with('success', 'Video consulting setting updated.');
     }

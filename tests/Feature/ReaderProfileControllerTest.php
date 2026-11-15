@@ -140,6 +140,29 @@ class ReaderProfileControllerTest extends TestCase
         $this->assertNull($reader->readerProfile->rate_notes_only);
     }
 
+    public function test_admin_overriding_a_readers_lead_hours_is_bound_by_the_admin_configured_range(): void
+    {
+        \App\Models\Setting::setValue('video_consulting_lead_hours_min', 12);
+        \App\Models\Setting::setValue('video_consulting_lead_hours_max', 72);
+
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}/video-consulting-availability", [
+                'days' => [], 'min_lead_hours' => '6',
+            ])
+            ->assertSessionHasErrors('min_lead_hours');
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}/video-consulting-availability", [
+                'days' => [], 'min_lead_hours' => '48',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(48, $reader->fresh('readerProfile')->readerProfile->video_consulting_min_lead_hours);
+    }
+
     public function test_editor_and_reader_cannot_update_a_readers_custom_rates(): void
     {
         $editor = User::factory()->create(['role' => 'editor']);

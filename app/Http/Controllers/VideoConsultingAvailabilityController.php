@@ -1,5 +1,8 @@
 <?php
 
+// v1.4 — 2026-11-15 | min_lead_hours is validated against admin-configurable bounds
+//                      (Setting::getVideoConsultingLeadHoursBounds(), Tools > Settings >
+//                      Assignments) instead of a hardcoded 0-336.
 // v1.3 — 2026-11-14 | The "Consulting" page/nav tab is retired — Availability now lives on the
 //                      reader's main Profile page (see profile/edit.blade.php). Every redirect
 //                      here now points at profile.edit instead of the retired video-consulting.edit.
@@ -36,17 +39,19 @@ class VideoConsultingAvailabilityController extends Controller
         $reader = auth()->user();
         abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
 
+        $leadHoursBounds = \App\Models\Setting::getVideoConsultingLeadHoursBounds();
+
         $data = $request->validate([
             'days'              => ['array'],
             'days.*.enabled'    => ['nullable', 'boolean'],
             'days.*.start_time' => ['nullable', 'date_format:H:i'],
             'days.*.end_time'   => ['nullable', 'date_format:H:i'],
-            'min_lead_hours'    => ['nullable', 'integer', 'min:0', 'max:336'],
+            'min_lead_hours'    => ['nullable', 'integer', "min:{$leadHoursBounds['min']}", "max:{$leadHoursBounds['max']}"],
         ]);
 
         if ($reader->readerProfile) {
             $reader->readerProfile->update([
-                'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? 0),
+                'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
             ]);
         }
 

@@ -77,6 +77,27 @@
                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                         <span class="text-sm text-gray-700">Video consulting enabled sitewide</span>
                     </label>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <x-input-label value="Reader's \"minimum notice before a call\" — allowed range (hours)" />
+                        <p class="text-xs text-gray-500 mb-2">
+                            Bounds the per-reader setting (Readers &gt; edit profile, or the reader's own Profile
+                            page) for how much notice they can require between a customer ordering a call and
+                            their first offered slot.
+                        </p>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="lead_hours_min"
+                                   value="{{ old('lead_hours_min', $videoConsultingLeadHoursBounds['min']) }}"
+                                   min="0" max="720" step="1"
+                                   class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                            <span class="text-sm text-gray-500">to</span>
+                            <input type="number" name="lead_hours_max"
+                                   value="{{ old('lead_hours_max', $videoConsultingLeadHoursBounds['max']) }}"
+                                   min="0" max="720" step="1"
+                                   class="w-24 border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                        </div>
+                        <x-input-error :messages="$errors->get('lead_hours_min')" class="mt-1" />
+                        <x-input-error :messages="$errors->get('lead_hours_max')" class="mt-1" />
+                    </div>
                     <div class="mt-3">
                         <x-primary-button>Save</x-primary-button>
                     </div>
