@@ -251,15 +251,21 @@
             <span class="text-xs text-gray-600 leading-snug whitespace-pre-line" x-text="note"></span>
         </div>
         @endif
-        @if($assignment->customer_focus_categories || $assignment->customer_focus_notes)
+        @if($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
         <div class="flex items-start gap-1.5 mt-1.5 max-w-xs md:hidden">
-            <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Focus:</span>
+            <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Client Requested Focus:</span>
             <div class="text-xs text-gray-600 leading-snug">
                 @if($assignment->customer_focus_categories)
                     <p class="font-medium text-gray-700">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
                 @endif
+                @if($assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                    <p class="mt-1 font-medium text-gray-700">Client Notes:</p>
+                @endif
                 @if($assignment->customer_focus_notes)
-                    <p>{{ \Illuminate\Support\Str::limit($assignment->customer_focus_notes, 160) }}</p>
+                    <p>{{ $assignment->customer_focus_notes }}</p>
+                @endif
+                @if($assignment->customer_focus_exclude_notes)
+                    <p><span class="italic">Skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
                 @endif
             </div>
         </div>
@@ -343,15 +349,21 @@
             </div>
         @endif
 
-        @if($assignment->customer_focus_categories || $assignment->customer_focus_notes)
+        @if($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
             <div class="hidden md:flex items-start gap-1.5 mt-1.5 max-w-xs">
-                <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Focus:</span>
+                <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Client Requested Focus:</span>
                 <div class="text-xs text-gray-600 leading-snug">
                     @if($assignment->customer_focus_categories)
                         <p class="font-medium text-gray-700">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
                     @endif
+                    @if($assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                        <p class="mt-1 font-medium text-gray-700">Client Notes:</p>
+                    @endif
                     @if($assignment->customer_focus_notes)
-                        <p>{{ \Illuminate\Support\Str::limit($assignment->customer_focus_notes, 160) }}</p>
+                        <p>{{ $assignment->customer_focus_notes }}</p>
+                    @endif
+                    @if($assignment->customer_focus_exclude_notes)
+                        <p><span class="italic">Skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
                     @endif
                 </div>
             </div>
@@ -451,6 +463,31 @@
                                 class="text-gray-400 hover:text-white text-2xl leading-none px-1">×</button>
                     </div>
                 </div>
+                @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                <div x-data="{ clientFocusOpen: true }" class="shrink-0 border-t border-gray-700 bg-indigo-950">
+                    <button type="button" @click="clientFocusOpen = !clientFocusOpen"
+                            class="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold text-indigo-200 hover:text-white">
+                        Client Requested Focus
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5 transition-transform" :class="clientFocusOpen ? 'rotate-180' : ''">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <div x-show="clientFocusOpen" x-cloak class="px-4 pb-2.5 text-xs text-indigo-100 leading-snug space-y-1.5">
+                        @if ($assignment->customer_focus_categories)
+                            <p>{{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                        @endif
+                        @if ($assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                            <p class="font-semibold pt-1">Client Notes</p>
+                        @endif
+                        @if ($assignment->customer_focus_notes)
+                            <p>{{ $assignment->customer_focus_notes }}</p>
+                        @endif
+                        @if ($assignment->customer_focus_exclude_notes)
+                            <p><span class="italic">Skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
+                        @endif
+                    </div>
+                </div>
+                @endif
                 {{-- PDF.js multi-page canvas viewer --}}
                 <div x-data="pdfViewer(@js($viewUrl))"
                      @sr-load-pdf-{{ $assignment->id }}.window="if (totalPages === 0 && !loading) loadPdf()"

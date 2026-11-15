@@ -523,6 +523,27 @@
                             </label>
                         </div>
 
+                        {{-- Client Requested Focus — read-only, customer-sourced from the theme's
+                             /upload/ focus-notes section. Not wired into any edit form field since
+                             staff shouldn't be able to silently overwrite what the customer said. --}}
+                        @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                        <div class="bg-indigo-50 rounded-lg shadow-sm border border-indigo-200 p-5 space-y-2 mt-5">
+                            <h3 class="text-xs font-semibold text-indigo-500 uppercase tracking-wider">Client Requested Focus</h3>
+                            @if ($assignment->customer_focus_categories)
+                                <p class="text-sm text-indigo-900 font-medium">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                            @endif
+                            @if ($assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                                <h3 class="text-xs font-semibold text-indigo-500 uppercase tracking-wider pt-2">Client Notes</h3>
+                            @endif
+                            @if ($assignment->customer_focus_notes)
+                                <p class="text-sm text-indigo-900">{{ $assignment->customer_focus_notes }}</p>
+                            @endif
+                            @if ($assignment->customer_focus_exclude_notes)
+                                <p class="text-sm text-indigo-900"><span class="italic">Skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
+                            @endif
+                        </div>
+                        @endif
+
                         {{-- Advanced Overrides — collapsed by default, rarely used --}}
                         <details class="bg-white rounded-lg shadow-sm border border-gray-200 mt-5">
                             <summary class="p-5 cursor-pointer select-none list-none flex items-center justify-between">
