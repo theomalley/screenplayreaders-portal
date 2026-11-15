@@ -91,6 +91,73 @@ class EditorProfileControllerTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_can_set_an_editors_video_consulting_rate(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = $this->makeEditor();
+        $duration = \App\Models\VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20,
+            'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+
+        $this->actingAs($admin)
+            ->patch("/admin/editors/{$editor->id}/video-consulting-rates", [
+                'vc_rates' => [$duration->id => '50'],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(50.0, (float) \App\Models\ReaderVideoConsultingRate::where('reader_id', $editor->id)
+            ->where('duration_id', $duration->id)->first()->rate);
+    }
+
+    public function test_non_admin_cannot_set_an_editors_video_consulting_rate(): void
+    {
+        $editor = $this->makeEditor();
+        $duration = \App\Models\VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20,
+            'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+
+        $this->actingAs($editor)
+            ->patch("/admin/editors/{$editor->id}/video-consulting-rates", [
+                'vc_rates' => [$duration->id => '50'],
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_set_an_editors_video_consulting_availability_and_lead_hours(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = $this->makeEditor();
+
+        $this->actingAs($admin)
+            ->patch("/admin/editors/{$editor->id}/video-consulting-availability", [
+                'days' => [1 => ['enabled' => '1', 'start_time' => '09:00', 'end_time' => '17:00']],
+                'min_lead_hours' => '24',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('reader_availability_rules', [
+            'reader_id' => $editor->id, 'day_of_week' => 1, 'enabled' => true,
+        ]);
+        $this->assertSame(24, $editor->fresh('readerProfile')->readerProfile->video_consulting_min_lead_hours);
+    }
+
+    public function test_admin_can_add_a_video_consulting_blackout_for_an_editor(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = $this->makeEditor();
+
+        $this->actingAs($admin)
+            ->post("/admin/editors/{$editor->id}/video-consulting-availability/blackouts", [
+                'start_at' => now()->addDays(5)->format('Y-m-d H:i:s'),
+                'end_at'   => now()->addDays(6)->format('Y-m-d H:i:s'),
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('reader_blackout_dates', ['reader_id' => $editor->id]);
+    }
+
     public function test_admin_can_delete_an_editor(): void
     {
         $admin  = User::factory()->create(['role' => 'admin']);

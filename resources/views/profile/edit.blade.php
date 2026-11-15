@@ -362,7 +362,7 @@
             </div>
             @endif
 
-            @if ($user->isReader() && \App\Support\VideoConsultingAccess::enabledFor($user))
+            @if (($user->isReader() || $user->isAdminOrEditor()) && \App\Support\VideoConsultingAccess::enabledFor($user))
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Rate</h2>
@@ -607,19 +607,41 @@
                     </div>
                 </div>
 
-                @if ($user->isReader())
-                {{-- Video Consulting Availability (admin override) --}}
+                @if ($user->isReader() || $user->isAdminOrEditor())
+                {{-- Video Consulting (admin override) — enable/disable + availability. Any
+                     role can take video consulting calls; an admin/editor opts in here exactly
+                     like a reader's override, just with no sitewide default to fall back to
+                     (App\Support\VideoConsultingAccess::enabledFor()). --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Availability <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
                         <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls — shown here instead of its own "Consulting" page.</p>
+                        @php
+                            $videoConsultingProfileSource = $isEditingReader ? $profile : ($videoConsultingOverrideSource ?? null);
+                            $videoConsultingOverride = match ($videoConsultingProfileSource?->video_consulting_enabled) {
+                                true => 'enabled', false => 'disabled', default => 'default',
+                            };
+                        @endphp
+                        <div class="mb-4">
+                            <label for="video_consulting_enabled" class="block text-xs text-gray-600 mb-1">Video consulting</label>
+                            <select id="video_consulting_enabled" name="video_consulting_enabled"
+                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="default" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'default')>{{ $isEditingReader ? 'Follow sitewide setting' : 'Disabled (default — no sitewide setting for admin/editor)' }}</option>
+                                <option value="enabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'enabled')>Enabled</option>
+                                <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Disabled{{ $isEditingReader ? ' (overrides sitewide setting)' : '' }}</option>
+                            </select>
+                        </div>
                         @include('partials.video-consulting-availability', [
                             'rules' => $videoConsultingRules ?? collect(),
                             'blackouts' => $videoConsultingBlackouts ?? collect(),
                             'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
                             'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
-                            'updateAction' => route('readers.updateVideoConsultingAvailability', $user),
-                            'blackoutStoreAction' => route('readers.videoConsultingAvailability.blackouts.store', $user),
+                            'updateAction' => $isEditingReader
+                                ? route('readers.updateVideoConsultingAvailability', $user)
+                                : route('admin.editors.updateVideoConsultingAvailability', $user),
+                            'blackoutStoreAction' => $isEditingReader
+                                ? route('readers.videoConsultingAvailability.blackouts.store', $user)
+                                : route('admin.editors.videoConsultingAvailability.blackouts.store', $user),
                             // This card sits inside <form id="admin-form"> below — a nested <form> is
                             // invalid HTML and gets silently merged into the outer one by the browser,
                             // which is what broke this save. formId makes the partial render plain
@@ -839,20 +861,6 @@
                                         class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                     <span class="text-sm text-gray-600">Watermark viewed/downloaded scripts</span>
                                 </label>
-                                @php
-                                    $videoConsultingOverride = match ($profile?->video_consulting_enabled) {
-                                        true => 'enabled', false => 'disabled', default => 'default',
-                                    };
-                                @endphp
-                                <div class="mt-2">
-                                    <label for="video_consulting_enabled" class="block text-xs text-gray-600 mb-1">Video consulting</label>
-                                    <select id="video_consulting_enabled" name="video_consulting_enabled"
-                                            class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                        <option value="default" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'default')>Follow sitewide setting</option>
-                                        <option value="enabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'enabled')>Always enabled (overrides sitewide setting)</option>
-                                        <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Always disabled (overrides sitewide setting)</option>
-                                    </select>
-                                </div>
                             </div>
                             <div>
                                 <x-input-label for="paypal_email" value="PayPal Email" />
@@ -1201,16 +1209,16 @@
             </div>
             @endif
 
-            {{-- Video Consulting Rates (readers only, admin only) --}}
-            @if ($user->isReader())
+            {{-- Video Consulting Rates (admin only) --}}
+            @if ($user->isReader() || $user->isAdminOrEditor())
             <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                 <div class="max-w-xl space-y-4">
                     <h2 class="text-lg font-medium text-gray-900">Video Consulting Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                    <p class="text-sm text-gray-600 -mt-2">What this reader is paid for a video consulting call of each length. Leave a field blank to opt this reader out of that call length. A reader needs at least one rate set here (or via their own self-serve page) before they appear as bookable on the checkout upgrade or the Script Consulting page.</p>
+                    <p class="text-sm text-gray-600 -mt-2">What this {{ $isEditingReader ? 'reader' : 'person' }} is paid for a video consulting call of each length. Leave a field blank to opt them out of that call length. They need at least one rate set here (or via their own self-serve page) before they appear as bookable on the checkout upgrade or the Script Consulting page.</p>
                     @if ($videoConsultingDurations->isEmpty())
                         <p class="text-sm text-gray-500 italic">No call-length durations are configured yet — add some under Settings first.</p>
                     @else
-                    <form method="POST" action="{{ route('readers.updateVideoConsultingRates', $user) }}" class="space-y-4">
+                    <form method="POST" action="{{ $isEditingReader ? route('readers.updateVideoConsultingRates', $user) : route('admin.editors.updateVideoConsultingRates', $user) }}" class="space-y-4">
                         @csrf
                         @method('PATCH')
                         <div class="grid grid-cols-2 gap-4">

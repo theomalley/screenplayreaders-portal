@@ -1,5 +1,9 @@
 <?php
 
+// v1.21 — 2026-11-15 | parseVideoConsultingOverride() moved to the shared
+//                      App\Support\VideoConsultingAccess::parseOverrideInput() — admins/editors
+//                      taking video consulting themselves now go through EditorProfileController's
+//                      parallel methods, which needed the same parsing.
 // v1.20 — 2026-11-14 | Admin/editor can now also edit a reader's video consulting weekly
 //                      availability + blackout dates from this edit page
 //                      (updateVideoConsultingAvailability()/storeVideoConsultingBlackout()) —
@@ -117,7 +121,7 @@ class ReaderProfileController extends Controller
 
         $data['requests_bypass_capacity']  = $request->boolean('requests_bypass_capacity');
         $data['watermark_enabled']         = $request->boolean('watermark_enabled');
-        $data['video_consulting_enabled']  = $this->parseVideoConsultingOverride($request);
+        $data['video_consulting_enabled']  = \App\Support\VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled'));
 
         $user = User::create([
             'name'     => $data['name'],
@@ -249,7 +253,7 @@ class ReaderProfileController extends Controller
         $data['is_1099']                  = $request->boolean('is_1099');
         if ($user->isReader()) {
             $data['watermark_enabled']        = $request->boolean('watermark_enabled');
-            $data['video_consulting_enabled'] = $this->parseVideoConsultingOverride($request);
+            $data['video_consulting_enabled'] = \App\Support\VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled'));
         }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(
@@ -448,13 +452,4 @@ class ReaderProfileController extends Controller
         return redirect()->route('team.index')->with('success', 'Reader deleted.');
     }
 
-    /** 'default'|'enabled'|'disabled' select -> null|true|false for ReaderProfile::video_consulting_enabled. */
-    private function parseVideoConsultingOverride(Request $request): ?bool
-    {
-        return match ($request->input('video_consulting_enabled')) {
-            'enabled'  => true,
-            'disabled' => false,
-            default    => null,
-        };
-    }
 }

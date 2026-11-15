@@ -1,5 +1,12 @@
 <?php
 
+// v1.17 — 2026-11-15 | Admin/editor can now opt into taking video consulting bookings
+//                      themselves — same settings a reader has (enable/disable override, weekly
+//                      availability + blackout dates, per-duration rate), stored on the same
+//                      ReaderProfile-keyed tables (see updateReaderProfileShell(),
+//                      updateVideoConsultingRates(), updateVideoConsultingAvailability(),
+//                      storeVideoConsultingBlackout()). App\Support\VideoConsultingAccess now
+//                      admits admin/editor (opt-in only, no sitewide default).
 // v1.16 — 2026-07-23 | Authorization moved to UserPolicy (app/Policies) abilities
 //                     (viewAnyEditors, createEditor, editEditor, updateEditorRates,
 //                     manageEditorCommissions, deleteEditor), replacing inline
@@ -30,8 +37,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\EditorProductCommission;
+use App\Models\ReaderAvailabilityRule;
+use App\Models\ReaderBlackoutDate;
+use App\Models\ReaderVideoConsultingRate;
+use App\Models\Setting;
 use App\Models\User;
+use App\Models\VideoConsultingDuration;
 use App\Support\Html;
+use App\Support\VideoConsultingAccess;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
@@ -109,6 +123,7 @@ class EditorProfileController extends Controller
         abort_unless($user->isEditor() || $user->isAdmin(), 404);
 
         $profile = $user->editorProfile;
+        $readerProfile = $user->readerProfile;
 
         return view('profile.edit', [
             'user'                 => $user,
@@ -116,6 +131,13 @@ class EditorProfileController extends Controller
             'isSelf'               => false,
             'pendingAboutPhotoUrl' => $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null,
             'pendingBioContent'    => $profile?->bio_pending,
+            'videoConsultingOverrideSource'  => $readerProfile,
+            'videoConsultingDurations'       => VideoConsultingDuration::active()->orderBy('minutes')->get(),
+            'videoConsultingRates'           => ReaderVideoConsultingRate::where('reader_id', $user->id)->pluck('rate', 'duration_id'),
+            'videoConsultingRules'           => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
+            'videoConsultingBlackouts'       => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
+            'videoConsultingMinLeadHours'    => (int) ($readerProfile?->video_consulting_min_lead_hours ?? 0),
+            'videoConsultingLeadHoursBounds' => Setting::getVideoConsultingLeadHoursBounds(),
         ]);
     }
 
@@ -190,8 +212,32 @@ class EditorProfileController extends Controller
             collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
         );
 
+        if ($request->has('video_consulting_enabled')) {
+            $this->updateReaderProfileShell($user, [
+                'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
+            ]);
+        }
+
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
         return redirect()->route('admin.editors.edit', $user)->with('success', "{$label} profile updated.");
+    }
+
+    /**
+     * Admin/editor taking video consulting bookings themselves uses the same
+     * ReaderProfile-keyed tables a reader does (video_consulting_enabled/min_lead_hours,
+     * ReaderAvailabilityRule, ReaderBlackoutDate, ReaderVideoConsultingRate) rather than
+     * duplicating those columns onto EditorProfile — see App\Support\VideoConsultingAccess.
+     * A ReaderProfile row doesn't exist yet for most admin/editor users, so creating one here
+     * seeds the NOT-NULL identity columns (initials/first_name/last_name/etc.) from their
+     * EditorProfile, mirroring EditorProfileController::update()'s reader<->editor role-change
+     * handoff (EditorProfile::sharedArrayFrom()) rather than inventing a new convention.
+     */
+    private function updateReaderProfileShell(User $user, array $data): \App\Models\ReaderProfile
+    {
+        $existing = $user->readerProfile;
+        $shell = $existing ? [] : \App\Models\EditorProfile::sharedArrayFrom($user->editorProfile, $user);
+
+        return $user->readerProfile()->updateOrCreate(['user_id' => $user->id], array_merge($shell, $data));
     }
 
     public function updateRates(Request $request, User $user)
@@ -241,6 +287,138 @@ class EditorProfileController extends Controller
 
         return redirect()->route('admin.editors.edit', $user)
             ->with('success', 'Commission config saved.');
+    }
+
+    /**
+     * Admin-set per-duration video consulting rate for an admin/editor taking calls
+     * themselves — mirrors ReaderProfileController::updateVideoConsultingRates() field-for-field,
+     * operating on the same ReaderProfile-keyed ReaderVideoConsultingRate rows (see
+     * updateReaderProfileShell()).
+     */
+    public function updateVideoConsultingRates(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('updateEditorRates', User::class);
+        abort_unless($user->isAdmin() || $user->isEditor(), 404);
+
+        $durations = VideoConsultingDuration::active()->get()->keyBy('id');
+        $submitted = $request->input('vc_rates', []);
+
+        $errors = [];
+        $toSave = [];
+
+        foreach ($submitted as $durationId => $rawRate) {
+            $duration = $durations->get((int) $durationId);
+            if (! $duration) {
+                continue;
+            }
+
+            $rawRate = trim((string) $rawRate);
+            if ($rawRate === '') {
+                $toSave[$duration->id] = null; // opt out of this duration
+                continue;
+            }
+
+            if (! is_numeric($rawRate)) {
+                $errors["vc_rates.{$durationId}"] = "Enter a valid number for {$duration->label}.";
+                continue;
+            }
+
+            $rate = round((float) $rawRate, 2);
+            if ($rate < (float) $duration->min_reader_rate || $rate > (float) $duration->max_reader_rate) {
+                $errors["vc_rates.{$durationId}"] = "{$duration->label} rate must be between \${$duration->min_reader_rate} and \${$duration->max_reader_rate}.";
+                continue;
+            }
+
+            $toSave[$duration->id] = $rate;
+        }
+
+        if (! empty($errors)) {
+            return back()->withErrors($errors)->withInput();
+        }
+
+        foreach ($toSave as $durationId => $rate) {
+            if ($rate === null) {
+                ReaderVideoConsultingRate::where('reader_id', $user->id)->where('duration_id', $durationId)->delete();
+            } else {
+                ReaderVideoConsultingRate::updateOrCreate(
+                    ['reader_id' => $user->id, 'duration_id' => $durationId],
+                    ['rate' => $rate]
+                );
+            }
+        }
+
+        return redirect()->route('admin.editors.edit', $user)->with('success', 'Video consulting rates updated.');
+    }
+
+    /**
+     * Admin/editor override of an admin/editor's weekly video consulting availability —
+     * mirrors ReaderProfileController::updateVideoConsultingAvailability() field-for-field.
+     * Blackout removal reuses the existing destroy route/policy unchanged
+     * (ReaderBlackoutDatePolicy::delete() already allows any admin/editor).
+     */
+    public function updateVideoConsultingAvailability(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('editEditor', User::class);
+        abort_unless($user->isAdmin() || $user->isEditor(), 404);
+
+        $leadHoursBounds = Setting::getVideoConsultingLeadHoursBounds();
+
+        $data = $request->validate([
+            'days'              => ['array'],
+            'days.*.enabled'    => ['nullable', 'boolean'],
+            'days.*.start_time' => ['nullable', 'date_format:H:i'],
+            'days.*.end_time'   => ['nullable', 'date_format:H:i'],
+            'min_lead_hours'    => ['nullable', 'integer', "min:{$leadHoursBounds['min']}", "max:{$leadHoursBounds['max']}"],
+        ]);
+
+        $this->updateReaderProfileShell($user, [
+            'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
+        ]);
+
+        foreach (range(0, 6) as $dayOfWeek) {
+            $day = $data['days'][$dayOfWeek] ?? null;
+            $enabled = (bool) ($day['enabled'] ?? false);
+            $start = $day['start_time'] ?? null;
+            $end = $day['end_time'] ?? null;
+
+            if (! $enabled || ! $start || ! $end) {
+                ReaderAvailabilityRule::where('reader_id', $user->id)->where('day_of_week', $dayOfWeek)->delete();
+                continue;
+            }
+
+            if ($start >= $end) {
+                return back()->withErrors(["days.{$dayOfWeek}.end_time" => 'End time must be after start time.'])->withInput();
+            }
+
+            ReaderAvailabilityRule::updateOrCreate(
+                ['reader_id' => $user->id, 'day_of_week' => $dayOfWeek],
+                ['start_time' => $start, 'end_time' => $end, 'enabled' => true]
+            );
+        }
+
+        return redirect()->route('admin.editors.edit', $user)->with('success', 'Availability updated.');
+    }
+
+    /** Admin/editor override — add a blackout date on behalf of an admin/editor taking calls. */
+    public function storeVideoConsultingBlackout(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('editEditor', User::class);
+        abort_unless($user->isAdmin() || $user->isEditor(), 404);
+
+        $data = $request->validate([
+            'start_at' => ['required', 'date'],
+            'end_at'   => ['required', 'date', 'after:start_at'],
+            'reason'   => ['nullable', 'string', 'max:255'],
+        ]);
+
+        ReaderBlackoutDate::create([
+            'reader_id' => $user->id,
+            'start_at'  => $data['start_at'],
+            'end_at'    => $data['end_at'],
+            'reason'    => $data['reason'] ?? null,
+        ]);
+
+        return redirect()->route('admin.editors.edit', $user)->with('success', 'Blackout added.');
     }
 
     public function destroy(User $user)

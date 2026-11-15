@@ -150,6 +150,39 @@ class VideoConsultingBookingApiTest extends TestCase
         $this->assertCount(0, $response->json());
     }
 
+    public function test_readers_endpoint_includes_an_editor_who_has_opted_in(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor', 'name' => 'Jordan Editor']);
+        $editor->readerProfile()->create([
+            'initials' => 'JE', 'first_name' => 'Jordan', 'last_name' => 'Editor',
+            'video_consulting_enabled' => true,
+        ]);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $editor->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $editor->id, 'name' => 'Jordan Editor']);
+    }
+
+    public function test_readers_endpoint_excludes_an_editor_who_has_not_opted_in(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor']);
+        $editor->readerProfile()->create(['initials' => 'JE', 'first_name' => 'Jordan', 'last_name' => 'Editor']);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $editor->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $this->assertCount(0, $response->json());
+    }
+
     public function test_create_booking_converts_a_held_slot_into_an_assignment_and_notifies(): void
     {
         Mail::fake();

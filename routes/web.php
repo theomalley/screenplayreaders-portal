@@ -447,6 +447,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/admin/editors/{user}', [EditorProfileController::class, 'update'])->name('admin.editors.update');
     Route::patch('/admin/editors/{user}/rates', [EditorProfileController::class, 'updateRates'])->name('admin.editors.updateRates');
     Route::patch('/admin/editors/{user}/commissions', [EditorProfileController::class, 'saveCommissions'])->name('admin.editors.commissions');
+    Route::patch('/admin/editors/{user}/video-consulting-rates', [EditorProfileController::class, 'updateVideoConsultingRates'])->name('admin.editors.updateVideoConsultingRates');
+    Route::patch('/admin/editors/{user}/video-consulting-availability', [EditorProfileController::class, 'updateVideoConsultingAvailability'])->name('admin.editors.updateVideoConsultingAvailability');
+    Route::post('/admin/editors/{user}/video-consulting-availability/blackouts', [EditorProfileController::class, 'storeVideoConsultingBlackout'])->name('admin.editors.videoConsultingAvailability.blackouts.store');
     Route::delete('/admin/editors/{user}', [EditorProfileController::class, 'destroy'])->name('admin.editors.destroy');
 
     Route::post('/editor-pay/{editor}/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');

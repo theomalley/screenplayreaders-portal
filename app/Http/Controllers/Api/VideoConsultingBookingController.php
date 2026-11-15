@@ -1,5 +1,7 @@
 <?php
 
+// v1.6 — 2026-11-15 | readers()/readerRates() now also admit admin/editor — any role can offer
+//                      video consulting (App\Support\VideoConsultingAccess), not just readers.
 // v1.5 — 2026-11-15 | createBooking() now accepts focus_categories/focus_notes/
 //                      focus_exclude_notes (the customer's optional "what to focus on"
 //                      answers from the theme's /upload/ slot picker) and stores them on the
@@ -68,7 +70,10 @@ class VideoConsultingBookingController extends Controller
      */
     public function readers(VideoConsultingAvailabilityService $availability): JsonResponse
     {
-        $readers = User::where('role', 'reader')
+        // Any role can offer video consulting (App\Support\VideoConsultingAccess) — admin/editor
+        // are opt-in only, so the enabledFor() filter below is what actually keeps an
+        // uninterested admin/editor off this list, not the role itself.
+        $readers = User::whereIn('role', ['reader', 'admin', 'editor'])
             ->whereHas('videoConsultingRates')
             ->with(['videoConsultingRates.duration', 'readerProfile'])
             ->get()
@@ -109,7 +114,7 @@ class VideoConsultingBookingController extends Controller
 
     public function readerRates(User $reader): JsonResponse
     {
-        abort_unless($reader->isReader(), 404);
+        abort_unless($reader->isReader() || $reader->isAdminOrEditor(), 404);
 
         if (! VideoConsultingAccess::enabledFor($reader)) {
             return response()->json([]);

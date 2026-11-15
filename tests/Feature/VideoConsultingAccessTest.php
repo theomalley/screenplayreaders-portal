@@ -14,10 +14,11 @@ use Tests\TestCase;
 
 /**
  * Admin-controlled kill switches for video consulting: a sitewide default
- * (Setting::video_consulting_enabled) and a per-reader tri-state override
+ * (Setting::video_consulting_enabled) and a per-user tri-state override
  * (ReaderProfile::video_consulting_enabled: null = follow sitewide, true/false = always
- * on/off for that reader regardless of the sitewide setting) — see
- * App\Support\VideoConsultingAccess::enabledFor().
+ * on/off for that user regardless of the sitewide setting) — see
+ * App\Support\VideoConsultingAccess::enabledFor(). Admin/editor use the same override field
+ * but are opt-in only: there's no sitewide default for them, so an unset override is disabled.
  */
 class VideoConsultingAccessTest extends TestCase
 {
@@ -66,11 +67,30 @@ class VideoConsultingAccessTest extends TestCase
         $this->assertTrue(VideoConsultingAccess::enabledFor($reader->fresh('readerProfile')));
     }
 
-    public function test_a_non_reader_is_never_enabled(): void
+    public function test_an_admin_or_editor_with_no_override_is_disabled_by_default(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-
         $this->assertFalse(VideoConsultingAccess::enabledFor($admin));
+
+        // Unlike a reader, turning the sitewide switch ON doesn't implicitly enable them —
+        // there's no sitewide default for admin/editor to fall back to.
+        Setting::setValue('video_consulting_enabled', '1');
+        $this->assertFalse(VideoConsultingAccess::enabledFor($admin));
+    }
+
+    public function test_an_admin_or_editor_can_opt_in_via_an_explicit_override(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor']);
+        $editor->readerProfile()->create([
+            'initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor',
+            'video_consulting_enabled' => true,
+        ]);
+
+        Setting::setValue('video_consulting_enabled', '0');
+        $this->assertTrue(VideoConsultingAccess::enabledFor($editor->fresh('readerProfile')));
+
+        $editor->readerProfile->update(['video_consulting_enabled' => false]);
+        $this->assertFalse(VideoConsultingAccess::enabledFor($editor->fresh('readerProfile')));
     }
 
     public function test_consulting_nav_item_no_longer_exists_regardless_of_access(): void
@@ -136,6 +156,22 @@ class VideoConsultingAccessTest extends TestCase
         ])->assertRedirect();
 
         $this->assertFalse($reader->fresh('readerProfile')->readerProfile->video_consulting_enabled);
+    }
+
+    public function test_admin_can_opt_an_editor_into_video_consulting_from_the_editor_edit_page(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $editor = User::factory()->create(['role' => 'editor', 'email' => 'editor@example.com']);
+        $editor->editorProfile()->create(['initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor']);
+
+        $this->actingAs($admin)->patch("/admin/editors/{$editor->id}", [
+            'initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor',
+            'email' => 'editor@example.com', 'availability' => 'available',
+            'video_consulting_enabled' => 'enabled',
+        ])->assertRedirect();
+
+        $this->assertTrue($editor->fresh('readerProfile')->readerProfile->video_consulting_enabled);
+        $this->assertTrue(VideoConsultingAccess::enabledFor($editor->fresh('readerProfile')));
     }
 
     public function test_leaving_the_select_on_default_clears_any_previous_override(): void

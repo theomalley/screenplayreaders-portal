@@ -23,14 +23,18 @@ class ProfileController extends Controller
         $user    = $request->user();
         $profile = $user->isAdminOrEditor() ? $user->editorProfile : $user->readerProfile;
 
+        // video_consulting_min_lead_hours/rate/availability/blackouts always live on
+        // ReaderProfile regardless of role — an admin/editor taking calls themselves has no
+        // EditorProfile columns for these, so $profile (above) is the wrong source for them.
         $videoConsultingData = [];
-        if ($user->isReader() && VideoConsultingAccess::enabledFor($user)) {
+        if (($user->isReader() || $user->isAdminOrEditor()) && VideoConsultingAccess::enabledFor($user)) {
+            $readerProfile = $user->isReader() ? $profile : $user->readerProfile;
             $videoConsultingData = [
                 'videoConsultingDurations'    => VideoConsultingDuration::active()->get(),
                 'videoConsultingMyRates'      => ReaderVideoConsultingRate::where('reader_id', $user->id)->pluck('rate', 'duration_id'),
                 'videoConsultingRules'        => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
                 'videoConsultingBlackouts'    => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
-                'videoConsultingMinLeadHours' => (int) ($profile?->video_consulting_min_lead_hours ?? 0),
+                'videoConsultingMinLeadHours' => (int) ($readerProfile?->video_consulting_min_lead_hours ?? 0),
                 'videoConsultingLeadHoursBounds' => \App\Models\Setting::getVideoConsultingLeadHoursBounds(),
             ];
         }
