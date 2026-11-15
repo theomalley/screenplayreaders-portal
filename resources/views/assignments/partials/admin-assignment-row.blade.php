@@ -160,6 +160,9 @@
             hoverInternal: false,
             tipXInternal: 0,
             tipYInternal: 0,
+            hoverFocus: false,
+            tipXFocus: 0,
+            tipYFocus: 0,
             note: @js($assignment->notes ?? ''),
             saving: false,
             saved: false,
@@ -252,14 +255,22 @@
         </div>
         @endif
         @if($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-        <div class="flex items-start gap-1.5 mt-1.5 max-w-xs md:hidden">
-            <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Client Requested Focus:</span>
-            <div class="text-xs text-gray-600 leading-snug">
+        <div class="mt-1.5 md:hidden">
+            <button type="button"
+                    @mouseenter="hoverFocus = true; const r = $el.getBoundingClientRect(); tipXFocus = r.left; tipYFocus = r.top"
+                    @mouseleave="hoverFocus = false"
+                    @click="hoverFocus = !hoverFocus; const r = $el.getBoundingClientRect(); tipXFocus = r.left; tipYFocus = r.top"
+                    class="text-[10px] text-indigo-500 font-semibold hover:text-indigo-700 hover:underline">
+                Client Requested Focus
+            </button>
+            <div x-show="hoverFocus" x-cloak @click.outside="hoverFocus = false"
+                 :style="`position:fixed;left:${tipXFocus}px;top:${tipYFocus}px;transform:translate(0,calc(-100% - 8px))`"
+                 class="z-50 w-64 bg-indigo-950 text-indigo-100 text-xs rounded-md px-3 py-2.5 shadow-lg space-y-1.5">
                 @if($assignment->customer_focus_categories)
-                    <p class="font-medium text-gray-700">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                    <p class="font-medium text-indigo-200">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
                 @endif
                 @if($assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-                    <p class="mt-1 font-medium text-gray-700">Client Notes:</p>
+                    <p class="font-medium text-indigo-200">Client Notes</p>
                 @endif
                 @if($assignment->customer_focus_notes)
                     <p>{{ $assignment->customer_focus_notes }}</p>
@@ -350,14 +361,22 @@
         @endif
 
         @if($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-            <div class="hidden md:flex items-start gap-1.5 mt-1.5 max-w-xs">
-                <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Client Requested Focus:</span>
-                <div class="text-xs text-gray-600 leading-snug">
+            <div class="hidden md:block mt-1.5">
+                <button type="button"
+                        @mouseenter="hoverFocus = true; const r = $el.getBoundingClientRect(); tipXFocus = r.left; tipYFocus = r.top"
+                        @mouseleave="hoverFocus = false"
+                        @click="hoverFocus = !hoverFocus; const r = $el.getBoundingClientRect(); tipXFocus = r.left; tipYFocus = r.top"
+                        class="text-[10px] text-indigo-500 font-semibold hover:text-indigo-700 hover:underline">
+                    Client Requested Focus
+                </button>
+                <div x-show="hoverFocus" x-cloak @click.outside="hoverFocus = false"
+                     :style="`position:fixed;left:${tipXFocus}px;top:${tipYFocus}px;transform:translate(0,calc(-100% - 8px))`"
+                     class="z-50 w-64 bg-indigo-950 text-indigo-100 text-xs rounded-md px-3 py-2.5 shadow-lg space-y-1.5">
                     @if($assignment->customer_focus_categories)
-                        <p class="font-medium text-gray-700">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                        <p class="font-medium text-indigo-200">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
                     @endif
                     @if($assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-                        <p class="mt-1 font-medium text-gray-700">Client Notes:</p>
+                        <p class="font-medium text-indigo-200">Client Notes</p>
                     @endif
                     @if($assignment->customer_focus_notes)
                         <p>{{ $assignment->customer_focus_notes }}</p>
@@ -464,7 +483,7 @@
                     </div>
                 </div>
                 @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-                <div x-data="{ clientFocusOpen: true }" class="shrink-0 border-t border-gray-700 bg-indigo-950">
+                <div x-data="{ clientFocusOpen: false }" class="shrink-0 border-t border-gray-700 bg-indigo-950">
                     <button type="button" @click="clientFocusOpen = !clientFocusOpen"
                             class="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold text-indigo-200 hover:text-white">
                         Client Requested Focus

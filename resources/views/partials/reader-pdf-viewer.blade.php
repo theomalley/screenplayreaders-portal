@@ -94,11 +94,11 @@
     </div>
 </div>
 {{-- Client Requested Focus — the customer's optional answers from the /upload/ page's
-     focus-notes section, so the reader sees them right where they're about to read the
-     script rather than having to go find them elsewhere. Open by default; collapsible so it
-     doesn't permanently eat canvas space once read. --}}
+     focus-notes section, so the reader can find them right where they're about to read the
+     script rather than having to go find them elsewhere. Collapsed by default — long
+     customer notes shouldn't show automatically, only on click. --}}
 @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-<div x-data="{ clientFocusOpen: true }" class="shrink-0 border-t border-gray-700 bg-indigo-950">
+<div x-data="{ clientFocusOpen: false }" class="shrink-0 border-t border-gray-700 bg-indigo-950">
     <button type="button" @click="clientFocusOpen = !clientFocusOpen"
             class="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold text-indigo-200 hover:text-white">
         Client Requested Focus

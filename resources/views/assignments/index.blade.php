@@ -1832,7 +1832,7 @@
                                                                 </div>
                                                             </div>
                                                             @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-                                                            <div x-data="{ clientFocusOpen: true }" class="shrink-0 border-t border-gray-700 bg-indigo-950">
+                                                            <div x-data="{ clientFocusOpen: false }" class="shrink-0 border-t border-gray-700 bg-indigo-950">
                                                                 <button type="button" @click="clientFocusOpen = !clientFocusOpen"
                                                                         class="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold text-indigo-200 hover:text-white">
                                                                     Client Requested Focus
