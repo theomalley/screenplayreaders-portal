@@ -1,5 +1,9 @@
 <?php
 
+// v1.5 — 2026-11-15 | createBooking() now accepts focus_categories/focus_notes/
+//                      focus_exclude_notes (the customer's optional "what to focus on"
+//                      answers from the theme's /upload/ slot picker) and stores them on the
+//                      new Assignment — same convention as IncomingAssignmentController::store().
 // v1.4 — 2026-11-13 | readers() now includes photo_url (ReaderProfile.photo) so the theme can
 //                      show the booked reader's photo in place of the generic product image on
 //                      cart/checkout/order-detail line items.
@@ -237,8 +241,16 @@ class VideoConsultingBookingController extends Controller
             'customer_name'  => ['nullable', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
             'script_title'   => ['required', 'string', 'max:255'],
+            'focus_categories'    => ['nullable', 'string', 'max:500'],
+            'focus_notes'         => ['nullable', 'string', 'max:2000'],
+            'focus_exclude_notes' => ['nullable', 'string', 'max:2000'],
             'script'         => ['required', 'file', 'mimes:pdf,docx', 'max:5120'],
         ]);
+
+        // Focus categories arrive as the already-resolved, human-readable label strings
+        // (comma-joined), not keys — see IncomingAssignmentController::store() for the same
+        // convention and why (the theme's Tools → SR Focus Notes owns the wording).
+        $focusCategories = array_values(array_filter(array_map('trim', explode(',', (string) ($data['focus_categories'] ?? '')))));
 
         $hold = VideoConsultingHold::with('duration')->where('hold_token', $data['hold_token'])->first();
         if (! $hold) {
@@ -275,6 +287,9 @@ class VideoConsultingBookingController extends Controller
                 'requested_reader_id'             => $hold->reader_id,
                 'video_consulting_hold_id'        => $hold->id,
                 'video_consulting_customer_email' => $data['customer_email'],
+                'customer_focus_categories'       => $focusCategories ?: null,
+                'customer_focus_notes'            => $data['focus_notes'] ?? null,
+                'customer_focus_exclude_notes'    => $data['focus_exclude_notes'] ?? null,
                 'unassigned_at'                   => now(),
             ]);
         } catch (QueryException $e) {

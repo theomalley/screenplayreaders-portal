@@ -117,6 +117,21 @@
                 </div>
             @endif
 
+            @if($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-sm text-indigo-900">
+                    <span class="font-medium block mb-1">Customer's Focus Notes</span>
+                    @if($assignment->customer_focus_categories)
+                        <p class="mb-1"><span class="font-medium">Categories:</span> {{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                    @endif
+                    @if($assignment->customer_focus_notes)
+                        <p class="mb-1">{{ $assignment->customer_focus_notes }}</p>
+                    @endif
+                    @if($assignment->customer_focus_exclude_notes)
+                        <p><span class="font-medium">Please skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
+                    @endif
+                </div>
+            @endif
+
             {{-- Action bar --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex flex-wrap items-center gap-3">
 

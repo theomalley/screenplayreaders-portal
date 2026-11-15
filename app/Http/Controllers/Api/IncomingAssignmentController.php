@@ -1,5 +1,8 @@
 <?php
 
+// v1.9 — 2026-11-15 | Accept focus_categories/focus_notes/focus_exclude_notes (customer's
+//                     optional "what to focus on" answers from the theme's /upload/ page) and
+//                     store them on every slot created for the order.
 // v1.8 — 2026-07-27 | Accept customer_first_name/customer_last_name/customer_email and check
 //                     them against the Karen List (App\Models\Karen). A match sets
 //                     karen_alert/karen_alert_note on every slot created for the order —
@@ -69,6 +72,9 @@ class IncomingAssignmentController extends Controller
             'customer_first_name' => 'nullable|string|max:255',
             'customer_last_name'  => 'nullable|string|max:255',
             'customer_email'      => 'nullable|string|max:255',
+            'focus_categories'    => 'nullable|string|max:500',
+            'focus_notes'         => 'nullable|string|max:2000',
+            'focus_exclude_notes' => 'nullable|string|max:2000',
             'script'           => 'required|file|mimes:pdf,docx|max:5120',
         ]);
 
@@ -117,6 +123,11 @@ class IncomingAssignmentController extends Controller
         $rush         = (bool) ($data['rush'] ?? false);
         $proofreading = (bool) ($data['proofreading'] ?? false);
 
+        // Focus categories arrive as the already-resolved, human-readable label strings
+        // (comma-joined), not keys — the admin-editable category wording lives entirely in
+        // the theme's Tools → SR Focus Notes, so the portal never needs to sync a dictionary.
+        $focusCategories = array_values(array_filter(array_map('trim', explode(',', (string) ($data['focus_categories'] ?? '')))));
+
         // Karen List check — one lookup per order, applied to every slot created for it.
         $karenMatch = Karen::matchFor(
             $data['customer_first_name'] ?? null,
@@ -159,6 +170,9 @@ class IncomingAssignmentController extends Controller
                     'blocked_reader_ids'  => $blockedReaderIds ?: null,
                     'karen_alert'         => (bool) $karenMatch,
                     'karen_alert_note'    => $karenAlertNote,
+                    'customer_focus_categories'    => $focusCategories ?: null,
+                    'customer_focus_notes'         => $data['focus_notes'] ?? null,
+                    'customer_focus_exclude_notes' => $data['focus_exclude_notes'] ?? null,
                 ]);
             } catch (\Throwable $e) {
                 Log::error('IncomingAssignment: slot create failed', [

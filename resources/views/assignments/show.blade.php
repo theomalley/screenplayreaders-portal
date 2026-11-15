@@ -86,6 +86,20 @@
                     <p class="mt-1 text-gray-600">{{ $assignment->notes }}</p>
                 </div>
             @endif
+            @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                <div class="pt-2 border-t border-gray-100">
+                    <span class="font-medium">Customer's Focus Notes</span>
+                    @if ($assignment->customer_focus_categories)
+                        <p class="mt-1 text-gray-600"><span class="font-medium">Wants notes on:</span> {{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                    @endif
+                    @if ($assignment->customer_focus_notes)
+                        <p class="mt-1 text-gray-600">{{ $assignment->customer_focus_notes }}</p>
+                    @endif
+                    @if ($assignment->customer_focus_exclude_notes)
+                        <p class="mt-1 text-gray-600"><span class="font-medium">Please skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
+                    @endif
+                </div>
+            @endif
 
             <div class="pt-3 border-t border-gray-100 flex gap-3 flex-wrap items-center">
                 <a href="{{ route('assignments.edit', $assignment) }}"
@@ -248,6 +262,20 @@
                 <div class="pt-2 border-t border-gray-100">
                     <span class="font-medium">Notes</span>
                     <p class="mt-1 text-gray-600">{{ $assignment->notes }}</p>
+                </div>
+            @endif
+            @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
+                <div class="pt-2 border-t border-gray-100">
+                    <span class="font-medium">Customer's Focus Notes</span>
+                    @if ($assignment->customer_focus_categories)
+                        <p class="mt-1 text-gray-600"><span class="font-medium">Wants notes on:</span> {{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                    @endif
+                    @if ($assignment->customer_focus_notes)
+                        <p class="mt-1 text-gray-600">{{ $assignment->customer_focus_notes }}</p>
+                    @endif
+                    @if ($assignment->customer_focus_exclude_notes)
+                        <p class="mt-1 text-gray-600"><span class="font-medium">Please skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
+                    @endif
                 </div>
             @endif
 

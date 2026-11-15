@@ -251,6 +251,19 @@
             <span class="text-xs text-gray-600 leading-snug whitespace-pre-line" x-text="note"></span>
         </div>
         @endif
+        @if($assignment->customer_focus_categories || $assignment->customer_focus_notes)
+        <div class="flex items-start gap-1.5 mt-1.5 max-w-xs md:hidden">
+            <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Focus:</span>
+            <div class="text-xs text-gray-600 leading-snug">
+                @if($assignment->customer_focus_categories)
+                    <p class="font-medium text-gray-700">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                @endif
+                @if($assignment->customer_focus_notes)
+                    <p>{{ \Illuminate\Support\Str::limit($assignment->customer_focus_notes, 160) }}</p>
+                @endif
+            </div>
+        </div>
+        @endif
         <div class="mt-1.5">
             <form method="POST" action="{{ route('assignments.updateStatus', $assignment) }}"
                   x-data="{ pendingAssign: false, curStatus: '{{ $assignment->status }}' }">
@@ -327,6 +340,20 @@
                     </svg>
                 </button>
                 <span class="text-xs text-gray-600 leading-snug whitespace-pre-line" x-text="note"></span>
+            </div>
+        @endif
+
+        @if($assignment->customer_focus_categories || $assignment->customer_focus_notes)
+            <div class="hidden md:flex items-start gap-1.5 mt-1.5 max-w-xs">
+                <span class="text-[10px] text-indigo-500 font-semibold shrink-0 mt-0.5">Focus:</span>
+                <div class="text-xs text-gray-600 leading-snug">
+                    @if($assignment->customer_focus_categories)
+                        <p class="font-medium text-gray-700">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
+                    @endif
+                    @if($assignment->customer_focus_notes)
+                        <p>{{ \Illuminate\Support\Str::limit($assignment->customer_focus_notes, 160) }}</p>
+                    @endif
+                </div>
             </div>
         @endif
 
