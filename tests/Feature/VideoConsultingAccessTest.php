@@ -228,6 +228,35 @@ class VideoConsultingAccessTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_a_reader_is_always_eligible_for_the_reader_request_waiver(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $this->assertTrue(VideoConsultingAccess::eligibleForReaderRequestWaiver($reader));
+    }
+
+    public function test_an_editor_is_always_eligible_for_the_reader_request_waiver(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor']);
+        $this->assertTrue(VideoConsultingAccess::eligibleForReaderRequestWaiver($editor));
+    }
+
+    public function test_an_admin_is_not_eligible_for_the_reader_request_waiver_by_default(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->assertFalse(VideoConsultingAccess::eligibleForReaderRequestWaiver($admin));
+    }
+
+    public function test_an_admin_becomes_eligible_after_opting_in(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $admin->readerProfile()->create([
+            'initials' => 'AD', 'first_name' => 'Test', 'last_name' => 'Admin',
+            'video_consulting_reader_request_eligible' => true,
+        ]);
+
+        $this->assertTrue(VideoConsultingAccess::eligibleForReaderRequestWaiver($admin->fresh('readerProfile')));
+    }
+
     public function test_booking_api_still_offers_a_reader_with_an_enabled_override_when_global_is_off(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);

@@ -93,6 +93,40 @@ class EditorProfileControllerTest extends TestCase
         $this->assertEquals(['Heat'], $readerProfile->favorite_films);
     }
 
+    public function test_admin_can_opt_another_admin_into_the_reader_request_waiver(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $target = User::factory()->create(['role' => 'admin', 'email' => 'other-admin@example.com']);
+
+        $this->actingAs($admin)
+            ->patch("/admin/editors/{$target->id}", [
+                'initials' => 'OA', 'first_name' => 'Other', 'last_name' => 'Admin',
+                'email' => $target->email, 'availability' => 'available',
+                'video_consulting_reader_request_eligible' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue($target->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
+    }
+
+    public function test_editing_an_editor_never_sets_the_admin_only_reader_request_field(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = $this->makeEditor();
+
+        $this->actingAs($admin)
+            ->patch("/admin/editors/{$editor->id}", [
+                'initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor',
+                'email' => $editor->email, 'availability' => 'available',
+                'video_consulting_reader_request_eligible' => '1',
+            ])
+            ->assertRedirect();
+
+        // Editors are always eligible regardless of this field — it's admin-only, and the
+        // controller never writes it for a non-admin target, so it stays at the column default.
+        $this->assertFalse($editor->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
+    }
+
     public function test_admin_can_update_editor_rates(): void
     {
         $admin  = User::factory()->create(['role' => 'admin']);

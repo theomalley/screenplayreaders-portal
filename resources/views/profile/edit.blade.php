@@ -398,6 +398,27 @@
                             <span class="text-sm text-green-600 mb-2">Saved.</span>
                         @endif
                     </form>
+
+                    @if ($user->isAdmin())
+                    {{-- Off by default — an admin doesn't write coverage, so a customer who
+                         books a call with one shouldn't be offered "count them as one of my
+                         requested readers too" unless this admin opts in. --}}
+                    <form method="POST" action="{{ route('profile.reader-request-eligible') }}" class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                        @csrf
+                        @method('PATCH')
+                        <label class="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="hidden" name="video_consulting_reader_request_eligible" value="0">
+                            <input type="checkbox" name="video_consulting_reader_request_eligible" value="1"
+                                   @checked(old('video_consulting_reader_request_eligible', $videoConsultingOverrideSource?->video_consulting_reader_request_eligible ?? false))
+                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            Let customers count me as one of their requested readers for coverage
+                        </label>
+                        <x-primary-button>Save</x-primary-button>
+                        @if (session('status') === 'reader-request-eligible-updated')
+                            <span class="text-sm text-green-600">Saved.</span>
+                        @endif
+                    </form>
+                    @endif
                 </div>
             </div>
             @endif
@@ -671,6 +692,20 @@
                                 <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Disabled{{ $isEditingReader ? ' (overrides sitewide setting)' : '' }}</option>
                             </select>
                         </div>
+                        @if ($user->isAdmin())
+                        {{-- Off by default — see the matching self-edit toggle for why. This
+                             field is part of the single outer <form id="admin-form">, saved by
+                             any Save button on this page like the select above it. --}}
+                        <div class="mb-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="hidden" name="video_consulting_reader_request_eligible" value="0">
+                                <input type="checkbox" name="video_consulting_reader_request_eligible" value="1"
+                                       @checked(old('video_consulting_reader_request_eligible', $videoConsultingProfileSource?->video_consulting_reader_request_eligible ?? false))
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                Let customers count them as one of their requested readers for coverage
+                            </label>
+                        </div>
+                        @endif
                         @include('partials.video-consulting-availability', [
                             'rules' => $videoConsultingRules ?? collect(),
                             'blackouts' => $videoConsultingBlackouts ?? collect(),

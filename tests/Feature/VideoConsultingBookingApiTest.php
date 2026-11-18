@@ -183,6 +183,53 @@ class VideoConsultingBookingApiTest extends TestCase
         $this->assertCount(0, $response->json());
     }
 
+    public function test_readers_endpoint_marks_a_reader_as_reader_request_eligible(): void
+    {
+        [$reader] = $this->makeBookableReader();
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $reader->id, 'reader_request_eligible' => true]);
+    }
+
+    public function test_readers_endpoint_marks_an_opted_out_admin_as_not_reader_request_eligible(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'name' => 'Admin Reader']);
+        $admin->readerProfile()->create([
+            'initials' => 'AR', 'first_name' => 'Admin', 'last_name' => 'Reader',
+            'video_consulting_enabled' => true,
+        ]);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $admin->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $admin->id, 'reader_request_eligible' => false]);
+    }
+
+    public function test_readers_endpoint_marks_an_opted_in_admin_as_reader_request_eligible(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'name' => 'Admin Reader']);
+        $admin->readerProfile()->create([
+            'initials' => 'AR', 'first_name' => 'Admin', 'last_name' => 'Reader',
+            'video_consulting_enabled' => true,
+            'video_consulting_reader_request_eligible' => true,
+        ]);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $admin->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $admin->id, 'reader_request_eligible' => true]);
+    }
+
     public function test_create_booking_converts_a_held_slot_into_an_assignment_and_notifies(): void
     {
         Mail::fake();

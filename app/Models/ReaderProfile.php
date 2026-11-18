@@ -1,5 +1,11 @@
 <?php
 
+// v1.23 — 2026-11-18 | Add video_consulting_reader_request_eligible — whether this
+//                      reader/admin/editor can be counted as one of a customer's requested
+//                      readers when they book a video call with them (the Reader Request fee
+//                      waiver in the theme repo). Readers/editors are always eligible
+//                      (hardcoded); admin defaults to false and must opt in — see
+//                      App\Support\VideoConsultingAccess::eligibleForReaderRequestWaiver().
 // v1.22 — 2026-11-14 | parseFavoritesInput() now takes the raw array straight from 5 separate
 //                      input fields per list (not one comma-separated field the reader could
 //                      cram anything into) — same trim/filter-empty/cap-at-5 behavior either way.
@@ -92,6 +98,7 @@ class ReaderProfile extends Model
         'watermark_enabled',
         'video_consulting_enabled',
         'video_consulting_min_lead_hours',
+        'video_consulting_reader_request_eligible',
         'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',
@@ -128,6 +135,7 @@ class ReaderProfile extends Model
         'watermark_enabled'        => 'boolean',
         'video_consulting_enabled' => 'boolean',
         'video_consulting_min_lead_hours' => 'integer',
+        'video_consulting_reader_request_eligible' => 'boolean',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',

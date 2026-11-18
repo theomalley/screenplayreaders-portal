@@ -1,5 +1,8 @@
 <?php
 
+// v1.19 — 2026-11-18 | update() now also saves video_consulting_reader_request_eligible when
+//                      the target is an admin — the admin-only toggle for whether they can be
+//                      counted as one of a customer's requested readers (default off).
 // v1.18 — 2026-11-18 | updateReaderProfileShell() moved to App\Support\VideoConsultingAccess
 //                      (shared with ProfileController's new self-serve enable/disable action)
 //                      instead of staying a private copy here.
@@ -219,11 +222,17 @@ class EditorProfileController extends Controller
             collect($data)->except(['email', 'password', 'password_confirmation', 'favorite_genres', 'favorite_films'])->toArray()
         );
 
-        VideoConsultingAccess::updateReaderProfileShell($user, [
+        $readerShellData = [
             'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []),
             'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []),
             'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
-        ]);
+        ];
+        // Only admin targets get this control (see profile/edit.blade.php) — readers/editors
+        // are always eligible and this field is meaningless for them.
+        if ($user->isAdmin()) {
+            $readerShellData['video_consulting_reader_request_eligible'] = $request->boolean('video_consulting_reader_request_eligible');
+        }
+        VideoConsultingAccess::updateReaderProfileShell($user, $readerShellData);
 
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
         return redirect()->route('admin.editors.edit', $user)->with('success', "{$label} profile updated.");

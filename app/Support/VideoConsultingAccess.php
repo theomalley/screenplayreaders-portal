@@ -1,5 +1,11 @@
 <?php
 
+// v1.5 — 2026-11-18 | Add eligibleForReaderRequestWaiver() — whether this reader/admin/editor
+//                      can be counted as one of a customer's requested readers when booking a
+//                      video call with them (the theme's Reader Request fee waiver). Readers
+//                      and editors always are; admin isn't unless they opt in via the new
+//                      video_consulting_reader_request_eligible column, since an admin doesn't
+//                      actually write coverage by default.
 // v1.4 — 2026-11-18 | updateReaderProfileShell() is also now used for an admin/editor's
 //                      Favorite Genres/Films (ProfileController::updateFavorites()) — those
 //                      columns live on ReaderProfile regardless of role, same as the
@@ -57,6 +63,25 @@ class VideoConsultingAccess
         }
 
         return false;
+    }
+
+    /**
+     * Whether this person can be counted as one of a customer's requested readers when the
+     * customer books a video call with them (theme-side: the Reader Request fee waiver).
+     * Readers and editors always can — it's literally their job. An admin can't unless they
+     * explicitly opt in on their Profile page, since by default they don't write coverage.
+     */
+    public static function eligibleForReaderRequestWaiver(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return (bool) $user->readerProfile?->video_consulting_reader_request_eligible;
+        }
+
+        return $user->isReader() || $user->isEditor();
     }
 
     /** 'default'|'enabled'|'disabled' select -> null|true|false for ReaderProfile::video_consulting_enabled. */

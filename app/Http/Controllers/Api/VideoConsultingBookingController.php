@@ -1,5 +1,9 @@
 <?php
 
+// v1.8 — 2026-11-18 | readers() now includes reader_request_eligible
+//                      (VideoConsultingAccess::eligibleForReaderRequestWaiver()) — lets the
+//                      theme's checkout widget skip offering the Reader Request fee waiver
+//                      for an admin who hasn't opted into it (readers/editors always qualify).
 // v1.7 — 2026-11-18 | readers() now includes initials (ReaderProfile.initials) — lets the theme
 //                      map a video-consulting booking back to the matching entry in its own
 //                      reader-initials list for the /upload/ Reader Request dropdowns (see
@@ -100,10 +104,11 @@ class VideoConsultingBookingController extends Controller
                 $photo = $reader->readerProfile?->photo;
 
                 return [
-                    'id'                   => $reader->id,
-                    'name'                 => $reader->name,
-                    'initials'             => $reader->readerProfile?->initials,
-                    'photo_url'            => $photo ? asset('storage/' . $photo) : null,
+                    'id'                      => $reader->id,
+                    'name'                    => $reader->name,
+                    'initials'                => $reader->readerProfile?->initials,
+                    'reader_request_eligible' => VideoConsultingAccess::eligibleForReaderRequestWaiver($reader),
+                    'photo_url'               => $photo ? asset('storage/' . $photo) : null,
                     'availability_summary' => $availability->availabilitySummaryFor($reader->id),
                     'min_lead_hours'       => (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0),
                     'favorite_genres'      => $reader->readerProfile?->favorite_genres ?? [],

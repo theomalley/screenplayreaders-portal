@@ -1,5 +1,10 @@
 <?php
 
+// v1.3 — 2026-11-18 | Add updateReaderRequestEligible() — admin-only toggle for whether this
+//                      admin can be counted as one of a customer's requested readers when
+//                      booking a video call with them (default off; readers/editors are
+//                      always eligible and don't get this control). New
+//                      video_consulting_reader_request_eligible column on ReaderProfile.
 // v1.2 — 2026-11-18 | updateFavorites() now also allows admin/editor (favorite_genres/
 //                      favorite_films are shown on the Script Consulting page for any
 //                      role that can appear there, not just readers) — self-edit view now
@@ -172,6 +177,25 @@ class ProfileController extends Controller
         ]);
 
         return Redirect::route('profile.edit')->with('status', 'video-consulting-enabled-updated');
+    }
+
+    /**
+     * Admin-only: whether this admin can be counted as one of a customer's requested readers
+     * when the customer books a video call with them (the theme's Reader Request fee waiver —
+     * see VideoConsultingAccess::eligibleForReaderRequestWaiver()). Readers/editors are always
+     * eligible and don't get this control; it only exists to let an admin opt in, since the
+     * default is off.
+     */
+    public function updateReaderRequestEligible(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isAdmin(), 404);
+
+        VideoConsultingAccess::updateReaderProfileShell($user, [
+            'video_consulting_reader_request_eligible' => $request->boolean('video_consulting_reader_request_eligible'),
+        ]);
+
+        return Redirect::route('profile.edit')->with('status', 'reader-request-eligible-updated');
     }
 
     public function updateCustomMessage(Request $request): RedirectResponse
