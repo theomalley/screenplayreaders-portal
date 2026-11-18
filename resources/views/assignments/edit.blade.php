@@ -533,10 +533,40 @@
                             @if ($assignment->customer_focus_categories)
                                 <p class="text-sm text-indigo-900 font-medium">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
                             @endif
-                            <div class="pt-2">
+                            <div class="pt-2"
+                                 x-data="{
+                                     focusNoteSaving: false,
+                                     focusNoteSaved: false,
+                                     async saveFocusNote() {
+                                         this.focusNoteSaving = true; this.focusNoteSaved = false;
+                                         try {
+                                             const r = await fetch('{{ route('assignments.updateCustomerFocusNotes', $assignment) }}', {
+                                                 method: 'PATCH',
+                                                 headers: {
+                                                     'Content-Type': 'application/json',
+                                                     'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                                     'Accept': 'application/json',
+                                                 },
+                                                 body: JSON.stringify({ customer_focus_notes: document.getElementById('customer_focus_notes').value }),
+                                             });
+                                             if (r.ok) {
+                                                 this.focusNoteSaved = true;
+                                                 setTimeout(() => { this.focusNoteSaved = false; }, 3000);
+                                             }
+                                         } finally {
+                                             this.focusNoteSaving = false;
+                                         }
+                                     },
+                                 }">
                                 <label for="customer_focus_notes" class="text-xs font-semibold text-indigo-500 uppercase tracking-wider">Client Notes</label>
                                 <textarea id="customer_focus_notes" name="customer_focus_notes" rows="3"
                                     class="mt-1 block w-full border-indigo-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm text-indigo-900">{{ $v('customer_focus_notes', $assignment->customer_focus_notes) }}</textarea>
+                                <div class="flex items-center justify-end gap-2 mt-2">
+                                    <span x-show="focusNoteSaved" x-cloak class="text-[10px] text-green-600">Saved</span>
+                                    <button type="button" @click="saveFocusNote()" :disabled="focusNoteSaving"
+                                        class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-md shadow-sm disabled:opacity-50"
+                                        x-text="focusNoteSaving ? 'Saving…' : 'Save Note'"></button>
+                                </div>
                                 <x-input-error :messages="$errors->get('customer_focus_notes')" class="mt-1" />
                             </div>
                             @if ($assignment->customer_focus_exclude_notes)

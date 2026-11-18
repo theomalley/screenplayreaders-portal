@@ -149,6 +149,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('video-consulting-bookings/{assignment}/reschedule', [\App\Http\Controllers\VideoConsultingRescheduleController::class, 'store'])->name('video-consulting-reschedule.store');
     Route::patch('assignments/{assignment}/status', [AssignmentController::class, 'updateStatus'])->name('assignments.updateStatus');
     Route::patch('assignments/{assignment}/notes', [AssignmentController::class, 'updateNotes'])->name('assignments.updateNotes');
+    Route::patch('assignments/{assignment}/customer-focus-notes', [AssignmentController::class, 'updateCustomerFocusNotes'])->name('assignments.updateCustomerFocusNotes');
     Route::post('assignments/{assignment}/dismiss-helpscout-draft', [AssignmentController::class, 'dismissHelpscoutDraft'])->name('assignments.dismissHelpscoutDraft');
     Route::post('assignments/{assignment}/dismiss-cancelled', [AssignmentController::class, 'dismissCancelled'])->name('assignments.dismiss-cancelled');
     Route::post('assignments/{assignment}/regenerate-discount-code', [AssignmentController::class, 'regenerateDiscountCode'])->name('assignments.regenerateDiscountCode');

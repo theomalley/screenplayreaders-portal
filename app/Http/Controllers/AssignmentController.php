@@ -1724,6 +1724,17 @@ class AssignmentController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function updateCustomerFocusNotes(Request $request, Assignment $assignment)
+    {
+        $this->authorize('update', $assignment);
+
+        $request->validate(['customer_focus_notes' => ['nullable', 'string', 'max:2000']]);
+
+        $assignment->update(['customer_focus_notes' => $request->input('customer_focus_notes')]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function dismissCancelled(Assignment $assignment)
     {
         $this->authorize('dismissCancelled', $assignment);
