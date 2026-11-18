@@ -1,5 +1,11 @@
 <?php
 
+// v1.2 — 2026-11-18 | updateFavorites() now also allows admin/editor (favorite_genres/
+//                      favorite_films are shown on the Script Consulting page for any
+//                      role that can appear there, not just readers) — self-edit view now
+//                      shows the card for isAdminOrEditor() too, reading from their
+//                      ReaderProfile (via $videoConsultingOverrideSource) since $profile is
+//                      their EditorProfile for that role, which has no favorites columns.
 // v1.1 — 2026-11-18 | Admin/editor can now opt into video consulting from their OWN Profile
 //                      page (enable/disable + availability + rate), not just via another admin
 //                      editing their profile at /admin/editors/{user}. New
@@ -188,7 +194,7 @@ class ProfileController extends Controller
     public function updateFavorites(Request $request): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($user->isReader(), 403);
+        abort_unless($user->isReader() || $user->isAdminOrEditor(), 403);
 
         $data = $request->validate([
             'favorite_genres'   => 'nullable|array|max:5',
@@ -197,10 +203,19 @@ class ProfileController extends Controller
             'favorite_films.*'  => 'nullable|string|max:60',
         ]);
 
-        $user->readerProfile()->updateOrCreate(['user_id' => $user->id], [
+        $favorites = [
             'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []),
             'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []),
-        ]);
+        ];
+
+        // Favorites always live on ReaderProfile. A reader already has that row; an
+        // admin/editor may not yet (it's lazily created — see updateVideoConsultingEnabled()
+        // above), so the shared shell helper seeds its NOT-NULL identity columns if needed.
+        if ($user->isReader()) {
+            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], $favorites);
+        } else {
+            VideoConsultingAccess::updateReaderProfileShell($user, $favorites);
+        }
 
         return back()->with('status', 'favorites-updated');
     }

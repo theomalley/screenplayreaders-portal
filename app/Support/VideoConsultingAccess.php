@@ -1,5 +1,10 @@
 <?php
 
+// v1.4 — 2026-11-18 | updateReaderProfileShell() is also now used for an admin/editor's
+//                      Favorite Genres/Films (ProfileController::updateFavorites()) — those
+//                      columns live on ReaderProfile regardless of role, same as the
+//                      video-consulting fields, so the name/doc below is no longer
+//                      video-consulting-specific even though it started that way.
 // v1.3 — 2026-11-18 | Add updateReaderProfileShell(), moved here from EditorProfileController's
 //                      private copy so ProfileController's new self-serve enable/disable action
 //                      (an admin/editor opting themselves into video consulting from their own
@@ -65,14 +70,15 @@ class VideoConsultingAccess
     }
 
     /**
-     * Admin/editor taking video consulting bookings themselves uses the same
-     * ReaderProfile-keyed tables a reader does (video_consulting_enabled/min_lead_hours,
-     * ReaderAvailabilityRule, ReaderBlackoutDate, ReaderVideoConsultingRate) rather than
-     * duplicating those columns onto EditorProfile. A ReaderProfile row doesn't exist yet
-     * for most admin/editor users, so creating one here seeds the NOT-NULL identity columns
-     * (initials/first_name/last_name/etc.) from their EditorProfile, mirroring
-     * EditorProfileController::update()'s reader<->editor role-change handoff
-     * (EditorProfile::sharedArrayFrom()) rather than inventing a new convention.
+     * An admin/editor acting on any ReaderProfile-keyed field for themselves — video
+     * consulting (video_consulting_enabled/min_lead_hours, ReaderAvailabilityRule,
+     * ReaderBlackoutDate, ReaderVideoConsultingRate) or favorite_genres/favorite_films —
+     * uses the same tables a reader does rather than duplicating those columns onto
+     * EditorProfile. A ReaderProfile row doesn't exist yet for most admin/editor users, so
+     * creating one here seeds the NOT-NULL identity columns (initials/first_name/last_name/
+     * etc.) from their EditorProfile, mirroring EditorProfileController::update()'s
+     * reader<->editor role-change handoff (EditorProfile::sharedArrayFrom()) rather than
+     * inventing a new convention.
      */
     public static function updateReaderProfileShell(User $user, array $data): ReaderProfile
     {

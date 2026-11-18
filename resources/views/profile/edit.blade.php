@@ -321,7 +321,13 @@
                 </div>
             </div>
 
-            @if ($user->isReader())
+            @if ($user->isReader() || $user->isAdminOrEditor())
+            @php
+                // Favorites always live on ReaderProfile, same as the video-consulting fields
+                // above — for an admin/editor, $profile is their EditorProfile, which has no
+                // favorite_genres/favorite_films columns, so it's the wrong source here.
+                $favoritesProfile = $user->isReader() ? $profile : ($videoConsultingOverrideSource ?? null);
+            @endphp
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
@@ -334,7 +340,7 @@
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_genres[]" type="text" class="block w-full"
-                                        value="{{ old('favorite_genres.' . $i, $profile?->favorite_genres[$i] ?? '') }}"
+                                        value="{{ old('favorite_genres.' . $i, $favoritesProfile?->favorite_genres[$i] ?? '') }}"
                                         placeholder="Genre {{ $i + 1 }}" />
                                 @endfor
                             </div>
@@ -345,7 +351,7 @@
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"
-                                        value="{{ old('favorite_films.' . $i, $profile?->favorite_films[$i] ?? '') }}"
+                                        value="{{ old('favorite_films.' . $i, $favoritesProfile?->favorite_films[$i] ?? '') }}"
                                         placeholder="Film/Show {{ $i + 1 }}" />
                                 @endfor
                             </div>
