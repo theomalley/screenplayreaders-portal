@@ -1,5 +1,14 @@
 <?php
 
+// v1.1 — 2026-11-18 | Admin/editor can now opt into video consulting from their OWN Profile
+//                      page (enable/disable + availability + rate), not just via another admin
+//                      editing their profile at /admin/editors/{user}. New
+//                      updateVideoConsultingEnabled(); edit() now always surfaces the
+//                      override/availability/rate data for admin/editor, not just once already
+//                      enabled, since there was previously no self-serve way to flip it on in
+//                      the first place. Shares App\Support\VideoConsultingAccess::
+//                      updateReaderProfileShell() with EditorProfileController.
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
@@ -26,15 +35,32 @@ class ProfileController extends Controller
         // video_consulting_min_lead_hours/rate/availability/blackouts always live on
         // ReaderProfile regardless of role — an admin/editor taking calls themselves has no
         // EditorProfile columns for these, so $profile (above) is the wrong source for them.
+        //
+        // A reader's Rate/Availability cards stay gated on enabledFor() unchanged (whether
+        // video consulting is on for them is either the sitewide default or an admin override —
+        // nothing on this page itself can flip it). An admin/editor has no sitewide fallback and
+        // no other admin-facing page to flip it from except this one, so their data (including
+        // the current override, for the enable/disable select) is always included here —
+        // otherwise there would be no self-serve way to ever turn it on in the first place.
         $videoConsultingData = [];
-        if (($user->isReader() || $user->isAdminOrEditor()) && VideoConsultingAccess::enabledFor($user)) {
-            $readerProfile = $user->isReader() ? $profile : $user->readerProfile;
+        if ($user->isReader() && VideoConsultingAccess::enabledFor($user)) {
             $videoConsultingData = [
                 'videoConsultingDurations'    => VideoConsultingDuration::active()->get(),
                 'videoConsultingMyRates'      => ReaderVideoConsultingRate::where('reader_id', $user->id)->pluck('rate', 'duration_id'),
                 'videoConsultingRules'        => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
                 'videoConsultingBlackouts'    => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
-                'videoConsultingMinLeadHours' => (int) ($readerProfile?->video_consulting_min_lead_hours ?? 0),
+                'videoConsultingMinLeadHours' => (int) ($profile?->video_consulting_min_lead_hours ?? 0),
+                'videoConsultingLeadHoursBounds' => \App\Models\Setting::getVideoConsultingLeadHoursBounds(),
+            ];
+        } elseif ($user->isAdminOrEditor()) {
+            $readerProfile = $user->readerProfile;
+            $videoConsultingData = [
+                'videoConsultingOverrideSource'  => $readerProfile,
+                'videoConsultingDurations'       => VideoConsultingDuration::active()->get(),
+                'videoConsultingMyRates'         => ReaderVideoConsultingRate::where('reader_id', $user->id)->pluck('rate', 'duration_id'),
+                'videoConsultingRules'           => ReaderAvailabilityRule::where('reader_id', $user->id)->get()->keyBy('day_of_week'),
+                'videoConsultingBlackouts'       => ReaderBlackoutDate::where('reader_id', $user->id)->orderBy('start_at')->get(),
+                'videoConsultingMinLeadHours'    => (int) ($readerProfile?->video_consulting_min_lead_hours ?? 0),
                 'videoConsultingLeadHoursBounds' => \App\Models\Setting::getVideoConsultingLeadHoursBounds(),
             ];
         }
@@ -120,6 +146,26 @@ class ProfileController extends Controller
         }
 
         return Redirect::route('profile.edit')->with('status', 'notifications-updated');
+    }
+
+    /**
+     * Self-serve enable/disable override for an admin/editor opting into (or out of) taking
+     * video consulting calls themselves — mirrors the override EditorProfileController::
+     * update() already lets another admin set on their behalf, just reachable from the
+     * admin/editor's own Profile page too now. Readers don't get this control here: their
+     * tri-state override (follow-sitewide / always-on / always-off) stays admin-only, set from
+     * the reader-edit page, not self-serve.
+     */
+    public function updateVideoConsultingEnabled(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isAdminOrEditor(), 404);
+
+        VideoConsultingAccess::updateReaderProfileShell($user, [
+            'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
+        ]);
+
+        return Redirect::route('profile.edit')->with('status', 'video-consulting-enabled-updated');
     }
 
     public function updateCustomMessage(Request $request): RedirectResponse

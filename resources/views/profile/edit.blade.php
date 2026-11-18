@@ -362,6 +362,40 @@
             </div>
             @endif
 
+            @if ($user->isAdminOrEditor())
+            {{-- Self-serve enable/disable — the only path for an admin/editor to opt into
+                 taking calls themselves without another admin editing their profile for them.
+                 Readers don't get this card: their override stays admin-only. --}}
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting</h2>
+                    <p class="text-sm text-gray-600 mb-4">Opt into taking paid video consulting calls yourself, with your own rate and availability below.</p>
+                    @php
+                        $videoConsultingOverride = match (($videoConsultingOverrideSource ?? null)?->video_consulting_enabled) {
+                            true => 'enabled', false => 'disabled', default => 'default',
+                        };
+                    @endphp
+                    <form method="POST" action="{{ route('profile.video-consulting-enabled') }}" class="flex items-end gap-3">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <label for="video_consulting_enabled" class="block text-xs text-gray-600 mb-1">Video consulting</label>
+                            <select id="video_consulting_enabled" name="video_consulting_enabled"
+                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="default" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'default')>Disabled (default — no sitewide setting for admin/editor)</option>
+                                <option value="enabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'enabled')>Enabled</option>
+                                <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Disabled</option>
+                            </select>
+                        </div>
+                        <x-primary-button>Save</x-primary-button>
+                        @if (session('status') === 'video-consulting-enabled-updated')
+                            <span class="text-sm text-green-600 mb-2">Saved.</span>
+                        @endif
+                    </form>
+                </div>
+            </div>
+            @endif
+
             @if (($user->isReader() || $user->isAdminOrEditor()) && \App\Support\VideoConsultingAccess::enabledFor($user))
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">

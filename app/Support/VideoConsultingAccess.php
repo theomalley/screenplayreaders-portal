@@ -1,5 +1,10 @@
 <?php
 
+// v1.3 — 2026-11-18 | Add updateReaderProfileShell(), moved here from EditorProfileController's
+//                      private copy so ProfileController's new self-serve enable/disable action
+//                      (an admin/editor opting themselves into video consulting from their own
+//                      Profile page, not just via another admin editing their profile) can reuse
+//                      it instead of duplicating the ReaderProfile-seeding logic.
 // v1.2 — 2026-11-15 | enabledFor() now also admits admin/editor: they're opt-in only (the
 //                      tri-state override must be explicitly true — no sitewide default-on,
 //                      since the sitewide switch is about readers). Add parseOverrideInput(),
@@ -16,6 +21,8 @@
 
 namespace App\Support;
 
+use App\Models\EditorProfile;
+use App\Models\ReaderProfile;
 use App\Models\Setting;
 use App\Models\User;
 
@@ -55,5 +62,23 @@ class VideoConsultingAccess
             'disabled' => false,
             default    => null,
         };
+    }
+
+    /**
+     * Admin/editor taking video consulting bookings themselves uses the same
+     * ReaderProfile-keyed tables a reader does (video_consulting_enabled/min_lead_hours,
+     * ReaderAvailabilityRule, ReaderBlackoutDate, ReaderVideoConsultingRate) rather than
+     * duplicating those columns onto EditorProfile. A ReaderProfile row doesn't exist yet
+     * for most admin/editor users, so creating one here seeds the NOT-NULL identity columns
+     * (initials/first_name/last_name/etc.) from their EditorProfile, mirroring
+     * EditorProfileController::update()'s reader<->editor role-change handoff
+     * (EditorProfile::sharedArrayFrom()) rather than inventing a new convention.
+     */
+    public static function updateReaderProfileShell(User $user, array $data): ReaderProfile
+    {
+        $existing = $user->readerProfile;
+        $shell = $existing ? [] : EditorProfile::sharedArrayFrom($user->editorProfile, $user);
+
+        return $user->readerProfile()->updateOrCreate(['user_id' => $user->id], array_merge($shell, $data));
     }
 }

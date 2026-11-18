@@ -1,5 +1,8 @@
 <?php
 
+// v1.18 — 2026-11-18 | updateReaderProfileShell() moved to App\Support\VideoConsultingAccess
+//                      (shared with ProfileController's new self-serve enable/disable action)
+//                      instead of staying a private copy here.
 // v1.17 — 2026-11-15 | Admin/editor can now opt into taking video consulting bookings
 //                      themselves — same settings a reader has (enable/disable override, weekly
 //                      availability + blackout dates, per-duration rate), stored on the same
@@ -213,31 +216,13 @@ class EditorProfileController extends Controller
         );
 
         if ($request->has('video_consulting_enabled')) {
-            $this->updateReaderProfileShell($user, [
+            VideoConsultingAccess::updateReaderProfileShell($user, [
                 'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
             ]);
         }
 
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
         return redirect()->route('admin.editors.edit', $user)->with('success', "{$label} profile updated.");
-    }
-
-    /**
-     * Admin/editor taking video consulting bookings themselves uses the same
-     * ReaderProfile-keyed tables a reader does (video_consulting_enabled/min_lead_hours,
-     * ReaderAvailabilityRule, ReaderBlackoutDate, ReaderVideoConsultingRate) rather than
-     * duplicating those columns onto EditorProfile — see App\Support\VideoConsultingAccess.
-     * A ReaderProfile row doesn't exist yet for most admin/editor users, so creating one here
-     * seeds the NOT-NULL identity columns (initials/first_name/last_name/etc.) from their
-     * EditorProfile, mirroring EditorProfileController::update()'s reader<->editor role-change
-     * handoff (EditorProfile::sharedArrayFrom()) rather than inventing a new convention.
-     */
-    private function updateReaderProfileShell(User $user, array $data): \App\Models\ReaderProfile
-    {
-        $existing = $user->readerProfile;
-        $shell = $existing ? [] : \App\Models\EditorProfile::sharedArrayFrom($user->editorProfile, $user);
-
-        return $user->readerProfile()->updateOrCreate(['user_id' => $user->id], array_merge($shell, $data));
     }
 
     public function updateRates(Request $request, User $user)
@@ -371,7 +356,7 @@ class EditorProfileController extends Controller
             'min_lead_hours'    => ['nullable', 'integer', "min:{$leadHoursBounds['min']}", "max:{$leadHoursBounds['max']}"],
         ]);
 
-        $this->updateReaderProfileShell($user, [
+        VideoConsultingAccess::updateReaderProfileShell($user, [
             'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
         ]);
 
