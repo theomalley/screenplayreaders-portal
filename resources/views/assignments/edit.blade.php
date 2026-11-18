@@ -523,21 +523,22 @@
                             </label>
                         </div>
 
-                        {{-- Client Requested Focus — read-only, customer-sourced from the theme's
-                             /upload/ focus-notes section. Not wired into any edit form field since
-                             staff shouldn't be able to silently overwrite what the customer said. --}}
+                        {{-- Client Requested Focus — customer-sourced from the theme's /upload/
+                             focus-notes section. Categories and the "skip" note are read-only
+                             (that's what the customer picked); Client Notes is editable so staff
+                             can correct/clarify what the customer wrote. --}}
                         @if ($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
                         <div class="bg-indigo-50 rounded-lg shadow-sm border border-indigo-200 p-5 space-y-2 mt-5">
                             <h3 class="text-xs font-semibold text-indigo-500 uppercase tracking-wider">Client Requested Focus</h3>
                             @if ($assignment->customer_focus_categories)
                                 <p class="text-sm text-indigo-900 font-medium">{{ implode(', ', $assignment->customer_focus_categories) }}</p>
                             @endif
-                            @if ($assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
-                                <h3 class="text-xs font-semibold text-indigo-500 uppercase tracking-wider pt-2">Client Notes</h3>
-                            @endif
-                            @if ($assignment->customer_focus_notes)
-                                <p class="text-sm text-indigo-900">{{ $assignment->customer_focus_notes }}</p>
-                            @endif
+                            <div class="pt-2">
+                                <label for="customer_focus_notes" class="text-xs font-semibold text-indigo-500 uppercase tracking-wider">Client Notes</label>
+                                <textarea id="customer_focus_notes" name="customer_focus_notes" rows="3"
+                                    class="mt-1 block w-full border-indigo-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm text-indigo-900">{{ $v('customer_focus_notes', $assignment->customer_focus_notes) }}</textarea>
+                                <x-input-error :messages="$errors->get('customer_focus_notes')" class="mt-1" />
+                            </div>
                             @if ($assignment->customer_focus_exclude_notes)
                                 <p class="text-sm text-indigo-900"><span class="italic">Skip:</span> {{ $assignment->customer_focus_exclude_notes }}</p>
                             @endif
