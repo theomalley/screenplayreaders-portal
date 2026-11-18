@@ -1,5 +1,9 @@
 <?php
 
+// v1.7 — 2026-11-18 | readers() now includes initials (ReaderProfile.initials) — lets the theme
+//                      map a video-consulting booking back to the matching entry in its own
+//                      reader-initials list for the /upload/ Reader Request dropdowns (see
+//                      sr_script_coverage_waive_req1_reader_request() in the theme repo).
 // v1.6 — 2026-11-15 | readers()/readerRates() now also admit admin/editor — any role can offer
 //                      video consulting (App\Support\VideoConsultingAccess), not just readers.
 // v1.5 — 2026-11-15 | createBooking() now accepts focus_categories/focus_notes/
@@ -98,6 +102,7 @@ class VideoConsultingBookingController extends Controller
                 return [
                     'id'                   => $reader->id,
                     'name'                 => $reader->name,
+                    'initials'             => $reader->readerProfile?->initials,
                     'photo_url'            => $photo ? asset('storage/' . $photo) : null,
                     'availability_summary' => $availability->availabilitySummaryFor($reader->id),
                     'min_lead_hours'       => (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0),

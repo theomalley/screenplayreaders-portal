@@ -89,7 +89,7 @@ class VideoConsultingBookingApiTest extends TestCase
         $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
 
         $response->assertOk();
-        $response->assertJsonFragment(['id' => $reader->id, 'name' => 'Jamie Reader']);
+        $response->assertJsonFragment(['id' => $reader->id, 'name' => 'Jamie Reader', 'initials' => 'JR']);
         $payload = $response->json();
         $this->assertStringContainsString('9:00 AM', $payload[0]['availability_summary']);
         $this->assertSame($duration->id, $payload[0]['durations'][0]['duration_id']);
