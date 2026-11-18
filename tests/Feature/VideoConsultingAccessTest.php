@@ -234,10 +234,23 @@ class VideoConsultingAccessTest extends TestCase
         $this->assertTrue(VideoConsultingAccess::eligibleForReaderRequestWaiver($reader));
     }
 
-    public function test_an_editor_is_always_eligible_for_the_reader_request_waiver(): void
+    public function test_an_editor_is_not_eligible_for_the_reader_request_waiver_by_default(): void
+    {
+        // Editors don't automatically write coverage the way a reader does — this is
+        // opt-in only, same as admin.
+        $editor = User::factory()->create(['role' => 'editor']);
+        $this->assertFalse(VideoConsultingAccess::eligibleForReaderRequestWaiver($editor));
+    }
+
+    public function test_an_editor_becomes_eligible_after_opting_in(): void
     {
         $editor = User::factory()->create(['role' => 'editor']);
-        $this->assertTrue(VideoConsultingAccess::eligibleForReaderRequestWaiver($editor));
+        $editor->readerProfile()->create([
+            'initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor',
+            'video_consulting_reader_request_eligible' => true,
+        ]);
+
+        $this->assertTrue(VideoConsultingAccess::eligibleForReaderRequestWaiver($editor->fresh('readerProfile')));
     }
 
     public function test_an_admin_is_not_eligible_for_the_reader_request_waiver_by_default(): void

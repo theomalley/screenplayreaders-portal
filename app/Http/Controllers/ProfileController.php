@@ -1,5 +1,8 @@
 <?php
 
+// v1.4 — 2026-11-18 | updateReaderRequestEligible() corrected: editors do NOT always write
+//                      coverage, so they get this toggle too, not just admin — gate changed
+//                      from isAdmin() to isAdminOrEditor().
 // v1.3 — 2026-11-18 | Add updateReaderRequestEligible() — admin-only toggle for whether this
 //                      admin can be counted as one of a customer's requested readers when
 //                      booking a video call with them (default off; readers/editors are
@@ -180,16 +183,15 @@ class ProfileController extends Controller
     }
 
     /**
-     * Admin-only: whether this admin can be counted as one of a customer's requested readers
-     * when the customer books a video call with them (the theme's Reader Request fee waiver —
-     * see VideoConsultingAccess::eligibleForReaderRequestWaiver()). Readers/editors are always
-     * eligible and don't get this control; it only exists to let an admin opt in, since the
-     * default is off.
+     * Admin/editor-only: whether this person can be counted as one of a customer's requested
+     * readers when the customer books a video call with them (the theme's Reader Request fee
+     * waiver — see VideoConsultingAccess::eligibleForReaderRequestWaiver()). A reader is
+     * always eligible and doesn't get this control; admin/editor default to off and opt in here.
      */
     public function updateReaderRequestEligible(Request $request): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($user->isAdmin(), 404);
+        abort_unless($user->isAdminOrEditor(), 404);
 
         VideoConsultingAccess::updateReaderProfileShell($user, [
             'video_consulting_reader_request_eligible' => $request->boolean('video_consulting_reader_request_eligible'),

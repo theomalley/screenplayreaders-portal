@@ -1,5 +1,9 @@
 <?php
 
+// v1.6 — 2026-11-18 | eligibleForReaderRequestWaiver(): correction — editors do NOT always
+//                      write coverage (only readers do by default). Editor is now opt-in via
+//                      video_consulting_reader_request_eligible, same as admin; only a plain
+//                      reader is automatically eligible.
 // v1.5 — 2026-11-18 | Add eligibleForReaderRequestWaiver() — whether this reader/admin/editor
 //                      can be counted as one of a customer's requested readers when booking a
 //                      video call with them (the theme's Reader Request fee waiver). Readers
@@ -67,9 +71,10 @@ class VideoConsultingAccess
 
     /**
      * Whether this person can be counted as one of a customer's requested readers when the
-     * customer books a video call with them (theme-side: the Reader Request fee waiver).
-     * Readers and editors always can — it's literally their job. An admin can't unless they
-     * explicitly opt in on their Profile page, since by default they don't write coverage.
+     * customer books a video call with them (theme-side: the Reader Request fee waiver). A
+     * reader always can — it's literally their job. Admin/editor can't unless they explicitly
+     * opt in on their Profile page, since neither writes coverage by default (an editor CAN,
+     * but doesn't always — it's not automatic the way it is for a reader).
      */
     public static function eligibleForReaderRequestWaiver(?User $user): bool
     {
@@ -77,11 +82,11 @@ class VideoConsultingAccess
             return false;
         }
 
-        if ($user->isAdmin()) {
-            return (bool) $user->readerProfile?->video_consulting_reader_request_eligible;
+        if ($user->isReader()) {
+            return true;
         }
 
-        return $user->isReader() || $user->isEditor();
+        return (bool) $user->readerProfile?->video_consulting_reader_request_eligible;
     }
 
     /** 'default'|'enabled'|'disabled' select -> null|true|false for ReaderProfile::video_consulting_enabled. */

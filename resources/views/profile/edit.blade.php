@@ -399,10 +399,11 @@
                         @endif
                     </form>
 
-                    @if ($user->isAdmin())
-                    {{-- Off by default — an admin doesn't write coverage, so a customer who
-                         books a call with one shouldn't be offered "count them as one of my
-                         requested readers too" unless this admin opts in. --}}
+                    @if ($user->isAdminOrEditor())
+                    {{-- Off by default — neither an admin nor an editor writes coverage
+                         automatically (unlike a reader), so a customer who books a call with
+                         one shouldn't be offered "count them as one of my requested readers
+                         too" unless they've opted in here. --}}
                     <form method="POST" action="{{ route('profile.reader-request-eligible') }}" class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
                         @csrf
                         @method('PATCH')
@@ -692,7 +693,7 @@
                                 <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Disabled{{ $isEditingReader ? ' (overrides sitewide setting)' : '' }}</option>
                             </select>
                         </div>
-                        @if ($user->isAdmin())
+                        @if ($user->isAdminOrEditor())
                         {{-- Off by default — see the matching self-edit toggle for why. This
                              field is part of the single outer <form id="admin-form">, saved by
                              any Save button on this page like the select above it. --}}

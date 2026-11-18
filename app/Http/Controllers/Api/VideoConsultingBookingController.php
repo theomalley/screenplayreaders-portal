@@ -3,7 +3,8 @@
 // v1.8 — 2026-11-18 | readers() now includes reader_request_eligible
 //                      (VideoConsultingAccess::eligibleForReaderRequestWaiver()) — lets the
 //                      theme's checkout widget skip offering the Reader Request fee waiver
-//                      for an admin who hasn't opted into it (readers/editors always qualify).
+//                      for an admin/editor who hasn't opted into it (a plain reader always
+//                      qualifies).
 // v1.7 — 2026-11-18 | readers() now includes initials (ReaderProfile.initials) — lets the theme
 //                      map a video-consulting booking back to the matching entry in its own
 //                      reader-initials list for the /upload/ Reader Request dropdowns (see

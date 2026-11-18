@@ -7,9 +7,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Admin-only self-serve toggle for whether this admin can be counted as one of a customer's
- * requested readers when booking a video call with them — see
- * ProfileController::updateReaderRequestEligible().
+ * Admin/editor self-serve toggle for whether this person can be counted as one of a
+ * customer's requested readers when booking a video call with them — see
+ * ProfileController::updateReaderRequestEligible(). A reader is always eligible and doesn't
+ * get this control; neither admin nor editor writes coverage automatically, so both default
+ * to off and opt in here.
  */
 class ProfileReaderRequestEligibleTest extends TestCase
 {
@@ -41,17 +43,19 @@ class ProfileReaderRequestEligibleTest extends TestCase
         $this->assertFalse($admin->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
     }
 
-    public function test_editor_cannot_use_the_admin_only_route(): void
+    public function test_editor_can_opt_in_for_themselves(): void
     {
         $editor = User::factory()->create(['role' => 'editor']);
         $editor->editorProfile()->create(['initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor']);
 
         $this->actingAs($editor)
             ->patch('/profile/reader-request-eligible', ['video_consulting_reader_request_eligible' => '1'])
-            ->assertNotFound();
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertTrue($editor->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
     }
 
-    public function test_reader_cannot_use_the_admin_only_route(): void
+    public function test_reader_cannot_use_this_route(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);
         $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
@@ -66,6 +70,16 @@ class ProfileReaderRequestEligibleTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
 
         $this->actingAs($admin)->get('/profile')
+            ->assertOk()
+            ->assertSee('count me as one of their requested readers');
+    }
+
+    public function test_editors_own_profile_page_shows_the_toggle(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor']);
+        $editor->editorProfile()->create(['initials' => 'ED', 'first_name' => 'Test', 'last_name' => 'Editor']);
+
+        $this->actingAs($editor)->get('/profile')
             ->assertOk()
             ->assertSee('count me as one of their requested readers');
     }

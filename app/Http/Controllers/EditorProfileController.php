@@ -1,5 +1,8 @@
 <?php
 
+// v1.20 — 2026-11-18 | Correction: video_consulting_reader_request_eligible is now saved for
+//                      an editor target too, not just admin — editors don't automatically
+//                      write coverage either, so they need the same opt-in.
 // v1.19 — 2026-11-18 | update() now also saves video_consulting_reader_request_eligible when
 //                      the target is an admin — the admin-only toggle for whether they can be
 //                      counted as one of a customer's requested readers (default off).
@@ -222,17 +225,15 @@ class EditorProfileController extends Controller
             collect($data)->except(['email', 'password', 'password_confirmation', 'favorite_genres', 'favorite_films'])->toArray()
         );
 
-        $readerShellData = [
+        // $user here is always an editor or admin (see abort_unless() above) — both get the
+        // reader_request_eligible control (see profile/edit.blade.php); only a plain reader
+        // is automatically eligible and skips it.
+        VideoConsultingAccess::updateReaderProfileShell($user, [
             'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []),
             'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []),
             'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
-        ];
-        // Only admin targets get this control (see profile/edit.blade.php) — readers/editors
-        // are always eligible and this field is meaningless for them.
-        if ($user->isAdmin()) {
-            $readerShellData['video_consulting_reader_request_eligible'] = $request->boolean('video_consulting_reader_request_eligible');
-        }
-        VideoConsultingAccess::updateReaderProfileShell($user, $readerShellData);
+            'video_consulting_reader_request_eligible' => $request->boolean('video_consulting_reader_request_eligible'),
+        ]);
 
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
         return redirect()->route('admin.editors.edit', $user)->with('success', "{$label} profile updated.");

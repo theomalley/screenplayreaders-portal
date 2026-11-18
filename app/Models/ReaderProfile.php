@@ -3,8 +3,8 @@
 // v1.23 — 2026-11-18 | Add video_consulting_reader_request_eligible — whether this
 //                      reader/admin/editor can be counted as one of a customer's requested
 //                      readers when they book a video call with them (the Reader Request fee
-//                      waiver in the theme repo). Readers/editors are always eligible
-//                      (hardcoded); admin defaults to false and must opt in — see
+//                      waiver in the theme repo). A plain reader is always eligible
+//                      (hardcoded); admin/editor default to false and must opt in — see
 //                      App\Support\VideoConsultingAccess::eligibleForReaderRequestWaiver().
 // v1.22 — 2026-11-14 | parseFavoritesInput() now takes the raw array straight from 5 separate
 //                      input fields per list (not one comma-separated field the reader could

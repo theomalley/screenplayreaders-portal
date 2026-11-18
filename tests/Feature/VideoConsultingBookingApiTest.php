@@ -230,6 +230,44 @@ class VideoConsultingBookingApiTest extends TestCase
         $response->assertJsonFragment(['id' => $admin->id, 'reader_request_eligible' => true]);
     }
 
+    public function test_readers_endpoint_marks_an_opted_out_editor_as_not_reader_request_eligible(): void
+    {
+        // Editors don't automatically write coverage either (only a plain reader does).
+        $editor = User::factory()->create(['role' => 'editor', 'name' => 'Editor Reader']);
+        $editor->readerProfile()->create([
+            'initials' => 'ER', 'first_name' => 'Editor', 'last_name' => 'Reader',
+            'video_consulting_enabled' => true,
+        ]);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $editor->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $editor->id, 'reader_request_eligible' => false]);
+    }
+
+    public function test_readers_endpoint_marks_an_opted_in_editor_as_reader_request_eligible(): void
+    {
+        $editor = User::factory()->create(['role' => 'editor', 'name' => 'Editor Reader']);
+        $editor->readerProfile()->create([
+            'initials' => 'ER', 'first_name' => 'Editor', 'last_name' => 'Reader',
+            'video_consulting_enabled' => true,
+            'video_consulting_reader_request_eligible' => true,
+        ]);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $editor->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $editor->id, 'reader_request_eligible' => true]);
+    }
+
     public function test_create_booking_converts_a_held_slot_into_an_assignment_and_notifies(): void
     {
         Mail::fake();

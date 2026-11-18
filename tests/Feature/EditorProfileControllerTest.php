@@ -109,8 +109,10 @@ class EditorProfileControllerTest extends TestCase
         $this->assertTrue($target->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
     }
 
-    public function test_editing_an_editor_never_sets_the_admin_only_reader_request_field(): void
+    public function test_admin_can_opt_an_editor_into_the_reader_request_waiver(): void
     {
+        // Editors don't automatically write coverage either (only a plain reader does), so
+        // they get this control too, same as admin.
         $admin  = User::factory()->create(['role' => 'admin']);
         $editor = $this->makeEditor();
 
@@ -122,9 +124,7 @@ class EditorProfileControllerTest extends TestCase
             ])
             ->assertRedirect();
 
-        // Editors are always eligible regardless of this field — it's admin-only, and the
-        // controller never writes it for a non-admin target, so it stays at the column default.
-        $this->assertFalse($editor->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
+        $this->assertTrue($editor->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
     }
 
     public function test_admin_can_update_editor_rates(): void

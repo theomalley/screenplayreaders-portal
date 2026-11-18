@@ -3,11 +3,11 @@
 // v1.0 — 2026-11-18 | Reader Request fee waiver (woo_script-coverage.php/
 //                      woo_video-consulting.php in the theme repo) — whether a reader can be
 //                      counted as one of a customer's requested readers when booking a video
-//                      call with them. Readers and editors always can (hardcoded in
-//                      VideoConsultingAccess::eligibleForReaderRequestWaiver()); an admin
-//                      can't by default, since they don't actually write coverage — this
+//                      call with them. A plain reader always can (hardcoded in
+//                      VideoConsultingAccess::eligibleForReaderRequestWaiver()); admin/editor
+//                      can't by default, since neither writes coverage automatically — this
 //                      column is the opt-in toggle for that case, defaulting to false so
-//                      nothing changes until an admin turns it on for themselves.
+//                      nothing changes until they turn it on for themselves.
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
