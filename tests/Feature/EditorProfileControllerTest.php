@@ -70,6 +70,29 @@ class EditorProfileControllerTest extends TestCase
         $this->actingAs($admin)->get("/admin/editors/{$reader->id}/edit")->assertNotFound();
     }
 
+    public function test_admin_can_set_an_editors_favorite_genres_and_films(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = $this->makeEditor();
+
+        $this->actingAs($admin)
+            ->patch("/admin/editors/{$editor->id}", [
+                'initials'     => 'ED',
+                'first_name'   => 'Test',
+                'last_name'    => 'Editor',
+                'email'        => $editor->email,
+                'availability' => 'available',
+                'favorite_genres' => ['Drama', 'Thriller'],
+                'favorite_films'  => ['Heat'],
+            ])
+            ->assertRedirect();
+
+        $readerProfile = $editor->fresh('readerProfile')->readerProfile;
+        $this->assertNotNull($readerProfile);
+        $this->assertEquals(['Drama', 'Thriller'], $readerProfile->favorite_genres);
+        $this->assertEquals(['Heat'], $readerProfile->favorite_films);
+    }
+
     public function test_admin_can_update_editor_rates(): void
     {
         $admin  = User::factory()->create(['role' => 'admin']);

@@ -735,8 +735,11 @@
                     </div>
                 </div>
 
-                @if ($user->isReader())
+                @if ($user->isReader() || $user->isAdminOrEditor())
                 {{-- Favorite Genres & Films (admin override) --}}
+                @php
+                    $favoritesProfileSource = $isEditingReader ? $profile : ($videoConsultingOverrideSource ?? null);
+                @endphp
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
@@ -746,7 +749,7 @@
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_genres[]" type="text" class="block w-full"
-                                        value="{{ old('favorite_genres.' . $i, $profile?->favorite_genres[$i] ?? '') }}"
+                                        value="{{ old('favorite_genres.' . $i, $favoritesProfileSource?->favorite_genres[$i] ?? '') }}"
                                         placeholder="Genre {{ $i + 1 }}" />
                                 @endfor
                             </div>
@@ -757,7 +760,7 @@
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"
-                                        value="{{ old('favorite_films.' . $i, $profile?->favorite_films[$i] ?? '') }}"
+                                        value="{{ old('favorite_films.' . $i, $favoritesProfileSource?->favorite_films[$i] ?? '') }}"
                                         placeholder="Film/Show {{ $i + 1 }}" />
                                 @endfor
                             </div>

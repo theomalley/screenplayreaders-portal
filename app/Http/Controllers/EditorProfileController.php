@@ -180,6 +180,10 @@ class EditorProfileController extends Controller
             'bio'                  => ['nullable', 'string', 'max:5000'],
             'custom_message'       => ['nullable', 'string', 'max:200'],
             'timezone'             => ['nullable', 'timezone'],
+            'favorite_genres'      => ['nullable', 'array', 'max:5'],
+            'favorite_genres.*'    => ['nullable', 'string', 'max:60'],
+            'favorite_films'       => ['nullable', 'array', 'max:5'],
+            'favorite_films.*'     => ['nullable', 'string', 'max:60'],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -212,14 +216,14 @@ class EditorProfileController extends Controller
 
         $user->editorProfile()->updateOrCreate(
             ['user_id' => $user->id],
-            collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
+            collect($data)->except(['email', 'password', 'password_confirmation', 'favorite_genres', 'favorite_films'])->toArray()
         );
 
-        if ($request->has('video_consulting_enabled')) {
-            VideoConsultingAccess::updateReaderProfileShell($user, [
-                'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
-            ]);
-        }
+        VideoConsultingAccess::updateReaderProfileShell($user, [
+            'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []),
+            'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []),
+            'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
+        ]);
 
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
         return redirect()->route('admin.editors.edit', $user)->with('success', "{$label} profile updated.");
