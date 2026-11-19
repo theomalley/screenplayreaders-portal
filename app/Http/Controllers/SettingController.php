@@ -1,5 +1,11 @@
 <?php
 
+// v2.26 — 2026-11-19 | Add updateVideoConsultingDurations() — CRUD for video-consulting
+//                      call-length durations (minutes, base rate, min/max reader-rate bounds)
+//                      directly on the Settings > Assignments tab; previously only manageable
+//                      via the WP theme's "SR Tools > SR Video Consulting" admin page, which
+//                      proxies the same data over the API. assignments() now also passes
+//                      $videoConsultingDurations to the view.
 // v2.25 — 2026-11-15 | updateVideoConsultingEnabled() also saves admin-configurable min/max
 //                      bounds (Setting::getVideoConsultingLeadHoursBounds()) on how much lead
 //                      time a reader can require before their first bookable call slot.
@@ -67,6 +73,7 @@ use App\Models\Assignment;
 use App\Models\FollowupToken;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\VideoConsultingDuration;
 use App\Services\HelpScoutService;
 use App\Support\FilenameGenerator;
 use App\Support\PayPeriod;
@@ -129,10 +136,11 @@ class SettingController extends Controller
         ];
         $wordCounts          = $isAdmin ? Setting::getWordCounts() : null;
         $blockedReaderLimits = $isAdmin ? Setting::getBlockedReaderLimits() : null;
+        $videoConsultingDurations = $isAdmin ? VideoConsultingDuration::orderBy('sort_order')->get() : null;
 
         return view('settings.assignments', compact(
             'isAdmin', 'capacityOverride', 'capacityOverrideEffective', 'capacityOverrideExcludesRushRequests',
-            'videoConsultingEnabled', 'videoConsultingLeadHoursBounds',
+            'videoConsultingEnabled', 'videoConsultingLeadHoursBounds', 'videoConsultingDurations',
             'ageThresholds', 'ageThresholdTypes', 'watermarkSettings', 'filenameSuffixes',
             'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts', 'blockedReaderLimits',
         ));
@@ -296,6 +304,78 @@ class SettingController extends Controller
         Setting::setValue('video_consulting_lead_hours_max', $data['lead_hours_max'] ?? Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS['max']);
 
         return redirect()->route('settings.assignments')->with('success', 'Video consulting setting updated.');
+    }
+
+    /**
+     * Call-length durations for video consulting — minutes, admin base rate, and the min/max
+     * reader-rate bounds enforced wherever a reader sets their own rate (VideoConsultingRateController,
+     * ReaderProfileController/EditorProfileController's rate-update methods). The whole list is
+     * resubmitted on every save (same convention as updateQcSavedReplies()); a row missing from the
+     * resubmission is deleted if it has no rate/booking history yet, otherwise just disabled —
+     * mirrors Api\VideoConsultingDurationController::destroy()'s canBeDeleted() guard.
+     */
+    public function updateVideoConsultingDurations(Request $request): RedirectResponse
+    {
+        $this->authorize('manage-settings-admin-only');
+
+        $data = $request->validate([
+            'durations'                   => 'nullable|array',
+            'durations.*.id'              => 'nullable|integer',
+            'durations.*.minutes'         => 'required|integer|min:1|max:600',
+            'durations.*.label'           => 'required|string|max:255',
+            'durations.*.base_rate'       => 'required|numeric|min:0|max:9999.99',
+            'durations.*.min_reader_rate' => 'required|numeric|min:0|max:9999.99',
+            'durations.*.max_reader_rate' => 'required|numeric|min:0|max:9999.99',
+            'durations.*.enabled'         => 'nullable|boolean',
+        ]);
+
+        $rows = $data['durations'] ?? [];
+
+        foreach ($rows as $i => $row) {
+            if ((float) $row['max_reader_rate'] < (float) $row['min_reader_rate']) {
+                return back()->withErrors(["durations.{$i}.max_reader_rate" => 'Max reader rate must be >= min reader rate.'])->withInput();
+            }
+        }
+
+        $kept     = [];
+        $warnings = [];
+
+        foreach ($rows as $i => $row) {
+            $attrs = [
+                'minutes'         => (int) $row['minutes'],
+                'label'           => trim($row['label']),
+                'base_rate'       => (float) $row['base_rate'],
+                'min_reader_rate' => (float) $row['min_reader_rate'],
+                'max_reader_rate' => (float) $row['max_reader_rate'],
+                'enabled'         => ! empty($row['enabled']),
+                'sort_order'      => $i,
+            ];
+
+            $duration = ! empty($row['id']) ? VideoConsultingDuration::find($row['id']) : null;
+
+            if ($duration) {
+                $duration->update($attrs);
+            } else {
+                $duration = VideoConsultingDuration::create($attrs);
+            }
+
+            $kept[] = $duration->id;
+        }
+
+        foreach (VideoConsultingDuration::whereNotIn('id', $kept)->get() as $removed) {
+            if ($removed->canBeDeleted()) {
+                $removed->delete();
+            } else {
+                $removed->update(['enabled' => false]);
+                $warnings[] = "\"{$removed->label}\" has reader rates or bookings attached — disabled instead of removed.";
+            }
+        }
+
+        if (! empty($warnings)) {
+            return redirect()->route('settings.assignments')->with('warning', implode(' ', $warnings));
+        }
+
+        return redirect()->route('settings.assignments')->with('success', 'Video consulting durations saved.');
     }
 
     public function updateSessionTimeout(Request $request): RedirectResponse
