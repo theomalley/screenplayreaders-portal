@@ -133,7 +133,7 @@
                      addDuration() {
                          this.durations.push({ id: null, minutes: 30, label: '', base_rate: '0.00', min_reader_rate: '0.00', max_reader_rate: '0.00', enabled: true });
                          this.$nextTick(() => {
-                             const inputs = this.$el.querySelectorAll('input[name*=\"[label]\"]');
+                             const inputs = this.$el.querySelectorAll('input[name*=\'[label]\']');
                              inputs[inputs.length - 1]?.focus();
                          });
                      },
@@ -463,7 +463,7 @@
                      addReply() {
                          this.replies.push({ name: '', body: '' });
                          this.$nextTick(() => {
-                             const inputs = this.$el.querySelectorAll('input[name*=\"[name]\"]');
+                             const inputs = this.$el.querySelectorAll('input[name*=\'[name]\']');
                              inputs[inputs.length - 1]?.focus();
                          });
                      },
