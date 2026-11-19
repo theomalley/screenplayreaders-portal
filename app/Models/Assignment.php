@@ -1,11 +1,7 @@
 <?php
 
-// v1.35 — 2026-11-19 | Add video_consulting_coupon_code_used/video_consulting_discount_amount —
-//                      audit trail for a reader's own video-consulting discount code when
-//                      used on a booking. pay_rate itself already carries the post-discount
-//                      amount (set in VideoConsultingBookingController::createBooking() via
-//                      App\Support\VideoConsultingAccess), untouched by the saving() pay_rate
-//                      recompute guard above (TYPE_VIDEO_CONSULTING already skips it).
+// v1.36 — 2026-11-19 | Dropped video_consulting_coupon_code_used/video_consulting_discount_amount
+//                      — the reader discount-code feature was removed.
 // v1.34 — 2026-11-11 | Video consulting Phase 7 (partial) — add video_consulting_call_token
 //                      (backs the portal-hosted Join Call page) and
 //                      video_consulting_reminder_24h_sent_at (idempotent marker for the new
@@ -169,8 +165,6 @@ class Assignment extends Model
         'video_consulting_transcript',
         'video_consulting_transcription_id',
         'video_consulting_customer_email',
-        'video_consulting_coupon_code_used',
-        'video_consulting_discount_amount',
         'video_consulting_needs_attention_reason',
         'reader_declined',
         'available_at',
@@ -195,7 +189,6 @@ class Assignment extends Model
             'customer_focus_categories' => 'array',
             'public_opt_in'  => 'boolean',
             'pay_rate'       => 'decimal:2',
-            'video_consulting_discount_amount' => 'decimal:2',
             'unassigned_at'  => 'datetime',
             'accepted_at'    => 'datetime',
             'submitted_at'   => 'datetime',

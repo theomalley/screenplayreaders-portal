@@ -507,45 +507,6 @@
                         </form>
                     </div>
 
-                    <div class="pb-6 mb-6 border-b border-gray-100">
-                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Consulting Discount Code (optional)</h3>
-                        <p class="text-sm text-gray-600 mb-4">Want to run a special? Set a code customers can enter for a discount on booking a call with you. It only ever comes out of your own rate — it can never reduce the base rate, and can't take your own cut below $0.</p>
-                        <form method="POST" action="{{ route('profile.video-consulting-coupon') }}" class="space-y-3">
-                            @csrf
-                            @method('PATCH')
-                            <div class="flex flex-wrap items-end gap-3">
-                                <div>
-                                    <x-input-label for="coupon_code" value="Code" />
-                                    <input type="text" id="coupon_code" name="coupon_code" maxlength="20"
-                                           value="{{ old('coupon_code', $vcListingSource?->video_consulting_coupon_code) }}"
-                                           placeholder="e.g. JANE10"
-                                           class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm text-sm uppercase focus:border-indigo-500 focus:ring-indigo-500" />
-                                </div>
-                                <div>
-                                    <label for="coupon_type" class="block text-xs text-gray-600 mb-1">Type</label>
-                                    <select id="coupon_type" name="coupon_type"
-                                            class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                        <option value="fixed" @selected(old('coupon_type', $vcListingSource?->video_consulting_coupon_type) === 'fixed')>$ off</option>
-                                        <option value="percent" @selected(old('coupon_type', $vcListingSource?->video_consulting_coupon_type) === 'percent')>% off</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <x-input-label for="coupon_amount" value="Amount" />
-                                    <input type="text" id="coupon_amount" name="coupon_amount"
-                                           value="{{ old('coupon_amount', $vcListingSource?->video_consulting_coupon_amount) }}"
-                                           class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                </div>
-                                <x-primary-button>Save</x-primary-button>
-                                @if (session('status') === 'video-consulting-coupon-updated')
-                                    <span class="text-sm text-green-600 mb-2">Saved.</span>
-                                @endif
-                            </div>
-                            <p class="text-xs text-gray-400">Leave the code blank and save to turn it off.</p>
-                            <x-input-error :messages="$errors->get('coupon_code')" class="mt-1" />
-                            <x-input-error :messages="$errors->get('coupon_amount')" class="mt-1" />
-                        </form>
-                    </div>
-
                     <div>
                         <h3 class="text-sm font-semibold text-gray-900 mb-1">Availability</h3>
                         <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls.</p>

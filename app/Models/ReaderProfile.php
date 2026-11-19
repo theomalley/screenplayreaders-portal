@@ -1,12 +1,11 @@
 <?php
 
+// v1.25 — 2026-11-19 | Dropped video_consulting_coupon_code/_type/_amount — the reader
+//                      discount-code feature was removed; readers will instead note a sale in
+//                      video_consulting_note and lower their own rate.
 // v1.24 — 2026-11-19 | Add video_consulting_note (shown on the public listing even when the
-//                      reader currently has no open slots), video_consulting_call_mode
-//                      ('video'|'audio'), and the reader's own single reusable discount code
-//                      (video_consulting_coupon_code/_type/_amount) for their video consulting
-//                      service — see App\Support\VideoConsultingAccess for the redemption math
-//                      that guarantees the discount only ever comes out of the reader's own
-//                      cut, never the house's base_rate.
+//                      reader currently has no open slots) and video_consulting_call_mode
+//                      ('video'|'audio') for their video consulting service.
 // v1.23 — 2026-11-18 | Add video_consulting_reader_request_eligible — whether this
 //                      reader/admin/editor can be counted as one of a customer's requested
 //                      readers when they book a video call with them (the Reader Request fee
@@ -108,9 +107,6 @@ class ReaderProfile extends Model
         'video_consulting_reader_request_eligible',
         'video_consulting_note',
         'video_consulting_call_mode',
-        'video_consulting_coupon_code',
-        'video_consulting_coupon_type',
-        'video_consulting_coupon_amount',
         'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',
@@ -148,7 +144,6 @@ class ReaderProfile extends Model
         'video_consulting_enabled' => 'boolean',
         'video_consulting_min_lead_hours' => 'integer',
         'video_consulting_reader_request_eligible' => 'boolean',
-        'video_consulting_coupon_amount' => 'decimal:2',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',

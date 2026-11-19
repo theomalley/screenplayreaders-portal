@@ -1,10 +1,10 @@
 <?php
 
-// v1.5 — 2026-11-19 | Add updateVideoConsultingListing() (note + video/audio call mode) and
-//                      updateVideoConsultingCoupon() (the reader's own single reusable
-//                      discount code) — same reader-or-admin/editor self-serve shape as
-//                      updateFavorites(). See App\Support\VideoConsultingAccess for the
-//                      coupon redemption math.
+// v1.6 — 2026-11-19 | Removed updateVideoConsultingCoupon() and the reader discount-code
+//                      feature — readers will instead note a sale in their existing note field
+//                      and lower their own rate.
+// v1.5 — 2026-11-19 | Add updateVideoConsultingListing() (note + video/audio call mode) — same
+//                      reader-or-admin/editor self-serve shape as updateFavorites().
 // v1.4 — 2026-11-18 | updateReaderRequestEligible() corrected: editors do NOT always write
 //                      coverage, so they get this toggle too, not just admin — gate changed
 //                      from isAdmin() to isAdminOrEditor().
@@ -235,59 +235,6 @@ class ProfileController extends Controller
         }
 
         return Redirect::route('profile.edit')->with('status', 'video-consulting-listing-updated');
-    }
-
-    /**
-     * Reader/admin/editor self-serve: their own single reusable discount code for video
-     * consulting bookings. Only sanity-validated here (amount >= 0, percent <= 100) — the
-     * real safety guarantee that this can never discount the house's base_rate and never
-     * drops the reader's own cut below $0 is enforced at redemption time
-     * (VideoConsultingAccess::applyReaderDiscount()), since reader_rate varies per duration
-     * and a fixed-dollar amount can't be bounds-checked against it once here. Saving a blank
-     * code clears the type/amount too (deactivates it).
-     */
-    public function updateVideoConsultingCoupon(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-        abort_unless($user->isReader() || $user->isAdminOrEditor(), 403);
-
-        $data = $request->validate([
-            'coupon_code'   => 'nullable|string|max:20|alpha_dash',
-            'coupon_type'   => 'nullable|required_with:coupon_code|in:percent,fixed',
-            'coupon_amount' => 'nullable|required_with:coupon_code|numeric|min:0',
-        ]);
-
-        $code = trim((string) ($data['coupon_code'] ?? ''));
-
-        if ($code !== '') {
-            $taken = ReaderProfile::where('user_id', '!=', $user->id)
-                ->whereRaw('LOWER(video_consulting_coupon_code) = ?', [strtolower($code)])
-                ->exists();
-            if ($taken) {
-                return back()->withErrors(['coupon_code' => 'That code is already taken by another reader.'])->withInput();
-            }
-            if (($data['coupon_type'] ?? null) === 'percent' && (float) $data['coupon_amount'] > 100) {
-                return back()->withErrors(['coupon_amount' => "Percentage discounts can't exceed 100%."])->withInput();
-            }
-        }
-
-        $payload = $code === '' ? [
-            'video_consulting_coupon_code'   => null,
-            'video_consulting_coupon_type'   => null,
-            'video_consulting_coupon_amount' => null,
-        ] : [
-            'video_consulting_coupon_code'   => strtoupper($code),
-            'video_consulting_coupon_type'   => $data['coupon_type'],
-            'video_consulting_coupon_amount' => $data['coupon_amount'],
-        ];
-
-        if ($user->isReader()) {
-            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], $payload);
-        } else {
-            VideoConsultingAccess::updateReaderProfileShell($user, $payload);
-        }
-
-        return Redirect::route('profile.edit')->with('status', 'video-consulting-coupon-updated');
     }
 
     public function updateCustomMessage(Request $request): RedirectResponse

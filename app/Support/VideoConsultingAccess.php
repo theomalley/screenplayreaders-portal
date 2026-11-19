@@ -1,12 +1,8 @@
 <?php
 
-// v1.7 — 2026-11-19 | Add readerCouponMatches()/describeReaderCoupon()/applyReaderDiscount() —
-//                      a reader's own single reusable video-consulting discount code. The
-//                      floor-at-0 math in applyReaderDiscount() is the actual safety guarantee
-//                      (never below $0 reader profit, base_rate never touched since it's never
-//                      passed in), not just the percent<=100/amount>=0 sanity validation done
-//                      at save time in ProfileController — reader_rate differs per duration so
-//                      a fixed-dollar code can't be bounds-checked once at save time anyway.
+// v1.8 — 2026-11-19 | Removed readerCouponMatches()/describeReaderCoupon()/applyReaderDiscount()
+//                      and the reader discount-code feature entirely — readers will instead note
+//                      a sale in their existing note field and lower their own rate.
 // v1.6 — 2026-11-18 | eligibleForReaderRequestWaiver(): correction — editors do NOT always
 //                      write coverage (only readers do by default). Editor is now opt-in via
 //                      video_consulting_reader_request_eligible, same as admin; only a plain
@@ -50,61 +46,6 @@ use App\Models\User;
 
 class VideoConsultingAccess
 {
-    /**
-     * Whether $code matches $reader's own stored video-consulting discount code
-     * (case/whitespace-insensitive). A code only ever redeems against the reader who owns
-     * it — this is the only place that comparison happens, so there's no path for a
-     * customer to apply one reader's code to a different reader's booking.
-     */
-    public static function readerCouponMatches(?User $reader, ?string $code): bool
-    {
-        $stored = $reader?->readerProfile?->video_consulting_coupon_code;
-
-        if (! $code || ! $stored) {
-            return false;
-        }
-
-        return strcasecmp(trim($code), trim($stored)) === 0;
-    }
-
-    /** Human-readable label for $reader's own stored coupon ("$20 off" / "10% off"), or null if they don't have one. */
-    public static function describeReaderCoupon(?User $reader): ?string
-    {
-        $profile = $reader?->readerProfile;
-        $type    = $profile?->video_consulting_coupon_type;
-        $amount  = $profile?->video_consulting_coupon_amount;
-
-        if (! $profile?->video_consulting_coupon_code || $type === null || $amount === null) {
-            return null;
-        }
-
-        return $type === 'percent'
-            ? rtrim(rtrim(number_format((float) $amount, 2), '0'), '.') . '% off'
-            : '$' . number_format((float) $amount, 2) . ' off';
-    }
-
-    /**
-     * Applies $reader's own stored coupon to a single duration's reader_rate cut. Callers
-     * must check readerCouponMatches() first — this assumes the code already matched and
-     * just does the math. By construction this can never reduce anything but reader_rate
-     * (the base_rate the house keeps is never passed in here, so there's nothing for this
-     * method to touch) and always floors at 0 — the reader's own cut, never the house's.
-     */
-    public static function applyReaderDiscount(?User $reader, float $readerRate): float
-    {
-        $profile = $reader?->readerProfile;
-        $type    = $profile?->video_consulting_coupon_type;
-        $amount  = (float) ($profile?->video_consulting_coupon_amount ?? 0);
-
-        $discounted = match ($type) {
-            'percent' => $readerRate * (1 - min(max($amount, 0), 100) / 100),
-            'fixed'   => $readerRate - max($amount, 0),
-            default   => $readerRate,
-        };
-
-        return max(0.0, $discounted);
-    }
-
     public static function enabledGlobally(): bool
     {
         return (bool) Setting::getValue('video_consulting_enabled', true);
