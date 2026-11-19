@@ -1,5 +1,16 @@
 <?php
 
+// v1.9 — 2026-11-19 | readers() now includes note/call_mode (shown even when a reader has no
+//                      open slots right now — unchanged: still fully excluded if
+//                      VideoConsultingAccess::enabledFor() is false) and accepts an optional
+//                      ?coupon_code= that, when it matches a reader's own stored code,
+//                      recomputes that reader's duration prices with the discount applied
+//                      (coupon_applied/coupon_label added to their entry only). createBooking()
+//                      now accepts the same coupon_code, re-derives the discount server-side
+//                      against the real reader_rate, and stores it on the Assignment
+//                      (pay_rate reduced, video_consulting_coupon_code_used/_discount_amount
+//                      for the audit trail) — see App\Support\VideoConsultingAccess for the
+//                      floor-at-0/never-touches-base_rate redemption math.
 // v1.8 — 2026-11-18 | readers() now includes reader_request_eligible
 //                      (VideoConsultingAccess::eligibleForReaderRequestWaiver()) — lets the
 //                      theme's checkout widget skip offering the Reader Request fee waiver
@@ -77,8 +88,10 @@ class VideoConsultingBookingController extends Controller
      * configured rate), with their weekly availability pattern — the checkout upgrade's
      * reader picker shows this, not a list of real bookable slots (see available-slots).
      */
-    public function readers(VideoConsultingAvailabilityService $availability): JsonResponse
+    public function readers(Request $request, VideoConsultingAvailabilityService $availability): JsonResponse
     {
+        $couponCode = $request->query('coupon_code');
+
         // Any role can offer video consulting (App\Support\VideoConsultingAccess) — admin/editor
         // are opt-in only, so the enabledFor() filter below is what actually keeps an
         // uninterested admin/editor off this list, not the role itself.
@@ -87,15 +100,25 @@ class VideoConsultingBookingController extends Controller
             ->with(['videoConsultingRates.duration', 'readerProfile'])
             ->get()
             ->filter(fn (User $reader) => VideoConsultingAccess::enabledFor($reader))
-            ->map(function (User $reader) use ($availability) {
+            ->map(function (User $reader) use ($availability, $couponCode) {
+                // A coupon only ever matches its own reader's own code — never trust/apply it
+                // against anyone else's durations below.
+                $couponMatches = $couponCode && VideoConsultingAccess::readerCouponMatches($reader, $couponCode);
+
                 $durations = $reader->videoConsultingRates
                     ->filter(fn (ReaderVideoConsultingRate $rate) => $rate->duration && $rate->duration->enabled)
-                    ->map(fn (ReaderVideoConsultingRate $rate) => [
-                        'duration_id' => $rate->duration_id,
-                        'minutes'     => $rate->duration->minutes,
-                        'label'       => $rate->duration->label,
-                        'price'       => (float) $rate->duration->base_rate + (float) $rate->rate,
-                    ])
+                    ->map(function (ReaderVideoConsultingRate $rate) use ($reader, $couponMatches) {
+                        $readerRate = $couponMatches
+                            ? VideoConsultingAccess::applyReaderDiscount($reader, (float) $rate->rate)
+                            : (float) $rate->rate;
+
+                        return [
+                            'duration_id' => $rate->duration_id,
+                            'minutes'     => $rate->duration->minutes,
+                            'label'       => $rate->duration->label,
+                            'price'       => (float) $rate->duration->base_rate + $readerRate,
+                        ];
+                    })
                     ->values();
 
                 if ($durations->isEmpty()) {
@@ -114,6 +137,10 @@ class VideoConsultingBookingController extends Controller
                     'min_lead_hours'       => (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0),
                     'favorite_genres'      => $reader->readerProfile?->favorite_genres ?? [],
                     'favorite_films'       => $reader->readerProfile?->favorite_films ?? [],
+                    'note'                 => $reader->readerProfile?->video_consulting_note,
+                    'call_mode'            => $reader->readerProfile?->video_consulting_call_mode ?? 'video',
+                    'coupon_applied'       => $couponMatches,
+                    'coupon_label'         => $couponMatches ? VideoConsultingAccess::describeReaderCoupon($reader) : null,
                     'durations'            => $durations,
                 ];
             })
@@ -260,6 +287,7 @@ class VideoConsultingBookingController extends Controller
             'focus_categories'    => ['nullable', 'string', 'max:500'],
             'focus_notes'         => ['nullable', 'string', 'max:2000'],
             'focus_exclude_notes' => ['nullable', 'string', 'max:2000'],
+            'coupon_code'         => ['nullable', 'string', 'max:20'],
             'script'         => ['required', 'file', 'mimes:pdf,docx', 'max:5120'],
         ]);
 
@@ -291,6 +319,20 @@ class VideoConsultingBookingController extends Controller
             return response()->json(['message' => 'This reader no longer offers that duration.'], 422);
         }
 
+        // Re-derive the discount server-side from the reader's own stored coupon — never trust
+        // a client-sent discount amount. A code only ever matches its own reader, so this can
+        // never reduce a different reader's pay_rate than the one actually being booked.
+        $reader = User::find($hold->reader_id);
+        $payRate = (float) $rate->rate;
+        $couponCodeUsed = null;
+        $discountAmount = null;
+        if (VideoConsultingAccess::readerCouponMatches($reader, $data['coupon_code'] ?? null)) {
+            $discountedRate = VideoConsultingAccess::applyReaderDiscount($reader, $payRate);
+            $discountAmount = round($payRate - $discountedRate, 2);
+            $payRate        = $discountedRate;
+            $couponCodeUsed = $reader?->readerProfile?->video_consulting_coupon_code;
+        }
+
         try {
             $assignment = Assignment::create([
                 'order_number'                    => $data['order_number'],
@@ -298,11 +340,13 @@ class VideoConsultingBookingController extends Controller
                 'assignment_type'                 => Assignment::TYPE_VIDEO_CONSULTING,
                 'script_title'                     => $data['script_title'],
                 'writer_name'                     => $data['customer_name'] ?? 'N/A (video consulting)',
-                'pay_rate'                        => $rate->rate,
+                'pay_rate'                        => $payRate,
                 'status'                          => Assignment::STATUS_UNASSIGNED,
                 'requested_reader_id'             => $hold->reader_id,
                 'video_consulting_hold_id'        => $hold->id,
                 'video_consulting_customer_email' => $data['customer_email'],
+                'video_consulting_coupon_code_used' => $couponCodeUsed,
+                'video_consulting_discount_amount'  => $discountAmount,
                 'customer_focus_categories'       => $focusCategories ?: null,
                 'customer_focus_notes'            => $data['focus_notes'] ?? null,
                 'customer_focus_exclude_notes'    => $data['focus_exclude_notes'] ?? null,

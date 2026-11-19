@@ -3,8 +3,12 @@
     $slotStart = $hold?->slot_start;
     $slotEnd = $hold?->slot_end;
     $durationMinutes = $slotStart && $slotEnd ? $slotStart->diffInMinutes($slotEnd) : null;
+    // Audio-only is the reader's own current profile setting, read live (not snapshotted at
+    // booking time) — cameraAccess=off fully disables the camera for both parties (the
+    // browser never even requests permission), not just starting muted/toggleable.
+    $audioOnly = ($assignment->assignedReader?->readerProfile?->video_consulting_call_mode ?? 'video') === 'audio';
     $joinUrl = $assignment->whereby_room_url
-        ? $assignment->whereby_room_url . (str_contains($assignment->whereby_room_url, '?') ? '&' : '?') . 'chat=off'
+        ? $assignment->whereby_room_url . (str_contains($assignment->whereby_room_url, '?') ? '&' : '?') . 'chat=off' . ($audioOnly ? '&cameraAccess=off' : '')
         : null;
 @endphp
 

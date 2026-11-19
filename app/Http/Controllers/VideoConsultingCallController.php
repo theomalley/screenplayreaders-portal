@@ -1,5 +1,9 @@
 <?php
 
+// v1.2 — 2026-11-19 | showPreview()'s synthetic $assignment now sets assignedReader => null so
+//                      the shared call-details partial's audio-only lookup
+//                      ($assignment->assignedReader?->readerProfile?->video_consulting_call_mode)
+//                      doesn't warn on an undefined property for this non-Eloquent stub.
 // v1.1 — 2026-11-11 | Pass admin-editable Setting::getCallPageSettings() (heading/consent/
 //                      not-ready text + logo) into both views, and add showPreview() — a public,
 //                      no-data preview of the customer page for admins testing copy/logo changes
@@ -53,6 +57,7 @@ class VideoConsultingCallController extends Controller
             'script_title'        => 'The Great American Screenplay (Sample)',
             'order_number'        => 'SAMPLE-0001',
             'whereby_room_url'    => '#',
+            'assignedReader'      => null,
             'videoConsultingHold' => (object) [
                 'slot_start' => $slotStart,
                 'slot_end'   => $slotStart->copy()->addMinutes(60),

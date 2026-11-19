@@ -103,6 +103,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile/custom-message', [ProfileController::class, 'updateCustomMessage'])->name('profile.custom-message');
     Route::patch('/profile/video-consulting-enabled', [ProfileController::class, 'updateVideoConsultingEnabled'])->name('profile.video-consulting-enabled');
     Route::patch('/profile/reader-request-eligible', [ProfileController::class, 'updateReaderRequestEligible'])->name('profile.reader-request-eligible');
+    Route::patch('/profile/video-consulting-listing', [ProfileController::class, 'updateVideoConsultingListing'])->name('profile.video-consulting-listing');
+    Route::patch('/profile/video-consulting-coupon', [ProfileController::class, 'updateVideoConsultingCoupon'])->name('profile.video-consulting-coupon');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/availability', [AvailabilityController::class, 'edit'])->name('availability.edit');
