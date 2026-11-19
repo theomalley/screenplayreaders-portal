@@ -368,197 +368,197 @@
             </div>
             @endif
 
-            @if ($user->isAdminOrEditor())
-            {{-- Self-serve enable/disable — the only path for an admin/editor to opt into
-                 taking calls themselves without another admin editing their profile for them.
-                 Readers don't get this card: their override stays admin-only. --}}
+            @php
+                $showVideoConsultingSection = $user->isAdminOrEditor()
+                    || ($user->isReader() && \App\Support\VideoConsultingAccess::enabledFor($user));
+            @endphp
+            @if ($showVideoConsultingSection)
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting</h2>
-                    <p class="text-sm text-gray-600 mb-4">Opt into taking paid video consulting calls yourself, with your own rate and availability below.</p>
-                    @php
-                        $videoConsultingOverride = match (($videoConsultingOverrideSource ?? null)?->video_consulting_enabled) {
-                            true => 'enabled', false => 'disabled', default => 'default',
-                        };
-                    @endphp
-                    <form method="POST" action="{{ route('profile.video-consulting-enabled') }}" class="flex items-end gap-3">
-                        @csrf
-                        @method('PATCH')
-                        <div>
-                            <label for="video_consulting_enabled" class="block text-xs text-gray-600 mb-1">Video consulting</label>
-                            <select id="video_consulting_enabled" name="video_consulting_enabled"
-                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="default" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'default')>Disabled (default — no sitewide setting for admin/editor)</option>
-                                <option value="enabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'enabled')>Enabled</option>
-                                <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Disabled</option>
-                            </select>
-                        </div>
-                        <x-primary-button>Save</x-primary-button>
-                        @if (session('status') === 'video-consulting-enabled-updated')
-                            <span class="text-sm text-green-600 mb-2">Saved.</span>
-                        @endif
-                    </form>
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Settings</h2>
+                    <p class="text-sm text-gray-600 mb-6">Everything for taking paid video consulting calls — opting in, your rate, your listing, availability, and an optional discount code.</p>
 
                     @if ($user->isAdminOrEditor())
-                    {{-- Off by default — neither an admin nor an editor writes coverage
-                         automatically (unlike a reader), so a customer who books a call with
-                         one shouldn't be offered "count them as one of my requested readers
-                         too" unless they've opted in here. --}}
-                    <form method="POST" action="{{ route('profile.reader-request-eligible') }}" class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-                        @csrf
-                        @method('PATCH')
-                        <label class="flex items-center gap-2 text-sm text-gray-700">
-                            <input type="hidden" name="video_consulting_reader_request_eligible" value="0">
-                            <input type="checkbox" name="video_consulting_reader_request_eligible" value="1"
-                                   @checked(old('video_consulting_reader_request_eligible', $videoConsultingOverrideSource?->video_consulting_reader_request_eligible ?? false))
-                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                            Let customers count me as one of their requested readers for coverage
-                        </label>
-                        <x-primary-button>Save</x-primary-button>
-                        @if (session('status') === 'reader-request-eligible-updated')
-                            <span class="text-sm text-green-600">Saved.</span>
-                        @endif
-                    </form>
-                    @endif
-                </div>
-            </div>
-            @endif
-
-            @if (($user->isReader() || $user->isAdminOrEditor()) && \App\Support\VideoConsultingAccess::enabledFor($user))
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Rate</h2>
-                    <p class="text-sm text-gray-600 mb-4">What you want to be paid per video consulting call. Leave a field blank if you don't want to offer that call length.</p>
-
-                    @php $vcDurations = $videoConsultingDurations ?? collect(); @endphp
-                    @if ($errors->any() && $errors->hasAny($vcDurations->map(fn ($d) => "rates.{$d->id}")->all()))
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 mb-4">
-                            <ul class="list-disc list-inside space-y-0.5">
-                                @foreach ($vcDurations as $duration)
-                                    @foreach ($errors->get("rates.{$duration->id}") as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-
-                    <form method="POST" action="{{ route('video-consulting-rate.update') }}" class="space-y-4">
-                        @csrf
-                        @method('PATCH')
-
-                        @forelse ($vcDurations as $duration)
+                    {{-- Self-serve enable/disable — the only path for an admin/editor to opt into
+                         taking calls themselves without another admin editing their profile for them.
+                         Readers don't get this toggle: their override stays admin-only. --}}
+                    <div class="pb-6 mb-6 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-3">Take Calls</h3>
+                        @php
+                            $videoConsultingOverride = match (($videoConsultingOverrideSource ?? null)?->video_consulting_enabled) {
+                                true => 'enabled', false => 'disabled', default => 'default',
+                            };
+                        @endphp
+                        <form method="POST" action="{{ route('profile.video-consulting-enabled') }}" class="flex items-end gap-3">
+                            @csrf
+                            @method('PATCH')
                             <div>
-                                <x-input-label for="rate_{{ $duration->id }}" value="{{ $duration->label }}" />
-                                <div class="mt-1 flex items-center gap-2">
-                                    <span class="text-sm text-gray-500">$</span>
-                                    <input type="text" id="rate_{{ $duration->id }}" name="rates[{{ $duration->id }}]"
-                                           value="{{ old('rates.' . $duration->id, ($videoConsultingMyRates ?? collect())[$duration->id] ?? '') }}"
-                                           class="block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                                    <span class="text-xs text-gray-400">
-                                        (${{ number_format($duration->min_reader_rate, 2) }} – ${{ number_format($duration->max_reader_rate, 2) }})
-                                    </span>
-                                </div>
-                                <x-input-error :messages="$errors->get('rates.' . $duration->id)" class="mt-1" />
-                            </div>
-                        @empty
-                            <p class="text-sm text-gray-400">No video consulting durations have been set up yet.</p>
-                        @endforelse
-
-                        <div class="flex justify-end pt-2 border-t border-gray-100">
-                            <x-primary-button>Save Rate</x-primary-button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            @php $vcListingSource = $user->isReader() ? $profile : ($videoConsultingOverrideSource ?? null); @endphp
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Listing</h2>
-                    <p class="text-sm text-gray-600 mb-4">A note customers see on your listing (e.g. when you'll be back), and whether calls are video or audio-only.</p>
-                    <form method="POST" action="{{ route('profile.video-consulting-listing') }}" class="space-y-4">
-                        @csrf
-                        @method('PATCH')
-                        <div>
-                            <x-input-label for="video_consulting_note" value="Note (shown even when you have no open times right now)" />
-                            <textarea id="video_consulting_note" name="video_consulting_note" rows="2" maxlength="500"
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                      placeholder="e.g. Back and taking calls again on Monday!">{{ old('video_consulting_note', $vcListingSource?->video_consulting_note) }}</textarea>
-                            <x-input-error :messages="$errors->get('video_consulting_note')" class="mt-1" />
-                        </div>
-                        <div>
-                            <label for="video_consulting_call_mode" class="block text-xs text-gray-600 mb-1">Call mode</label>
-                            <select id="video_consulting_call_mode" name="video_consulting_call_mode"
-                                    class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="video" @selected(old('video_consulting_call_mode', $vcListingSource?->video_consulting_call_mode ?? 'video') === 'video')>Video</option>
-                                <option value="audio" @selected(old('video_consulting_call_mode', $vcListingSource?->video_consulting_call_mode ?? 'video') === 'audio')>Audio only</option>
-                            </select>
-                            <x-input-error :messages="$errors->get('video_consulting_call_mode')" class="mt-1" />
-                        </div>
-                        <div class="flex items-center gap-3 pt-2 border-t border-gray-100">
-                            <x-primary-button>Save</x-primary-button>
-                            @if (session('status') === 'video-consulting-listing-updated')
-                                <span class="text-sm text-green-600">Saved.</span>
-                            @endif
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Discount Code</h2>
-                    <p class="text-sm text-gray-600 mb-4">A code customers can enter for a discount on booking a call with you. It only ever comes out of your own rate — it can never reduce the base rate, and can't take your own cut below $0.</p>
-                    <form method="POST" action="{{ route('profile.video-consulting-coupon') }}" class="space-y-3">
-                        @csrf
-                        @method('PATCH')
-                        <div class="flex flex-wrap items-end gap-3">
-                            <div>
-                                <x-input-label for="coupon_code" value="Code" />
-                                <input type="text" id="coupon_code" name="coupon_code" maxlength="20"
-                                       value="{{ old('coupon_code', $vcListingSource?->video_consulting_coupon_code) }}"
-                                       placeholder="e.g. JANE10"
-                                       class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm text-sm uppercase focus:border-indigo-500 focus:ring-indigo-500" />
-                            </div>
-                            <div>
-                                <label for="coupon_type" class="block text-xs text-gray-600 mb-1">Type</label>
-                                <select id="coupon_type" name="coupon_type"
+                                <label for="video_consulting_enabled" class="block text-xs text-gray-600 mb-1">Video consulting</label>
+                                <select id="video_consulting_enabled" name="video_consulting_enabled"
                                         class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="fixed" @selected(old('coupon_type', $vcListingSource?->video_consulting_coupon_type) === 'fixed')>$ off</option>
-                                    <option value="percent" @selected(old('coupon_type', $vcListingSource?->video_consulting_coupon_type) === 'percent')>% off</option>
+                                    <option value="default" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'default')>Disabled (default — no sitewide setting for admin/editor)</option>
+                                    <option value="enabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'enabled')>Enabled</option>
+                                    <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Disabled</option>
                                 </select>
                             </div>
-                            <div>
-                                <x-input-label for="coupon_amount" value="Amount" />
-                                <input type="text" id="coupon_amount" name="coupon_amount"
-                                       value="{{ old('coupon_amount', $vcListingSource?->video_consulting_coupon_amount) }}"
-                                       class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                            </div>
                             <x-primary-button>Save</x-primary-button>
-                            @if (session('status') === 'video-consulting-coupon-updated')
+                            @if (session('status') === 'video-consulting-enabled-updated')
                                 <span class="text-sm text-green-600 mb-2">Saved.</span>
                             @endif
-                        </div>
-                        <p class="text-xs text-gray-400">Leave the code blank and save to turn it off.</p>
-                        <x-input-error :messages="$errors->get('coupon_code')" class="mt-1" />
-                        <x-input-error :messages="$errors->get('coupon_amount')" class="mt-1" />
-                    </form>
-                </div>
-            </div>
+                        </form>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Availability</h2>
-                    <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls.</p>
-                    @include('partials.video-consulting-availability', [
-                        'rules' => $videoConsultingRules ?? collect(),
-                        'blackouts' => $videoConsultingBlackouts ?? collect(),
-                        'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
-                        'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
-                        'updateAction' => route('video-consulting-availability.update'),
-                        'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
-                    ])
+                        {{-- Off by default — neither an admin nor an editor writes coverage
+                             automatically (unlike a reader), so a customer who books a call with
+                             one shouldn't be offered "count them as one of my requested readers
+                             too" unless they've opted in here. --}}
+                        <form method="POST" action="{{ route('profile.reader-request-eligible') }}" class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                            @csrf
+                            @method('PATCH')
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="hidden" name="video_consulting_reader_request_eligible" value="0">
+                                <input type="checkbox" name="video_consulting_reader_request_eligible" value="1"
+                                       @checked(old('video_consulting_reader_request_eligible', $videoConsultingOverrideSource?->video_consulting_reader_request_eligible ?? false))
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                Let customers count me as one of their requested readers for coverage
+                            </label>
+                            <x-primary-button>Save</x-primary-button>
+                            @if (session('status') === 'reader-request-eligible-updated')
+                                <span class="text-sm text-green-600">Saved.</span>
+                            @endif
+                        </form>
+                    </div>
+                    @endif
+
+                    @if (\App\Support\VideoConsultingAccess::enabledFor($user))
+                    <div class="pb-6 mb-6 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Your Rate</h3>
+                        <p class="text-sm text-gray-600 mb-4">What you want to be paid per video consulting call. Leave a field blank if you don't want to offer that call length.</p>
+
+                        @php $vcDurations = $videoConsultingDurations ?? collect(); @endphp
+                        @if ($errors->any() && $errors->hasAny($vcDurations->map(fn ($d) => "rates.{$d->id}")->all()))
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 mb-4">
+                                <ul class="list-disc list-inside space-y-0.5">
+                                    @foreach ($vcDurations as $duration)
+                                        @foreach ($errors->get("rates.{$duration->id}") as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('video-consulting-rate.update') }}" class="space-y-4">
+                            @csrf
+                            @method('PATCH')
+
+                            @forelse ($vcDurations as $duration)
+                                <div>
+                                    <x-input-label for="rate_{{ $duration->id }}" value="{{ $duration->label }}" />
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <span class="text-sm text-gray-500">$</span>
+                                        <input type="text" id="rate_{{ $duration->id }}" name="rates[{{ $duration->id }}]"
+                                               value="{{ old('rates.' . $duration->id, ($videoConsultingMyRates ?? collect())[$duration->id] ?? '') }}"
+                                               class="block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                        <span class="text-xs text-gray-400">
+                                            (${{ number_format($duration->min_reader_rate, 2) }} – ${{ number_format($duration->max_reader_rate, 2) }})
+                                        </span>
+                                    </div>
+                                    <x-input-error :messages="$errors->get('rates.' . $duration->id)" class="mt-1" />
+                                </div>
+                            @empty
+                                <p class="text-sm text-gray-400">No video consulting durations have been set up yet.</p>
+                            @endforelse
+
+                            <div class="flex justify-end pt-2 border-t border-gray-100">
+                                <x-primary-button>Save Rate</x-primary-button>
+                            </div>
+                        </form>
+                    </div>
+
+                    @php $vcListingSource = $user->isReader() ? $profile : ($videoConsultingOverrideSource ?? null); @endphp
+                    <div class="pb-6 mb-6 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Listing</h3>
+                        <p class="text-sm text-gray-600 mb-4">A note customers see on your listing (e.g. when you'll be back), and what kind of calls you're available for.</p>
+                        <form method="POST" action="{{ route('profile.video-consulting-listing') }}" class="space-y-4">
+                            @csrf
+                            @method('PATCH')
+                            <div>
+                                <x-input-label for="video_consulting_note" value="Note (shown even when you have no open times right now)" />
+                                <textarea id="video_consulting_note" name="video_consulting_note" rows="2" maxlength="500"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                          placeholder="e.g. Back and taking calls again on Monday!">{{ old('video_consulting_note', $vcListingSource?->video_consulting_note) }}</textarea>
+                                <x-input-error :messages="$errors->get('video_consulting_note')" class="mt-1" />
+                            </div>
+                            <div>
+                                <label for="video_consulting_call_mode" class="block text-xs text-gray-600 mb-1">Types of calls I'm available for</label>
+                                <select id="video_consulting_call_mode" name="video_consulting_call_mode"
+                                        class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="video" @selected(old('video_consulting_call_mode', $vcListingSource?->video_consulting_call_mode ?? 'video') === 'video')>Video + Audio</option>
+                                    <option value="audio" @selected(old('video_consulting_call_mode', $vcListingSource?->video_consulting_call_mode ?? 'video') === 'audio')>Audio only</option>
+                                </select>
+                                <x-input-error :messages="$errors->get('video_consulting_call_mode')" class="mt-1" />
+                            </div>
+                            <div class="flex items-center gap-3 pt-2 border-t border-gray-100">
+                                <x-primary-button>Save</x-primary-button>
+                                @if (session('status') === 'video-consulting-listing-updated')
+                                    <span class="text-sm text-green-600">Saved.</span>
+                                @endif
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="pb-6 mb-6 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Consulting Discount Code (optional)</h3>
+                        <p class="text-sm text-gray-600 mb-4">Want to run a special? Set a code customers can enter for a discount on booking a call with you. It only ever comes out of your own rate — it can never reduce the base rate, and can't take your own cut below $0.</p>
+                        <form method="POST" action="{{ route('profile.video-consulting-coupon') }}" class="space-y-3">
+                            @csrf
+                            @method('PATCH')
+                            <div class="flex flex-wrap items-end gap-3">
+                                <div>
+                                    <x-input-label for="coupon_code" value="Code" />
+                                    <input type="text" id="coupon_code" name="coupon_code" maxlength="20"
+                                           value="{{ old('coupon_code', $vcListingSource?->video_consulting_coupon_code) }}"
+                                           placeholder="e.g. JANE10"
+                                           class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm text-sm uppercase focus:border-indigo-500 focus:ring-indigo-500" />
+                                </div>
+                                <div>
+                                    <label for="coupon_type" class="block text-xs text-gray-600 mb-1">Type</label>
+                                    <select id="coupon_type" name="coupon_type"
+                                            class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                        <option value="fixed" @selected(old('coupon_type', $vcListingSource?->video_consulting_coupon_type) === 'fixed')>$ off</option>
+                                        <option value="percent" @selected(old('coupon_type', $vcListingSource?->video_consulting_coupon_type) === 'percent')>% off</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <x-input-label for="coupon_amount" value="Amount" />
+                                    <input type="text" id="coupon_amount" name="coupon_amount"
+                                           value="{{ old('coupon_amount', $vcListingSource?->video_consulting_coupon_amount) }}"
+                                           class="mt-1 block w-24 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                                </div>
+                                <x-primary-button>Save</x-primary-button>
+                                @if (session('status') === 'video-consulting-coupon-updated')
+                                    <span class="text-sm text-green-600 mb-2">Saved.</span>
+                                @endif
+                            </div>
+                            <p class="text-xs text-gray-400">Leave the code blank and save to turn it off.</p>
+                            <x-input-error :messages="$errors->get('coupon_code')" class="mt-1" />
+                            <x-input-error :messages="$errors->get('coupon_amount')" class="mt-1" />
+                        </form>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Availability</h3>
+                        <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls.</p>
+                        @include('partials.video-consulting-availability', [
+                            'rules' => $videoConsultingRules ?? collect(),
+                            'blackouts' => $videoConsultingBlackouts ?? collect(),
+                            'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                            'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
+                            'updateAction' => route('video-consulting-availability.update'),
+                            'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
+                        ])
+                    </div>
+                    @endif
                 </div>
             </div>
             @endif
