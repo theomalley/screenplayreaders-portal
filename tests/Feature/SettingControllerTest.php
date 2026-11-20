@@ -68,6 +68,7 @@ class SettingControllerTest extends TestCase
             'discount-coupon'                    => ['PATCH', '/settings/discount-coupon'],
             'commission-products.add'            => ['POST', '/settings/commission-products/add'],
             'commission-products.remove'         => ['POST', '/settings/commission-products/remove'],
+            'video-consulting-durations'         => ['PATCH', '/settings/video-consulting-durations'],
         ];
     }
 
@@ -113,5 +114,53 @@ class SettingControllerTest extends TestCase
             $status = $this->hit($admin, $method, $uri)->getStatusCode();
             $this->assertNotEquals(403, $status, "admin should not be forbidden from $name (got $status)");
         }
+    }
+
+    public function test_admin_can_save_a_video_consulting_duration_with_base_rate_percent(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->patch('/settings/video-consulting-durations', [
+            'durations' => [[
+                'id' => null, 'minutes' => 60, 'label' => '60 Minutes',
+                'base_rate' => 100, 'base_rate_percent' => 15,
+                'min_reader_rate' => 149, 'max_reader_rate' => 5000, 'enabled' => true,
+            ]],
+        ]);
+
+        $response->assertRedirect(route('settings.assignments'));
+        $this->assertDatabaseHas('video_consulting_durations', [
+            'minutes' => 60, 'label' => '60 Minutes', 'base_rate_percent' => 15,
+        ]);
+    }
+
+    public function test_video_consulting_duration_base_rate_percent_over_100_is_rejected(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->patch('/settings/video-consulting-durations', [
+            'durations' => [[
+                'id' => null, 'minutes' => 60, 'label' => '60 Minutes',
+                'base_rate' => 100, 'base_rate_percent' => 101,
+                'min_reader_rate' => 149, 'max_reader_rate' => 5000, 'enabled' => true,
+            ]],
+        ]);
+
+        $response->assertSessionHasErrors('durations.0.base_rate_percent');
+    }
+
+    public function test_video_consulting_duration_base_rate_percent_defaults_to_zero_when_omitted(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->patch('/settings/video-consulting-durations', [
+            'durations' => [[
+                'id' => null, 'minutes' => 30, 'label' => '30 Minutes',
+                'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100, 'enabled' => true,
+            ]],
+        ]);
+
+        $response->assertRedirect(route('settings.assignments'));
+        $this->assertDatabaseHas('video_consulting_durations', ['minutes' => 30, 'base_rate_percent' => 0]);
     }
 }

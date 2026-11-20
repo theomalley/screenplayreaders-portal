@@ -1,5 +1,11 @@
 <?php
 
+// v2.27 — 2026-11-20 | updateVideoConsultingDurations() now also accepts base_rate_percent —
+//                      the company's cut can scale with a reader's own rate instead of staying
+//                      flat, now that reader rates can go as high as $5000. Also removed the
+//                      theme's now-fully-redundant "SR Tools > SR Video Consulting" durations UI
+//                      (and its API-only proxy controller) so this Settings tab is the one and
+//                      only place durations are edited.
 // v2.26 — 2026-11-19 | Add updateVideoConsultingDurations() — CRUD for video-consulting
 //                      call-length durations (minutes, base rate, min/max reader-rate bounds)
 //                      directly on the Settings > Assignments tab; previously only manageable
@@ -307,12 +313,14 @@ class SettingController extends Controller
     }
 
     /**
-     * Call-length durations for video consulting — minutes, admin base rate, and the min/max
-     * reader-rate bounds enforced wherever a reader sets their own rate (VideoConsultingRateController,
+     * Call-length durations for video consulting — minutes, admin base rate (+ base rate %,
+     * added 2026-11-20 so the company's cut can scale with a reader's own rate — see
+     * VideoConsultingDuration::effectiveBaseRate()), and the min/max reader-rate bounds enforced
+     * wherever a reader sets their own rate (VideoConsultingRateController,
      * ReaderProfileController/EditorProfileController's rate-update methods). The whole list is
      * resubmitted on every save (same convention as updateQcSavedReplies()); a row missing from the
      * resubmission is deleted if it has no rate/booking history yet, otherwise just disabled —
-     * mirrors Api\VideoConsultingDurationController::destroy()'s canBeDeleted() guard.
+     * mirrors VideoConsultingDuration::canBeDeleted()'s guard.
      */
     public function updateVideoConsultingDurations(Request $request): RedirectResponse
     {
@@ -324,6 +332,7 @@ class SettingController extends Controller
             'durations.*.minutes'         => 'required|integer|min:1|max:600',
             'durations.*.label'           => 'required|string|max:255',
             'durations.*.base_rate'       => 'required|numeric|min:0|max:9999.99',
+            'durations.*.base_rate_percent' => 'nullable|numeric|min:0|max:100',
             'durations.*.min_reader_rate' => 'required|numeric|min:0|max:9999.99',
             'durations.*.max_reader_rate' => 'required|numeric|min:0|max:9999.99',
             'durations.*.enabled'         => 'nullable|boolean',
@@ -344,7 +353,8 @@ class SettingController extends Controller
             $attrs = [
                 'minutes'         => (int) $row['minutes'],
                 'label'           => trim($row['label']),
-                'base_rate'       => (float) $row['base_rate'],
+                'base_rate'         => (float) $row['base_rate'],
+                'base_rate_percent' => (float) ($row['base_rate_percent'] ?? 0),
                 'min_reader_rate' => (float) $row['min_reader_rate'],
                 'max_reader_rate' => (float) $row['max_reader_rate'],
                 'enabled'         => ! empty($row['enabled']),
