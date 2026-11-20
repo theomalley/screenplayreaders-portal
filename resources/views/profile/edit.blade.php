@@ -432,7 +432,7 @@
                     @if (\App\Support\VideoConsultingAccess::enabledFor($user))
                     <div class="pb-6 mb-6 border-b border-gray-100">
                         <h3 class="text-sm font-semibold text-gray-900 mb-1">Your Rate</h3>
-                        <p class="text-sm text-gray-600 mb-4">What you want to be paid per video consulting call. Leave a field blank if you don't want to offer that call length.</p>
+                        <p class="text-sm text-gray-600 mb-4">What you want to be paid per video consulting call. Leave a field blank if you don't want to offer that call length. You can change these rates as often as you like.</p>
 
                         @php $vcDurations = $videoConsultingDurations ?? collect(); @endphp
                         @if ($errors->any() && $errors->hasAny($vcDurations->map(fn ($d) => "rates.{$d->id}")->all()))
@@ -459,6 +459,9 @@
                                         get cut() {
                                             const r = parseFloat(this.rate) || 0;
                                             return Math.max(this.baseRate, Math.round((this.basePercent / 100) * r));
+                                        },
+                                        get total() {
+                                            return (parseFloat(this.rate) || 0) + this.cut;
                                         }
                                      }">
                                     <x-input-label for="rate_{{ $duration->id }}" value="{{ $duration->label }}" />
@@ -474,7 +477,8 @@
                                     <p class="mt-1 text-xs text-gray-400">
                                         SR's Fee: ${{ number_format($duration->base_rate, 2) }}
                                         or <span x-text="basePercent"></span>% of your rate, whichever is higher —
-                                        at this rate SR's fee is <span class="font-medium text-gray-600" x-text="'$' + cut"></span>.
+                                        at this rate SR's fee is <span class="font-medium text-gray-600" x-text="'$' + cut"></span>,
+                                        so the customer would pay <span class="font-medium text-gray-600" x-text="'$' + total"></span> total.
                                     </p>
                                     <x-input-error :messages="$errors->get('rates.' . $duration->id)" class="mt-1" />
                                 </div>
@@ -1342,7 +1346,7 @@
             <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
                 <div class="max-w-xl space-y-4">
                     <h2 class="text-lg font-medium text-gray-900">Video Consulting Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                    <p class="text-sm text-gray-600 -mt-2">What this {{ $isEditingReader ? 'reader' : 'person' }} is paid for a video consulting call of each length. Leave a field blank to opt them out of that call length. They need at least one rate set here (or via their own self-serve page) before they appear as bookable on the checkout upgrade or the Script Consulting page.</p>
+                    <p class="text-sm text-gray-600 -mt-2">What this {{ $isEditingReader ? 'reader' : 'person' }} is paid for a video consulting call of each length. Leave a field blank to opt them out of that call length. They need at least one rate set here (or via their own self-serve page) before they appear as bookable on the checkout upgrade or the Script Consulting page. Rates can be changed as often as needed.</p>
                     @if ($videoConsultingDurations->isEmpty())
                         <p class="text-sm text-gray-500 italic">No call-length durations are configured yet — add some under Settings first.</p>
                     @else
@@ -1358,6 +1362,9 @@
                                         get cut() {
                                             const r = parseFloat(this.rate) || 0;
                                             return Math.max(this.baseRate, Math.round((this.basePercent / 100) * r));
+                                        },
+                                        get total() {
+                                            return (parseFloat(this.rate) || 0) + this.cut;
                                         }
                                      }">
                                     <x-input-label for="vc_rate_{{ $duration->id }}" value="{{ $duration->label }}" />
@@ -1373,7 +1380,8 @@
                                     <p class="mt-1 text-xs text-gray-500">
                                         SR's Fee ${{ number_format((float) $duration->base_rate, 2) }} /
                                         <span x-text="basePercent"></span>% — SR's fee at this rate:
-                                        <span class="font-medium text-gray-700" x-text="'$' + cut"></span>
+                                        <span class="font-medium text-gray-700" x-text="'$' + cut"></span>,
+                                        customer pays <span class="font-medium text-gray-700" x-text="'$' + total"></span> total
                                     </p>
                                     <x-input-error :messages="$errors->get('vc_rates.' . $duration->id)" class="mt-1" />
                                 </div>
