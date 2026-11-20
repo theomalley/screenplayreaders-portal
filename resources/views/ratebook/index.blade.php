@@ -403,6 +403,29 @@
 
             </form>
 
+            @if ($canEdit)
+            {{-- Video Consulting Commission — admin-only; overrides any individual editor's own
+                 per-product commission config for the video consulting product. --}}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-sm font-semibold text-gray-800 mb-1">Video Consulting Commission <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Whether editors can earn commission on video consulting orders at all. Turning this off
+                    overrides any individual editor's own per-product commission setting for video consulting.
+                </p>
+                <form method="POST" action="{{ route('ratebook.video-consulting-commission') }}">
+                    @csrf
+                    @method('PATCH')
+                    <label class="flex items-center gap-2 mb-4">
+                        <input type="checkbox" name="video_consulting_editor_commission_enabled" value="1"
+                            @checked($videoConsultingEditorCommissionEnabled)
+                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        <span class="text-sm text-gray-700">Editors can earn commission on video consulting orders</span>
+                    </label>
+                    <x-primary-button>Save</x-primary-button>
+                </form>
+            </div>
+            @endif
+
             {{-- Additional Rate Items — free-form, admin add/edit/delete. Informational only;
                  not wired into the reader pay-rate calculation engine (see AssignmentController). --}}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">

@@ -452,17 +452,30 @@
                             @method('PATCH')
 
                             @forelse ($vcDurations as $duration)
-                                <div>
+                                <div x-data="{
+                                        rate: '{{ old('rates.' . $duration->id, ($videoConsultingMyRates ?? collect())[$duration->id] ?? '') }}',
+                                        baseRate: {{ (float) $duration->base_rate }},
+                                        basePercent: {{ (float) $duration->base_rate_percent }},
+                                        get cut() {
+                                            const r = parseFloat(this.rate) || 0;
+                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * r));
+                                        }
+                                     }">
                                     <x-input-label for="rate_{{ $duration->id }}" value="{{ $duration->label }}" />
                                     <div class="mt-1 flex items-center gap-2">
                                         <span class="text-sm text-gray-500">$</span>
                                         <input type="text" id="rate_{{ $duration->id }}" name="rates[{{ $duration->id }}]"
-                                               value="{{ old('rates.' . $duration->id, ($videoConsultingMyRates ?? collect())[$duration->id] ?? '') }}"
+                                               x-model="rate"
                                                class="block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
                                         <span class="text-xs text-gray-400">
                                             (${{ number_format($duration->min_reader_rate, 2) }} – ${{ number_format($duration->max_reader_rate, 2) }})
                                         </span>
                                     </div>
+                                    <p class="mt-1 text-xs text-gray-400">
+                                        Company base rate ${{ number_format($duration->base_rate, 2) }}
+                                        / <span x-text="basePercent"></span>% of your rate, whichever is higher —
+                                        at this rate the company keeps <span class="font-medium text-gray-600" x-text="'$' + cut"></span>.
+                                    </p>
                                     <x-input-error :messages="$errors->get('rates.' . $duration->id)" class="mt-1" />
                                 </div>
                             @empty
@@ -1338,17 +1351,30 @@
                         @method('PATCH')
                         <div class="grid grid-cols-2 gap-4">
                             @foreach ($videoConsultingDurations as $duration)
-                                <div>
+                                <div x-data="{
+                                        rate: '{{ old('vc_rates.' . $duration->id, $videoConsultingRates[$duration->id] ?? '') }}',
+                                        baseRate: {{ (float) $duration->base_rate }},
+                                        basePercent: {{ (float) $duration->base_rate_percent }},
+                                        get cut() {
+                                            const r = parseFloat(this.rate) || 0;
+                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * r));
+                                        }
+                                     }">
                                     <x-input-label for="vc_rate_{{ $duration->id }}" value="{{ $duration->label }}" />
                                     <div class="mt-1 flex items-center gap-1">
                                         <span class="text-gray-400 text-sm">$</span>
                                         <x-text-input id="vc_rate_{{ $duration->id }}" name="vc_rates[{{ $duration->id }}]" type="number"
                                             class="block w-28 text-right"
-                                            value="{{ old('vc_rates.' . $duration->id, $videoConsultingRates[$duration->id] ?? '') }}"
+                                            x-model="rate"
                                             min="{{ $duration->min_reader_rate }}" max="{{ $duration->max_reader_rate }}" step="0.01"
                                             placeholder="blank = opt out" />
                                     </div>
                                     <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        Base ${{ number_format((float) $duration->base_rate, 2) }} /
+                                        <span x-text="basePercent"></span>% — company cut at this rate:
+                                        <span class="font-medium text-gray-700" x-text="'$' + cut"></span>
+                                    </p>
                                     <x-input-error :messages="$errors->get('vc_rates.' . $duration->id)" class="mt-1" />
                                 </div>
                             @endforeach

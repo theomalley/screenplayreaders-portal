@@ -1,5 +1,11 @@
 <?php
 
+// v1.7 — 2026-11-20 | Add updateVideoConsultingCommission() — admin-only master toggle for
+//                      whether editors can earn commission on video consulting orders at all,
+//                      overriding any individual editor's own per-product commission config
+//                      (EditorProductCommission). Visible on this page only to admin, since
+//                      editor/reader can view Ratebook but editor commission itself is already
+//                      admin-only info. See EditorCommissionService::calculate().
 // v1.6 — 2026-07-17 | Add admin-editable Retail Price column (what customers are charged)
 //                      alongside each core rate row, visible to editors and admins.
 // v1.5 — 2026-07-12 | Editable [[shortcode]] token per rate row; auto-migrates existing
@@ -34,6 +40,9 @@ class RatebookController extends Controller
 
         $editorRates   = null;  // admin: all editors with their effective rates
         $myEditorRates = null;  // editor: own effective rates
+        $videoConsultingEditorCommissionEnabled = $user->isAdmin()
+            ? (string) Setting::getValue('video_consulting_editor_commission_enabled', '1') === '1'
+            : null;
 
         if ($user->isAdmin()) {
             $editorRates = User::where('role', 'editor')
@@ -59,8 +68,20 @@ class RatebookController extends Controller
 
         return view('ratebook.index', compact(
             'rates', 'labels', 'shortcodes', 'editorRates', 'myEditorRates', 'customItems', 'retailPrices',
-            'wordCounts', 'wordCountTotals'
+            'wordCounts', 'wordCountTotals', 'videoConsultingEditorCommissionEnabled'
         ));
+    }
+
+    public function updateVideoConsultingCommission(Request $request)
+    {
+        abort_unless(Permission::check('ratebook.edit'), 403);
+
+        Setting::setValue(
+            'video_consulting_editor_commission_enabled',
+            $request->boolean('video_consulting_editor_commission_enabled') ? '1' : '0'
+        );
+
+        return back()->with('success', 'Video consulting commission setting saved.');
     }
 
     /**

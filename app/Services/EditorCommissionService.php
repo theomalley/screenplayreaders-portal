@@ -1,5 +1,11 @@
 <?php
 
+// v1.3 — 2026-11-20 | calculate() now respects video_consulting_editor_commission_enabled
+//                      (Ratebook, admin-only) — an admin-level master switch that overrides any
+//                      individual editor's own per-product EditorProductCommission config for the
+//                      video consulting Woo product specifically. Defaults to enabled ('1'), i.e.
+//                      no behavior change for anyone who already had it configured one way or the
+//                      other — this just adds a sitewide override on top.
 // v1.2 — 2026-07-30 | applyQcAdjustmentForOrder() now skips entirely if any countable assignment
 //                     has no qc_completed_by_user_id recorded — that means it predates this
 //                     feature (approved before the column existed) and there's no reliable QC-actor
@@ -21,6 +27,23 @@ use App\Models\User;
 
 class EditorCommissionService
 {
+    /**
+     * The video consulting product's WooCommerce product ID — mirrors SR_VIDEO_CONSULTING_PRODUCT_ID
+     * in the theme repo's woo_video-consulting.php. Keep these two in sync if that ever changes;
+     * the portal has no other way to know which line item is the video consulting one.
+     */
+    private const VIDEO_CONSULTING_WOO_PRODUCT_ID = 58573;
+
+    /**
+     * Admin-level master switch (Ratebook, admin-only) for whether editors can earn commission on
+     * video consulting orders at all — overrides any individual editor's own per-product
+     * EditorProductCommission config for that one product. Defaults to enabled.
+     */
+    public static function videoConsultingCommissionEnabled(): bool
+    {
+        return (string) Setting::getValue('video_consulting_editor_commission_enabled', '1') === '1';
+    }
+
     /**
      * Compute editor commission from the given editor's portal config.
      * Returns null if the editor has no per-product config set up yet (falls back to theme value).
@@ -54,6 +77,10 @@ class EditorCommissionService
             $config = $commissionConfig->get($productId);
 
             $enabled = $config ? $config->commission_enabled : $defaultElig;
+
+            if ($productId === self::VIDEO_CONSULTING_WOO_PRODUCT_ID && ! self::videoConsultingCommissionEnabled()) {
+                $enabled = false;
+            }
 
             if (! $enabled) continue;
 
