@@ -20,15 +20,24 @@ class RatebookVideoConsultingCommissionTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
 
         $response = $this->actingAs($admin)->patch('/ratebook/video-consulting-commission', [
-            'video_consulting_editor_commission_enabled' => '0',
+            'video_consulting_editor_commission_enabled' => '1',
         ]);
-
         $response->assertRedirect();
-        $this->assertSame('0', Setting::getValue('video_consulting_editor_commission_enabled'));
+        $this->assertSame('1', Setting::getValue('video_consulting_editor_commission_enabled'));
 
         $response = $this->actingAs($admin)->patch('/ratebook/video-consulting-commission', [
             // omitted => unchecked
         ]);
+        $response->assertRedirect();
+        $this->assertSame('0', Setting::getValue('video_consulting_editor_commission_enabled'));
+    }
+
+    public function test_setting_defaults_to_disabled(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get('/ratebook')->assertOk();
+
         $this->assertSame('0', Setting::getValue('video_consulting_editor_commission_enabled', '0'));
     }
 

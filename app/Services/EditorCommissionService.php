@@ -1,11 +1,18 @@
 <?php
 
+// v1.4 — 2026-11-20 | video_consulting_editor_commission_enabled now defaults to disabled ('0'),
+//                      not enabled — per explicit business rule: an editor who personally takes a
+//                      video consulting booking is paid for it via the normal reader-style
+//                      Assignment.pay_rate (set from ReaderVideoConsultingRate at booking time,
+//                      see Api\VideoConsultingBookingController::createBooking() — completely
+//                      separate from this service and untouched by this flag either way), NOT
+//                      editor commission on top. The toggle still exists so an admin can turn
+//                      commission on for this product if that ever changes, but the correct
+//                      no-admin-action default is off.
 // v1.3 — 2026-11-20 | calculate() now respects video_consulting_editor_commission_enabled
 //                      (Ratebook, admin-only) — an admin-level master switch that overrides any
 //                      individual editor's own per-product EditorProductCommission config for the
-//                      video consulting Woo product specifically. Defaults to enabled ('1'), i.e.
-//                      no behavior change for anyone who already had it configured one way or the
-//                      other — this just adds a sitewide override on top.
+//                      video consulting Woo product specifically.
 // v1.2 — 2026-07-30 | applyQcAdjustmentForOrder() now skips entirely if any countable assignment
 //                     has no qc_completed_by_user_id recorded — that means it predates this
 //                     feature (approved before the column existed) and there's no reliable QC-actor
@@ -37,11 +44,13 @@ class EditorCommissionService
     /**
      * Admin-level master switch (Ratebook, admin-only) for whether editors can earn commission on
      * video consulting orders at all — overrides any individual editor's own per-product
-     * EditorProductCommission config for that one product. Defaults to enabled.
+     * EditorProductCommission config for that one product. Defaults to disabled: an editor who
+     * personally takes a video consulting booking is already paid for it via Assignment.pay_rate
+     * (set independently from ReaderVideoConsultingRate, never touched by this flag), not commission.
      */
     public static function videoConsultingCommissionEnabled(): bool
     {
-        return (string) Setting::getValue('video_consulting_editor_commission_enabled', '1') === '1';
+        return (string) Setting::getValue('video_consulting_editor_commission_enabled', '0') === '1';
     }
 
     /**

@@ -46,24 +46,24 @@ class EditorCommissionServiceVideoConsultingTest extends TestCase
         ]]);
     }
 
-    public function test_commission_computed_when_editor_override_enabled_and_master_switch_defaults_on(): void
+    public function test_master_switch_defaults_to_off_overriding_the_editors_own_enabled_config(): void
     {
+        $profile = $this->editorProfileWithVideoConsultingCommissionEnabled();
+
+        $commission = (new EditorCommissionService())->calculate($profile, $this->lineItemsJsonFor(500), 500);
+
+        $this->assertSame(0.0, $commission);
+    }
+
+    public function test_commission_computed_when_editor_override_enabled_and_master_switch_turned_on(): void
+    {
+        Setting::setValue('video_consulting_editor_commission_enabled', '1');
         $profile = $this->editorProfileWithVideoConsultingCommissionEnabled();
 
         $commission = (new EditorCommissionService())->calculate($profile, $this->lineItemsJsonFor(500), 500);
 
         $this->assertNotNull($commission);
         $this->assertGreaterThan(0, $commission);
-    }
-
-    public function test_master_switch_off_overrides_the_editors_own_enabled_config(): void
-    {
-        Setting::setValue('video_consulting_editor_commission_enabled', '0');
-        $profile = $this->editorProfileWithVideoConsultingCommissionEnabled();
-
-        $commission = (new EditorCommissionService())->calculate($profile, $this->lineItemsJsonFor(500), 500);
-
-        $this->assertSame(0.0, $commission);
     }
 
     public function test_master_switch_does_not_affect_other_products(): void
@@ -93,8 +93,8 @@ class EditorCommissionServiceVideoConsultingTest extends TestCase
         $this->assertGreaterThan(0, $commission);
     }
 
-    public function test_video_consulting_commission_enabled_defaults_to_true(): void
+    public function test_video_consulting_commission_enabled_defaults_to_false(): void
     {
-        $this->assertTrue(EditorCommissionService::videoConsultingCommissionEnabled());
+        $this->assertFalse(EditorCommissionService::videoConsultingCommissionEnabled());
     }
 }

@@ -409,8 +409,10 @@
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-sm font-semibold text-gray-800 mb-1">Video Consulting Commission <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h3>
                 <p class="text-xs text-gray-500 mb-4">
-                    Whether editors can earn commission on video consulting orders at all. Turning this off
-                    overrides any individual editor's own per-product commission setting for video consulting.
+                    Whether editors can earn commission on video consulting orders, separate from an editor's own
+                    pay for personally taking a video call (that's their booked rate, paid either way — see their
+                    Video Consulting Rate). Off by default: turning this off overrides any individual editor's own
+                    per-product commission setting for video consulting.
                 </p>
                 <form method="POST" action="{{ route('ratebook.video-consulting-commission') }}">
                     @csrf

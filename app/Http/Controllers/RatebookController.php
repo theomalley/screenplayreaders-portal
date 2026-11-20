@@ -5,7 +5,9 @@
 //                      overriding any individual editor's own per-product commission config
 //                      (EditorProductCommission). Visible on this page only to admin, since
 //                      editor/reader can view Ratebook but editor commission itself is already
-//                      admin-only info. See EditorCommissionService::calculate().
+//                      admin-only info. Defaults to disabled — an editor's video consulting pay
+//                      is their Assignment.pay_rate, a separate mechanism entirely, not commission.
+//                      See EditorCommissionService::calculate()/videoConsultingCommissionEnabled().
 // v1.6 — 2026-07-17 | Add admin-editable Retail Price column (what customers are charged)
 //                      alongside each core rate row, visible to editors and admins.
 // v1.5 — 2026-07-12 | Editable [[shortcode]] token per rate row; auto-migrates existing
@@ -41,7 +43,7 @@ class RatebookController extends Controller
         $editorRates   = null;  // admin: all editors with their effective rates
         $myEditorRates = null;  // editor: own effective rates
         $videoConsultingEditorCommissionEnabled = $user->isAdmin()
-            ? (string) Setting::getValue('video_consulting_editor_commission_enabled', '1') === '1'
+            ? (string) Setting::getValue('video_consulting_editor_commission_enabled', '0') === '1'
             : null;
 
         if ($user->isAdmin()) {
