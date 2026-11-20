@@ -432,7 +432,7 @@
                     @if (\App\Support\VideoConsultingAccess::enabledFor($user))
                     <div class="pb-6 mb-6 border-b border-gray-100">
                         <h3 class="text-sm font-semibold text-gray-900 mb-1">Your Rate</h3>
-                        <p class="text-sm text-gray-600 mb-4">What you want to be paid per video consulting call. Leave a field blank if you don't want to offer that call length. You can change these rates as often as you like.</p>
+                        <p class="text-sm text-gray-600 mb-4">What you want to be paid per video consulting call. Leave a field blank if you don't want to offer that call length. You can change these rates as often as you like. You can see your listing at <a href="https://screenplayreaders.com/screenplay-consulting/" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">screenplayreaders.com/screenplay-consulting <span aria-hidden="true">&#8599;</span></a>.</p>
 
                         @php $vcDurations = $videoConsultingDurations ?? collect(); @endphp
                         @if ($errors->any() && $errors->hasAny($vcDurations->map(fn ($d) => "rates.{$d->id}")->all()))
