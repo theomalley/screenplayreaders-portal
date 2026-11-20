@@ -1,5 +1,9 @@
 <?php
 
+// v1.12 — 2026-11-20 | readers() now also includes about_photo_url (ReaderProfile.about_photo) —
+//                       the theme's video-consulting shortcode/checkout widget were displaying
+//                       the reader's "icon" photo (photo_url) instead of their public-facing
+//                       "about" photo; about_photo_url is the correct field for that use.
 // v1.11 — 2026-11-20 | readers()/readerRates() now use VideoConsultingDuration::effectiveBaseRate()
 //                       instead of the flat base_rate — the company's cut can scale with the
 //                       reader's own rate (base_rate stays the floor) now that reader rates can go
@@ -114,7 +118,8 @@ class VideoConsultingBookingController extends Controller
                     return null;
                 }
 
-                $photo = $reader->readerProfile?->photo;
+                $photo      = $reader->readerProfile?->photo;
+                $aboutPhoto = $reader->readerProfile?->about_photo;
 
                 return [
                     'id'                      => $reader->id,
@@ -122,6 +127,7 @@ class VideoConsultingBookingController extends Controller
                     'initials'                => $reader->readerProfile?->initials,
                     'reader_request_eligible' => VideoConsultingAccess::eligibleForReaderRequestWaiver($reader),
                     'photo_url'               => $photo ? asset('storage/' . $photo) : null,
+                    'about_photo_url'         => $aboutPhoto ? asset('storage/' . $aboutPhoto) : null,
                     'availability_summary' => $availability->availabilitySummaryFor($reader->id),
                     'min_lead_hours'       => (int) ($reader->readerProfile?->video_consulting_min_lead_hours ?? 0),
                     'favorite_genres'      => $reader->readerProfile?->favorite_genres ?? [],
