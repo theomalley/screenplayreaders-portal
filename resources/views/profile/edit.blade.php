@@ -231,48 +231,73 @@
                 </div>
             </div>
 
+            @php
+                $showVideoConsultingSection = $user->isAdminOrEditor()
+                    || ($user->isReader() && \App\Support\VideoConsultingAccess::enabledFor($user));
+            @endphp
+
             @if ($profile)
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    <h2 class="text-lg font-medium text-gray-900 mb-1">My Availability</h2>
-                    <p class="text-sm text-gray-600 mb-4">Visible to the assignments team — not shown to customers.</p>
-                    @if (session('availability_success'))
-                        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-                            {{ session('availability_success') }}
-                        </div>
-                    @endif
-                    <form method="POST" action="{{ route('availability.update') }}" class="space-y-4">
-                        @csrf
-                        @method('PATCH')
-                        <div>
-                            <x-input-label value="Status" />
-                            <div class="mt-2 flex gap-6">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="availability" value="available"
-                                           {{ old('availability', $profile->availability ?? 'available') === 'available' ? 'checked' : '' }}
-                                           class="text-green-600 focus:ring-green-500" />
-                                    <span class="text-sm font-medium text-green-700">Available</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="availability" value="unavailable"
-                                           {{ old('availability', $profile->availability ?? 'available') === 'unavailable' ? 'checked' : '' }}
-                                           class="text-red-600 focus:ring-red-500" />
-                                    <span class="text-sm font-medium text-red-700">Unavailable</span>
-                                </label>
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Availability</h2>
+                    <p class="text-sm text-gray-600 mb-6">Two separate settings — one for regular script assignments, one for paid video consulting calls. Setting one does not affect the other.</p>
+
+                    <div class="pb-6 mb-6 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Assignment Availability</h3>
+                        <p class="text-sm text-gray-600 mb-4">Visible to the assignments team — not shown to customers. Does not affect your video consulting calls below.</p>
+                        @if (session('availability_success'))
+                            <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                                {{ session('availability_success') }}
                             </div>
-                            <x-input-error :messages="$errors->get('availability')" class="mt-1" />
-                        </div>
-                        <div>
-                            <x-input-label for="avail_message" value="Availability Note (internal only, optional)" />
-                            <textarea id="avail_message" name="availability_message" rows="2"
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                      placeholder="e.g. Back Jan 15, on vacation through end of month…">{{ old('availability_message', $profile->availability_message) }}</textarea>
-                            <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Availability</x-primary-button>
-                        </div>
-                    </form>
+                        @endif
+                        <form method="POST" action="{{ route('availability.update') }}" class="space-y-4">
+                            @csrf
+                            @method('PATCH')
+                            <div>
+                                <x-input-label value="Status" />
+                                <div class="mt-2 flex gap-6">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="availability" value="available"
+                                               {{ old('availability', $profile->availability ?? 'available') === 'available' ? 'checked' : '' }}
+                                               class="text-green-600 focus:ring-green-500" />
+                                        <span class="text-sm font-medium text-green-700">Available</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="availability" value="unavailable"
+                                               {{ old('availability', $profile->availability ?? 'available') === 'unavailable' ? 'checked' : '' }}
+                                               class="text-red-600 focus:ring-red-500" />
+                                        <span class="text-sm font-medium text-red-700">Unavailable</span>
+                                    </label>
+                                </div>
+                                <x-input-error :messages="$errors->get('availability')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="avail_message" value="Availability Note (internal only, optional)" />
+                                <textarea id="avail_message" name="availability_message" rows="2"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                          placeholder="e.g. Back Jan 15, on vacation through end of month…">{{ old('availability_message', $profile->availability_message) }}</textarea>
+                                <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
+                            </div>
+                            <div class="flex justify-end">
+                                <x-primary-button>Save Availability</x-primary-button>
+                            </div>
+                        </form>
+                    </div>
+
+                    @if ($showVideoConsultingSection && \App\Support\VideoConsultingAccess::enabledFor($user))
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Video Call Availability</h3>
+                        <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for paid video consulting calls — separate from your assignment availability above. Manage your rate and listing under Video Consulting Settings further down.</p>
+                        @include('partials.video-consulting-availability', [
+                            'rules' => $videoConsultingRules ?? collect(),
+                            'blackouts' => $videoConsultingBlackouts ?? collect(),
+                            'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                            'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
+                            'updateAction' => route('video-consulting-availability.update'),
+                            'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
+                        ])
+                    </div>
+                    @endif
                 </div>
             </div>
             @endif
@@ -368,15 +393,11 @@
             </div>
             @endif
 
-            @php
-                $showVideoConsultingSection = $user->isAdminOrEditor()
-                    || ($user->isReader() && \App\Support\VideoConsultingAccess::enabledFor($user));
-            @endphp
             @if ($showVideoConsultingSection)
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting Settings</h2>
-                    <p class="text-sm text-gray-600 mb-6">Everything for taking paid video consulting calls — opting in, your rate, your listing, availability, and an optional discount code.</p>
+                    <p class="text-sm text-gray-600 mb-6">Opting in, your rate, and your listing for paid video consulting calls. Your call schedule and blackout dates are under Video Call Availability in the Availability section above.</p>
 
                     @if ($user->isAdminOrEditor())
                     {{-- Self-serve enable/disable — the only path for an admin/editor to opt into
@@ -522,19 +543,6 @@
                                 @endif
                             </div>
                         </form>
-                    </div>
-
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Availability</h3>
-                        <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls.</p>
-                        @include('partials.video-consulting-availability', [
-                            'rules' => $videoConsultingRules ?? collect(),
-                            'blackouts' => $videoConsultingBlackouts ?? collect(),
-                            'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
-                            'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
-                            'updateAction' => route('video-consulting-availability.update'),
-                            'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
-                        ])
                     </div>
                     @endif
                 </div>
@@ -686,11 +694,11 @@
                     </div>
                 </div>
 
-                {{-- Availability --}}
+                {{-- Assignment Availability (separate from Video Call Availability below) --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">Availability</h2>
-                        <p class="text-sm text-gray-600 -mt-2">Visible to the assignments team — not shown to customers.</p>
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Assignment Availability</h2>
+                        <p class="text-sm text-gray-600 -mt-2">Visible to the assignments team — not shown to customers. Does not affect video consulting calls below.</p>
                         <div>
                             <x-input-label value="Status" />
                             <div class="mt-2 flex gap-6">
@@ -730,7 +738,7 @@
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <p class="text-sm text-gray-600 mb-4">Weekly hours and blackout dates for video consulting calls — shown here instead of its own "Consulting" page.</p>
+                        <p class="text-sm text-gray-600 mb-4">Enable/disable, and Video Call Availability (weekly hours and blackout dates) — separate from Assignment Availability above.</p>
                         @php
                             $videoConsultingProfileSource = $isEditingReader ? $profile : ($videoConsultingOverrideSource ?? null);
                             $videoConsultingOverride = match ($videoConsultingProfileSource?->video_consulting_enabled) {
@@ -760,6 +768,7 @@
                             </label>
                         </div>
                         @endif
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1 pt-2 border-t border-gray-100">Video Call Availability</h3>
                         @include('partials.video-consulting-availability', [
                             'rules' => $videoConsultingRules ?? collect(),
                             'blackouts' => $videoConsultingBlackouts ?? collect(),
