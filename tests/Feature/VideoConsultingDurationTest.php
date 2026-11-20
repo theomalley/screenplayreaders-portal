@@ -86,4 +86,64 @@ class VideoConsultingDurationTest extends TestCase
         $response->assertStatus(200);
         $this->assertDatabaseMissing('video_consulting_durations', ['id' => $duration->id]);
     }
+
+    public function test_admin_can_set_base_rate_percent_on_create(): void
+    {
+        $response = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/admin/durations', [
+            'minutes'           => 60,
+            'label'             => '60 Minutes',
+            'base_rate'         => 100,
+            'base_rate_percent' => 15,
+            'min_reader_rate'   => 149,
+            'max_reader_rate'   => 5000,
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('video_consulting_durations', ['minutes' => 60, 'base_rate_percent' => 15]);
+    }
+
+    public function test_base_rate_percent_over_100_is_rejected(): void
+    {
+        $response = $this->withHeaders($this->authHeaders())->postJson('/api/video-consulting/admin/durations', [
+            'minutes'           => 60,
+            'label'             => '60 Minutes',
+            'base_rate'         => 100,
+            'base_rate_percent' => 101,
+            'min_reader_rate'   => 149,
+            'max_reader_rate'   => 5000,
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_base_rate_percent_defaults_to_zero_when_omitted(): void
+    {
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+
+        $this->assertSame('0.00', $duration->refresh()->base_rate_percent);
+    }
+
+    public function test_effective_base_rate_rounds_the_percent_cut_to_whole_dollars(): void
+    {
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 60, 'label' => '60 Minutes', 'base_rate' => 0, 'base_rate_percent' => 33,
+            'min_reader_rate' => 10, 'max_reader_rate' => 5000,
+        ]);
+
+        // 33% of 149 = 49.17, rounds to 49.
+        $this->assertSame(49.0, $duration->effectiveBaseRate(149));
+    }
+
+    public function test_effective_base_rate_floors_at_the_flat_base_rate(): void
+    {
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 100, 'base_rate_percent' => 15,
+            'min_reader_rate' => 10, 'max_reader_rate' => 5000,
+        ]);
+
+        $this->assertSame(100.0, $duration->effectiveBaseRate(149)); // 15% of 149 = 22.35, floor wins
+        $this->assertSame(750.0, $duration->effectiveBaseRate(5000)); // 15% of 5000 = 750, percent wins
+    }
 }

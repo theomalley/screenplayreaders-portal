@@ -1,5 +1,7 @@
 <?php
 
+// v1.1 — 2026-11-20 | Added base_rate_percent validation (0-100) alongside the existing flat
+//                      base_rate floor.
 // v1.0 — 2026-11-07 | Video consulting Phase 1 — admin CRUD for call-length durations.
 //                      PORTAL INTEGRATION: called by the theme's (Phase 4) "Tools -> SR Video
 //                      Consulting" wp-admin page, gated by the shared-secret 'portal.secret'
@@ -28,6 +30,7 @@ class VideoConsultingDurationController extends Controller
             'minutes'          => ['required', 'integer', 'min:1', 'max:600'],
             'label'            => ['required', 'string', 'max:255'],
             'base_rate'        => ['required', 'numeric', 'min:0', 'max:9999.99'],
+            'base_rate_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'min_reader_rate'  => ['required', 'numeric', 'min:0', 'max:9999.99'],
             'max_reader_rate'  => ['required', 'numeric', 'min:0', 'max:9999.99', 'gte:min_reader_rate'],
             'enabled'          => ['nullable', 'boolean'],
@@ -45,6 +48,7 @@ class VideoConsultingDurationController extends Controller
             'minutes'          => ['sometimes', 'integer', 'min:1', 'max:600'],
             'label'            => ['sometimes', 'string', 'max:255'],
             'base_rate'        => ['sometimes', 'numeric', 'min:0', 'max:9999.99'],
+            'base_rate_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'min_reader_rate'  => ['sometimes', 'numeric', 'min:0', 'max:9999.99'],
             'max_reader_rate'  => ['sometimes', 'numeric', 'min:0', 'max:9999.99'],
             'enabled'          => ['sometimes', 'boolean'],

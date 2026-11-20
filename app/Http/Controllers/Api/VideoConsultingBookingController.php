@@ -1,5 +1,9 @@
 <?php
 
+// v1.11 — 2026-11-20 | readers()/readerRates() now use VideoConsultingDuration::effectiveBaseRate()
+//                       instead of the flat base_rate — the company's cut can scale with the
+//                       reader's own rate (base_rate stays the floor) now that reader rates can go
+//                       as high as $5000.
 // v1.10 — 2026-11-19 | Removed the reader discount-code feature from readers()/createBooking()
 //                       (coupon_code query param, coupon_applied/coupon_label, and the
 //                       video_consulting_coupon_code_used/_discount_amount Assignment fields) —
@@ -76,7 +80,7 @@ class VideoConsultingBookingController extends Controller
     public function durations(): JsonResponse
     {
         return response()->json(
-            VideoConsultingDuration::active()->get(['id', 'minutes', 'label', 'base_rate'])
+            VideoConsultingDuration::active()->get(['id', 'minutes', 'label', 'base_rate', 'base_rate_percent'])
         );
     }
 
@@ -102,7 +106,7 @@ class VideoConsultingBookingController extends Controller
                         'duration_id' => $rate->duration_id,
                         'minutes'     => $rate->duration->minutes,
                         'label'       => $rate->duration->label,
-                        'price'       => (float) $rate->duration->base_rate + (float) $rate->rate,
+                        'price'       => $rate->duration->effectiveBaseRate((float) $rate->rate) + (float) $rate->rate,
                     ])
                     ->values();
 
@@ -149,9 +153,9 @@ class VideoConsultingBookingController extends Controller
                 'duration_id' => $rate->duration_id,
                 'minutes'     => $rate->duration->minutes,
                 'label'       => $rate->duration->label,
-                'base_rate'   => (float) $rate->duration->base_rate,
+                'base_rate'   => $rate->duration->effectiveBaseRate((float) $rate->rate),
                 'reader_rate' => (float) $rate->rate,
-                'price'       => (float) $rate->duration->base_rate + (float) $rate->rate,
+                'price'       => $rate->duration->effectiveBaseRate((float) $rate->rate) + (float) $rate->rate,
             ])
             ->values();
 

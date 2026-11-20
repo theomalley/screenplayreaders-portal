@@ -1,5 +1,8 @@
 <?php
 
+// v1.1 — 2026-11-20 | Added base_rate_percent + effectiveBaseRate() — the company's cut can now
+//                      scale with a reader's own rate instead of staying a flat dollar amount,
+//                      since reader rates can go as high as $5000. base_rate is now the floor.
 // v1.0 — 2026-11-07 | Video consulting Phase 1 — admin-creatable call-length options.
 
 namespace App\Models;
@@ -14,6 +17,7 @@ class VideoConsultingDuration extends Model
         'minutes',
         'label',
         'base_rate',
+        'base_rate_percent',
         'min_reader_rate',
         'max_reader_rate',
         'enabled',
@@ -21,11 +25,22 @@ class VideoConsultingDuration extends Model
     ];
 
     protected $casts = [
-        'base_rate'       => 'decimal:2',
-        'min_reader_rate' => 'decimal:2',
-        'max_reader_rate' => 'decimal:2',
-        'enabled'         => 'boolean',
+        'base_rate'         => 'decimal:2',
+        'base_rate_percent' => 'decimal:2',
+        'min_reader_rate'   => 'decimal:2',
+        'max_reader_rate'   => 'decimal:2',
+        'enabled'           => 'boolean',
     ];
+
+    /**
+     * The company's actual cut for a given reader rate — base_rate acts as a floor; above that,
+     * base_rate_percent of the reader's own rate wins once it's the larger of the two. Rounded
+     * to whole dollars for clean, reconcilable numbers.
+     */
+    public function effectiveBaseRate(float $readerRate): float
+    {
+        return max((float) $this->base_rate, round(((float) $this->base_rate_percent / 100) * $readerRate));
+    }
 
     public function scopeActive(Builder $query): Builder
     {

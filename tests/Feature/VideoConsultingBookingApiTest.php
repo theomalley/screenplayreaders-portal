@@ -97,6 +97,40 @@ class VideoConsultingBookingApiTest extends TestCase
         $this->assertSame(0, $payload[0]['min_lead_hours']); // default from makeBookableReader()
     }
 
+    public function test_readers_endpoint_uses_base_rate_percent_when_it_exceeds_the_flat_floor(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader', 'name' => 'Jamie Reader']);
+        $reader->readerProfile()->create(['initials' => 'JR', 'first_name' => 'Jamie', 'last_name' => 'Reader']);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 60, 'label' => '60 Minutes', 'base_rate' => 100, 'base_rate_percent' => 15,
+            'min_reader_rate' => 149, 'max_reader_rate' => 5000,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $reader->id, 'duration_id' => $duration->id, 'rate' => 5000]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        // 15% of 5000 = 750, which beats the $100 flat floor, so price is 750 + 5000, not 100 + 5000.
+        $this->assertEquals(5750.0, $response->json('0.durations.0.price'));
+    }
+
+    public function test_readers_endpoint_keeps_the_flat_floor_when_the_percent_cut_is_smaller(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader', 'name' => 'Jamie Reader']);
+        $reader->readerProfile()->create(['initials' => 'JR', 'first_name' => 'Jamie', 'last_name' => 'Reader']);
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 60, 'label' => '60 Minutes', 'base_rate' => 100, 'base_rate_percent' => 15,
+            'min_reader_rate' => 149, 'max_reader_rate' => 5000,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $reader->id, 'duration_id' => $duration->id, 'rate' => 149]);
+
+        $response = $this->withHeaders($this->authHeaders())->getJson('/api/video-consulting/readers');
+
+        $response->assertOk();
+        // 15% of 149 = 22.35, well under the $100 floor, so price stays 100 + 149.
+        $this->assertEquals(249.0, $response->json('0.durations.0.price'));
+    }
+
     public function test_readers_endpoint_includes_the_readers_min_lead_hours(): void
     {
         [$reader] = $this->makeBookableReader();
