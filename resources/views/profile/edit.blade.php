@@ -472,9 +472,9 @@
                                         </span>
                                     </div>
                                     <p class="mt-1 text-xs text-gray-400">
-                                        Company base rate ${{ number_format($duration->base_rate, 2) }}
-                                        / <span x-text="basePercent"></span>% of your rate, whichever is higher —
-                                        at this rate the company keeps <span class="font-medium text-gray-600" x-text="'$' + cut"></span>.
+                                        SR's Fee: ${{ number_format($duration->base_rate, 2) }}
+                                        or <span x-text="basePercent"></span>% of your rate, whichever is higher —
+                                        at this rate SR's fee is <span class="font-medium text-gray-600" x-text="'$' + cut"></span>.
                                     </p>
                                     <x-input-error :messages="$errors->get('rates.' . $duration->id)" class="mt-1" />
                                 </div>
@@ -1371,8 +1371,8 @@
                                     </div>
                                     <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
                                     <p class="mt-1 text-xs text-gray-500">
-                                        Base ${{ number_format((float) $duration->base_rate, 2) }} /
-                                        <span x-text="basePercent"></span>% — company cut at this rate:
+                                        SR's Fee ${{ number_format((float) $duration->base_rate, 2) }} /
+                                        <span x-text="basePercent"></span>% — SR's fee at this rate:
                                         <span class="font-medium text-gray-700" x-text="'$' + cut"></span>
                                     </p>
                                     <x-input-error :messages="$errors->get('vc_rates.' . $duration->id)" class="mt-1" />

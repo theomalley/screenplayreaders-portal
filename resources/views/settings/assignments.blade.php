@@ -154,10 +154,10 @@
                 <p class="text-xs text-gray-500 mb-4">
                     Call-length options offered for paid video consulting calls. Readers set their own rate on their
                     Video Consulting Rates page, bounded by the <strong>Min/Max Reader Rate</strong> set here.
-                    <strong>Base Rate</strong> is the minimum the company keeps; <strong>Base Rate %</strong> is a
+                    <strong>SR's Fee ($)</strong> is the minimum SR keeps; <strong>SR's Fee %</strong> is a
                     percentage of the reader's own rate instead — whichever of the two is higher wins (rounded to
                     the nearest dollar), so a flat floor still applies to normal-priced calls while high-dollar calls
-                    scale proportionally. The customer's price is that effective base rate + the reader's own rate.
+                    scale proportionally. The customer's price is SR's fee + the reader's own rate.
                     A duration with existing reader rates or bookings can't be deleted — it will be disabled instead.
                 </p>
 
@@ -172,8 +172,8 @@
                                     <th class="py-2 pr-2 font-medium w-10"></th>
                                     <th class="text-left py-2 px-2 font-medium">Label</th>
                                     <th class="text-center py-2 px-2 font-medium w-24">Minutes</th>
-                                    <th class="text-center py-2 px-2 font-medium w-28">Base Rate ($)</th>
-                                    <th class="text-center py-2 px-2 font-medium w-24">Base Rate %</th>
+                                    <th class="text-center py-2 px-2 font-medium w-28">SR's Fee ($)</th>
+                                    <th class="text-center py-2 px-2 font-medium w-24">SR's Fee %</th>
                                     <th class="text-center py-2 px-2 font-medium w-28">Min Reader Rate ($)</th>
                                     <th class="text-center py-2 px-2 font-medium w-28">Max Reader Rate ($)</th>
                                     <th class="text-center py-2 px-2 font-medium w-20">Enabled</th>
@@ -203,13 +203,13 @@
                                         <td class="py-2 px-2">
                                             <input type="number" :name="'durations[' + idx + '][base_rate]'" x-model="duration.base_rate"
                                                    min="0" max="9999.99" step="0.01" required
-                                                   title="Minimum the company keeps, in dollars."
+                                                   title="Minimum SR keeps, in dollars."
                                                    class="w-full text-center text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400">
                                         </td>
                                         <td class="py-2 px-2">
                                             <input type="number" :name="'durations[' + idx + '][base_rate_percent]'" x-model="duration.base_rate_percent"
                                                    min="0" max="100" step="0.1"
-                                                   title="Percentage of the reader's own rate — used instead of Base Rate ($) whenever it's higher."
+                                                   title="Percentage of the reader's own rate — used instead of SR's Fee ($) whenever it's higher."
                                                    class="w-full text-center text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400">
                                         </td>
                                         <td class="py-2 px-2">
