@@ -477,12 +477,14 @@
                                         rate: '{{ old('rates.' . $duration->id, ($videoConsultingMyRates ?? collect())[$duration->id] ?? '') }}',
                                         baseRate: {{ (float) $duration->base_rate }},
                                         basePercent: {{ (float) $duration->base_rate_percent }},
+                                        get payout() {
+                                            return parseFloat(this.rate) || 0;
+                                        },
                                         get cut() {
-                                            const r = parseFloat(this.rate) || 0;
-                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * r));
+                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * this.payout));
                                         },
                                         get total() {
-                                            return (parseFloat(this.rate) || 0) + this.cut;
+                                            return this.payout + this.cut;
                                         }
                                      }">
                                     <x-input-label for="rate_{{ $duration->id }}" value="{{ $duration->label }}" />
@@ -496,10 +498,13 @@
                                         </span>
                                     </div>
                                     <p class="mt-1 text-xs text-gray-400">
-                                        SR's Fee: ${{ number_format($duration->base_rate, 2) }}
-                                        or <span x-text="basePercent"></span>% of your rate, whichever is higher —
-                                        at this rate SR's fee is <span class="font-medium text-gray-600" x-text="'$' + cut"></span>,
-                                        so the customer would pay <span class="font-medium text-gray-600" x-text="'$' + total"></span> total.
+                                        You're paid exactly what you enter above — SR adds its own fee on top to set the
+                                        customer's price; nothing is ever taken out of your rate. SR's fee is
+                                        ${{ number_format($duration->base_rate, 2) }} or <span x-text="basePercent"></span>%
+                                        of your rate, whichever is higher. For example, at this rate
+                                        <span class="font-medium text-gray-600">you are paid $<span x-text="payout"></span></span>,
+                                        SR's fee is <span class="font-medium text-gray-600" x-text="'$' + cut"></span>,
+                                        so the customer pays <span class="font-medium text-gray-600" x-text="'$' + total"></span> total.
                                     </p>
                                     <x-input-error :messages="$errors->get('rates.' . $duration->id)" class="mt-1" />
                                 </div>
@@ -1368,12 +1373,14 @@
                                         rate: '{{ old('vc_rates.' . $duration->id, $videoConsultingRates[$duration->id] ?? '') }}',
                                         baseRate: {{ (float) $duration->base_rate }},
                                         basePercent: {{ (float) $duration->base_rate_percent }},
+                                        get payout() {
+                                            return parseFloat(this.rate) || 0;
+                                        },
                                         get cut() {
-                                            const r = parseFloat(this.rate) || 0;
-                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * r));
+                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * this.payout));
                                         },
                                         get total() {
-                                            return (parseFloat(this.rate) || 0) + this.cut;
+                                            return this.payout + this.cut;
                                         }
                                      }">
                                     <x-input-label for="vc_rate_{{ $duration->id }}" value="{{ $duration->label }}" />
@@ -1387,9 +1394,11 @@
                                     </div>
                                     <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
                                     <p class="mt-1 text-xs text-gray-500">
-                                        SR's Fee ${{ number_format((float) $duration->base_rate, 2) }} /
-                                        <span x-text="basePercent"></span>% — SR's fee at this rate:
-                                        <span class="font-medium text-gray-700" x-text="'$' + cut"></span>,
+                                        They're paid exactly what's entered above — SR's fee (${{ number_format((float) $duration->base_rate, 2) }}
+                                        or <span x-text="basePercent"></span>% of their rate, whichever is higher) is added on top for
+                                        the customer's price, never taken out of their rate. At this rate
+                                        <span class="font-medium text-gray-700">they're paid $<span x-text="payout"></span></span>,
+                                        SR's fee is <span class="font-medium text-gray-700" x-text="'$' + cut"></span>,
                                         customer pays <span class="font-medium text-gray-700" x-text="'$' + total"></span> total
                                     </p>
                                     <x-input-error :messages="$errors->get('vc_rates.' . $duration->id)" class="mt-1" />
