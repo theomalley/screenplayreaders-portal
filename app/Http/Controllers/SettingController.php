@@ -98,9 +98,21 @@ class SettingController extends Controller
         $this->authorize('manage-settings');
 
         $isAdmin       = auth()->user()->isAdmin();
-        $portalTheme   = Setting::getValue('portal_theme', 'default');
         $appTimezone   = Setting::getAppTimezone();
         $sessionTimeout = (int) Setting::getValue('session_timeout_minutes', 120);
+        $permissionsGrid = $isAdmin ? Permission::all() : null;
+
+        return view('settings.general', compact(
+            'isAdmin', 'appTimezone', 'sessionTimeout', 'permissionsGrid',
+        ));
+    }
+
+    public function appearance(): View
+    {
+        $this->authorize('manage-settings');
+
+        $isAdmin       = auth()->user()->isAdmin();
+        $portalTheme   = Setting::getValue('portal_theme', 'default');
 
         $metaFile     = storage_path('app/portal-logo-path.txt');
         $logoUrl      = is_readable($metaFile) ? asset('storage/' . trim(file_get_contents($metaFile))) : null;
@@ -110,15 +122,13 @@ class SettingController extends Controller
 
         $faviconMetaFile = storage_path('app/portal-favicon-path.txt');
         $faviconUrl      = is_readable($faviconMetaFile) ? asset('storage/' . trim(file_get_contents($faviconMetaFile))) : null;
-        $permissionsGrid = $isAdmin ? Permission::all() : null;
 
-        return view('settings.general', compact(
-            'isAdmin', 'portalTheme', 'appTimezone', 'sessionTimeout',
-            'logoUrl', 'loginLogoUrl', 'faviconUrl', 'permissionsGrid',
+        return view('settings.appearance', compact(
+            'isAdmin', 'portalTheme', 'logoUrl', 'loginLogoUrl', 'faviconUrl',
         ));
     }
 
-    public function assignments(): View
+    public function servicesCoverage(): View
     {
         $this->authorize('manage-settings');
 
@@ -127,11 +137,8 @@ class SettingController extends Controller
         $capacityOverride                     = (int) Setting::getValue('capacity_override', 0);
         $capacityOverrideEffective             = \App\Models\ReaderProfile::globalDefaultCap();
         $capacityOverrideExcludesRushRequests = (bool) Setting::getValue('capacity_override_excludes_rush_requests', true);
-        $videoConsultingEnabled = \App\Support\VideoConsultingAccess::enabledGlobally();
-        $videoConsultingLeadHoursBounds = Setting::getVideoConsultingLeadHoursBounds();
         $ageThresholds     = Setting::getAgeThresholds();
         $ageThresholdTypes = Setting::AGE_THRESHOLD_TYPES;
-        $watermarkSettings = $isAdmin ? Setting::getWatermarkSettings() : null;
         $filenameSuffixes  = $isAdmin ? FilenameGenerator::allSuffixes() : null;
         $qcSavedReplies    = Setting::getSavedReplies();
         $coverageSuccessHtml = $isAdmin ? Setting::getValue('coverage_success_html', '') : null;
@@ -141,14 +148,26 @@ class SettingController extends Controller
             'reader' => (bool) Setting::getValue('dev_autofill_reader', false),
         ];
         $wordCounts          = $isAdmin ? Setting::getWordCounts() : null;
-        $blockedReaderLimits = $isAdmin ? Setting::getBlockedReaderLimits() : null;
+
+        return view('settings.services.coverage', compact(
+            'isAdmin', 'capacityOverride', 'capacityOverrideEffective', 'capacityOverrideExcludesRushRequests',
+            'ageThresholds', 'ageThresholdTypes', 'filenameSuffixes',
+            'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts',
+        ));
+    }
+
+    public function servicesVideoConsulting(): View
+    {
+        $this->authorize('manage-settings');
+
+        $isAdmin = auth()->user()->isAdmin();
+
+        $videoConsultingEnabled = \App\Support\VideoConsultingAccess::enabledGlobally();
+        $videoConsultingLeadHoursBounds = Setting::getVideoConsultingLeadHoursBounds();
         $videoConsultingDurations = $isAdmin ? VideoConsultingDuration::orderBy('sort_order')->get() : null;
 
-        return view('settings.assignments', compact(
-            'isAdmin', 'capacityOverride', 'capacityOverrideEffective', 'capacityOverrideExcludesRushRequests',
-            'videoConsultingEnabled', 'videoConsultingLeadHoursBounds', 'videoConsultingDurations',
-            'ageThresholds', 'ageThresholdTypes', 'watermarkSettings', 'filenameSuffixes',
-            'qcSavedReplies', 'coverageSuccessHtml', 'devAutofill', 'wordCounts', 'blockedReaderLimits',
+        return view('settings.services.video-consulting', compact(
+            'isAdmin', 'videoConsultingEnabled', 'videoConsultingLeadHoursBounds', 'videoConsultingDurations',
         ));
     }
 
@@ -185,19 +204,10 @@ class SettingController extends Controller
         $srInvoiceAddress = Setting::getValue('sr_invoice_address', '');
         $invoiceEmailBody = Setting::getValue('invoice_email_body', '');
         $discountCoupon   = $isAdmin ? Setting::getDiscountCouponSettings() : null;
-        $orderLogEditorSettings = $isAdmin ? Setting::getOrderLogEditorSettings() : null;
-        $orderLogColumns  = Setting::ORDER_LOG_COLUMNS;
-        $editors          = $isAdmin ? User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get() : null;
-        $defaultEditorId  = $isAdmin ? Setting::getValue('default_editor_id') : null;
-        $qcCommissionPenaltyEnabled = $isAdmin
-            ? (string) Setting::getValue('qc_commission_penalty_enabled', '1') === '1'
-            : null;
 
         return view('settings.orders', compact(
             'isAdmin', 'appTimezone', 'payPeriod', 'payoutSchedule', 'nextPayout',
             'srInvoiceAddress', 'invoiceEmailBody', 'discountCoupon',
-            'orderLogEditorSettings', 'orderLogColumns',
-            'editors', 'defaultEditorId', 'qcCommissionPenaltyEnabled',
         ));
     }
 
@@ -285,7 +295,7 @@ class SettingController extends Controller
 
         $effective = $value > 0 ? $value : \App\Models\ReaderProfile::globalDefaultCap();
 
-        return redirect()->route('settings.assignments')->with('success',
+        return redirect()->route('settings.services.coverage')->with('success',
             "Default capacity set to {$effective} assignment" . ($effective === 1 ? '' : 's') . ' for all readers (individual overrides still apply).');
     }
 
@@ -309,7 +319,7 @@ class SettingController extends Controller
         Setting::setValue('video_consulting_lead_hours_min', $data['lead_hours_min'] ?? Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS['min']);
         Setting::setValue('video_consulting_lead_hours_max', $data['lead_hours_max'] ?? Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS['max']);
 
-        return redirect()->route('settings.assignments')->with('success', 'Video consulting setting updated.');
+        return redirect()->route('settings.services.video-consulting')->with('success', 'Video consulting setting updated.');
     }
 
     /**
@@ -382,10 +392,10 @@ class SettingController extends Controller
         }
 
         if (! empty($warnings)) {
-            return redirect()->route('settings.assignments')->with('warning', implode(' ', $warnings));
+            return redirect()->route('settings.services.video-consulting')->with('warning', implode(' ', $warnings));
         }
 
-        return redirect()->route('settings.assignments')->with('success', 'Video consulting durations saved.');
+        return redirect()->route('settings.services.video-consulting')->with('success', 'Video consulting durations saved.');
     }
 
     public function updateSessionTimeout(Request $request): RedirectResponse

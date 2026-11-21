@@ -185,7 +185,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/manual', [ManualController::class, 'update'])->name('manual.update')->middleware('role:admin');
 
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
-    Route::get('/settings/assignments', [SettingController::class, 'assignments'])->name('settings.assignments');
+    Route::get('/settings/appearance', [SettingController::class, 'appearance'])->name('settings.appearance');
+    Route::get('/settings/services/coverage', [SettingController::class, 'servicesCoverage'])->name('settings.services.coverage');
+    Route::get('/settings/services/video-consulting', [SettingController::class, 'servicesVideoConsulting'])->name('settings.services.video-consulting');
     Route::get('/settings/emails', [SettingController::class, 'emails'])->name('settings.emails');
     Route::get('/settings/orders', [SettingController::class, 'orders'])->name('settings.orders');
     Route::post('/settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo');
@@ -214,7 +216,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/settings/blocked-reader-limits', [SettingController::class, 'updateBlockedReaderLimits'])->name('settings.blocked-reader-limits');
     Route::patch('/settings/notification-history-retention', [SettingController::class, 'updateNotificationHistoryRetention'])->name('settings.notification-history-retention');
     Route::middleware('role:admin')->group(function () {
-        Route::get('/settings/tiers', [\App\Http\Controllers\TierController::class, 'index'])->name('settings.tiers');
+        Route::get('/settings/team', [\App\Http\Controllers\TierController::class, 'index'])->name('settings.team');
         Route::post('/settings/tiers', [\App\Http\Controllers\TierController::class, 'store'])->name('tiers.store');
         Route::patch('/settings/tiers/{tier}', [\App\Http\Controllers\TierController::class, 'update'])->name('tiers.update');
         Route::delete('/settings/tiers/{tier}', [\App\Http\Controllers\TierController::class, 'destroy'])->name('tiers.destroy');

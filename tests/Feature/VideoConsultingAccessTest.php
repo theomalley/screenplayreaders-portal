@@ -138,7 +138,7 @@ class VideoConsultingAccessTest extends TestCase
 
         $this->actingAs($admin)
             ->patch('/settings/video-consulting', ['video_consulting_enabled' => '0'])
-            ->assertRedirect(route('settings.assignments'));
+            ->assertRedirect(route('settings.services.video-consulting'));
 
         $this->assertFalse(VideoConsultingAccess::enabledGlobally());
     }

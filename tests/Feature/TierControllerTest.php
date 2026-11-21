@@ -16,7 +16,7 @@ class TierControllerTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $tier  = Tier::create(['name' => 'Tier 1', 'position' => 1]);
 
-        $this->actingAs($admin)->get('/settings/tiers')->assertOk();
+        $this->actingAs($admin)->get('/settings/team')->assertOk();
 
         $this->actingAs($admin)
             ->post('/settings/tiers', ['name' => 'Tier 2'])
@@ -39,7 +39,7 @@ class TierControllerTest extends TestCase
         $editor = User::factory()->create(['role' => 'editor']);
         $tier   = Tier::create(['name' => 'Tier 1', 'position' => 1]);
 
-        $this->actingAs($editor)->get('/settings/tiers')->assertForbidden();
+        $this->actingAs($editor)->get('/settings/team')->assertForbidden();
         $this->actingAs($editor)->post('/settings/tiers', ['name' => 'Tier 2'])->assertForbidden();
         $this->actingAs($editor)->patch("/settings/tiers/{$tier->id}", ['name' => 'x', 'position' => 1])->assertForbidden();
         $this->actingAs($editor)->delete("/settings/tiers/{$tier->id}")->assertForbidden();
@@ -50,7 +50,7 @@ class TierControllerTest extends TestCase
     {
         $reader = User::factory()->create(['role' => 'reader']);
 
-        $this->actingAs($reader)->get('/settings/tiers')->assertForbidden();
+        $this->actingAs($reader)->get('/settings/team')->assertForbidden();
     }
 
     public function test_checking_a_cell_grants_both_view_and_accept_for_a_normal_tier(): void
@@ -127,7 +127,7 @@ class TierControllerTest extends TestCase
         $this->actingAs($admin)->post('/settings/tiers', ['name' => 'Tier 2'])->assertRedirect();
         $newTier = Tier::where('name', 'Tier 2')->firstOrFail();
 
-        $response = $this->actingAs($admin)->get('/settings/tiers');
+        $response = $this->actingAs($admin)->get('/settings/team');
         $response->assertOk();
         $response->assertSee('Tier 2');
 

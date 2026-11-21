@@ -23,7 +23,9 @@ class SettingControllerTest extends TestCase
     {
         return [
             'index'                  => ['GET', '/settings'],
-            'assignments'            => ['GET', '/settings/assignments'],
+            'appearance'             => ['GET', '/settings/appearance'],
+            'services-coverage'      => ['GET', '/settings/services/coverage'],
+            'services-video-consulting' => ['GET', '/settings/services/video-consulting'],
             'emails'                 => ['GET', '/settings/emails'],
             'orders'                 => ['GET', '/settings/orders'],
             'capacity-override'      => ['PATCH', '/settings/capacity-override'],
@@ -128,7 +130,7 @@ class SettingControllerTest extends TestCase
             ]],
         ]);
 
-        $response->assertRedirect(route('settings.assignments'));
+        $response->assertRedirect(route('settings.services.video-consulting'));
         $this->assertDatabaseHas('video_consulting_durations', [
             'minutes' => 60, 'label' => '60 Minutes', 'base_rate_percent' => 15,
         ]);
@@ -160,7 +162,7 @@ class SettingControllerTest extends TestCase
             ]],
         ]);
 
-        $response->assertRedirect(route('settings.assignments'));
+        $response->assertRedirect(route('settings.services.video-consulting'));
         $this->assertDatabaseHas('video_consulting_durations', ['minutes' => 30, 'base_rate_percent' => 0]);
     }
 }

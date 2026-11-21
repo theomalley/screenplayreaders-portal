@@ -6,6 +6,9 @@
     <div class="py-6">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+            @include('settings._nav')
+            @include('settings.services._nav')
+
             <p class="text-sm text-gray-500">
                 These checkboxes appear on the SR coverage submission form's Final Assessment step.
                 A reader must check every one below before they can submit coverage.

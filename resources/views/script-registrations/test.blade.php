@@ -6,6 +6,9 @@
     <div class="py-6">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
+            @include('settings._nav')
+            @include('settings.services._nav')
+
             @if($errors->any())
                 <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
                     {{ $errors->first() }}

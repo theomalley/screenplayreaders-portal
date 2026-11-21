@@ -6,6 +6,9 @@
     <div class="py-6">
         <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
+            @include('settings._nav')
+            @include('settings.services._nav')
+
             <a href="{{ route('budget-admin.crew-rates') }}"
                class="block bg-white rounded-lg shadow-sm border border-gray-200 px-5 py-4 hover:border-indigo-300 hover:shadow transition">
                 <h3 class="text-base font-semibold text-gray-800">Crew Rates</h3>

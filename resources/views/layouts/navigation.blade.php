@@ -169,7 +169,7 @@
 
                         {{-- Admin dropdown (Team, Archive, Ratebook, Reader Manual) --}}
                         @php
-                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('coverage-attestations.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('test-data.*') || request()->routeIs('budget-admin.*') || request()->routeIs('script-registrations.test') || request()->routeIs('karens.*');
+                            $adminActive = request()->routeIs('team.*') || request()->routeIs('readers.*') || request()->routeIs('archive.*') || request()->routeIs('ratebook.*') || request()->routeIs('manual.*') || request()->routeIs('admin.editors*') || request()->routeIs('settings.*') || request()->routeIs('test-data.*') || request()->routeIs('karens.*');
                         @endphp
                         <div class="relative flex items-center"
                              x-data="{ adminOpen: false }"
@@ -196,24 +196,6 @@
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('ratebook.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Rates
                                 </a>
-                                @if(auth()->user()?->isAdmin())
-                                <a href="{{ route('coverage-attestations.index') }}"
-                                    class="block px-4 py-2 text-sm {{ request()->routeIs('coverage-attestations.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Coverage Attestations
-                                </a>
-                                @endif
-                                @if(\App\Support\Permission::check('budget.admin'))
-                                <a href="{{ route('budget-admin.index') }}"
-                                    class="block px-4 py-2 text-sm {{ request()->routeIs('budget-admin.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Budget
-                                </a>
-                                @endif
-                                @if(auth()->user()?->isAdmin())
-                                <a href="{{ route('script-registrations.test') }}"
-                                    class="block px-4 py-2 text-sm {{ request()->routeIs('script-registrations.test') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
-                                    Script Registration
-                                </a>
-                                @endif
                                 <a href="{{ route('manual.show') }}"
                                     class="block px-4 py-2 text-sm {{ request()->routeIs('manual.*') ? 'text-indigo-700 font-semibold bg-indigo-50' : 'text-gray-700 hover:bg-gray-50' }}">
                                     Reader Manual
@@ -369,27 +351,12 @@
                 <x-responsive-nav-link :href="route('ratebook.index')" :active="request()->routeIs('ratebook.*')">
                     {{ __('Rates') }}
                 </x-responsive-nav-link>
-                @if(auth()->user()?->isAdmin())
-                <x-responsive-nav-link :href="route('coverage-attestations.index')" :active="request()->routeIs('coverage-attestations.*')">
-                    {{ __('Coverage Attestations') }}
-                </x-responsive-nav-link>
-                @endif
                 <x-responsive-nav-link :href="route('manual.show')" :active="request()->routeIs('manual.*')">
                     {{ __('Reader Manual') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
                     {{ __('Settings') }}
                 </x-responsive-nav-link>
-                @if(\App\Support\Permission::check('budget.admin'))
-                <x-responsive-nav-link :href="route('budget-admin.index')" :active="request()->routeIs('budget-admin.*')">
-                    {{ __('Budget') }}
-                </x-responsive-nav-link>
-                @endif
-                @if(auth()->user()?->isAdmin())
-                <x-responsive-nav-link :href="route('script-registrations.test')" :active="request()->routeIs('script-registrations.test')">
-                    {{ __('Script Registration') }}
-                </x-responsive-nav-link>
-                @endif
                 @if(\App\Support\Permission::check('team'))
                 <x-responsive-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')">
                     {{ __('Team') }}

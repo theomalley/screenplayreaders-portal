@@ -9,8 +9,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Models\Tier;
 use App\Models\TierCrossVisibility;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -36,13 +38,33 @@ class TierController extends Controller
     {
         $this->authorize('viewAny', Tier::class);
 
+        $isAdmin         = auth()->user()->isAdmin();
         $tiers           = Tier::ordered()->get();
         $crossVisibility = TierCrossVisibility::all()->groupBy('from_tier_id');
 
-        return view('settings.tiers', [
-            'tiers'           => $tiers,
-            'crossVisibility' => $crossVisibility,
-            'assignmentTypes' => self::ASSIGNMENT_TYPES,
+        $watermarkSettings = $isAdmin ? Setting::getWatermarkSettings() : null;
+        $blockedReaderLimits = $isAdmin ? Setting::getBlockedReaderLimits() : null;
+
+        $editors         = $isAdmin ? User::where('role', 'editor')->where('is_test', false)->with('editorProfile')->orderBy('name')->get() : null;
+        $defaultEditorId = $isAdmin ? Setting::getValue('default_editor_id') : null;
+        $qcCommissionPenaltyEnabled = $isAdmin
+            ? (string) Setting::getValue('qc_commission_penalty_enabled', '1') === '1'
+            : null;
+        $orderLogEditorSettings = $isAdmin ? Setting::getOrderLogEditorSettings() : null;
+        $orderLogColumns = Setting::ORDER_LOG_COLUMNS;
+
+        return view('settings.team', [
+            'isAdmin'           => $isAdmin,
+            'tiers'             => $tiers,
+            'crossVisibility'   => $crossVisibility,
+            'assignmentTypes'   => self::ASSIGNMENT_TYPES,
+            'watermarkSettings' => $watermarkSettings,
+            'blockedReaderLimits' => $blockedReaderLimits,
+            'editors'           => $editors,
+            'defaultEditorId'   => $defaultEditorId,
+            'qcCommissionPenaltyEnabled' => $qcCommissionPenaltyEnabled,
+            'orderLogEditorSettings' => $orderLogEditorSettings,
+            'orderLogColumns'   => $orderLogColumns,
         ]);
     }
 
@@ -113,7 +135,7 @@ class TierController extends Controller
         TierCrossVisibility::where('from_tier_id', $tier->id)->orWhere('to_tier_id', $tier->id)->delete();
         $tier->delete();
 
-        return redirect()->route('settings.tiers')->with('success', 'Tier deleted.');
+        return redirect()->route('settings.team')->with('success', 'Tier deleted.');
     }
 
     /** Bulk-saves the whole from-tier -> to-tier matrix from one form submission. */
