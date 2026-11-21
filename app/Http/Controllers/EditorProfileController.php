@@ -245,8 +245,9 @@ class EditorProfileController extends Controller
         abort_unless($user->isEditor(), 404);
 
         $data = $request->validate([
-            'editor_commission'  => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'editor_weekly_flat' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'editor_commission'               => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'editor_weekly_flat'              => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'video_consulting_commission_cap' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
         ]);
 
         $user->editorProfile()->updateOrCreate(

@@ -412,7 +412,9 @@
                     Whether editors can earn commission on video consulting orders, separate from an editor's own
                     pay for personally taking a video call (that's their booked rate, paid either way — see their
                     Video Consulting Rate). Off by default: turning this off overrides any individual editor's own
-                    per-product commission setting for video consulting.
+                    per-product commission setting for video consulting. Each editor's own per-call commission cap
+                    (optional, caps what any single booking can earn them) is set on their profile page's Editor
+                    Rates section, not here.
                 </p>
                 <form method="POST" action="{{ route('ratebook.video-consulting-commission') }}">
                     @csrf

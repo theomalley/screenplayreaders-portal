@@ -1,5 +1,14 @@
 <?php
 
+// v1.5 — 2026-11-21 | calculate() now tracks video consulting's commission contribution
+//                      separately from every other product (its own line-total share of
+//                      precommission, or its own custom_amount), so it can be clamped to the
+//                      editor's video_consulting_commission_cap (EditorProfile, set on the
+//                      editor's own profile page's "Editor Rates" section) before being added to
+//                      the total. Null cap = unchanged/uncapped behavior. Capping happens here,
+//                      inside calculate(), so it's baked into cog_commission_base and
+//                      automatically respected by applyQcAdjustmentForOrder()'s penalty
+//                      multiplier below without any changes to that method.
 // v1.4 — 2026-11-20 | video_consulting_editor_commission_enabled now defaults to disabled ('0'),
 //                      not enabled — per explicit business rule: an editor who personally takes a
 //                      video consulting booking is paid for it via the normal reader-style
@@ -77,17 +86,24 @@ class EditorCommissionService
         $totalLineTotal    = 0.0;
         $anyEligible       = false;
 
+        // Video consulting's commission is tracked separately from every other product's so
+        // the per-editor video_consulting_commission_cap below can clamp just that portion —
+        // the pooled $eligibleLineTotal/$totalCommission below never includes it.
+        $videoConsultingCommission = 0.0;
+        $videoConsultingLineTotal  = 0.0;
+
         foreach ($lineItems as $item) {
             $productId   = (int) ($item['product_id'] ?? 0);
             $lineTotal   = (float) ($item['line_total'] ?? 0);
             $defaultElig = (bool) ($item['commission_eligible'] ?? false);
             $totalLineTotal += $lineTotal;
+            $isVideoConsulting = $productId === self::VIDEO_CONSULTING_WOO_PRODUCT_ID;
 
             $config = $commissionConfig->get($productId);
 
             $enabled = $config ? $config->commission_enabled : $defaultElig;
 
-            if ($productId === self::VIDEO_CONSULTING_WOO_PRODUCT_ID && ! self::videoConsultingCommissionEnabled()) {
+            if ($isVideoConsulting && ! self::videoConsultingCommissionEnabled()) {
                 $enabled = false;
             }
 
@@ -97,7 +113,13 @@ class EditorCommissionService
 
             // Custom flat amount: add directly
             if ($config && $config->custom_amount !== null) {
-                $totalCommission += (float) $config->custom_amount;
+                if ($isVideoConsulting) {
+                    $videoConsultingCommission += (float) $config->custom_amount;
+                } else {
+                    $totalCommission += (float) $config->custom_amount;
+                }
+            } elseif ($isVideoConsulting) {
+                $videoConsultingLineTotal += $lineTotal;
             } else {
                 $eligibleLineTotal += $lineTotal;
             }
@@ -111,6 +133,19 @@ class EditorCommissionService
         if ($eligibleLineTotal > 0 && $totalLineTotal > 0 && $precommission > 0) {
             $eligibleShare = $eligibleLineTotal / $totalLineTotal;
             $totalCommission += round($precommission * $eligibleShare * $globalRate, 2);
+        }
+
+        if ($videoConsultingLineTotal > 0 && $totalLineTotal > 0 && $precommission > 0) {
+            $videoConsultingShare = $videoConsultingLineTotal / $totalLineTotal;
+            $videoConsultingCommission += round($precommission * $videoConsultingShare * $globalRate, 2);
+        }
+
+        if ($videoConsultingCommission > 0) {
+            $cap = $editorProfile->video_consulting_commission_cap;
+            if ($cap !== null) {
+                $videoConsultingCommission = min($videoConsultingCommission, (float) $cap);
+            }
+            $totalCommission += $videoConsultingCommission;
         }
 
         return round($totalCommission, 2);

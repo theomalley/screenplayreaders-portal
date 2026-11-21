@@ -1,5 +1,9 @@
 <?php
 
+// v1.12 — 2026-11-21 | Add video_consulting_commission_cap — per-editor max commission $ on a
+//                      single video consulting booking, null = no cap. See
+//                      EditorProfileController::updateRates() and
+//                      EditorCommissionService::calculate().
 // v1.11 — 2026-07-31 | Add email_notifications/email_notify_any/rush/requests to fillable/casts —
 //                      admin-only "preview the new-assignment email" toggle (ProfileController::
 //                      updateNotifications(), ReaderNotificationService::notifyOptedInAdmins()).
@@ -45,6 +49,7 @@ class EditorProfile extends Model
         'timezone',
         'editor_commission',
         'editor_weekly_flat',
+        'video_consulting_commission_cap',
         'about_photo',
         'about_photo_pending',
         'about_photo_rejection_note',
@@ -55,8 +60,9 @@ class EditorProfile extends Model
     ];
 
     protected $casts = [
-        'editor_commission'     => 'float',
-        'editor_weekly_flat'    => 'float',
+        'editor_commission'               => 'float',
+        'editor_weekly_flat'              => 'float',
+        'video_consulting_commission_cap' => 'float',
         'is_1099'               => 'boolean',
         'email_notifications'   => 'boolean',
         'email_notify_any'      => 'boolean',

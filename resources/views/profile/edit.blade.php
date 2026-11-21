@@ -1199,6 +1199,18 @@
                                 </div>
                                 <x-input-error :messages="$errors->get('editor_weekly_flat')" class="mt-1" />
                             </div>
+                            <div>
+                                <x-input-label for="video_consulting_commission_cap" value="Max Commission per Video Call" />
+                                <div class="mt-1 flex items-center gap-1">
+                                    <span class="text-gray-400 text-sm">$</span>
+                                    <x-text-input id="video_consulting_commission_cap" name="video_consulting_commission_cap" type="number"
+                                        class="block w-28 text-right"
+                                        value="{{ old('video_consulting_commission_cap', $profile?->video_consulting_commission_cap) }}"
+                                        min="0" max="9999.99" step="0.01" placeholder="blank = no cap" />
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">Caps commission earned on a single video consulting booking, regardless of the Commission Rate above. Leave blank for no cap.</p>
+                                <x-input-error :messages="$errors->get('video_consulting_commission_cap')" class="mt-1" />
+                            </div>
                         </div>
                         <div class="flex justify-end">
                             <x-primary-button>Save Rates</x-primary-button>
