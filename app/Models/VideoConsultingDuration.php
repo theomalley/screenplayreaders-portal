@@ -1,5 +1,16 @@
 <?php
 
+// v1.2 — 2026-11-21 | effectiveBaseRate() switched from "whichever is higher" (max of the flat
+//                      base_rate or base_rate_percent of the reader's rate) to additive (both
+//                      always apply together) — the max() version let SR's cut go flat for a
+//                      whole band of reader rates (from the floor up to the point where the
+//                      percent caught up), during which card-processing + editor-commission
+//                      costs kept rising with the (also-rising) customer price while SR's own
+//                      take didn't, so net profit actually DECLINED as reader rate rose through
+//                      that band before recovering past the old breakeven point. Additive keeps
+//                      the percent component always scaling, so profit now rises monotonically
+//                      with reader rate everywhere (as long as base_rate_percent stays above
+//                      ~10.4%, the rate at which it exactly offsets 2.9%+6.5% downstream costs).
 // v1.1 — 2026-11-20 | Added base_rate_percent + effectiveBaseRate() — the company's cut can now
 //                      scale with a reader's own rate instead of staying a flat dollar amount,
 //                      since reader rates can go as high as $5000. base_rate is now the floor.
@@ -33,13 +44,13 @@ class VideoConsultingDuration extends Model
     ];
 
     /**
-     * The company's actual cut for a given reader rate — base_rate acts as a floor; above that,
-     * base_rate_percent of the reader's own rate wins once it's the larger of the two. Rounded
+     * The company's actual cut for a given reader rate — the flat base_rate PLUS base_rate_percent
+     * of the reader's own rate, both always applied together (not whichever is larger). Rounded
      * to whole dollars for clean, reconcilable numbers.
      */
     public function effectiveBaseRate(float $readerRate): float
     {
-        return max((float) $this->base_rate, round(((float) $this->base_rate_percent / 100) * $readerRate));
+        return (float) $this->base_rate + round(((float) $this->base_rate_percent / 100) * $readerRate);
     }
 
     public function scopeActive(Builder $query): Builder

@@ -106,10 +106,10 @@
                 <p class="text-xs text-gray-500 mb-4">
                     Call-length options offered for paid video consulting calls. Readers set their own rate on their
                     Video Consulting Rates page, bounded by the <strong>Min/Max Reader Rate</strong> set here.
-                    <strong>SR's Fee ($)</strong> is the minimum SR keeps; <strong>SR's Fee %</strong> is a
-                    percentage of the reader's own rate instead — whichever of the two is higher wins (rounded to
-                    the nearest dollar), so a flat floor still applies to normal-priced calls while high-dollar calls
-                    scale proportionally. The customer's price is SR's fee + the reader's own rate.
+                    <strong>SR's Fee ($)</strong> and <strong>SR's Fee %</strong> both apply together — SR's fee is
+                    the flat dollar amount plus that percentage of the reader's own rate (rounded to the nearest
+                    dollar), so SR's cut keeps scaling up on higher-dollar calls instead of staying capped at the
+                    flat amount. The customer's price is SR's fee + the reader's own rate.
                     A duration with existing reader rates or bookings can't be deleted — it will be disabled instead.
                 </p>
 
@@ -161,7 +161,7 @@
                                         <td class="py-2 px-2">
                                             <input type="number" :name="'durations[' + idx + '][base_rate_percent]'" x-model="duration.base_rate_percent"
                                                    min="0" max="100" step="0.1"
-                                                   title="Percentage of the reader's own rate — used instead of SR's Fee ($) whenever it's higher."
+                                                   title="Percentage of the reader's own rate — added on top of SR's Fee ($), not instead of it."
                                                    class="w-full text-center text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400">
                                         </td>
                                         <td class="py-2 px-2">

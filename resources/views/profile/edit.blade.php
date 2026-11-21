@@ -481,7 +481,7 @@
                                             return parseFloat(this.rate) || 0;
                                         },
                                         get cut() {
-                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * this.payout));
+                                            return this.baseRate + Math.round((this.basePercent / 100) * this.payout);
                                         },
                                         get total() {
                                             return this.payout + this.cut;
@@ -499,9 +499,9 @@
                                     </div>
                                     <p class="mt-1 text-xs text-gray-400">
                                         You're paid exactly what you enter above — SR adds its own fee on top to set the
-                                        customer's price; nothing is ever taken out of your rate. SR's fee is
-                                        ${{ number_format($duration->base_rate, 2) }} or <span x-text="basePercent"></span>%
-                                        of your rate, whichever is higher. For example, at this rate
+                                        customer's price; nothing is ever taken out of your rate. SR's fee is a flat
+                                        ${{ number_format($duration->base_rate, 2) }} plus <span x-text="basePercent"></span>%
+                                        of your rate. For example, at this rate
                                         <span class="font-medium text-gray-600">you are paid $<span x-text="payout"></span></span>,
                                         SR's fee is <span class="font-medium text-gray-600" x-text="'$' + cut"></span>,
                                         so the customer pays <span class="font-medium text-gray-600" x-text="'$' + total"></span> total.
@@ -1377,7 +1377,7 @@
                                             return parseFloat(this.rate) || 0;
                                         },
                                         get cut() {
-                                            return Math.max(this.baseRate, Math.round((this.basePercent / 100) * this.payout));
+                                            return this.baseRate + Math.round((this.basePercent / 100) * this.payout);
                                         },
                                         get total() {
                                             return this.payout + this.cut;
@@ -1394,8 +1394,8 @@
                                     </div>
                                     <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
                                     <p class="mt-1 text-xs text-gray-500">
-                                        They're paid exactly what's entered above — SR's fee (${{ number_format((float) $duration->base_rate, 2) }}
-                                        or <span x-text="basePercent"></span>% of their rate, whichever is higher) is added on top for
+                                        They're paid exactly what's entered above — SR's fee (a flat ${{ number_format((float) $duration->base_rate, 2) }}
+                                        plus <span x-text="basePercent"></span>% of their rate) is added on top for
                                         the customer's price, never taken out of their rate. At this rate
                                         <span class="font-medium text-gray-700">they're paid $<span x-text="payout"></span></span>,
                                         SR's fee is <span class="font-medium text-gray-700" x-text="'$' + cut"></span>,
