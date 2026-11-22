@@ -1,5 +1,8 @@
 <?php
 
+// v1.1 — 2026-11-22 | destroy()'s inline abort_unless() ownership check replaced with
+//                     ScriptHighlightPolicy::delete(), per this codebase's "Policies for
+//                     all authorization" convention.
 // v1.0 — 2026-06-09 | AJAX CRUD for personal PDF text highlights on a script assignment.
 
 namespace App\Http\Controllers;
@@ -65,7 +68,7 @@ class ScriptHighlightController extends Controller
 
     public function destroy(ScriptHighlight $highlight): JsonResponse
     {
-        abort_unless($highlight->user_id === auth()->id(), 403);
+        $this->authorize('delete', $highlight);
 
         $highlight->delete();
 

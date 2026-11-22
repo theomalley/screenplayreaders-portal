@@ -1,5 +1,12 @@
 <?php
 
+// v2.34 — 2026-11-22 | BUG FIX: update() (the main edit-form save handler) had no
+//                      DB::transaction()/lockForUpdate(), unlike its sibling
+//                      updateStatus() which received exactly this fix in v2.32 for the
+//                      same reason — two admins/editors saving the full edit form on
+//                      the same assignment concurrently raced with silent
+//                      last-write-wins. Now locks the row for the duration of the
+//                      read-then-write, mirroring updateStatus()'s pattern.
 // v2.33 — 2026-10-22 | streamScript()/downloadScriptForReader(): read the reader's
 //                      ReaderProfile::watermark_enabled flag (admin-configurable per reader,
 //                      defaults to true) instead of always watermarking. qpdf print/copy/
@@ -1249,31 +1256,6 @@ class AssignmentController extends Controller
         }
         unset($data['date'], $data['time']);
 
-        $transitioningToUnassigned = $data['status'] === Assignment::STATUS_UNASSIGNED
-            && $assignment->status !== Assignment::STATUS_UNASSIGNED;
-
-        // A request can also be added/changed on an assignment that's already
-        // sitting in Available/unassigned, with no status transition to key off of.
-        $requestedReaderAdded = $data['status'] === Assignment::STATUS_UNASSIGNED
-            && !empty($data['requested_reader_id'])
-            && $data['requested_reader_id'] != $assignment->requested_reader_id;
-
-        if ($transitioningToUnassigned) {
-            $data['unassigned_at'] = now();
-        }
-
-        if ($data['status'] === Assignment::STATUS_COMPLETED
-            && $assignment->status !== Assignment::STATUS_COMPLETED) {
-            $data['completed_at'] = now();
-        }
-
-        if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
-            $data['assigned_reader_id'] = null;
-            $data['accepted_at']        = null;
-            $data['reader_declined']    = false;
-            $data['available_at']       = null; // clear any pending auto-release when manually set to Available
-        }
-
         // Convert the datetime-local string to app timezone, or clear if empty
         if (! empty($data['available_at'])) {
             $data['available_at'] = Carbon::createFromFormat(
@@ -1283,16 +1265,6 @@ class AssignmentController extends Controller
             );
         } else {
             $data['available_at'] = null;
-        }
-
-        if (!empty($data['assigned_reader_id'])) {
-            abort_unless($this->canAssign((int) $data['assigned_reader_id']), 403);
-
-            // Re-picking a reader (even one who previously declined) clears the
-            // stale "No can do" flag admins would otherwise still see.
-            if ((int) $data['assigned_reader_id'] !== (int) $assignment->assigned_reader_id) {
-                $data['reader_declined'] = false;
-            }
         }
 
         // If a short conversation number was entered, resolve it to the large
@@ -1311,8 +1283,58 @@ class AssignmentController extends Controller
             }
         }
 
-        $assignment->update($data);
-        $assignment->tiers()->sync($tierIds);
+        $transitioningToUnassigned = false;
+        $requestedReaderAdded      = false;
+
+        // FIX: lock the row for the duration of this read-then-write — previously two
+        // admins/editors saving the full edit form concurrently raced with silent
+        // last-write-wins and no conflict surfaced to either, the same race class
+        // already fixed in updateStatus() above. Every read of the assignment's
+        // CURRENT (pre-update) status/reader below now comes from this locked $fresh
+        // instance rather than the possibly-stale route-bound $assignment.
+        $assignment = DB::transaction(function () use ($data, $tierIds, $assignment, &$transitioningToUnassigned, &$requestedReaderAdded) {
+            $fresh = Assignment::lockForUpdate()->findOrFail($assignment->id);
+
+            $transitioningToUnassigned = $data['status'] === Assignment::STATUS_UNASSIGNED
+                && $fresh->status !== Assignment::STATUS_UNASSIGNED;
+
+            // A request can also be added/changed on an assignment that's already
+            // sitting in Available/unassigned, with no status transition to key off of.
+            $requestedReaderAdded = $data['status'] === Assignment::STATUS_UNASSIGNED
+                && !empty($data['requested_reader_id'])
+                && $data['requested_reader_id'] != $fresh->requested_reader_id;
+
+            if ($transitioningToUnassigned) {
+                $data['unassigned_at'] = now();
+            }
+
+            if ($data['status'] === Assignment::STATUS_COMPLETED
+                && $fresh->status !== Assignment::STATUS_COMPLETED) {
+                $data['completed_at'] = now();
+            }
+
+            if ($data['status'] === Assignment::STATUS_UNASSIGNED) {
+                $data['assigned_reader_id'] = null;
+                $data['accepted_at']        = null;
+                $data['reader_declined']    = false;
+                $data['available_at']       = null; // clear any pending auto-release when manually set to Available
+            }
+
+            if (!empty($data['assigned_reader_id'])) {
+                abort_unless($this->canAssign((int) $data['assigned_reader_id']), 403);
+
+                // Re-picking a reader (even one who previously declined) clears the
+                // stale "No can do" flag admins would otherwise still see.
+                if ((int) $data['assigned_reader_id'] !== (int) $fresh->assigned_reader_id) {
+                    $data['reader_declined'] = false;
+                }
+            }
+
+            $fresh->update($data);
+            $fresh->tiers()->sync($tierIds);
+
+            return $fresh;
+        });
 
         // Blocked readers apply to the whole order, not just this slot — keep
         // every sibling assignment for this order_number in sync.

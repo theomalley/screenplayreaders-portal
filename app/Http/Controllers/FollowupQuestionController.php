@@ -1,5 +1,7 @@
 <?php
 
+// v1.5 — 2026-11-22 | update(): renamed a misleadingly-named local variable
+//                     ($wasUnanswered actually meant the opposite) — logic unchanged.
 // v1.4 — 2026-10-27 | notifyReader() now always emails the reader when a followup is sent
 //                     to them — this is a time-boxed, action-required notification (10-day
 //                     reply deadline), not an opt-in preference, so readerProfile.
@@ -41,8 +43,11 @@ class FollowupQuestionController extends Controller
             'status'           => 'nullable|in:pending,unanswered,answered,complete',
         ]);
 
-        $wasUnanswered = $followup->status !== FollowupQuestion::STATUS_UNANSWERED;
-        $newStatus     = $data['status'] ?? $followup->status;
+        // FIX: was named $wasUnanswered but held the opposite — true means the status
+        // was NOT unanswered before this update. Renamed to say what it actually holds;
+        // the logic itself (notify only on a transition INTO unanswered) was already correct.
+        $wasNotAlreadyUnanswered = $followup->status !== FollowupQuestion::STATUS_UNANSWERED;
+        $newStatus               = $data['status'] ?? $followup->status;
 
         if ($newStatus === FollowupQuestion::STATUS_UNANSWERED && $followup->status !== FollowupQuestion::STATUS_UNANSWERED) {
             $data['unanswered_at'] = now();
@@ -51,7 +56,7 @@ class FollowupQuestionController extends Controller
         $followup->update($data);
 
         // Fire reader notification when transitioning to unanswered
-        if ($wasUnanswered && $followup->fresh()->status === FollowupQuestion::STATUS_UNANSWERED) {
+        if ($wasNotAlreadyUnanswered && $followup->fresh()->status === FollowupQuestion::STATUS_UNANSWERED) {
             $this->notifyReader($followup);
         }
 

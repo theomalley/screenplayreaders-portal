@@ -165,8 +165,8 @@
                         <x-input-error :messages="$errors->get('wd_logline')" class="mt-1" />
                     </div>
 
-                    {{-- Synopsis --}}
-                    <div>
+                    {{-- Synopsis — shown only for "coverage"; per spec, Development Notes doesn't have one --}}
+                    <div x-show="assignmentType === 'coverage'">
                         <div class="flex items-baseline justify-between">
                             <x-input-label for="wd_synopsis" value="Synopsis" />
                             <span class="text-xs" :class="wordCount(synopsis) >= synopsisMinWords() ? 'text-green-600' : 'text-gray-400'"
@@ -376,6 +376,9 @@
             },
 
             synopsisMinWords() {
+                // FIX: was applied to every assignment type — per spec, Synopsis only
+                // applies to "coverage", not "development_notes".
+                if (this.assignmentType !== 'coverage') return 0;
                 return wdWcSettings.wc_wd_synopsis || 0;
             },
 

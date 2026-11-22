@@ -1,5 +1,21 @@
 <?php
 
+// v1.2 — 2026-11-22 | SECURITY/BUG FIX: sr_assignment_type/wd_assignment_type (which
+//                      determine word-count minimums and which fields are required)
+//                      were trusted from client input, with no server-side cross-check
+//                      against the assignment's own assignment_type column — unlike
+//                      vendor, which the controller already server-overrides. Both
+//                      coverage views render the field as a hidden input with no
+//                      legitimate way to change it, so a tampered request could submit
+//                      a less-demanding type (e.g. a "book" assignment submitted as
+//                      "short") and be accepted at that lower bar. Both now always
+//                      derive the type from $assignment->assignment_type, never from
+//                      request input.
+//                      Also: wd_synopsis was required/word-count-checked for BOTH
+//                      "coverage" and "development_notes" WD assignment types, but per
+//                      spec it should only apply to "coverage" — every Development
+//                      Notes submission was being forced through an undocumented
+//                      synopsis requirement.
 // v1.1 — 2026-06-03 | Server-side word count minimum enforcement (respects global enable flag and per-assignment exemption)
 // v1.0 — 2026-05-17 | Validates SR and WD coverage submission forms
 
@@ -60,7 +76,7 @@ class StoreCoverageSubmissionRequest extends FormRequest
 
     private function checkSrWordCounts(Validator $validator, array $wc, Assignment $assignment): void
     {
-        $type = $this->input('sr_assignment_type', $assignment->assignment_type);
+        $type = $assignment->assignment_type;
 
         $showLogline  = in_array($type, ['script_coverage', 'short', 'deep_dive', 'book'], true);
         $showSynopsis = in_array($type, ['script_coverage', 'book'], true);
@@ -91,7 +107,7 @@ class StoreCoverageSubmissionRequest extends FormRequest
 
     private function checkWdWordCounts(Validator $validator, array $wc, Assignment $assignment): void
     {
-        $type = $this->input('wd_assignment_type', $assignment->assignment_type);
+        $type = $assignment->assignment_type;
 
         if ($wc['wc_wd_logline'] > 0) {
             $count = $this->wordCount($this->input('wd_logline'));
@@ -100,7 +116,9 @@ class StoreCoverageSubmissionRequest extends FormRequest
             }
         }
 
-        if (in_array($type, ['coverage', 'development_notes'], true) && $wc['wc_wd_synopsis'] > 0) {
+        // FIX: was in_array($type, ['coverage', 'development_notes']) — per spec, Synopsis
+        // only applies to "coverage"; Development Notes shouldn't require one at all.
+        if ($type === 'coverage' && $wc['wc_wd_synopsis'] > 0) {
             $count = $this->wordCount($this->input('wd_synopsis'));
             if ($count < $wc['wc_wd_synopsis']) {
                 $validator->errors()->add('wd_synopsis', "Synopsis must be at least {$wc['wc_wd_synopsis']} words (currently {$count}).");
@@ -120,7 +138,9 @@ class StoreCoverageSubmissionRequest extends FormRequest
 
     private function srRules(): array
     {
-        $type = $this->input('sr_assignment_type');
+        /** @var Assignment $assignment */
+        $assignment = $this->route('assignment');
+        $type       = $assignment->assignment_type;
 
         $noPageCount      = $type === 'book';
         $showLogline      = in_array($type, ['script_coverage', 'short', 'deep_dive', 'book'], true);
@@ -191,7 +211,9 @@ class StoreCoverageSubmissionRequest extends FormRequest
 
     private function wdRules(): array
     {
-        $type = $this->input('wd_assignment_type');
+        /** @var Assignment $assignment */
+        $assignment = $this->route('assignment');
+        $type       = $assignment->assignment_type;
 
         return [
             'wd_assignment_type'      => ['required', 'in:coverage,development_notes'],
@@ -203,7 +225,9 @@ class StoreCoverageSubmissionRequest extends FormRequest
             'wd_form'                 => ['required', 'string', 'max:255'],
             'wd_mpaa_rating'          => ['required', 'string', 'max:100'],
             'wd_logline'              => ['required', 'string'],
-            'wd_synopsis'             => in_array($type, ['coverage', 'development_notes'], true) ? ['required', 'string'] : ['nullable', 'string'],
+            // FIX: was required for both coverage and development_notes — per spec,
+            // Synopsis only applies to coverage.
+            'wd_synopsis'             => $type === 'coverage' ? ['required', 'string'] : ['nullable', 'string'],
             'wd_script_recommendations' => ['required', 'string', 'max:500'],
 
             'wd_score_concept'    => ['required', 'in:Poor,Fair,Good,Excellent'],

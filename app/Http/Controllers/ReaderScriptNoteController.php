@@ -1,5 +1,8 @@
 <?php
 
+// v1.3 — 2026-11-22 | destroy()'s inline abort_unless() ownership check replaced with
+//                     ReaderScriptNotePolicy::delete(), per this codebase's "Policies
+//                     for all authorization" convention.
 // v1.2 — 2026-06-09 | Capture and return page_number — auto-logged from the PDF viewer's current page.
 // v1.1 — 2026-06-05 | Add index() to list notes for a given assignment (used by reader modal lazy-load).
 // v1.0 — 2026-06-05 | AJAX CRUD for personal reading notes on a script assignment.
@@ -56,7 +59,7 @@ class ReaderScriptNoteController extends Controller
 
     public function destroy(ReaderScriptNote $note): JsonResponse
     {
-        abort_unless($note->user_id === auth()->id(), 403);
+        $this->authorize('delete', $note);
 
         $note->delete();
 

@@ -1,5 +1,14 @@
 <?php
 
+// v1.2 — 2026-11-22 | BUG FIX: urlForOrder() reused an existing unexpired token as-is,
+//                     never updating its assignment_ids to the newly-passed set. On a
+//                     multi-reader order, QcController/ArchiveController::redraftGoback()
+//                     call this repeatedly over the order's lifecycle (once per QC
+//                     action/redraft) — if the token was first created from an early
+//                     completed assignment and reused later as more assignments
+//                     completed, the customer's followup link permanently reflected only
+//                     the original, now-stale assignment set for the token's full 30-day
+//                     life. Now merges in any newly-passed IDs on every call.
 // v1.1 — 2026-06-12 | Add urlForOrder() — get-or-create a token and return its public URL
 // v1.0 — 2026-05-30 | Initial: followup question token linking order → customer form URL
 
@@ -51,6 +60,11 @@ class FollowupToken extends Model
                 'customer_email' => null,
                 'expires_at'     => now()->addDays(30),
             ]);
+        } elseif (! empty($assignmentIds)) {
+            $merged = array_values(array_unique(array_merge($existing->assignment_ids ?? [], $assignmentIds)));
+            if ($merged !== ($existing->assignment_ids ?? [])) {
+                $existing->update(['assignment_ids' => $merged]);
+            }
         }
 
         return route('followup.show', $existing->token);
