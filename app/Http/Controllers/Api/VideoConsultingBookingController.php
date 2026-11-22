@@ -1,5 +1,10 @@
 <?php
 
+// v1.14 — 2026-11-22 | readers()/readerRates() now pass the reader's readerProfile into
+//                      effectiveBaseRate() so a per-person fee override
+//                      (video_consulting_fee_override_enabled/_amount/_percent) is respected
+//                      in the price/base_rate this API reports — the theme never recomputes
+//                      the fee itself, it just uses these numbers directly.
 // v1.13 — 2026-11-22 | readers()/readerRates()/availableSlots()/createHold() now use
 //                       VideoConsultingAccess::bookableFor() instead of enabledFor() — also
 //                       excludes a reader who's paused themselves via the new self-serve
@@ -115,7 +120,7 @@ class VideoConsultingBookingController extends Controller
                         'duration_id' => $rate->duration_id,
                         'minutes'     => $rate->duration->minutes,
                         'label'       => $rate->duration->label,
-                        'price'       => $rate->duration->effectiveBaseRate((float) $rate->rate) + (float) $rate->rate,
+                        'price'       => $rate->duration->effectiveBaseRate((float) $rate->rate, $reader->readerProfile) + (float) $rate->rate,
                     ])
                     ->values();
 
@@ -164,9 +169,9 @@ class VideoConsultingBookingController extends Controller
                 'duration_id' => $rate->duration_id,
                 'minutes'     => $rate->duration->minutes,
                 'label'       => $rate->duration->label,
-                'base_rate'   => $rate->duration->effectiveBaseRate((float) $rate->rate),
+                'base_rate'   => $rate->duration->effectiveBaseRate((float) $rate->rate, $reader->readerProfile),
                 'reader_rate' => (float) $rate->rate,
-                'price'       => $rate->duration->effectiveBaseRate((float) $rate->rate) + (float) $rate->rate,
+                'price'       => $rate->duration->effectiveBaseRate((float) $rate->rate, $reader->readerProfile) + (float) $rate->rate,
             ])
             ->values();
 

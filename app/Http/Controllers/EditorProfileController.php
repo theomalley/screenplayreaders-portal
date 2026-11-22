@@ -1,5 +1,8 @@
 <?php
 
+// v1.23 — 2026-11-22 | updateVideoConsultingRates() now also saves a per-person fee override
+//                      (video_consulting_fee_override_enabled/_amount/_percent), mirroring
+//                      ReaderProfileController's equivalent method.
 // v1.22 — 2026-11-22 | Add updateVideoConsultingHolidays() — admin override of an admin/
 //                      editor's US federal holiday blackout accordion (App\Support\
 //                      FederalHolidays).
@@ -339,6 +342,19 @@ class EditorProfileController extends Controller
             $toSave[$duration->id] = $rate;
         }
 
+        $feeOverrideEnabled = $request->boolean('fee_override_enabled');
+        $feeOverrideAmount = is_numeric($request->input('fee_override_amount')) ? round((float) $request->input('fee_override_amount'), 2) : null;
+        $feeOverridePercent = is_numeric($request->input('fee_override_percent')) ? round((float) $request->input('fee_override_percent'), 2) : null;
+
+        if ($feeOverrideEnabled) {
+            if ($feeOverrideAmount === null || $feeOverrideAmount < 0) {
+                $errors['fee_override_amount'] = 'Enter a valid SR fee amount (0 or more).';
+            }
+            if ($feeOverridePercent === null || $feeOverridePercent < 0 || $feeOverridePercent > 100) {
+                $errors['fee_override_percent'] = 'Enter a valid SR fee percent (0-100).';
+            }
+        }
+
         if (! empty($errors)) {
             return back()->withErrors($errors)->withInput();
         }
@@ -353,6 +369,12 @@ class EditorProfileController extends Controller
                 );
             }
         }
+
+        VideoConsultingAccess::updateReaderProfileShell($user, [
+            'video_consulting_fee_override_enabled' => $feeOverrideEnabled,
+            'video_consulting_fee_override_amount'  => $feeOverrideAmount,
+            'video_consulting_fee_override_percent' => $feeOverridePercent,
+        ]);
 
         return redirect()->route('admin.editors.edit', $user)->with('success', 'Video consulting rates updated.');
     }

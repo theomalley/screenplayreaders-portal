@@ -1,5 +1,9 @@
 <?php
 
+// v1.28 — 2026-11-22 | Add video_consulting_fee_override_enabled/_amount/_percent — an
+//                      admin-set per-person override of the company's video consulting fee,
+//                      replacing VideoConsultingDuration's own base_rate/base_rate_percent for
+//                      this specific person. See VideoConsultingDuration::effectiveBaseRate().
 // v1.27 — 2026-11-22 | Add video_consulting_holiday_blackouts — nullable JSON array of
 //                      App\Support\FederalHolidays keys this reader has blacked out for video
 //                      calls. Null (never saved) means every federal holiday, not none — see
@@ -113,6 +117,9 @@ class ReaderProfile extends Model
         'video_consulting_min_lead_hours',
         'video_consulting_available',
         'video_consulting_holiday_blackouts',
+        'video_consulting_fee_override_enabled',
+        'video_consulting_fee_override_amount',
+        'video_consulting_fee_override_percent',
         'video_consulting_reader_request_eligible',
         'video_consulting_note',
         'video_consulting_call_mode',
@@ -154,6 +161,9 @@ class ReaderProfile extends Model
         'video_consulting_min_lead_hours' => 'integer',
         'video_consulting_available' => 'boolean',
         'video_consulting_holiday_blackouts' => 'array',
+        'video_consulting_fee_override_enabled' => 'boolean',
+        'video_consulting_fee_override_amount' => 'decimal:2',
+        'video_consulting_fee_override_percent' => 'decimal:2',
         'video_consulting_reader_request_eligible' => 'boolean',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',

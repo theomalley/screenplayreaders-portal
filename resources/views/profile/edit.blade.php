@@ -479,11 +479,20 @@
                             @csrf
                             @method('PATCH')
 
+                            @php
+                                $myFeeOverrideEnabled = (bool) ($vcAvailabilitySource?->video_consulting_fee_override_enabled ?? false);
+                                $myFeeOverrideAmount = $vcAvailabilitySource?->video_consulting_fee_override_amount;
+                                $myFeeOverridePercent = $vcAvailabilitySource?->video_consulting_fee_override_percent;
+                            @endphp
                             @forelse ($vcDurations as $duration)
+                                @php
+                                    $myEffectiveBaseRate = $myFeeOverrideEnabled ? (float) ($myFeeOverrideAmount ?? 0) : (float) $duration->base_rate;
+                                    $myEffectiveBasePercent = $myFeeOverrideEnabled ? (float) ($myFeeOverridePercent ?? 0) : (float) $duration->base_rate_percent;
+                                @endphp
                                 <div x-data="{
                                         rate: '{{ old('rates.' . $duration->id, ($videoConsultingMyRates ?? collect())[$duration->id] ?? '') }}',
-                                        baseRate: {{ (float) $duration->base_rate }},
-                                        basePercent: {{ (float) $duration->base_rate_percent }},
+                                        baseRate: {{ $myEffectiveBaseRate }},
+                                        basePercent: {{ $myEffectiveBasePercent }},
                                         get payout() {
                                             return parseFloat(this.rate) || 0;
                                         },
@@ -507,7 +516,7 @@
                                     <p class="mt-1 text-xs text-gray-400">
                                         You're paid exactly what you enter above — SR adds its own fee on top to set the
                                         customer's price; nothing is ever taken out of your rate. SR's fee is a flat
-                                        ${{ number_format($duration->base_rate, 2) }} plus <span x-text="basePercent"></span>%
+                                        ${{ number_format($myEffectiveBaseRate, 2) }} plus <span x-text="basePercent"></span>%
                                         of your rate. For example, at this rate
                                         <span class="font-medium text-gray-600">you are paid $<span x-text="payout"></span></span>,
                                         SR's fee is <span class="font-medium text-gray-600" x-text="'$' + cut"></span>,
@@ -1388,15 +1397,59 @@
                     @if ($videoConsultingDurations->isEmpty())
                         <p class="text-sm text-gray-500 italic">No call-length durations are configured yet — add some under Settings first.</p>
                     @else
+                    @php
+                        $feeOverrideEnabled = (bool) ($videoConsultingProfileSource?->video_consulting_fee_override_enabled ?? false);
+                        $feeOverrideAmount = $videoConsultingProfileSource?->video_consulting_fee_override_amount;
+                        $feeOverridePercent = $videoConsultingProfileSource?->video_consulting_fee_override_percent;
+                    @endphp
                     <form method="POST" action="{{ $isEditingReader ? route('readers.updateVideoConsultingRates', $user) : route('admin.editors.updateVideoConsultingRates', $user) }}" class="space-y-4">
                         @csrf
                         @method('PATCH')
+
+                        <div class="pb-4 mb-2 border-b border-gray-100" x-data="{ feeOverride: {{ old('fee_override_enabled', $feeOverrideEnabled) ? 'true' : 'false' }} }">
+                            <label class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                                <input type="hidden" name="fee_override_enabled" value="0">
+                                <input type="checkbox" name="fee_override_enabled" value="1" x-model="feeOverride"
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                Override SR's fee for this person
+                            </label>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Replaces the per-duration fee below with a flat $ and % of their own rate,
+                                applied the same way across every call length. Set both to 0 to charge the
+                                customer exactly this person's rate, with no SR fee added.
+                            </p>
+                            <div class="mt-2 flex items-end gap-4" x-show="feeOverride" x-cloak>
+                                <div>
+                                    <x-input-label value="SR Fee ($)" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <span class="text-gray-400 text-sm">$</span>
+                                        <x-text-input name="fee_override_amount" type="number" class="block w-24 text-right"
+                                            value="{{ old('fee_override_amount', $feeOverrideAmount) }}" min="0" step="0.01" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <x-input-label value="SR Fee (%)" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <x-text-input name="fee_override_percent" type="number" class="block w-24 text-right"
+                                            value="{{ old('fee_override_percent', $feeOverridePercent) }}" min="0" max="100" step="0.01" />
+                                        <span class="text-gray-400 text-sm">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <x-input-error :messages="$errors->get('fee_override_amount')" class="mt-1" />
+                            <x-input-error :messages="$errors->get('fee_override_percent')" class="mt-1" />
+                        </div>
+
                         <div class="grid grid-cols-2 gap-4">
                             @foreach ($videoConsultingDurations as $duration)
+                                @php
+                                    $effectiveBaseRate = $feeOverrideEnabled ? (float) ($feeOverrideAmount ?? 0) : (float) $duration->base_rate;
+                                    $effectiveBasePercent = $feeOverrideEnabled ? (float) ($feeOverridePercent ?? 0) : (float) $duration->base_rate_percent;
+                                @endphp
                                 <div x-data="{
                                         rate: '{{ old('vc_rates.' . $duration->id, $videoConsultingRates[$duration->id] ?? '') }}',
-                                        baseRate: {{ (float) $duration->base_rate }},
-                                        basePercent: {{ (float) $duration->base_rate_percent }},
+                                        baseRate: {{ $effectiveBaseRate }},
+                                        basePercent: {{ $effectiveBasePercent }},
                                         get payout() {
                                             return parseFloat(this.rate) || 0;
                                         },
@@ -1418,7 +1471,7 @@
                                     </div>
                                     <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
                                     <p class="mt-1 text-xs text-gray-500">
-                                        They're paid exactly what's entered above — SR's fee (a flat ${{ number_format((float) $duration->base_rate, 2) }}
+                                        They're paid exactly what's entered above — SR's fee (a flat ${{ number_format($effectiveBaseRate, 2) }}
                                         plus <span x-text="basePercent"></span>% of their rate) is added on top for
                                         the customer's price, never taken out of their rate. At this rate
                                         <span class="font-medium text-gray-700">they're paid $<span x-text="payout"></span></span>,

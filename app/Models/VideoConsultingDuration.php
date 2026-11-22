@@ -1,5 +1,12 @@
 <?php
 
+// v1.3 — 2026-11-22 | effectiveBaseRate() now takes an optional $profile — when that person
+//                      has video_consulting_fee_override_enabled, their own override amount/
+//                      percent (ReaderProfile.video_consulting_fee_override_amount/_percent)
+//                      replaces this duration's base_rate/base_rate_percent entirely, same
+//                      additive formula either way. Lets the admin (the company owner) or
+//                      anyone else charge a different fee than the sitewide default, down to
+//                      0/0 (customer pays exactly the reader's own rate).
 // v1.2 — 2026-11-21 | effectiveBaseRate() switched from "whichever is higher" (max of the flat
 //                      base_rate or base_rate_percent of the reader's rate) to additive (both
 //                      always apply together) — the max() version let SR's cut go flat for a
@@ -46,10 +53,19 @@ class VideoConsultingDuration extends Model
     /**
      * The company's actual cut for a given reader rate — the flat base_rate PLUS base_rate_percent
      * of the reader's own rate, both always applied together (not whichever is larger). Rounded
-     * to whole dollars for clean, reconcilable numbers.
+     * to whole dollars for clean, reconcilable numbers. If $profile has its own fee override
+     * enabled, its amount/percent are used instead of this duration's — same person, same fee,
+     * regardless of which call length they're booked for.
      */
-    public function effectiveBaseRate(float $readerRate): float
+    public function effectiveBaseRate(float $readerRate, ?ReaderProfile $profile = null): float
     {
+        if ($profile?->video_consulting_fee_override_enabled) {
+            $amount = (float) ($profile->video_consulting_fee_override_amount ?? 0);
+            $percent = (float) ($profile->video_consulting_fee_override_percent ?? 0);
+
+            return $amount + round(($percent / 100) * $readerRate);
+        }
+
         return (float) $this->base_rate + round(((float) $this->base_rate_percent / 100) * $readerRate);
     }
 
