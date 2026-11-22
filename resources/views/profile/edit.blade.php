@@ -106,8 +106,10 @@
                 $aboutPath               = $profile?->about_photo ?? $profile?->about_photo_pending ?? $profile?->photo;
                 $currentAboutPhoto       = $aboutPath ? asset('storage/' . $aboutPath) : null;
                 $pendingAboutPhotoSelf   = $profile?->about_photo_pending ? asset('storage/' . $profile->about_photo_pending) : null;
+                $pendingPhotoSelf        = $profile?->photo_pending ? asset('storage/' . $profile->photo_pending) : null;
                 $pendingBioSelf          = $profile?->bio_pending;
                 $aboutPhotoRejectionNote = $profile?->about_photo_rejection_note;
+                $photoRejectionNote      = $profile?->photo_rejection_note;
                 $bioRejectionNote        = $profile?->bio_rejection_note;
             @endphp
 
@@ -117,7 +119,7 @@
                 <div class="flex flex-col sm:flex-row gap-8">
                 <div class="flex-1 min-w-0">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Reader Icon</h2>
-                    <p class="text-sm text-gray-600 mb-3">Your avatar in the portal (not public). Min 600×600 px.</p>
+                    <p class="text-sm text-gray-600 mb-3">Your avatar in the portal — also used as your photo on the public website wherever a [sr_staff_photo] shortcode doesn't request the About Page Photo. Min 600×600 px.</p>
                     <form method="POST" action="{{ route('profile.photo') }}" enctype="multipart/form-data"
                           x-data="{
                             preview: '{{ $currentPhoto }}',
@@ -161,6 +163,19 @@
                         <x-input-error :messages="$errors->get('photo')" class="mt-2" />
                         @if (session('status') === 'photo-updated')
                             <p class="mt-2 text-sm text-green-600">Saved.</p>
+                        @elseif (session('status') === 'photo-pending')
+                            <p class="mt-2 text-sm text-amber-600">Submitted for admin approval.</p>
+                        @endif
+                        @if ($photoRejectionNote)
+                            <div class="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                <p class="font-medium">Reader icon rejected by admin:</p>
+                                <p class="mt-0.5">{{ $photoRejectionNote }}</p>
+                            </div>
+                        @elseif ($pendingPhotoSelf)
+                            <div class="mt-2 flex items-center gap-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                <img src="{{ $pendingPhotoSelf }}" class="w-10 h-10 rounded-full object-cover shrink-0" alt="Pending reader icon" />
+                                <span>Pending admin approval.</span>
+                            </div>
                         @endif
                     </form>
                 </div>

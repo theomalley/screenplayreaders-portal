@@ -1,5 +1,11 @@
 <?php
 
+// v1.2 — 2026-11-22 | FIX: login() didn't clear session('impersonator_id') before
+//                     Auth::login(), unlike QuickLoginController's equivalent login paths —
+//                     a magic-link login mid-impersonation (same browser session) left a
+//                     stale impersonator_id pointing at the original admin, so a later
+//                     /impersonate/stop would silently log that session into the admin
+//                     account with no credential check.
 // v1.1 — 2026-08-07 | Added per-email rate limit on send() (alongside per-IP) and a
 //                     per-token rate limit on login() (alongside per-IP), mirroring
 //                     QuickLoginController's v1.1 pattern — an IP-only limit doesn't
@@ -87,6 +93,11 @@ class MagicLinkController extends Controller
         RateLimiter::clear($tokenKey);
 
         $user = $record->user;
+
+        // Clear any active impersonation so this session always ends up as the
+        // magic-link's own user, never left pointing at a stale admin identity.
+        session()->forget('impersonator_id');
+
         Auth::login($user, remember: true);
         request()->session()->regenerate();
 

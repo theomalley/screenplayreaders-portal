@@ -1,5 +1,14 @@
 <?php
 
+// v1.7 — 2026-11-22 | FIX: uploadPhoto() wrote a reader/editor's self-uploaded "Reader
+//                      Icon" straight to the live `photo` column with no approval step —
+//                      inconsistent with updateBio()/uploadAboutPhoto(), which route
+//                      non-admin submissions through *_pending for admin review, and a real
+//                      gap given StaffProfileController's public /staff/{user} API (consumed
+//                      by the theme's [sr_staff_photo] shortcode) returns this same `photo`
+//                      column by default. Now mirrors uploadAboutPhoto()'s admin-vs-non-admin
+//                      branching: admins write straight to `photo`, readers/editors write to
+//                      the existing (previously unused) `photo_pending` column instead.
 // v1.6 — 2026-11-19 | Removed updateVideoConsultingCoupon() and the reader discount-code
 //                      feature — readers will instead note a sale in their existing note field
 //                      and lower their own rate.
@@ -340,18 +349,35 @@ class ProfileController extends Controller
         ]);
 
         if ($user->isReader()) {
-            $profile = $user->readerProfile;
             $path    = $request->file('photo')->store('reader-photos', 'public');
-            if ($profile?->photo) Storage::disk('public')->delete($profile->photo);
-            $user->readerProfile()->updateOrCreate(['user_id' => $user->id], ['photo' => $path]);
+            $profile = $user->readerProfile;
+
+            if ($profile?->photo_pending) {
+                Storage::disk('public')->delete($profile->photo_pending);
+            }
+            $user->readerProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['photo_pending' => $path, 'photo_rejection_note' => null]
+            );
         } else {
-            $profile = $user->editorProfile;
             $path    = $request->file('photo')->store('editor-photos', 'public');
-            if ($profile?->photo) Storage::disk('public')->delete($profile->photo);
-            $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['photo' => $path]);
+            $profile = $user->editorProfile;
+
+            if ($user->isAdmin()) {
+                if ($profile?->photo) Storage::disk('public')->delete($profile->photo);
+                $user->editorProfile()->updateOrCreate(['user_id' => $user->id], ['photo' => $path]);
+            } else {
+                if ($profile?->photo_pending) {
+                    Storage::disk('public')->delete($profile->photo_pending);
+                }
+                $user->editorProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    ['photo_pending' => $path, 'photo_rejection_note' => null]
+                );
+            }
         }
 
-        return back()->with('status', 'photo-updated');
+        return back()->with('status', $user->isAdmin() ? 'photo-updated' : 'photo-pending');
     }
 
     public function uploadAboutPhoto(Request $request): RedirectResponse
