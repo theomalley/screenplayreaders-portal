@@ -1,5 +1,10 @@
 <?php
 
+// v1.3 — 2026-11-22 | update() now also saves a fee override (video_consulting_fee_override_
+//                      enabled/_amount/_percent) when the caller is an admin — the only
+//                      self-serve path to set it on their own rate; everyone else still has it
+//                      set for them from the admin's reader/editor-edit page instead. See
+//                      VideoConsultingDuration::effectiveBaseRate().
 // v1.2 — 2026-11-14 | The "Consulting" page/nav tab is retired — Rate now lives on the
 //                      reader's main Profile page (see profile/edit.blade.php). edit() and
 //                      update()'s redirect both now point at profile.edit instead.
@@ -65,6 +70,20 @@ class VideoConsultingRateController extends Controller
             $toSave[$duration->id] = $rate;
         }
 
+        $isAdmin = $reader->isAdmin();
+        $feeOverrideEnabled = $isAdmin && $request->boolean('fee_override_enabled');
+        $feeOverrideAmount = is_numeric($request->input('fee_override_amount')) ? round((float) $request->input('fee_override_amount'), 2) : null;
+        $feeOverridePercent = is_numeric($request->input('fee_override_percent')) ? round((float) $request->input('fee_override_percent'), 2) : null;
+
+        if ($feeOverrideEnabled) {
+            if ($feeOverrideAmount === null || $feeOverrideAmount < 0) {
+                $errors['fee_override_amount'] = 'Enter a valid SR fee amount (0 or more).';
+            }
+            if ($feeOverridePercent === null || $feeOverridePercent < 0 || $feeOverridePercent > 100) {
+                $errors['fee_override_percent'] = 'Enter a valid SR fee percent (0-100).';
+            }
+        }
+
         if (! empty($errors)) {
             return back()->withErrors($errors)->withInput();
         }
@@ -78,6 +97,14 @@ class VideoConsultingRateController extends Controller
                     ['rate' => $rate]
                 );
             }
+        }
+
+        if ($isAdmin) {
+            VideoConsultingAccess::updateReaderProfileShell($reader, [
+                'video_consulting_fee_override_enabled' => $feeOverrideEnabled,
+                'video_consulting_fee_override_amount'  => $feeOverrideAmount,
+                'video_consulting_fee_override_percent' => $feeOverridePercent,
+            ]);
         }
 
         return redirect()->route('profile.edit')->with('success', 'Video consulting rates updated.');

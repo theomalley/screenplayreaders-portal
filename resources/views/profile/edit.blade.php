@@ -484,6 +484,46 @@
                                 $myFeeOverrideAmount = $vcAvailabilitySource?->video_consulting_fee_override_amount;
                                 $myFeeOverridePercent = $vcAvailabilitySource?->video_consulting_fee_override_percent;
                             @endphp
+
+                            @if (auth()->user()->isAdmin())
+                            {{-- Admin-only, even on their own Rate page — see the matching
+                                 override on the "Video Consulting Rates (admin only)" card for
+                                 other people's profiles. Submits with this same form/button. --}}
+                            <div class="pb-4 mb-2 border-b border-gray-100" x-data="{ feeOverride: {{ old('fee_override_enabled', $myFeeOverrideEnabled) ? 'true' : 'false' }} }">
+                                <label class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                                    <input type="hidden" name="fee_override_enabled" value="0">
+                                    <input type="checkbox" name="fee_override_enabled" value="1" x-model="feeOverride"
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                    Override SR's fee for me <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Replaces the per-duration fee below with a flat $ and % of your own rate,
+                                    applied the same way across every call length. Set both to 0 to charge the
+                                    customer exactly your own rate, with no SR fee added.
+                                </p>
+                                <div class="mt-2 flex items-end gap-4" x-show="feeOverride" x-cloak>
+                                    <div>
+                                        <x-input-label value="SR Fee ($)" />
+                                        <div class="mt-1 flex items-center gap-1">
+                                            <span class="text-gray-400 text-sm">$</span>
+                                            <x-text-input name="fee_override_amount" type="number" class="block w-24 text-right"
+                                                value="{{ old('fee_override_amount', $myFeeOverrideAmount) }}" min="0" step="0.01" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <x-input-label value="SR Fee (%)" />
+                                        <div class="mt-1 flex items-center gap-1">
+                                            <x-text-input name="fee_override_percent" type="number" class="block w-24 text-right"
+                                                value="{{ old('fee_override_percent', $myFeeOverridePercent) }}" min="0" max="100" step="0.01" />
+                                            <span class="text-gray-400 text-sm">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <x-input-error :messages="$errors->get('fee_override_amount')" class="mt-1" />
+                                <x-input-error :messages="$errors->get('fee_override_percent')" class="mt-1" />
+                            </div>
+                            @endif
+
                             @forelse ($vcDurations as $duration)
                                 @php
                                     $myEffectiveBaseRate = $myFeeOverrideEnabled ? (float) ($myFeeOverrideAmount ?? 0) : (float) $duration->base_rate;
