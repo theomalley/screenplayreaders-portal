@@ -15,6 +15,12 @@
       $leadHoursBounds — ['min' => int, 'max' => int], admin-configurable (Tools > Settings >
                 Assignments > Video Consulting); defaults to Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS
                 when omitted.
+      $available — bool, ReaderProfile.video_consulting_available (the reader's own pause
+                toggle, separate from the admin-only video_consulting_enabled override).
+                Defaults to true when omitted. Turning it off only affects whether this person
+                is currently offered to customers (App\Support\VideoConsultingAccess::
+                bookableFor()) — the weekly schedule and blackout dates below are saved and
+                enforced completely independently, so pausing never loses them.
       $formId — pass this when including the partial somewhere already inside another <form>
                 (the admin reader-edit page's single shared admin-form). HTML forms can't
                 nest — a browser silently discards a nested <form> start tag, merging its
@@ -43,6 +49,7 @@
     $minuteOptions = ['00' => ':00', '15' => ':15', '30' => ':30', '45' => ':45'];
 
     $leadHoursBounds = $leadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS;
+    $vcAvailable = $available ?? true;
 
     $vcFormId = $formId ?? null;
     $scheduleFormAttr = $vcFormId ? ' form="' . e($vcFormId) . '"' : '';
@@ -78,6 +85,25 @@
             </ul>
         </div>
     @endif
+
+    <div class="flex items-center justify-between gap-4 pb-3 border-b border-gray-100">
+        <div>
+            <span class="text-sm font-medium text-gray-900">Available for video calls</span>
+            <p class="mt-0.5 text-sm text-gray-500">
+                Turn this off to stop being offered to customers right away — your schedule and
+                blackout dates below stay exactly as set and come right back the moment you
+                turn this on again.
+            </p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="hidden" name="video_consulting_available" value="0"{!! $scheduleFormAttr !!}>
+            <input type="checkbox" name="video_consulting_available" value="1"{!! $scheduleFormAttr !!}
+                   {{ old('video_consulting_available', $vcAvailable ? '1' : '') ? 'checked' : '' }}
+                   class="sr-only peer" />
+            <div class="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-600 rounded-full transition-colors"></div>
+            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+        </label>
+    </div>
 
     <p class="text-sm text-gray-500">Weekly recurring hours available for video consulting calls.</p>
 
@@ -152,14 +178,15 @@
     @endforeach
 
     <div class="pt-3 border-t border-gray-100">
-        <x-input-label value="Minimum notice before a call (hours)" />
+        <x-input-label value="My minimum notice between a customer's booking and the call (hours)" />
         <input type="number" name="min_lead_hours" min="{{ $leadHoursBounds['min'] }}" max="{{ $leadHoursBounds['max'] }}" step="1"{!! $scheduleFormAttr !!}
                value="{{ old('min_lead_hours', $minLeadHours) }}"
                class="mt-1 block w-32 border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
         <p class="mt-1 text-sm text-gray-500">
-            Calls won't be offered to customers sooner than this, so there's time to read the
-            script and compile notes first. Must be between {{ $leadHoursBounds['min'] }} and
-            {{ $leadHoursBounds['max'] }} hours (set by an admin).
+            How much advance notice you want between when a customer books a call and when it
+            actually starts, so you have time to read the script and prepare notes. You choose
+            the exact number — it just has to fall between {{ $leadHoursBounds['min'] }} and
+            {{ $leadHoursBounds['max'] }} hours, a range set by an admin.
         </p>
         <x-input-error :messages="$errors->get('min_lead_hours')" class="mt-1" />
     </div>

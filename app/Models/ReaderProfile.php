@@ -1,5 +1,8 @@
 <?php
 
+// v1.26 — 2026-11-22 | Add video_consulting_available — reader self-serve pause toggle,
+//                      distinct from the admin-only video_consulting_enabled override. See
+//                      App\Support\VideoConsultingAccess::bookableFor().
 // v1.25 — 2026-11-19 | Dropped video_consulting_coupon_code/_type/_amount — the reader
 //                      discount-code feature was removed; readers will instead note a sale in
 //                      video_consulting_note and lower their own rate.
@@ -104,6 +107,7 @@ class ReaderProfile extends Model
         'watermark_enabled',
         'video_consulting_enabled',
         'video_consulting_min_lead_hours',
+        'video_consulting_available',
         'video_consulting_reader_request_eligible',
         'video_consulting_note',
         'video_consulting_call_mode',
@@ -143,6 +147,7 @@ class ReaderProfile extends Model
         'watermark_enabled'        => 'boolean',
         'video_consulting_enabled' => 'boolean',
         'video_consulting_min_lead_hours' => 'integer',
+        'video_consulting_available' => 'boolean',
         'video_consulting_reader_request_eligible' => 'boolean',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',

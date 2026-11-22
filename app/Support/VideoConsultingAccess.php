@@ -23,6 +23,14 @@
 //                      (an admin/editor opting themselves into video consulting from their own
 //                      Profile page, not just via another admin editing their profile) can reuse
 //                      it instead of duplicating the ReaderProfile-seeding logic.
+// v1.3 — 2026-11-22 | Add availableFor()/bookableFor() — the reader's own self-serve
+//                      "Available for video calls" pause toggle (ReaderProfile.
+//                      video_consulting_available), layered on top of enabledFor() rather than
+//                      folded into it. enabledFor() stays unchanged on purpose: it gates the
+//                      Profile page's own Availability/Rate cards and self-serve controllers,
+//                      so a reader who pauses themselves can still see and use those to turn
+//                      it back on. bookableFor() (enabledFor() AND availableFor()) is the one
+//                      customer-facing booking paths should use instead.
 // v1.2 — 2026-11-15 | enabledFor() now also admits admin/editor: they're opt-in only (the
 //                      tri-state override must be explicitly true — no sitewide default-on,
 //                      since the sitewide switch is about readers). Add parseOverrideInput(),
@@ -70,6 +78,28 @@ class VideoConsultingAccess
         }
 
         return false;
+    }
+
+    /**
+     * The reader's own self-serve pause toggle (ReaderProfile.video_consulting_available) —
+     * separate from the admin-only video_consulting_enabled policy override. Defaults to true
+     * (missing profile = available) so a reader who's never touched it isn't paused.
+     */
+    public static function availableFor(?User $user): bool
+    {
+        return (bool) ($user?->readerProfile?->video_consulting_available ?? true);
+    }
+
+    /**
+     * Whether a customer should actually be offered/allowed to book this person right now —
+     * enabledFor() (policy: sitewide default + admin override) AND availableFor() (the
+     * reader's own pause toggle). Use this, not enabledFor() alone, for booking/listing
+     * decisions (Api\VideoConsultingBookingController). enabledFor() alone stays reserved for
+     * gating the reader's own self-serve pages, which must stay reachable even while paused.
+     */
+    public static function bookableFor(?User $user): bool
+    {
+        return self::enabledFor($user) && self::availableFor($user);
     }
 
     /**

@@ -1,5 +1,9 @@
 <?php
 
+// v1.22 — 2026-11-22 | updateVideoConsultingAvailability() now also saves
+//                      video_consulting_available — an admin can see/override a reader's own
+//                      "Available for video calls" pause toggle from here too. Doesn't touch
+//                      the day loop below, so toggling it never affects the saved schedule.
 // v1.21 — 2026-11-15 | parseVideoConsultingOverride() moved to the shared
 //                      App\Support\VideoConsultingAccess::parseOverrideInput() — admins/editors
 //                      taking video consulting themselves now go through EditorProfileController's
@@ -381,6 +385,7 @@ class ReaderProfileController extends Controller
 
         $user->readerProfile()->updateOrCreate(['user_id' => $user->id], [
             'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
+            'video_consulting_available'      => $request->boolean('video_consulting_available'),
         ]);
 
         foreach (range(0, 6) as $dayOfWeek) {

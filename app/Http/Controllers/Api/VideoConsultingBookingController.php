@@ -1,5 +1,9 @@
 <?php
 
+// v1.13 — 2026-11-22 | readers()/readerRates()/availableSlots()/createHold() now use
+//                       VideoConsultingAccess::bookableFor() instead of enabledFor() — also
+//                       excludes a reader who's paused themselves via the new self-serve
+//                       "Available for video calls" toggle, not just an admin-disabled one.
 // v1.12 — 2026-11-20 | readers() now also includes about_photo_url (ReaderProfile.about_photo) —
 //                       the theme's video-consulting shortcode/checkout widget were displaying
 //                       the reader's "icon" photo (photo_url) instead of their public-facing
@@ -96,13 +100,14 @@ class VideoConsultingBookingController extends Controller
     public function readers(Request $request, VideoConsultingAvailabilityService $availability): JsonResponse
     {
         // Any role can offer video consulting (App\Support\VideoConsultingAccess) — admin/editor
-        // are opt-in only, so the enabledFor() filter below is what actually keeps an
-        // uninterested admin/editor off this list, not the role itself.
+        // are opt-in only, so the bookableFor() filter below is what actually keeps an
+        // uninterested admin/editor (or a reader who's paused themselves) off this list, not
+        // the role itself.
         $readers = User::whereIn('role', ['reader', 'admin', 'editor'])
             ->whereHas('videoConsultingRates')
             ->with(['videoConsultingRates.duration', 'readerProfile'])
             ->get()
-            ->filter(fn (User $reader) => VideoConsultingAccess::enabledFor($reader))
+            ->filter(fn (User $reader) => VideoConsultingAccess::bookableFor($reader))
             ->map(function (User $reader) use ($availability) {
                 $durations = $reader->videoConsultingRates
                     ->filter(fn (ReaderVideoConsultingRate $rate) => $rate->duration && $rate->duration->enabled)
@@ -147,7 +152,7 @@ class VideoConsultingBookingController extends Controller
     {
         abort_unless($reader->isReader() || $reader->isAdminOrEditor(), 404);
 
-        if (! VideoConsultingAccess::enabledFor($reader)) {
+        if (! VideoConsultingAccess::bookableFor($reader)) {
             return response()->json([]);
         }
 
@@ -178,7 +183,7 @@ class VideoConsultingBookingController extends Controller
         ]);
 
         $reader = User::find($data['reader_id']);
-        if (! VideoConsultingAccess::enabledFor($reader)) {
+        if (! VideoConsultingAccess::bookableFor($reader)) {
             return response()->json([]);
         }
 
@@ -208,7 +213,7 @@ class VideoConsultingBookingController extends Controller
             return response()->json(['message' => 'Duration is not available.'], 422);
         }
 
-        if (! VideoConsultingAccess::enabledFor(User::find($data['reader_id']))) {
+        if (! VideoConsultingAccess::bookableFor(User::find($data['reader_id']))) {
             return response()->json(['message' => 'This reader is not currently accepting video consulting bookings.'], 422);
         }
 

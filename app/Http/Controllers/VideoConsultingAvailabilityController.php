@@ -1,5 +1,9 @@
 <?php
 
+// v1.5 — 2026-11-22 | update() now also saves video_consulting_available — the reader's own
+//                      "Available for video calls" pause toggle (ReaderProfile.
+//                      video_consulting_available). Doesn't touch the day loop below at all,
+//                      so pausing/unpausing never affects the saved weekly schedule.
 // v1.4 — 2026-11-15 | min_lead_hours is validated against admin-configurable bounds
 //                      (Setting::getVideoConsultingLeadHoursBounds(), Tools > Settings >
 //                      Assignments) instead of a hardcoded 0-336.
@@ -52,6 +56,7 @@ class VideoConsultingAvailabilityController extends Controller
         if ($reader->readerProfile) {
             $reader->readerProfile->update([
                 'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
+                'video_consulting_available'      => $request->boolean('video_consulting_available'),
             ]);
         }
 

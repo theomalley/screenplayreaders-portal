@@ -1,5 +1,9 @@
 <?php
 
+// v1.21 — 2026-11-22 | updateVideoConsultingAvailability() now also saves
+//                      video_consulting_available (the "Available for video calls" pause
+//                      toggle), mirroring ReaderProfileController's equivalent method. Doesn't
+//                      touch the day loop below.
 // v1.20 — 2026-11-18 | Correction: video_consulting_reader_request_eligible is now saved for
 //                      an editor target too, not just admin — editors don't automatically
 //                      write coverage either, so they need the same opt-in.
@@ -373,6 +377,7 @@ class EditorProfileController extends Controller
 
         VideoConsultingAccess::updateReaderProfileShell($user, [
             'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
+            'video_consulting_available'      => $request->boolean('video_consulting_available'),
         ]);
 
         foreach (range(0, 6) as $dayOfWeek) {

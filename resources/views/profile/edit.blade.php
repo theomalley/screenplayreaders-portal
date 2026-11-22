@@ -234,6 +234,10 @@
             @php
                 $showVideoConsultingSection = $user->isAdminOrEditor()
                     || ($user->isReader() && \App\Support\VideoConsultingAccess::enabledFor($user));
+                // video_consulting_available lives on ReaderProfile regardless of role — for an
+                // admin/editor, $profile is their EditorProfile (no such column), so the source
+                // is $videoConsultingOverrideSource instead, same as $favoritesProfile below.
+                $vcAvailabilitySource = $user->isReader() ? $profile : ($videoConsultingOverrideSource ?? null);
             @endphp
 
             @if ($profile)
@@ -293,6 +297,7 @@
                             'blackouts' => $videoConsultingBlackouts ?? collect(),
                             'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
                             'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
+                            'available' => (bool) ($vcAvailabilitySource?->video_consulting_available ?? true),
                             'updateAction' => route('video-consulting-availability.update'),
                             'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
                         ])
@@ -779,6 +784,7 @@
                             'blackouts' => $videoConsultingBlackouts ?? collect(),
                             'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
                             'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
+                            'available' => (bool) ($videoConsultingProfileSource?->video_consulting_available ?? true),
                             'updateAction' => $isEditingReader
                                 ? route('readers.updateVideoConsultingAvailability', $user)
                                 : route('admin.editors.updateVideoConsultingAvailability', $user),
