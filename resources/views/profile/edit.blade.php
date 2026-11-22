@@ -298,8 +298,10 @@
                             'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
                             'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
                             'available' => (bool) ($vcAvailabilitySource?->video_consulting_available ?? true),
+                            'holidayBlackouts' => $vcAvailabilitySource?->video_consulting_holiday_blackouts,
                             'updateAction' => route('video-consulting-availability.update'),
                             'blackoutStoreAction' => route('video-consulting-availability.blackouts.store'),
+                            'holidaysUpdateAction' => route('video-consulting-availability.holidays.update'),
                         ])
                     </div>
                     @endif
@@ -785,12 +787,16 @@
                             'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
                             'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
                             'available' => (bool) ($videoConsultingProfileSource?->video_consulting_available ?? true),
+                            'holidayBlackouts' => $videoConsultingProfileSource?->video_consulting_holiday_blackouts,
                             'updateAction' => $isEditingReader
                                 ? route('readers.updateVideoConsultingAvailability', $user)
                                 : route('admin.editors.updateVideoConsultingAvailability', $user),
                             'blackoutStoreAction' => $isEditingReader
                                 ? route('readers.videoConsultingAvailability.blackouts.store', $user)
                                 : route('admin.editors.videoConsultingAvailability.blackouts.store', $user),
+                            'holidaysUpdateAction' => $isEditingReader
+                                ? route('readers.videoConsultingAvailability.holidays.update', $user)
+                                : route('admin.editors.videoConsultingAvailability.holidays.update', $user),
                             // This card sits inside <form id="admin-form"> below — a nested <form> is
                             // invalid HTML and gets silently merged into the outer one by the browser,
                             // which is what broke this save. formId makes the partial render plain

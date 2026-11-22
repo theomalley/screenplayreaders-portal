@@ -1,5 +1,8 @@
 <?php
 
+// v1.22 — 2026-11-22 | Add updateVideoConsultingHolidays() — admin override of an admin/
+//                      editor's US federal holiday blackout accordion (App\Support\
+//                      FederalHolidays).
 // v1.21 — 2026-11-22 | updateVideoConsultingAvailability() now also saves
 //                      video_consulting_available (the "Available for video calls" pause
 //                      toggle), mirroring ReaderProfileController's equivalent method. Doesn't
@@ -402,6 +405,26 @@ class EditorProfileController extends Controller
         }
 
         return redirect()->route('admin.editors.edit', $user)->with('success', 'Availability updated.');
+    }
+
+    /**
+     * Admin override of an admin/editor's US federal holiday blackout accordion, mirroring
+     * ReaderProfileController::updateVideoConsultingHolidays() field-for-field.
+     */
+    public function updateVideoConsultingHolidays(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('editEditor', User::class);
+        abort_unless($user->isAdmin() || $user->isEditor(), 404);
+
+        $validKeys = array_keys(\App\Support\FederalHolidays::HOLIDAYS);
+        $submitted = $request->input('holidays', []);
+        $blackedOut = array_values(array_intersect($validKeys, is_array($submitted) ? $submitted : []));
+
+        VideoConsultingAccess::updateReaderProfileShell($user, [
+            'video_consulting_holiday_blackouts' => $blackedOut,
+        ]);
+
+        return redirect()->route('admin.editors.edit', $user)->with('success', 'Holiday blackouts updated.');
     }
 
     /** Admin/editor override — add a blackout date on behalf of an admin/editor taking calls. */

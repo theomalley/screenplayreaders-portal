@@ -118,6 +118,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/video-consulting-availability', [VideoConsultingAvailabilityController::class, 'update'])->name('video-consulting-availability.update');
     Route::post('/video-consulting-availability/blackouts', [VideoConsultingAvailabilityController::class, 'storeBlackout'])->name('video-consulting-availability.blackouts.store');
     Route::delete('/video-consulting-availability/blackouts/{blackout}', [VideoConsultingAvailabilityController::class, 'destroyBlackout'])->name('video-consulting-availability.blackouts.destroy');
+    Route::patch('/video-consulting-availability/holidays', [VideoConsultingAvailabilityController::class, 'updateHolidayBlackouts'])->name('video-consulting-availability.holidays.update');
 
     Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
     Route::get('assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');
@@ -178,6 +179,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/readers/{user}/video-consulting-rates', [ReaderProfileController::class, 'updateVideoConsultingRates'])->name('readers.updateVideoConsultingRates');
     Route::patch('/readers/{user}/video-consulting-availability', [ReaderProfileController::class, 'updateVideoConsultingAvailability'])->name('readers.updateVideoConsultingAvailability');
     Route::post('/readers/{user}/video-consulting-availability/blackouts', [ReaderProfileController::class, 'storeVideoConsultingBlackout'])->name('readers.videoConsultingAvailability.blackouts.store');
+    Route::patch('/readers/{user}/video-consulting-availability/holidays', [ReaderProfileController::class, 'updateVideoConsultingHolidays'])->name('readers.videoConsultingAvailability.holidays.update');
     Route::delete('/readers/{user}', [ReaderProfileController::class, 'destroy'])->name('readers.destroy');
 
     Route::get('/manual', [ManualController::class, 'show'])->name('manual.show');
@@ -458,6 +460,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/admin/editors/{user}/video-consulting-rates', [EditorProfileController::class, 'updateVideoConsultingRates'])->name('admin.editors.updateVideoConsultingRates');
     Route::patch('/admin/editors/{user}/video-consulting-availability', [EditorProfileController::class, 'updateVideoConsultingAvailability'])->name('admin.editors.updateVideoConsultingAvailability');
     Route::post('/admin/editors/{user}/video-consulting-availability/blackouts', [EditorProfileController::class, 'storeVideoConsultingBlackout'])->name('admin.editors.videoConsultingAvailability.blackouts.store');
+    Route::patch('/admin/editors/{user}/video-consulting-availability/holidays', [EditorProfileController::class, 'updateVideoConsultingHolidays'])->name('admin.editors.videoConsultingAvailability.holidays.update');
     Route::delete('/admin/editors/{user}', [EditorProfileController::class, 'destroy'])->name('admin.editors.destroy');
 
     Route::post('/editor-pay/{editor}/mark-paid', [EditorPayController::class, 'markPaid'])->name('editor-pay.mark-paid');

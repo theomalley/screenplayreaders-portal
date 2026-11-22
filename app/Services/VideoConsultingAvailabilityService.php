@@ -1,5 +1,11 @@
 <?php
 
+// v1.3 — 2026-11-22 | generateSlots() now also skips days that fall on a US federal holiday
+//                      the reader has blacked out (ReaderProfile.
+//                      video_consulting_holiday_blackouts, App\Support\FederalHolidays) — a
+//                      reader who's never touched the accordion is blacked out on all of them
+//                      by default. Enforced here (not just displayed), so it's authoritative
+//                      the same way min_lead_hours already is.
 // v1.2 — 2026-11-09 | Video consulting — enforce each reader's own minimum lead time
 //                      (ReaderProfile.video_consulting_min_lead_hours) in generateSlots(), not
 //                      just "must be in the future" — gives the reader time to actually read
@@ -23,6 +29,7 @@ use App\Models\ReaderBlackoutDate;
 use App\Models\User;
 use App\Models\VideoConsultingDuration;
 use App\Models\VideoConsultingHold;
+use App\Support\FederalHolidays;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 
@@ -120,8 +127,12 @@ class VideoConsultingAvailabilityService
 
         $minutes = (int) $duration->minutes;
 
-        $leadHours = (int) (User::find($readerId)?->readerProfile?->video_consulting_min_lead_hours ?? 0);
+        $readerProfile = User::find($readerId)?->readerProfile;
+
+        $leadHours = (int) ($readerProfile?->video_consulting_min_lead_hours ?? 0);
         $earliestAllowed = now()->addHours($leadHours);
+
+        $holidayBlackouts = $readerProfile?->video_consulting_holiday_blackouts ?? array_keys(FederalHolidays::HOLIDAYS);
 
         $rulesByDay = ReaderAvailabilityRule::where('reader_id', $readerId)
             ->enabled()
@@ -149,6 +160,12 @@ class VideoConsultingAvailabilityService
         $lastDay = $to->copy()->startOfDay();
 
         while ($day->lte($lastDay)) {
+            $holidayKey = FederalHolidays::keyForDate($day);
+            if ($holidayKey !== null && in_array($holidayKey, $holidayBlackouts, true)) {
+                $day->addDay();
+                continue;
+            }
+
             $rules = $rulesByDay->get($day->dayOfWeek, collect());
 
             foreach ($rules as $rule) {

@@ -1,5 +1,9 @@
 <?php
 
+// v1.6 — 2026-11-22 | Add updateHolidayBlackouts() — the reader's own US federal holiday
+//                      blackout accordion (ReaderProfile.video_consulting_holiday_blackouts,
+//                      App\Support\FederalHolidays). Separate action/form from update() since
+//                      it lives visually in the Blackout Dates card, not the weekly-schedule one.
 // v1.5 — 2026-11-22 | update() now also saves video_consulting_available — the reader's own
 //                      "Available for video calls" pause toggle (ReaderProfile.
 //                      video_consulting_available). Doesn't touch the day loop below at all,
@@ -82,6 +86,24 @@ class VideoConsultingAvailabilityController extends Controller
         }
 
         return redirect()->route('profile.edit')->with('success', 'Availability updated.');
+    }
+
+    public function updateHolidayBlackouts(Request $request): RedirectResponse
+    {
+        $reader = auth()->user();
+        abort_unless(VideoConsultingAccess::enabledFor($reader), 404);
+
+        $validKeys = array_keys(\App\Support\FederalHolidays::HOLIDAYS);
+        $submitted = $request->input('holidays', []);
+        $blackedOut = array_values(array_intersect($validKeys, is_array($submitted) ? $submitted : []));
+
+        if ($reader->readerProfile) {
+            $reader->readerProfile->update([
+                'video_consulting_holiday_blackouts' => $blackedOut,
+            ]);
+        }
+
+        return redirect()->route('profile.edit')->with('success', 'Holiday blackouts updated.');
     }
 
     public function storeBlackout(Request $request): RedirectResponse

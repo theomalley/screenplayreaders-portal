@@ -1,5 +1,9 @@
 <?php
 
+// v1.27 — 2026-11-22 | Add video_consulting_holiday_blackouts — nullable JSON array of
+//                      App\Support\FederalHolidays keys this reader has blacked out for video
+//                      calls. Null (never saved) means every federal holiday, not none — see
+//                      VideoConsultingAvailabilityService::generateSlots().
 // v1.26 — 2026-11-22 | Add video_consulting_available — reader self-serve pause toggle,
 //                      distinct from the admin-only video_consulting_enabled override. See
 //                      App\Support\VideoConsultingAccess::bookableFor().
@@ -108,6 +112,7 @@ class ReaderProfile extends Model
         'video_consulting_enabled',
         'video_consulting_min_lead_hours',
         'video_consulting_available',
+        'video_consulting_holiday_blackouts',
         'video_consulting_reader_request_eligible',
         'video_consulting_note',
         'video_consulting_call_mode',
@@ -148,6 +153,7 @@ class ReaderProfile extends Model
         'video_consulting_enabled' => 'boolean',
         'video_consulting_min_lead_hours' => 'integer',
         'video_consulting_available' => 'boolean',
+        'video_consulting_holiday_blackouts' => 'array',
         'video_consulting_reader_request_eligible' => 'boolean',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',

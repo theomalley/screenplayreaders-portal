@@ -21,6 +21,10 @@
                 is currently offered to customers (App\Support\VideoConsultingAccess::
                 bookableFor()) — the weekly schedule and blackout dates below are saved and
                 enforced completely independently, so pausing never loses them.
+      $holidayBlackouts    — array|null, ReaderProfile.video_consulting_holiday_blackouts (the
+                US federal holiday keys currently blacked out). Null (never saved) defaults to
+                every holiday — see App\Support\FederalHolidays.
+      $holidaysUpdateAction — route() for the holiday-blackout accordion's own form.
       $formId — pass this when including the partial somewhere already inside another <form>
                 (the admin reader-edit page's single shared admin-form). HTML forms can't
                 nest — a browser silently discards a nested <form> start tag, merging its
@@ -51,10 +55,17 @@
     $leadHoursBounds = $leadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS;
     $vcAvailable = $available ?? true;
 
+    $allHolidayKeys = array_keys(\App\Support\FederalHolidays::HOLIDAYS);
+    $vcHolidayBlackouts = $holidayBlackouts ?? $allHolidayKeys;
+    $holidayDatesThisYear = \App\Support\FederalHolidays::datesForYear(now()->year);
+    $holidayDatesNextYear = \App\Support\FederalHolidays::datesForYear(now()->year + 1);
+
     $vcFormId = $formId ?? null;
     $scheduleFormAttr = $vcFormId ? ' form="' . e($vcFormId) . '"' : '';
     $storeFormId = $vcFormId ? $vcFormId . '-store' : null;
     $storeFormAttr = $storeFormId ? ' form="' . e($storeFormId) . '"' : '';
+    $holidaysFormId = $vcFormId ? $vcFormId . '-holidays' : null;
+    $holidaysFormAttr = $holidaysFormId ? ' form="' . e($holidaysFormId) . '"' : '';
 @endphp
 
 @if ($vcFormId)
@@ -207,6 +218,64 @@
 <div class="space-y-4 pt-6 mt-6 border-t border-gray-200">
     <h3 class="font-semibold text-gray-800">Blackout Dates</h3>
     <p class="text-sm text-gray-500">One-off times unavailable, even during the normal hours above.</p>
+
+    @if ($holidaysFormId)
+        @push('late-forms')
+            <form id="{{ $holidaysFormId }}" method="POST" action="{{ $holidaysUpdateAction }}">
+                @csrf
+                @method('PATCH')
+            </form>
+        @endpush
+    @endif
+
+    <details class="border border-gray-100 rounded-md px-3 py-2 group">
+        <summary class="cursor-pointer text-sm font-medium text-gray-900 flex items-center gap-2 list-none select-none">
+            <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            US Federal Holidays
+        </summary>
+
+        @if ($holidaysFormId)
+            <div class="mt-3 space-y-3">
+        @else
+            <form method="POST" action="{{ $holidaysUpdateAction }}" class="mt-3 space-y-3">
+                @csrf
+                @method('PATCH')
+        @endif
+
+            <p class="text-sm text-gray-500">
+                Blacked out by default every year — uncheck a holiday if you're happy to take
+                calls on it.
+            </p>
+            <div class="space-y-2">
+                @foreach (\App\Support\FederalHolidays::HOLIDAYS as $key => $label)
+                    @php
+                        $upcoming = $holidayDatesThisYear[$key]->isBefore(now()->startOfDay())
+                            ? $holidayDatesNextYear[$key]
+                            : $holidayDatesThisYear[$key];
+                    @endphp
+                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" name="holidays[]" value="{{ $key }}"{!! $holidaysFormAttr !!}
+                               {{ in_array($key, old('holidays', $vcHolidayBlackouts), true) ? 'checked' : '' }}
+                               class="rounded text-indigo-600 focus:ring-indigo-500" />
+                        <span>{{ $label }}</span>
+                        <span class="text-gray-400">— {{ $upcoming->format('M j, Y') }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <div class="flex justify-end">
+                @if ($holidaysFormId)
+                    <x-primary-button form="{{ $holidaysFormId }}">Save Holidays</x-primary-button>
+                @else
+                    <x-primary-button>Save Holidays</x-primary-button>
+                @endif
+            </div>
+
+        @if ($holidaysFormId)
+            </div>
+        @else
+            </form>
+        @endif
+    </details>
 
     @forelse ($blackouts as $blackout)
         @php
