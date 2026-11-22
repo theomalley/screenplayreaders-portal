@@ -1,5 +1,9 @@
 <?php
 
+// v1.1 — 2026-11-22 | FIX: A permanently-failed delivery (tries exhausted) never marked
+//                      the registration STATUS_FAILED/error_message, unlike the sibling
+//                      GenerateRegistrationCertificate job — the row just sat at
+//                      STATUS_PENDING forever with no signal that staff need to resend.
 // v1.0 — 2026-06-22 | Initial: downloads certificate PDF from Drive, emails to customer
 //                      via MailerSend template, updates registration status.
 
@@ -11,12 +15,13 @@ use App\Services\GoogleDocsService;
 use App\Services\SpacesStorageService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class DeliverRegistrationEmail implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, InteractsWithQueue;
 
     public int $tries = 3;
     public int $backoff = 60;
@@ -63,6 +68,21 @@ class DeliverRegistrationEmail implements ShouldQueue
                 'registration_id' => $reg->id,
                 'email' => $reg->email,
             ]);
+        } catch (\Throwable $e) {
+            if ($this->attempts() >= $this->tries) {
+                $reg->update([
+                    'status' => ScriptRegistration::STATUS_FAILED,
+                    'error_message' => 'Email delivery failed: ' . $e->getMessage(),
+                ]);
+            }
+
+            Log::error('DeliverRegistrationEmail: failed', [
+                'registration_id' => $reg->id,
+                'attempt' => $this->attempts(),
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
         } finally {
             foreach ($tempFiles as $tmp) {
                 @unlink($tmp);

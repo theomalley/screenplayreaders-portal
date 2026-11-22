@@ -1,5 +1,17 @@
 <?php
 
+// v1.2 — 2026-11-22 | FIX: The idempotency check queried existing registration_ids once,
+//                      before DB::transaction() began, with no row lock — two concurrent
+//                      or retried deliveries of the same webhook (e.g. a client-side
+//                      timeout causing the theme to retry while the first request was
+//                      still mid-transaction) could both pass the check and both attempt
+//                      create() for the same registration_id. The unique constraint then
+//                      threw uncaught, rolling back the ENTIRE batch (including unrelated
+//                      payloads in that request that would have inserted cleanly) and
+//                      returning an uncontrolled 500. Each create() is now individually
+//                      guarded against a duplicate-key violation — on one, that single
+//                      payload is treated as already-handled and skipped, not fatal to
+//                      the rest of the batch.
 // v1.1 — 2026-07-09 | variation_label and "never expires" now prefer the theme's
 //                      sr_registration_variation_label / sr_registration_never_expires
 //                      payload fields (set from its admin-configurable term length),
@@ -77,38 +89,54 @@ class ScriptRegistrationWebhookController extends Controller
                     ? $payload['sr_registration_never_expires'] === '1'
                     : $variationId === ScriptRegistration::VAR_LIFETIME;
 
-                $registration = ScriptRegistration::create([
-                    'woo_order_id'      => $data['order_id'],
-                    'woo_order_number'  => $data['order_number'] ?? null,
-                    'customer_name'     => $data['customer_name'],
-                    'customer_email'    => $data['customer_email'],
-                    'variation_id'      => $variationId,
-                    'variation_label'   => $variationLabel,
-                    'registration_id'   => $registrationId ?? ScriptRegistration::generateRegistrationId(),
-                    'script_title'      => $payload['sr_title'] ?? '',
-                    'page_count'        => ! empty($payload['sr_page_count']) ? (int) $payload['sr_page_count'] : null,
-                    'type_of_work'      => $payload['sr_type_of_work'] ?? '',
-                    'author_first'      => $payload['sr_author_first'] ?? '',
-                    'author_last'       => $payload['sr_author_last'] ?? '',
-                    'additional_authors' => $payload['sr_additional_authors'] ?? null,
-                    'street_address'    => $payload['sr_street_address'] ?? '',
-                    'city'              => $payload['sr_city'] ?? '',
-                    'state_or_province' => $payload['sr_state_or_province'] ?? '',
-                    'postal_or_zip'     => $payload['sr_postal_or_zip'] ?? '',
-                    'country'           => $payload['sr_country'] ?? '',
-                    'phone'             => $payload['sr_phone'] ?? '',
-                    'unique_id'         => $payload['sr_unique_id_optional'] ?? null,
-                    'email'             => $payload['sr_email'] ?? $data['customer_email'],
-                    'uploaded_file_url' => $payload['sr_uploaded_file_url'] ?? null,
-                    'uploaded_file_name' => $payload['sr_uploaded_file_original_name'] ?? null,
-                    'authcode'          => $payload['sr_authcode'] ?? bin2hex(random_bytes(16)),
-                    'registered_at'     => now(),
-                    'expires_at'        => $this->parseExpiry($payload['sr_registration_expires'] ?? null, $variationId, $neverExpires),
-                    'unlimited_token'   => $neverExpires
-                        ? ScriptRegistration::generateUnlimitedToken()
-                        : null,
-                    'status'            => ScriptRegistration::STATUS_PENDING,
-                ]);
+                try {
+                    $registration = ScriptRegistration::create([
+                        'woo_order_id'      => $data['order_id'],
+                        'woo_order_number'  => $data['order_number'] ?? null,
+                        'customer_name'     => $data['customer_name'],
+                        'customer_email'    => $data['customer_email'],
+                        'variation_id'      => $variationId,
+                        'variation_label'   => $variationLabel,
+                        'registration_id'   => $registrationId ?? ScriptRegistration::generateRegistrationId(),
+                        'script_title'      => $payload['sr_title'] ?? '',
+                        'page_count'        => ! empty($payload['sr_page_count']) ? (int) $payload['sr_page_count'] : null,
+                        'type_of_work'      => $payload['sr_type_of_work'] ?? '',
+                        'author_first'      => $payload['sr_author_first'] ?? '',
+                        'author_last'       => $payload['sr_author_last'] ?? '',
+                        'additional_authors' => $payload['sr_additional_authors'] ?? null,
+                        'street_address'    => $payload['sr_street_address'] ?? '',
+                        'city'              => $payload['sr_city'] ?? '',
+                        'state_or_province' => $payload['sr_state_or_province'] ?? '',
+                        'postal_or_zip'     => $payload['sr_postal_or_zip'] ?? '',
+                        'country'           => $payload['sr_country'] ?? '',
+                        'phone'             => $payload['sr_phone'] ?? '',
+                        'unique_id'         => $payload['sr_unique_id_optional'] ?? null,
+                        'email'             => $payload['sr_email'] ?? $data['customer_email'],
+                        'uploaded_file_url' => $payload['sr_uploaded_file_url'] ?? null,
+                        'uploaded_file_name' => $payload['sr_uploaded_file_original_name'] ?? null,
+                        'authcode'          => $payload['sr_authcode'] ?? bin2hex(random_bytes(16)),
+                        'registered_at'     => now(),
+                        'expires_at'        => $this->parseExpiry($payload['sr_registration_expires'] ?? null, $variationId, $neverExpires),
+                        'unlimited_token'   => $neverExpires
+                            ? ScriptRegistration::generateUnlimitedToken()
+                            : null,
+                        'status'            => ScriptRegistration::STATUS_PENDING,
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // Duplicate-key violation (SQLSTATE 23000) means a concurrent/retried
+                    // delivery already inserted this exact registration_id between our
+                    // pre-transaction existence check and this create() — treat it the
+                    // same as the already-processed case above instead of letting it take
+                    // down the rest of this batch.
+                    if ($e->getCode() === '23000') {
+                        Log::info('ScriptRegistrationWebhook: duplicate-key on create, skipping', [
+                            'order_id' => $data['order_id'],
+                            'registration_id' => $registrationId,
+                        ]);
+                        continue;
+                    }
+                    throw $e;
+                }
 
                 $created[] = $registration;
             }

@@ -1,5 +1,9 @@
 <?php
 
+// v1.2 — 2026-11-22 | SECURITY: Removed application/octet-stream from the .fountain
+//                      allowed-MIME list — a genuine Fountain file is always plain text,
+//                      so the generic binary fallback only weakened the magic-byte check
+//                      for that extension with no legitimate upside.
 // v1.1 — 2026-06-23 | Security hardening: MIME magic-byte verification on uploads, minimum
 //                      file size check, UUID-based safe filenames, strict extension matching
 // v1.0 — 2026-06-22 | Initial: public form for unlimited script registration token holders.
@@ -173,13 +177,21 @@ class ScriptRegistrationPublicController extends Controller
         return $parent;
     }
 
+    // FIX: 'fountain' is a plain-text markup format — a genuine .fountain file always
+    // detects as text/plain, so 'application/octet-stream' (finfo's generic fallback for
+    // almost any unrecognized binary content) added nothing but a loophole that let
+    // nearly any file renamed to .fountain pass magic-byte verification. Removed.
+    // 'fdr' keeps octet-stream: it's a legacy proprietary Final Draft binary format with
+    // no well-known canonical signature, so this one extension's magic-byte check is
+    // genuinely closer to extension-match-only — a documented, accepted trade-off (unlike
+    // fountain, there's no narrower real MIME type to require instead).
     private const ALLOWED_MIMES = [
         'pdf'      => ['application/pdf'],
         'docx'     => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
         'fdx'      => ['application/xml', 'text/xml', 'text/plain'],
         'fdr'      => ['application/zip', 'application/octet-stream'],
         'fadein'   => ['application/zip'],
-        'fountain' => ['text/plain', 'application/octet-stream'],
+        'fountain' => ['text/plain'],
     ];
 
     private function verifyMime(string $path, string $ext): bool
