@@ -111,9 +111,11 @@
                 $bioRejectionNote        = $profile?->bio_rejection_note;
             @endphp
 
-            {{-- Reader Icon --}}
+            {{-- Reader Icon + About Page Photo — side by side so the two drop-zones don't eat
+                 twice the vertical space of one card. --}}
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
+                <div class="flex flex-col sm:flex-row gap-8">
+                <div class="flex-1 min-w-0">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">Reader Icon</h2>
                     <p class="text-sm text-gray-600 mb-3">Your avatar in the portal (not public). Min 600×600 px.</p>
                     <form method="POST" action="{{ route('profile.photo') }}" enctype="multipart/form-data"
@@ -162,11 +164,8 @@
                         @endif
                     </form>
                 </div>
-            </div>
 
-            {{-- About Page Photo --}}
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
+                <div class="flex-1 min-w-0">
                     <h2 class="text-lg font-medium text-gray-900 mb-1">About Page Photo</h2>
                     <p class="text-sm text-gray-600 mb-3">Displayed on the public website's About page. Min 600×600 px.</p>
                     <form method="POST" action="{{ route('profile.about-photo') }}" enctype="multipart/form-data"
@@ -228,6 +227,7 @@
                             </div>
                         @endif
                     </form>
+                </div>
                 </div>
             </div>
 
@@ -695,9 +695,11 @@
                 </div>
                 @endif
 
-                {{-- Reader Icon --}}
+                {{-- Reader Icon + About Page Photo — side by side so the two drop-zones don't
+                     eat twice the vertical space of one card. --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl" x-data="{ previewUrl: '{{ $currentPhotoUrl }}', hasFile: false }">
+                    <div class="flex flex-col sm:flex-row gap-8">
+                    <div class="flex-1 min-w-0" x-data="{ previewUrl: '{{ $currentPhotoUrl }}', hasFile: false }">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Reader Icon</h2>
                         <p class="text-sm text-gray-600 mb-3">Portal avatar and public website icon. Min 600×600 px. Leave blank to keep current.</p>
                         <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-3"
@@ -718,11 +720,8 @@
                         <x-input-error :messages="$errors->get('photo')" class="mt-1" />
                         <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
                     </div>
-                </div>
 
-                {{-- About Page Photo --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl" x-data="{ previewUrl: '', hasFile: false }">
+                    <div class="flex-1 min-w-0" x-data="{ previewUrl: '', hasFile: false }">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">About Page Photo</h2>
                         <p class="text-sm text-gray-600 mb-3">Displayed on the public website's About page. Min 600×600 px. Leave blank to keep current.</p>
                         <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-3"
@@ -752,6 +751,7 @@
                             ])
                         @endif
                         <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
+                    </div>
                     </div>
                 </div>
 
