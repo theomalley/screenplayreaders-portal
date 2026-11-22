@@ -40,7 +40,11 @@ The Laravel app lives in the `screenplayreaders-portal/` subdirectory of this re
 - **Framework:** Laravel (PHP) — app is in `screenplayreaders-portal/` subdirectory
 - **Database:** MySQL — Laravel migrations + Eloquent
 - **File storage:** Google Drive API (scripts as PDFs, coverage as Google Docs) — see File Strategy
-- **Auth:** Laravel Breeze or Jetstream — email + password for all roles (decide at scaffold time)
+- **Auth:** Laravel Breeze (Blade stack) — email + password for all roles. WordPress-theme-facing
+  API endpoints (routes/api.php) are NOT authenticated via Sanctum — they use a custom shared-secret
+  header check (`App\Http\Middleware\VerifyPortalWebhookSecret`, aliased `portal.secret`) plus
+  route-level `throttle:N,1` middleware. There is no Sanctum dependency in this app and no named
+  `RateLimiter::for()` definitions — rate limiting is all inline `throttle:` middleware.
 - **Frontend:** Blade templates + Alpine.js + Tailwind CSS — no Vue/React
 - **PDF manipulation:** Google Drive export API; local PDF library (e.g. spatie/pdf-to-image) for title page removal
 - **Queue/jobs:** Laravel queues for all Google Drive API calls and Zapier webhooks
@@ -506,7 +510,8 @@ Customer email delivery. Integration approach TBD (see Coverage Delivery above).
 - Jobs/queues for anything calling an external API — never block a web request on these.
 - Rate limiting on all API endpoints via Laravel's `RateLimiter`.
 - Input validation via Form Request classes. Sanitize everything at the boundary.
-- CSRF on all forms. API endpoints authenticated via Laravel Sanctum.
+- CSRF on all forms. WordPress-theme-facing API endpoints authenticated via the shared-secret
+  `portal.secret` middleware (not Sanctum — see Technology Stack above), not session/token auth.
 - Version-comment each major class file: version header + short changelog at the top.
 - Comments only when the WHY is non-obvious. Do not narrate what the code does.
 - Do not write Phase 2 code during Phase 1 work.
@@ -594,4 +599,6 @@ Then pull locally so the IDE stays in sync.
 
 ---
 
-*Last updated: 2026-05-17 — coverage form field spec complete (SR + WD); vendor/assignment_type added to assignments table; coverage_submissions table fully specced; deploy script corrected (OPcache via HTTP); Nginx uses current/ symlink pointing to site root — deploy script re-affirms this. storage:link added to deploy script (required for logo uploads).*
+*Last updated: 2026-11-22 — corrected stale Auth/Coding Conventions claims (no Sanctum, no RateLimiter::for() — see Technology Stack). Note: this file still describes Phase 1 planning-era scope; the actual app has grown far beyond it (video consulting, budget tool, pay/payroll, partner sites, statistics, etc. — see the theme repo's CLAUDE.md module map and the portal's own controller/model directories for current scope).*
+
+*Prior update: 2026-05-17 — coverage form field spec complete (SR + WD); vendor/assignment_type added to assignments table; coverage_submissions table fully specced; deploy script corrected (OPcache via HTTP); Nginx uses current/ symlink pointing to site root — deploy script re-affirms this. storage:link added to deploy script (required for logo uploads).*

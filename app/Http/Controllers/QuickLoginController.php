@@ -1,5 +1,10 @@
 <?php
 
+// v1.4 — 2026-11-22 | Added isConfiguredAdminId() so CheckSessionTimeout only restores
+//                     the specific admin configured for quick-login, not whichever admin
+//                     happened to time out — a second admin account timing out was being
+//                     silently re-authenticated as the quick-login admin instead of logged
+//                     out normally.
 // v1.3 — 2026-10-26 | Session-timeout handling no longer redirects through the public
 //                     /ql/{token} URL (which put the permanent, un-expiring token in
 //                     every proxy/access log on every timeout). CheckSessionTimeout now
@@ -128,6 +133,18 @@ class QuickLoginController extends Controller
         Setting::setValue(self::USER_ID_KEY, '');
 
         return back()->with('success', 'Quick-login link revoked.');
+    }
+
+    /**
+     * True if $userId is the specific admin currently configured for
+     * quick-login auto-restoration — the only account CheckSessionTimeout
+     * is allowed to silently re-authenticate on its own timeout.
+     */
+    public static function isConfiguredAdminId(int $userId): bool
+    {
+        $configuredId = Setting::getValue(self::USER_ID_KEY);
+
+        return $configuredId !== null && $configuredId !== '' && (string) $configuredId === (string) $userId;
     }
 
     /**
