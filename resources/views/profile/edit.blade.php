@@ -247,7 +247,7 @@
                     <p class="text-sm text-gray-600 mb-6">Two separate settings — one for regular script assignments, one for paid video consulting calls. Setting one does not affect the other.</p>
 
                     <div class="pb-6 mb-6 border-b border-gray-100">
-                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Assignment Availability</h3>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Coverage/Editing Assignment Availability</h3>
                         <p class="text-sm text-gray-600 mb-4">Visible to the assignments team — not shown to customers. Does not affect your video consulting calls below.</p>
                         @if (session('availability_success'))
                             <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
@@ -674,7 +674,161 @@
                 $nameParts            = explode(' ', $user->name, 2);
                 $fallbackFirst        = $nameParts[0] ?? '';
                 $fallbackLast         = $nameParts[1] ?? '';
+                // Hoisted up here (rather than computed inline where the Video Consulting card
+                // used to be) since Reader Rates/Video Consulting Rates now render ABOVE that
+                // card and also depend on this for the fee override — see line ~1441.
+                $videoConsultingProfileSource = $isEditingReader ? $profile : ($videoConsultingOverrideSource ?? null);
             @endphp
+
+            {{-- Reader Rates + Video Consulting Rates — moved up to sit just above the
+                 Availability box, own standalone forms, unaffected by admin-form below. --}}
+            {{-- Reader Rates (readers only, admin only) --}}
+            @if ($user->isReader())
+            @php
+                $globalRates = \App\Models\Setting::ratesForForms();
+                $readerRateFields = [
+                    'rate_script_coverage'   => ['label' => 'Script Coverage',               'default' => $globalRates['rate_sr_script_coverage']],
+                    'rate_notes_only'        => ['label' => 'Notes-Only Coverage',             'default' => $globalRates['rate_sr_notes_only']],
+                    'rate_deep_dive'         => ['label' => 'Advanced Script Coverage',        'default' => $globalRates['rate_sr_deep_dive']],
+                    'rate_proofreading'      => ['label' => 'Proofreading',                   'default' => $globalRates['rate_sr_proofreading']],
+                    'rate_oversized_121_160' => ['label' => 'Oversized (121-160 pages)',       'default' => $globalRates['rate_sr_oversized_121_160']],
+                    'rate_rush'              => ['label' => 'Rush (24h turnaround)',           'default' => $globalRates['rate_sr_rush']],
+                    'rate_request'           => ['label' => 'Reader Request',                 'default' => $globalRates['rate_sr_request']],
+                ];
+            @endphp
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                <div class="max-w-xl space-y-4">
+                    <h2 class="text-lg font-medium text-gray-900">Reader Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                    <p class="text-sm text-gray-600 -mt-2">Custom per-reader pay rates. Leave a field blank to use the sitewide Ratebook default shown as its placeholder.</p>
+                    <form method="POST" action="{{ route('readers.updateRates', $user) }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <div class="grid grid-cols-2 gap-4">
+                            @foreach ($readerRateFields as $key => $field)
+                                <div>
+                                    <x-input-label for="{{ $key }}" value="{{ $field['label'] }}" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <span class="text-gray-400 text-sm">$</span>
+                                        <x-text-input id="{{ $key }}" name="{{ $key }}" type="number"
+                                            class="block w-28 text-right"
+                                            value="{{ old($key, $profile?->{$key}) }}"
+                                            min="0" max="9999.99" step="0.01"
+                                            placeholder="{{ number_format((float) $field['default'], 2) }}" />
+                                    </div>
+                                    <x-input-error :messages="$errors->get($key)" class="mt-1" />
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Rates</x-primary-button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
+            {{-- Video Consulting Rates (admin only) --}}
+            @if ($user->isReader() || $user->isAdminOrEditor())
+            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+                <div class="max-w-xl space-y-4">
+                    <h2 class="text-lg font-medium text-gray-900">Video Consulting Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                    <p class="text-sm text-gray-600 -mt-2">What this {{ $isEditingReader ? 'reader' : 'person' }} is paid for a video consulting call of each length. Leave a field blank to opt them out of that call length. They need at least one rate set here (or via their own self-serve page) before they appear as bookable on the checkout upgrade or the Script Consulting page. Rates can be changed as often as needed.</p>
+                    @if ($videoConsultingDurations->isEmpty())
+                        <p class="text-sm text-gray-500 italic">No call-length durations are configured yet — add some under Settings first.</p>
+                    @else
+                    @php
+                        $feeOverrideEnabled = (bool) ($videoConsultingProfileSource?->video_consulting_fee_override_enabled ?? false);
+                        $feeOverrideAmount = $videoConsultingProfileSource?->video_consulting_fee_override_amount;
+                        $feeOverridePercent = $videoConsultingProfileSource?->video_consulting_fee_override_percent;
+                    @endphp
+                    <form method="POST" action="{{ $isEditingReader ? route('readers.updateVideoConsultingRates', $user) : route('admin.editors.updateVideoConsultingRates', $user) }}" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div class="pb-4 mb-2 border-b border-gray-100" x-data="{ feeOverride: {{ old('fee_override_enabled', $feeOverrideEnabled) ? 'true' : 'false' }} }">
+                            <label class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                                <input type="hidden" name="fee_override_enabled" value="0">
+                                <input type="checkbox" name="fee_override_enabled" value="1" x-model="feeOverride"
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                Override SR's fee for this person
+                            </label>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Replaces the per-duration fee below with a flat $ and % of their own rate,
+                                applied the same way across every call length. Set both to 0 to charge the
+                                customer exactly this person's rate, with no SR fee added.
+                            </p>
+                            <div class="mt-2 flex items-end gap-4" x-show="feeOverride" x-cloak>
+                                <div>
+                                    <x-input-label value="SR Fee ($)" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <span class="text-gray-400 text-sm">$</span>
+                                        <x-text-input name="fee_override_amount" type="number" class="block w-24 text-right"
+                                            value="{{ old('fee_override_amount', $feeOverrideAmount) }}" min="0" step="0.01" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <x-input-label value="SR Fee (%)" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <x-text-input name="fee_override_percent" type="number" class="block w-24 text-right"
+                                            value="{{ old('fee_override_percent', $feeOverridePercent) }}" min="0" max="100" step="0.01" />
+                                        <span class="text-gray-400 text-sm">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <x-input-error :messages="$errors->get('fee_override_amount')" class="mt-1" />
+                            <x-input-error :messages="$errors->get('fee_override_percent')" class="mt-1" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            @foreach ($videoConsultingDurations as $duration)
+                                @php
+                                    $effectiveBaseRate = $feeOverrideEnabled ? (float) ($feeOverrideAmount ?? 0) : (float) $duration->base_rate;
+                                    $effectiveBasePercent = $feeOverrideEnabled ? (float) ($feeOverridePercent ?? 0) : (float) $duration->base_rate_percent;
+                                @endphp
+                                <div x-data="{
+                                        rate: '{{ old('vc_rates.' . $duration->id, $videoConsultingRates[$duration->id] ?? '') }}',
+                                        baseRate: {{ $effectiveBaseRate }},
+                                        basePercent: {{ $effectiveBasePercent }},
+                                        get payout() {
+                                            return parseFloat(this.rate) || 0;
+                                        },
+                                        get cut() {
+                                            return this.baseRate + Math.round((this.basePercent / 100) * this.payout);
+                                        },
+                                        get total() {
+                                            return this.payout + this.cut;
+                                        }
+                                     }">
+                                    <x-input-label for="vc_rate_{{ $duration->id }}" value="{{ $duration->label }}" />
+                                    <div class="mt-1 flex items-center gap-1">
+                                        <span class="text-gray-400 text-sm">$</span>
+                                        <x-text-input id="vc_rate_{{ $duration->id }}" name="vc_rates[{{ $duration->id }}]" type="number"
+                                            class="block w-28 text-right"
+                                            x-model="rate"
+                                            min="{{ $duration->min_reader_rate }}" max="{{ $duration->max_reader_rate }}" step="0.01"
+                                            placeholder="blank = opt out" />
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        They're paid exactly what's entered above — SR's fee (a flat ${{ number_format($effectiveBaseRate, 2) }}
+                                        plus <span x-text="basePercent"></span>% of their rate) is added on top for
+                                        the customer's price, never taken out of their rate. At this rate
+                                        <span class="font-medium text-gray-700">they're paid $<span x-text="payout"></span></span>,
+                                        SR's fee is <span class="font-medium text-gray-700" x-text="'$' + cut"></span>,
+                                        customer pays <span class="font-medium text-gray-700" x-text="'$' + total"></span> total
+                                    </p>
+                                    <x-input-error :messages="$errors->get('vc_rates.' . $duration->id)" class="mt-1" />
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Save Video Consulting Rates</x-primary-button>
+                        </div>
+                    </form>
+                    @endif
+                </div>
+            </div>
+            @endif
 
             {{-- Single outer form — all Save buttons within it submit everything. --}}
             {{-- Each card is a visual section; per-card saves re-submit the whole form --}}
@@ -695,113 +849,87 @@
                 </div>
                 @endif
 
-                {{-- Reader Icon + About Page Photo — side by side so the two drop-zones don't
-                     eat twice the vertical space of one card. --}}
+                {{-- Availability — Coverage/Editing assignment status + Video Call Availability
+                     (schedule, blackouts, holidays) combined in one card, mirroring the
+                     self-edit layout's Availability card. --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="flex flex-col sm:flex-row gap-8">
-                    <div class="flex-1 min-w-0" x-data="{ previewUrl: '{{ $currentPhotoUrl }}', hasFile: false }">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">Reader Icon</h2>
-                        <p class="text-sm text-gray-600 mb-3">Portal avatar and public website icon. Min 600×600 px. Leave blank to keep current.</p>
-                        <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-3"
-                             style="width:200px;height:200px"
-                             @click="$refs.photoInput.click()">
-                            <template x-if="previewUrl">
-                                <img :src="previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="Photo preview" />
-                            </template>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
-                                 :class="previewUrl ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
-                                <svg class="w-8 h-8" :class="previewUrl ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                                <span class="text-sm font-medium" :class="previewUrl ? 'text-white' : 'text-gray-500'">Click to browse</span>
-                            </div>
-                        </div>
-                        <input x-ref="photoInput" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
-                               @change="if ($event.target.files[0]) { const r=new FileReader(); r.onload=e=>{previewUrl=e.target.result;hasFile=true}; r.readAsDataURL($event.target.files[0]); }" />
-                        <p class="text-xs text-gray-500 mb-2">JPG, PNG or WebP &nbsp;·&nbsp; min 600×600 px &nbsp;·&nbsp; max 8 MB</p>
-                        <x-input-error :messages="$errors->get('photo')" class="mt-1" />
-                        <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
-                    </div>
+                    <div class="max-w-xl">
+                        <h2 class="text-lg font-medium text-gray-900 mb-1">Availability</h2>
+                        <p class="text-sm text-gray-600 mb-6">Two separate settings — one for regular script assignments, one for paid video consulting calls. Setting one does not affect the other.</p>
 
-                    <div class="flex-1 min-w-0" x-data="{ previewUrl: '', hasFile: false }">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">About Page Photo</h2>
-                        <p class="text-sm text-gray-600 mb-3">Displayed on the public website's About page. Min 600×600 px. Leave blank to keep current.</p>
-                        <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-3"
-                             style="width:200px;height:200px"
-                             @click="$refs.aboutInput.click()">
-                            @if($currentAboutPhotoUrl)
-                                <img src="{{ $currentAboutPhotoUrl }}" x-show="!previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="About photo" />
-                            @endif
-                            <img x-show="previewUrl" :src="previewUrl" x-cloak class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
-                            <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
-                                 :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
-                                <svg class="w-8 h-8" :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-                                <span class="text-sm font-medium" :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-500'">Click to browse</span>
+                        <div class="pb-6 mb-6 border-b border-gray-100">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-1">Coverage/Editing Assignment Availability</h3>
+                            <p class="text-sm text-gray-600 mb-4">Visible to the assignments team — not shown to customers. Does not affect video consulting calls below.</p>
+                            <div>
+                                <x-input-label value="Status" />
+                                <div class="mt-2 flex gap-6">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="availability" value="available"
+                                               {{ old('availability', $profile?->availability ?? 'available') === 'available' ? 'checked' : '' }}
+                                               class="text-green-600 focus:ring-green-500" />
+                                        <span class="text-sm font-medium text-green-700">Available</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="availability" value="unavailable"
+                                               {{ old('availability', $profile?->availability ?? 'available') === 'unavailable' ? 'checked' : '' }}
+                                               class="text-red-600 focus:ring-red-500" />
+                                        <span class="text-sm font-medium text-red-700">Unavailable</span>
+                                    </label>
+                                </div>
+                                <x-input-error :messages="$errors->get('availability')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="availability_message" value="Availability Note (optional)" />
+                                <textarea id="availability_message" name="availability_message" rows="2"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                          placeholder="e.g. Back Jan 15, on vacation, etc.">{{ old('availability_message', $profile?->availability_message) }}</textarea>
+                                <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
+                            </div>
+                            <div class="flex justify-end">
+                                <x-primary-button>Save Availability</x-primary-button>
                             </div>
                         </div>
-                        <input x-ref="aboutInput" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only"
-                               @change="if ($event.target.files[0]) { const r=new FileReader(); r.onload=e=>{previewUrl=e.target.result;hasFile=true}; r.readAsDataURL($event.target.files[0]); }" />
-                        <p class="text-xs text-gray-500 mb-2">JPG, PNG or WebP &nbsp;·&nbsp; min 600×600 px &nbsp;·&nbsp; max 8 MB</p>
-                        <x-input-error :messages="$errors->get('about_photo')" class="mt-1" />
-                        @if (!empty($pendingAboutPhotoUrl))
-                            @include('partials.approval-panel', [
-                                'type'       => 'about-photo',
-                                'approveUrl' => route('admin.approvals.about-photo.approve', $user),
-                                'rejectUrl'  => route('admin.approvals.about-photo.reject', $user),
-                                'preview'    => '<img src="'.e($pendingAboutPhotoUrl).'" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending about photo" />',
-                                'label'      => 'Pending about page photo waiting for approval.',
+
+                        @if ($user->isReader() || $user->isAdminOrEditor())
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-900 mb-1">Video Call Availability</h3>
+                            @include('partials.video-consulting-availability', [
+                                'rules' => $videoConsultingRules ?? collect(),
+                                'blackouts' => $videoConsultingBlackouts ?? collect(),
+                                'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
+                                'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
+                                'available' => (bool) ($videoConsultingProfileSource?->video_consulting_available ?? true),
+                                'holidayBlackouts' => $videoConsultingProfileSource?->video_consulting_holiday_blackouts,
+                                'updateAction' => $isEditingReader
+                                    ? route('readers.updateVideoConsultingAvailability', $user)
+                                    : route('admin.editors.updateVideoConsultingAvailability', $user),
+                                'blackoutStoreAction' => $isEditingReader
+                                    ? route('readers.videoConsultingAvailability.blackouts.store', $user)
+                                    : route('admin.editors.videoConsultingAvailability.blackouts.store', $user),
+                                'holidaysUpdateAction' => $isEditingReader
+                                    ? route('readers.videoConsultingAvailability.holidays.update', $user)
+                                    : route('admin.editors.videoConsultingAvailability.holidays.update', $user),
+                                // This card sits inside <form id="admin-form"> below — a nested <form> is
+                                // invalid HTML and gets silently merged into the outer one by the browser,
+                                // which is what broke this save. formId makes the partial render plain
+                                // form="..."-tagged fields here instead, with the real (empty) <form> tags
+                                // pushed onto 'late-forms' and rendered just after admin-form closes.
+                                'formId' => 'vc-availability-admin',
                             ])
+                        </div>
                         @endif
-                        <x-primary-button x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
-                    </div>
-                    </div>
-                </div>
-
-                {{-- Assignment Availability (separate from Video Call Availability below) --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900 mb-1">Assignment Availability</h2>
-                        <p class="text-sm text-gray-600 -mt-2">Visible to the assignments team — not shown to customers. Does not affect video consulting calls below.</p>
-                        <div>
-                            <x-input-label value="Status" />
-                            <div class="mt-2 flex gap-6">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="availability" value="available"
-                                           {{ old('availability', $profile?->availability ?? 'available') === 'available' ? 'checked' : '' }}
-                                           class="text-green-600 focus:ring-green-500" />
-                                    <span class="text-sm font-medium text-green-700">Available</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="availability" value="unavailable"
-                                           {{ old('availability', $profile?->availability ?? 'available') === 'unavailable' ? 'checked' : '' }}
-                                           class="text-red-600 focus:ring-red-500" />
-                                    <span class="text-sm font-medium text-red-700">Unavailable</span>
-                                </label>
-                            </div>
-                            <x-input-error :messages="$errors->get('availability')" class="mt-1" />
-                        </div>
-                        <div>
-                            <x-input-label for="availability_message" value="Availability Note (optional)" />
-                            <textarea id="availability_message" name="availability_message" rows="2"
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                      placeholder="e.g. Back Jan 15, on vacation, etc.">{{ old('availability_message', $profile?->availability_message) }}</textarea>
-                            <x-input-error :messages="$errors->get('availability_message')" class="mt-1" />
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Availability</x-primary-button>
-                        </div>
                     </div>
                 </div>
 
                 @if ($user->isReader() || $user->isAdminOrEditor())
-                {{-- Video Consulting (admin override) — enable/disable + availability. Any
-                     role can take video consulting calls; an admin/editor opts in here exactly
-                     like a reader's override, just with no sitewide default to fall back to
-                     (App\Support\VideoConsultingAccess::enabledFor()). --}}
+                {{-- Video Consulting (admin override) — enable/disable + Reader Request
+                     eligibility. Availability/schedule now lives in the combined Availability
+                     card above — see App\Support\VideoConsultingAccess::enabledFor(). --}}
                 <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                     <div class="max-w-xl">
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Video Consulting <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                        <p class="text-sm text-gray-600 mb-4">Enable/disable, and Video Call Availability (weekly hours and blackout dates) — separate from Assignment Availability above.</p>
+                        <p class="text-sm text-gray-600 mb-4">Enable/disable video consulting for this person, and whether customers can count them as one of their requested readers.</p>
                         @php
-                            $videoConsultingProfileSource = $isEditingReader ? $profile : ($videoConsultingOverrideSource ?? null);
                             $videoConsultingOverride = match ($videoConsultingProfileSource?->video_consulting_enabled) {
                                 true => 'enabled', false => 'disabled', default => 'default',
                             };
@@ -829,30 +957,6 @@
                             </label>
                         </div>
                         @endif
-                        <h3 class="text-sm font-semibold text-gray-900 mb-1 pt-2 border-t border-gray-100">Video Call Availability</h3>
-                        @include('partials.video-consulting-availability', [
-                            'rules' => $videoConsultingRules ?? collect(),
-                            'blackouts' => $videoConsultingBlackouts ?? collect(),
-                            'minLeadHours' => $videoConsultingMinLeadHours ?? 0,
-                            'leadHoursBounds' => $videoConsultingLeadHoursBounds ?? \App\Models\Setting::VIDEO_CONSULTING_LEAD_HOURS_DEFAULTS,
-                            'available' => (bool) ($videoConsultingProfileSource?->video_consulting_available ?? true),
-                            'holidayBlackouts' => $videoConsultingProfileSource?->video_consulting_holiday_blackouts,
-                            'updateAction' => $isEditingReader
-                                ? route('readers.updateVideoConsultingAvailability', $user)
-                                : route('admin.editors.updateVideoConsultingAvailability', $user),
-                            'blackoutStoreAction' => $isEditingReader
-                                ? route('readers.videoConsultingAvailability.blackouts.store', $user)
-                                : route('admin.editors.videoConsultingAvailability.blackouts.store', $user),
-                            'holidaysUpdateAction' => $isEditingReader
-                                ? route('readers.videoConsultingAvailability.holidays.update', $user)
-                                : route('admin.editors.videoConsultingAvailability.holidays.update', $user),
-                            // This card sits inside <form id="admin-form"> below — a nested <form> is
-                            // invalid HTML and gets silently merged into the outer one by the browser,
-                            // which is what broke this save. formId makes the partial render plain
-                            // form="..."-tagged fields here instead, with the real (empty) <form> tags
-                            // pushed onto 'late-forms' and rendered just after admin-form closes.
-                            'formId' => 'vc-availability-admin',
-                        ])
                     </div>
                 </div>
                 @endif
@@ -970,33 +1074,6 @@
                     </div>
                 </div>
                 @endif
-
-                {{-- Account --}}
-                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Account</h2>
-                        <div>
-                            <x-input-label for="email" value="Email" />
-                            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full"
-                                value="{{ old('email', $user->email) }}" required />
-                            <x-input-error :messages="$errors->get('email')" class="mt-1" />
-                        </div>
-                        <div>
-                            <x-input-label for="password" value="New Password" />
-                            <x-text-input id="password" name="password" type="password" class="mt-1 block w-full"
-                                placeholder="Leave blank to keep current password" />
-                            <x-input-error :messages="$errors->get('password')" class="mt-1" />
-                        </div>
-                        <div>
-                            <x-input-label for="password_confirmation" value="Confirm New Password" />
-                            <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full"
-                                placeholder="Leave blank to keep current password" />
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Account</x-primary-button>
-                        </div>
-                    </div>
-                </div>
 
                 {{-- Identity — admin only --}}
                 <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
@@ -1383,153 +1460,98 @@
             </div>
             @endif
 
-            {{-- Reader Rates (readers only, admin only) --}}
-            @if ($user->isReader())
-            @php
-                $globalRates = \App\Models\Setting::ratesForForms();
-                $readerRateFields = [
-                    'rate_script_coverage'   => ['label' => 'Script Coverage',               'default' => $globalRates['rate_sr_script_coverage']],
-                    'rate_notes_only'        => ['label' => 'Notes-Only Coverage',             'default' => $globalRates['rate_sr_notes_only']],
-                    'rate_deep_dive'         => ['label' => 'Advanced Script Coverage',        'default' => $globalRates['rate_sr_deep_dive']],
-                    'rate_proofreading'      => ['label' => 'Proofreading',                   'default' => $globalRates['rate_sr_proofreading']],
-                    'rate_oversized_121_160' => ['label' => 'Oversized (121-160 pages)',       'default' => $globalRates['rate_sr_oversized_121_160']],
-                    'rate_rush'              => ['label' => 'Rush (24h turnaround)',           'default' => $globalRates['rate_sr_rush']],
-                    'rate_request'           => ['label' => 'Reader Request',                 'default' => $globalRates['rate_sr_request']],
-                ];
-            @endphp
-            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
+            {{-- Account — moved down to sit just above Delete, alongside Reader Images below.
+                 Lives outside <form id="admin-form"> now; its controls still submit with that
+                 form via the HTML form="admin-form" attribute, same pattern as Test Account
+                 below. --}}
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl space-y-4">
-                    <h2 class="text-lg font-medium text-gray-900">Reader Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                    <p class="text-sm text-gray-600 -mt-2">Custom per-reader pay rates. Leave a field blank to use the sitewide Ratebook default shown as its placeholder.</p>
-                    <form method="POST" action="{{ route('readers.updateRates', $user) }}" class="space-y-4">
-                        @csrf
-                        @method('PATCH')
-                        <div class="grid grid-cols-2 gap-4">
-                            @foreach ($readerRateFields as $key => $field)
-                                <div>
-                                    <x-input-label for="{{ $key }}" value="{{ $field['label'] }}" />
-                                    <div class="mt-1 flex items-center gap-1">
-                                        <span class="text-gray-400 text-sm">$</span>
-                                        <x-text-input id="{{ $key }}" name="{{ $key }}" type="number"
-                                            class="block w-28 text-right"
-                                            value="{{ old($key, $profile?->{$key}) }}"
-                                            min="0" max="9999.99" step="0.01"
-                                            placeholder="{{ number_format((float) $field['default'], 2) }}" />
-                                    </div>
-                                    <x-input-error :messages="$errors->get($key)" class="mt-1" />
-                                </div>
-                            @endforeach
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Rates</x-primary-button>
-                        </div>
-                    </form>
+                    <h2 class="text-lg font-medium text-gray-900">Account</h2>
+                    <div>
+                        <x-input-label for="email" value="Email" />
+                        <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" form="admin-form"
+                            value="{{ old('email', $user->email) }}" required />
+                        <x-input-error :messages="$errors->get('email')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="password" value="New Password" />
+                        <x-text-input id="password" name="password" type="password" class="mt-1 block w-full" form="admin-form"
+                            placeholder="Leave blank to keep current password" />
+                        <x-input-error :messages="$errors->get('password')" class="mt-1" />
+                    </div>
+                    <div>
+                        <x-input-label for="password_confirmation" value="Confirm New Password" />
+                        <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" form="admin-form"
+                            placeholder="Leave blank to keep current password" />
+                    </div>
+                    <div class="flex justify-end">
+                        <x-primary-button form="admin-form">Save Account</x-primary-button>
+                    </div>
                 </div>
             </div>
-            @endif
 
-            {{-- Video Consulting Rates (admin only) --}}
-            @if ($user->isReader() || $user->isAdminOrEditor())
-            <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
-                <div class="max-w-xl space-y-4">
-                    <h2 class="text-lg font-medium text-gray-900">Video Consulting Rates <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
-                    <p class="text-sm text-gray-600 -mt-2">What this {{ $isEditingReader ? 'reader' : 'person' }} is paid for a video consulting call of each length. Leave a field blank to opt them out of that call length. They need at least one rate set here (or via their own self-serve page) before they appear as bookable on the checkout upgrade or the Script Consulting page. Rates can be changed as often as needed.</p>
-                    @if ($videoConsultingDurations->isEmpty())
-                        <p class="text-sm text-gray-500 italic">No call-length durations are configured yet — add some under Settings first.</p>
-                    @else
-                    @php
-                        $feeOverrideEnabled = (bool) ($videoConsultingProfileSource?->video_consulting_fee_override_enabled ?? false);
-                        $feeOverrideAmount = $videoConsultingProfileSource?->video_consulting_fee_override_amount;
-                        $feeOverridePercent = $videoConsultingProfileSource?->video_consulting_fee_override_percent;
-                    @endphp
-                    <form method="POST" action="{{ $isEditingReader ? route('readers.updateVideoConsultingRates', $user) : route('admin.editors.updateVideoConsultingRates', $user) }}" class="space-y-4">
-                        @csrf
-                        @method('PATCH')
+            {{-- Reader Icon + About Page Photo — moved down to sit just above Delete, alongside
+                 Account above. Lives outside <form id="admin-form"> now; its controls still
+                 submit with that form via the HTML form="admin-form" attribute, same pattern as
+                 Test Account below. Side by side so the two drop-zones don't eat twice the
+                 vertical space of one card. --}}
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="flex flex-col sm:flex-row gap-8">
+                <div class="flex-1 min-w-0" x-data="{ previewUrl: '{{ $currentPhotoUrl }}', hasFile: false }">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">Reader Icon</h2>
+                    <p class="text-sm text-gray-600 mb-3">Portal avatar and public website icon. Min 600×600 px. Leave blank to keep current.</p>
+                    <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-3"
+                         style="width:200px;height:200px"
+                         @click="$refs.photoInput.click()">
+                        <template x-if="previewUrl">
+                            <img :src="previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="Photo preview" />
+                        </template>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
+                             :class="previewUrl ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                            <svg class="w-8 h-8" :class="previewUrl ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                            <span class="text-sm font-medium" :class="previewUrl ? 'text-white' : 'text-gray-500'">Click to browse</span>
+                        </div>
+                    </div>
+                    <input x-ref="photoInput" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" form="admin-form"
+                           @change="if ($event.target.files[0]) { const r=new FileReader(); r.onload=e=>{previewUrl=e.target.result;hasFile=true}; r.readAsDataURL($event.target.files[0]); }" />
+                    <p class="text-xs text-gray-500 mb-2">JPG, PNG or WebP &nbsp;·&nbsp; min 600×600 px &nbsp;·&nbsp; max 8 MB</p>
+                    <x-input-error :messages="$errors->get('photo')" class="mt-1" />
+                    <x-primary-button form="admin-form" x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
+                </div>
 
-                        <div class="pb-4 mb-2 border-b border-gray-100" x-data="{ feeOverride: {{ old('fee_override_enabled', $feeOverrideEnabled) ? 'true' : 'false' }} }">
-                            <label class="flex items-center gap-2 text-sm font-medium text-gray-900">
-                                <input type="hidden" name="fee_override_enabled" value="0">
-                                <input type="checkbox" name="fee_override_enabled" value="1" x-model="feeOverride"
-                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                Override SR's fee for this person
-                            </label>
-                            <p class="mt-1 text-xs text-gray-500">
-                                Replaces the per-duration fee below with a flat $ and % of their own rate,
-                                applied the same way across every call length. Set both to 0 to charge the
-                                customer exactly this person's rate, with no SR fee added.
-                            </p>
-                            <div class="mt-2 flex items-end gap-4" x-show="feeOverride" x-cloak>
-                                <div>
-                                    <x-input-label value="SR Fee ($)" />
-                                    <div class="mt-1 flex items-center gap-1">
-                                        <span class="text-gray-400 text-sm">$</span>
-                                        <x-text-input name="fee_override_amount" type="number" class="block w-24 text-right"
-                                            value="{{ old('fee_override_amount', $feeOverrideAmount) }}" min="0" step="0.01" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <x-input-label value="SR Fee (%)" />
-                                    <div class="mt-1 flex items-center gap-1">
-                                        <x-text-input name="fee_override_percent" type="number" class="block w-24 text-right"
-                                            value="{{ old('fee_override_percent', $feeOverridePercent) }}" min="0" max="100" step="0.01" />
-                                        <span class="text-gray-400 text-sm">%</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <x-input-error :messages="$errors->get('fee_override_amount')" class="mt-1" />
-                            <x-input-error :messages="$errors->get('fee_override_percent')" class="mt-1" />
+                <div class="flex-1 min-w-0" x-data="{ previewUrl: '', hasFile: false }">
+                    <h2 class="text-lg font-medium text-gray-900 mb-1">About Page Photo</h2>
+                    <p class="text-sm text-gray-600 mb-3">Displayed on the public website's About page. Min 600×600 px. Leave blank to keep current.</p>
+                    <div class="relative border-2 rounded-lg overflow-hidden cursor-pointer transition-colors border-dashed border-gray-300 hover:border-gray-400 mb-3"
+                         style="width:200px;height:200px"
+                         @click="$refs.aboutInput.click()">
+                        @if($currentAboutPhotoUrl)
+                            <img src="{{ $currentAboutPhotoUrl }}" x-show="!previewUrl" class="absolute inset-0 w-full h-full object-cover" alt="About photo" />
+                        @endif
+                        <img x-show="previewUrl" :src="previewUrl" x-cloak class="absolute inset-0 w-full h-full object-cover" alt="About photo preview" />
+                        <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none"
+                             :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'bg-black/30 opacity-0 hover:opacity-100 transition-opacity' : ''">
+                            <svg class="w-8 h-8" :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                            <span class="text-sm font-medium" :class="(previewUrl || {{ $currentAboutPhotoUrl ? 'true' : 'false' }}) ? 'text-white' : 'text-gray-500'">Click to browse</span>
                         </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            @foreach ($videoConsultingDurations as $duration)
-                                @php
-                                    $effectiveBaseRate = $feeOverrideEnabled ? (float) ($feeOverrideAmount ?? 0) : (float) $duration->base_rate;
-                                    $effectiveBasePercent = $feeOverrideEnabled ? (float) ($feeOverridePercent ?? 0) : (float) $duration->base_rate_percent;
-                                @endphp
-                                <div x-data="{
-                                        rate: '{{ old('vc_rates.' . $duration->id, $videoConsultingRates[$duration->id] ?? '') }}',
-                                        baseRate: {{ $effectiveBaseRate }},
-                                        basePercent: {{ $effectiveBasePercent }},
-                                        get payout() {
-                                            return parseFloat(this.rate) || 0;
-                                        },
-                                        get cut() {
-                                            return this.baseRate + Math.round((this.basePercent / 100) * this.payout);
-                                        },
-                                        get total() {
-                                            return this.payout + this.cut;
-                                        }
-                                     }">
-                                    <x-input-label for="vc_rate_{{ $duration->id }}" value="{{ $duration->label }}" />
-                                    <div class="mt-1 flex items-center gap-1">
-                                        <span class="text-gray-400 text-sm">$</span>
-                                        <x-text-input id="vc_rate_{{ $duration->id }}" name="vc_rates[{{ $duration->id }}]" type="number"
-                                            class="block w-28 text-right"
-                                            x-model="rate"
-                                            min="{{ $duration->min_reader_rate }}" max="{{ $duration->max_reader_rate }}" step="0.01"
-                                            placeholder="blank = opt out" />
-                                    </div>
-                                    <p class="mt-1 text-xs text-gray-500">${{ number_format((float) $duration->min_reader_rate, 2) }}–${{ number_format((float) $duration->max_reader_rate, 2) }}</p>
-                                    <p class="mt-1 text-xs text-gray-500">
-                                        They're paid exactly what's entered above — SR's fee (a flat ${{ number_format($effectiveBaseRate, 2) }}
-                                        plus <span x-text="basePercent"></span>% of their rate) is added on top for
-                                        the customer's price, never taken out of their rate. At this rate
-                                        <span class="font-medium text-gray-700">they're paid $<span x-text="payout"></span></span>,
-                                        SR's fee is <span class="font-medium text-gray-700" x-text="'$' + cut"></span>,
-                                        customer pays <span class="font-medium text-gray-700" x-text="'$' + total"></span> total
-                                    </p>
-                                    <x-input-error :messages="$errors->get('vc_rates.' . $duration->id)" class="mt-1" />
-                                </div>
-                            @endforeach
-                        </div>
-                        <div class="flex justify-end">
-                            <x-primary-button>Save Video Consulting Rates</x-primary-button>
-                        </div>
-                    </form>
+                    </div>
+                    <input x-ref="aboutInput" name="about_photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" form="admin-form"
+                           @change="if ($event.target.files[0]) { const r=new FileReader(); r.onload=e=>{previewUrl=e.target.result;hasFile=true}; r.readAsDataURL($event.target.files[0]); }" />
+                    <p class="text-xs text-gray-500 mb-2">JPG, PNG or WebP &nbsp;·&nbsp; min 600×600 px &nbsp;·&nbsp; max 8 MB</p>
+                    <x-input-error :messages="$errors->get('about_photo')" class="mt-1" />
+                    @if (!empty($pendingAboutPhotoUrl))
+                        @include('partials.approval-panel', [
+                            'type'       => 'about-photo',
+                            'approveUrl' => route('admin.approvals.about-photo.approve', $user),
+                            'rejectUrl'  => route('admin.approvals.about-photo.reject', $user),
+                            'preview'    => '<img src="'.e($pendingAboutPhotoUrl).'" class="w-12 h-12 rounded-full object-cover shrink-0" alt="Pending about photo" />',
+                            'label'      => 'Pending about page photo waiting for approval.',
+                        ])
                     @endif
+                    <x-primary-button form="admin-form" x-bind:disabled="!hasFile" x-bind:class="!hasFile ? 'opacity-40 cursor-not-allowed' : ''">Save Photo</x-primary-button>
+                </div>
                 </div>
             </div>
-            @endif
 
             {{-- Test account toggle — admin only. Lives outside <form id="admin-form"> now (moved
                  to sit just above Delete) but its controls still submit with that form via the

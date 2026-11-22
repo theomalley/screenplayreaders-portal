@@ -97,23 +97,27 @@
         </div>
     @endif
 
-    <div class="flex items-center justify-between gap-4 pb-3 border-b border-gray-100">
-        <div>
-            <span class="text-sm font-medium text-gray-900">Available for video calls</span>
-            <p class="mt-0.5 text-sm text-gray-500">
-                Turn this off to stop being offered to customers right away — your schedule and
-                blackout dates below stay exactly as set and come right back the moment you
-                turn this on again.
-            </p>
+    <div class="pb-3 border-b border-gray-100">
+        <x-input-label value="Video Call Status" />
+        <div class="mt-2 flex gap-6">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="video_consulting_available" value="1"{!! $scheduleFormAttr !!}
+                       {{ old('video_consulting_available', $vcAvailable ? '1' : '0') === '1' ? 'checked' : '' }}
+                       class="text-green-600 focus:ring-green-500" />
+                <span class="text-sm font-medium text-green-700">Available</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="video_consulting_available" value="0"{!! $scheduleFormAttr !!}
+                       {{ old('video_consulting_available', $vcAvailable ? '1' : '0') === '0' ? 'checked' : '' }}
+                       class="text-red-600 focus:ring-red-500" />
+                <span class="text-sm font-medium text-red-700">Unavailable</span>
+            </label>
         </div>
-        <label class="relative inline-flex items-center cursor-pointer shrink-0">
-            <input type="hidden" name="video_consulting_available" value="0"{!! $scheduleFormAttr !!}>
-            <input type="checkbox" name="video_consulting_available" value="1"{!! $scheduleFormAttr !!}
-                   {{ old('video_consulting_available', $vcAvailable ? '1' : '') ? 'checked' : '' }}
-                   class="sr-only peer" />
-            <div class="w-11 h-6 bg-gray-200 peer-checked:bg-indigo-600 rounded-full transition-colors"></div>
-            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-        </label>
+        <p class="mt-1 text-sm text-gray-500">
+            Turn this off to stop being offered to customers right away — your schedule and
+            blackout dates below stay exactly as set and come right back the moment you
+            turn this on again.
+        </p>
     </div>
 
     <p class="text-sm text-gray-500">Weekly recurring hours available for video consulting calls.</p>
