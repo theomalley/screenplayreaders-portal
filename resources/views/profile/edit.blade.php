@@ -383,7 +383,7 @@
                         @csrf
                         @method('PATCH')
                         <div>
-                            <x-input-label value="Top 5 Favorite Genres" />
+                            <x-input-label value="Top 5 Genres" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_genres[]" type="text" class="block w-full"
@@ -394,7 +394,7 @@
                             <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label value="Top 5 Favorite Films/Shows" />
+                            <x-input-label value="Top 5 Films/Shows" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"
@@ -1032,7 +1032,7 @@
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
                         <p class="text-sm text-gray-600 -mt-2">Shown on the Script Consulting page. Up to 5 each — leave any blank to skip.</p>
                         <div>
-                            <x-input-label value="Top 5 Favorite Genres" />
+                            <x-input-label value="Top 5 Genres" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_genres[]" type="text" class="block w-full"
@@ -1043,7 +1043,7 @@
                             <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label value="Top 5 Favorite Films/Shows" />
+                            <x-input-label value="Top 5 Films/Shows" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"
