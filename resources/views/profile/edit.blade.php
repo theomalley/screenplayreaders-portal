@@ -383,7 +383,7 @@
                         @csrf
                         @method('PATCH')
                         <div>
-                            <x-input-label value="Favorite Genres" />
+                            <x-input-label value="Top 5 Favorite Genres" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_genres[]" type="text" class="block w-full"
@@ -394,7 +394,7 @@
                             <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label value="Favorite Films/Shows" />
+                            <x-input-label value="Top 5 Favorite Films/Shows" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"
@@ -592,10 +592,24 @@
                     @php $vcListingSource = $user->isReader() ? $profile : ($videoConsultingOverrideSource ?? null); @endphp
                     <div class="pb-6 mb-6 border-b border-gray-100">
                         <h3 class="text-sm font-semibold text-gray-900 mb-1">Listing</h3>
-                        <p class="text-sm text-gray-600 mb-4">A note customers see on your listing (e.g. when you'll be back), and what kind of calls you're available for.</p>
+                        <p class="text-sm text-gray-600 mb-4">A header + blurb customers see on the Script Consulting page, a note customers see on your listing (e.g. when you'll be back), and what kind of calls you're available for.</p>
                         <form method="POST" action="{{ route('profile.video-consulting-listing') }}" class="space-y-4">
                             @csrf
                             @method('PATCH')
+                            <div>
+                                <x-input-label for="video_consulting_blurb_header" value="Listing header (e.g. &quot;Animation specialist will take your script to next level&quot;)" />
+                                <x-text-input id="video_consulting_blurb_header" name="video_consulting_blurb_header" type="text" maxlength="150"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('video_consulting_blurb_header', $vcListingSource?->video_consulting_blurb_header) }}" />
+                                <x-input-error :messages="$errors->get('video_consulting_blurb_header')" class="mt-1" />
+                            </div>
+                            <div>
+                                <x-input-label for="video_consulting_blurb" value="Listing blurb" />
+                                <textarea id="video_consulting_blurb" name="video_consulting_blurb" rows="4" maxlength="1000"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                          placeholder="Tell customers a bit about yourself and what you bring to a call.">{{ old('video_consulting_blurb', $vcListingSource?->video_consulting_blurb) }}</textarea>
+                                <x-input-error :messages="$errors->get('video_consulting_blurb')" class="mt-1" />
+                            </div>
                             <div>
                                 <x-input-label for="video_consulting_note" value="Note (shown even when you have no open times right now)" />
                                 <textarea id="video_consulting_note" name="video_consulting_note" rows="2" maxlength="500"
@@ -942,7 +956,7 @@
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Favorite Genres &amp; Films</h2>
                         <p class="text-sm text-gray-600 -mt-2">Shown on the Script Consulting page. Up to 5 each — leave any blank to skip.</p>
                         <div>
-                            <x-input-label value="Favorite Genres" />
+                            <x-input-label value="Top 5 Favorite Genres" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_genres[]" type="text" class="block w-full"
@@ -953,7 +967,7 @@
                             <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label value="Favorite Films/Shows" />
+                            <x-input-label value="Top 5 Favorite Films/Shows" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"

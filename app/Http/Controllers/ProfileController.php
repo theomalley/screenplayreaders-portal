@@ -1,5 +1,9 @@
 <?php
 
+// v1.8 — 2026-11-23 | updateVideoConsultingListing() now also accepts
+//                      video_consulting_blurb_header/video_consulting_blurb — a reader-authored
+//                      header + paragraph replacing the generic bio shown on the Script
+//                      Consulting page.
 // v1.7 — 2026-11-22 | FIX: uploadPhoto() wrote a reader/editor's self-uploaded "Reader
 //                      Icon" straight to the live `photo` column with no approval step —
 //                      inconsistent with updateBio()/uploadAboutPhoto(), which route
@@ -219,8 +223,9 @@ class ProfileController extends Controller
      * Reader/admin/editor self-serve: a free-text note shown on the public video-consulting
      * listing even when they currently have no open slots (readers() still returns them in
      * that case — it only ever drops someone whose video_consulting_enabled override is off),
-     * and whether their calls run as video or audio-only (VideoConsultingAccess::enabledFor()
-     * gates whether this card is shown at all, same as the Rate/Availability cards).
+     * whether their calls run as video or audio-only (VideoConsultingAccess::enabledFor()
+     * gates whether this card is shown at all, same as the Rate/Availability cards), and the
+     * listing header + blurb shown on the Script Consulting page in place of their bio.
      */
     public function updateVideoConsultingListing(Request $request): RedirectResponse
     {
@@ -228,13 +233,17 @@ class ProfileController extends Controller
         abort_unless($user->isReader() || $user->isAdminOrEditor(), 403);
 
         $data = $request->validate([
-            'video_consulting_note'      => 'nullable|string|max:500',
-            'video_consulting_call_mode' => 'required|in:video,audio',
+            'video_consulting_note'         => 'nullable|string|max:500',
+            'video_consulting_call_mode'    => 'required|in:video,audio',
+            'video_consulting_blurb_header' => 'nullable|string|max:150',
+            'video_consulting_blurb'        => 'nullable|string|max:1000',
         ]);
 
         $payload = [
-            'video_consulting_note'      => trim((string) ($data['video_consulting_note'] ?? '')) ?: null,
-            'video_consulting_call_mode' => $data['video_consulting_call_mode'],
+            'video_consulting_note'         => trim((string) ($data['video_consulting_note'] ?? '')) ?: null,
+            'video_consulting_call_mode'    => $data['video_consulting_call_mode'],
+            'video_consulting_blurb_header' => trim((string) ($data['video_consulting_blurb_header'] ?? '')) ?: null,
+            'video_consulting_blurb'        => trim((string) ($data['video_consulting_blurb'] ?? '')) ?: null,
         ];
 
         if ($user->isReader()) {

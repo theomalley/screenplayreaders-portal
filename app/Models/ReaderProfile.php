@@ -1,5 +1,8 @@
 <?php
 
+// v1.30 — 2026-11-23 | Add video_consulting_blurb_header/video_consulting_blurb — a
+//                      reader-authored header + paragraph shown on the Script Consulting page,
+//                      replacing the generic About-page bio that used to be shown there.
 // v1.29 — 2026-11-22 | Add initialsTaken() — initials are the primary display identifier
 //                      throughout the app, but nothing checked uniqueness across either table
 //                      it lives on (reader_profiles, editor_profiles), so two people could
@@ -128,6 +131,8 @@ class ReaderProfile extends Model
         'video_consulting_reader_request_eligible',
         'video_consulting_note',
         'video_consulting_call_mode',
+        'video_consulting_blurb_header',
+        'video_consulting_blurb',
         'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',

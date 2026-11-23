@@ -1,5 +1,8 @@
 <?php
 
+// v1.15 — 2026-11-23 | readers() now also includes blurb_header/blurb (ReaderProfile.
+//                      video_consulting_blurb_header/video_consulting_blurb) — the theme's
+//                      Script Consulting page shows these instead of the reader's generic bio.
 // v1.14 — 2026-11-22 | readers()/readerRates() now pass the reader's readerProfile into
 //                      effectiveBaseRate() so a per-person fee override
 //                      (video_consulting_fee_override_enabled/_amount/_percent) is respected
@@ -144,6 +147,8 @@ class VideoConsultingBookingController extends Controller
                     'favorite_films'       => $reader->readerProfile?->favorite_films ?? [],
                     'note'                 => $reader->readerProfile?->video_consulting_note,
                     'call_mode'            => $reader->readerProfile?->video_consulting_call_mode ?? 'video',
+                    'blurb_header'         => $reader->readerProfile?->video_consulting_blurb_header,
+                    'blurb'                => $reader->readerProfile?->video_consulting_blurb,
                     'durations'            => $durations,
                 ];
             })
