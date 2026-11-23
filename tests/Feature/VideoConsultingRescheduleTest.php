@@ -82,6 +82,28 @@ class VideoConsultingRescheduleTest extends TestCase
             ->assertSessionHasErrors('slots');
     }
 
+    public function test_store_rejects_a_candidate_slot_that_conflicts_with_another_booking_for_the_reader(): void
+    {
+        [$reader, $assignment, $hold] = $this->makeAcceptedBooking();
+
+        $conflictingStart = now()->addDays(2);
+        VideoConsultingHold::create([
+            'reader_id' => $reader->id, 'duration_id' => $hold->duration_id,
+            'slot_start' => $conflictingStart, 'slot_end' => $conflictingStart->copy()->addMinutes(30),
+            'hold_token' => 'tok-' . uniqid(), 'status' => VideoConsultingHold::STATUS_CONVERTED, 'expires_at' => now(),
+        ]);
+
+        $slots = collect(range(1, 5))->map(fn ($i) => now()->addDays($i)->format('Y-m-d\TH:i'))->all();
+        // Day 2's slot (index 1) lands exactly on the conflicting booking above.
+        $slots[1] = $conflictingStart->format('Y-m-d\TH:i');
+
+        $this->actingAs($reader)
+            ->post("/video-consulting-bookings/{$assignment->id}/reschedule", ['slots' => $slots])
+            ->assertSessionHasErrors('slots.1');
+
+        $this->assertNull(VideoConsultingRescheduleOffer::where('assignment_id', $assignment->id)->first());
+    }
+
     public function test_customer_can_pick_a_slot_and_the_hold_and_whereby_room_update(): void
     {
         Mail::fake();
@@ -115,6 +137,37 @@ class VideoConsultingRescheduleTest extends TestCase
         $this->assertNull($assignment->whereby_room_url);
 
         Mail::assertQueued(VideoConsultingRescheduleConfirmedMail::class);
+    }
+
+    public function test_submit_rejects_a_chosen_slot_that_now_conflicts_with_another_booking(): void
+    {
+        [$reader, $assignment, $hold] = $this->makeAcceptedBooking();
+
+        $newSlot = now()->addDays(3);
+        $offer = VideoConsultingRescheduleOffer::create([
+            'assignment_id' => $assignment->id,
+            'token' => bin2hex(random_bytes(32)),
+            'candidate_slots' => [$newSlot->format('Y-m-d\TH:i'), now()->addDays(4)->format('Y-m-d\TH:i'), now()->addDays(5)->format('Y-m-d\TH:i'), now()->addDays(6)->format('Y-m-d\TH:i'), now()->addDays(7)->format('Y-m-d\TH:i')],
+            'status' => VideoConsultingRescheduleOffer::STATUS_PENDING,
+            'expires_at' => now()->addHours(48),
+        ]);
+
+        // Simulates an unrelated checkout grabbing this exact candidate slot for the same
+        // reader in between the offer being sent and the customer accepting it.
+        VideoConsultingHold::create([
+            'reader_id' => $reader->id, 'duration_id' => $hold->duration_id,
+            'slot_start' => $newSlot, 'slot_end' => $newSlot->copy()->addMinutes(30),
+            'hold_token' => 'tok-' . uniqid(), 'status' => VideoConsultingHold::STATUS_CONVERTED, 'expires_at' => now(),
+        ]);
+
+        $this->post("/video-consulting-reschedule/{$offer->token}", ['chosen_slot' => $newSlot->format('Y-m-d\TH:i')])
+            ->assertStatus(409);
+
+        $offer->refresh();
+        $this->assertSame(VideoConsultingRescheduleOffer::STATUS_PENDING, $offer->status);
+
+        $hold->refresh();
+        $this->assertFalse($hold->slot_start->equalTo($newSlot));
     }
 
     public function test_cannot_pick_a_slot_that_was_not_offered(): void

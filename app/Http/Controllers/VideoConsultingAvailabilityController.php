@@ -1,5 +1,10 @@
 <?php
 
+// v1.7 — 2026-11-23 | update() now validates every submitted day BEFORE writing any
+//                      ReaderAvailabilityRule — a start>=end failure on (say) day 4 used to
+//                      still leave days 0-3 permanently persisted since the old code validated
+//                      and wrote inside the same loop. Mirrors VideoConsultingRateController::
+//                      update()'s collect-errors-then-write-all pattern.
 // v1.6 — 2026-11-22 | Add updateHolidayBlackouts() — the reader's own US federal holiday
 //                      blackout accordion (ReaderProfile.video_consulting_holiday_blackouts,
 //                      App\Support\FederalHolidays). Separate action/form from update() since
@@ -57,12 +62,11 @@ class VideoConsultingAvailabilityController extends Controller
             'min_lead_hours'    => ['nullable', 'integer', "min:{$leadHoursBounds['min']}", "max:{$leadHoursBounds['max']}"],
         ]);
 
-        if ($reader->readerProfile) {
-            $reader->readerProfile->update([
-                'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
-                'video_consulting_available'      => $request->boolean('video_consulting_available'),
-            ]);
-        }
+        // Pass 1: validate every day first — decide what each day's end state should be
+        // without writing anything yet, so a bad day later in the loop can't leave earlier
+        // days' writes permanently committed.
+        $errors = [];
+        $dayActions = [];
 
         foreach (range(0, 6) as $dayOfWeek) {
             $day = $data['days'][$dayOfWeek] ?? null;
@@ -71,17 +75,39 @@ class VideoConsultingAvailabilityController extends Controller
             $end = $day['end_time'] ?? null;
 
             if (! $enabled || ! $start || ! $end) {
-                ReaderAvailabilityRule::where('reader_id', $reader->id)->where('day_of_week', $dayOfWeek)->delete();
+                $dayActions[$dayOfWeek] = null; // delete
                 continue;
             }
 
             if ($start >= $end) {
-                return back()->withErrors(["days.{$dayOfWeek}.end_time" => 'End time must be after start time.'])->withInput();
+                $errors["days.{$dayOfWeek}.end_time"] = 'End time must be after start time.';
+                continue;
+            }
+
+            $dayActions[$dayOfWeek] = ['start_time' => $start, 'end_time' => $end, 'enabled' => true];
+        }
+
+        if (! empty($errors)) {
+            return back()->withErrors($errors)->withInput();
+        }
+
+        // Pass 2: everything validated — now safe to write.
+        if ($reader->readerProfile) {
+            $reader->readerProfile->update([
+                'video_consulting_min_lead_hours' => (int) ($data['min_lead_hours'] ?? $leadHoursBounds['min']),
+                'video_consulting_available'      => $request->boolean('video_consulting_available'),
+            ]);
+        }
+
+        foreach ($dayActions as $dayOfWeek => $action) {
+            if ($action === null) {
+                ReaderAvailabilityRule::where('reader_id', $reader->id)->where('day_of_week', $dayOfWeek)->delete();
+                continue;
             }
 
             ReaderAvailabilityRule::updateOrCreate(
                 ['reader_id' => $reader->id, 'day_of_week' => $dayOfWeek],
-                ['start_time' => $start, 'end_time' => $end, 'enabled' => true]
+                $action
             );
         }
 

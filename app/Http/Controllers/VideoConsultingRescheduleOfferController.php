@@ -1,11 +1,19 @@
 <?php
 
+// v1.1 — 2026-11-23 | submit() now re-validates the chosen slot for a reader collision
+//                      (VideoConsultingAvailabilityService::hasConflictingBooking()) before
+//                      committing it to the hold — it previously overwrote slot_start with
+//                      ZERO check, so an unrelated booking taking that exact time between when
+//                      the offer was created and when the customer accepted it would silently
+//                      double-book the reader. Also changes the "no hold on file" abort from a
+//                      500 (an expected business condition, not a server error) to a 409.
 // v1.0 — 2026-11-09 | Video consulting Phase 3 — public customer-facing reschedule link (no
 //                      auth required), mirroring FollowupFormController's token pattern.
 
 namespace App\Http\Controllers;
 
 use App\Models\VideoConsultingRescheduleOffer;
+use App\Services\VideoConsultingAvailabilityService;
 use App\Services\VideoConsultingCallService;
 use App\Services\VideoConsultingNotificationService;
 use Carbon\Carbon;
@@ -27,7 +35,7 @@ class VideoConsultingRescheduleOfferController extends Controller
         return view('video-consulting-reschedule-offer.show', compact('offer', 'assignment', 'token'));
     }
 
-    public function submit(Request $request, string $token, VideoConsultingCallService $callService, VideoConsultingNotificationService $notifier): RedirectResponse
+    public function submit(Request $request, string $token, VideoConsultingCallService $callService, VideoConsultingNotificationService $notifier, VideoConsultingAvailabilityService $availability): RedirectResponse
     {
         $offer = VideoConsultingRescheduleOffer::where('token', $token)->firstOrFail();
 
@@ -41,14 +49,24 @@ class VideoConsultingRescheduleOfferController extends Controller
         $assignment = $offer->assignment;
         $hold       = $assignment->videoConsultingHold;
 
-        abort_unless($hold, 500, 'This booking has no reserved slot on file.');
+        // An expected business condition (nothing was ever reserved for this booking), not a
+        // server error — 409 Conflict, not abort(500).
+        abort_unless($hold, 409, 'This booking has no reserved slot on file.');
 
         $durationMinutes = $hold->slot_start->diffInMinutes($hold->slot_end);
         $newStart        = Carbon::parse($data['chosen_slot']);
+        $newEnd          = $newStart->copy()->addMinutes($durationMinutes);
+
+        // Re-check for a collision at commit time, not just when the offer was created — time
+        // has passed since the reader proposed this slot, and an unrelated checkout could have
+        // taken it in the meantime.
+        if ($availability->hasConflictingBooking($hold->reader_id, $newStart, $newEnd, $hold->id)) {
+            abort(409, 'That time is no longer available — please contact us to pick another one.');
+        }
 
         $hold->update([
             'slot_start' => $newStart,
-            'slot_end'   => $newStart->copy()->addMinutes($durationMinutes),
+            'slot_end'   => $newEnd,
         ]);
 
         $offer->update([

@@ -1,5 +1,21 @@
 <?php
 
+// v1.4 — 2026-11-23 | Add hasConflictingBooking() — a reschedule (reader proposing candidate
+//                      slots, or a customer accepting one) used to commit the new slot_start
+//                      with ZERO check against the reader's other holds/bookings, risking a
+//                      silent double-book if an unrelated checkout grabbed that time in the
+//                      meantime. Deliberately narrower than isSlotAvailable()/generateSlots():
+//                      it only checks for an actual overlapping hold (held or converted), not
+//                      the reader's standing weekly ReaderAvailabilityRule windows — a
+//                      reschedule is the reader manually vouching for a specific one-off time
+//                      they know they're free at (same as a reader request can predate/ignore
+//                      their own posted hours), so it shouldn't be rejected by a schedule check
+//                      that has nothing to do with the actual collision risk being guarded
+//                      against. (Using the full isSlotAvailable() here would also require
+//                      every reschedule fixture to carry its own ReaderAvailabilityRule rows,
+//                      which isn't how VideoConsultingRescheduleTest's accepted-booking fixture
+//                      is written — see VideoConsultingRescheduleController/
+//                      VideoConsultingRescheduleOfferController for where this is called.)
 // v1.3 — 2026-11-22 | generateSlots() now also skips days that fall on a US federal holiday
 //                      the reader has blacked out (ReaderProfile.
 //                      video_consulting_holiday_blackouts, App\Support\FederalHolidays) — a
@@ -113,6 +129,30 @@ class VideoConsultingAvailabilityService
                 : $dayNames[$range[0]] . '–' . $dayNames[$range[1]],
             $ranges
         ));
+    }
+
+    /**
+     * True if this reader already has another active hold (held or converted/booked) that
+     * overlaps [$slotStart, $slotEnd) — the actual double-booking check a reschedule needs,
+     * independent of whether the time falls inside the reader's own posted weekly windows.
+     * $excludeHoldId is the hold being rescheduled itself (it still occupies its OLD
+     * slot_start/slot_end until the caller commits the new one, so it would never actually
+     * self-collide, but excluding it by id keeps this safe regardless of call order).
+     */
+    public function hasConflictingBooking(int $readerId, Carbon $slotStart, Carbon $slotEnd, ?int $excludeHoldId = null): bool
+    {
+        return VideoConsultingHold::where('reader_id', $readerId)
+            ->when($excludeHoldId !== null, fn ($q) => $q->where('id', '!=', $excludeHoldId))
+            ->where(function ($q) {
+                $q->where('status', VideoConsultingHold::STATUS_CONVERTED)
+                    ->orWhere(function ($q2) {
+                        $q2->where('status', VideoConsultingHold::STATUS_HELD)
+                            ->where('expires_at', '>', now());
+                    });
+            })
+            ->where('slot_start', '<', $slotEnd)
+            ->where('slot_end', '>', $slotStart)
+            ->exists();
     }
 
     /**

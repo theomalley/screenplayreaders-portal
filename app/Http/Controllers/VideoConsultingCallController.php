@@ -1,5 +1,12 @@
 <?php
 
+// v1.3 — 2026-11-23 | showPublic() now expires the public call link — it used to authorize
+//                      solely via the bearer token with no time bound at all, so a leaked/
+//                      forwarded link stayed valid forever. Expires at scheduled slot_end +
+//                      LINK_EXPIRY_GRACE_HOURS (4h — long enough for a legitimate late join or
+//                      a dropped-connection reconnect, short enough that an old link is useless
+//                      to anyone well after the call). Falls open (never blocks) if the
+//                      assignment has no hold/slot_end to compare against.
 // v1.2 — 2026-11-19 | showPreview()'s synthetic $assignment now sets assignedReader => null so
 //                      the shared call-details partial's audio-only lookup
 //                      ($assignment->assignedReader?->readerProfile?->video_consulting_call_mode)
@@ -26,9 +33,17 @@ use Illuminate\View\View;
 
 class VideoConsultingCallController extends Controller
 {
+    /** How long after the scheduled call ends the public link keeps working. */
+    private const LINK_EXPIRY_GRACE_HOURS = 4;
+
     public function showPublic(string $token): View
     {
         $assignment = Assignment::where('video_consulting_call_token', $token)->firstOrFail();
+
+        $slotEnd = $assignment->videoConsultingHold?->slot_end;
+        if ($slotEnd && now()->greaterThan($slotEnd->copy()->addHours(self::LINK_EXPIRY_GRACE_HOURS))) {
+            abort(410, 'This call link has expired.');
+        }
 
         return view('video-consulting.call-public', [
             'assignment'       => $assignment,

@@ -58,6 +58,31 @@ class VideoConsultingCallPageTest extends TestCase
         $this->get('/video-consulting-call/not-a-real-token')->assertNotFound();
     }
 
+    public function test_public_call_page_still_works_within_the_grace_period_after_the_call_ended(): void
+    {
+        [, $assignment] = $this->makeAcceptedBooking();
+        $assignment->videoConsultingHold->update([
+            'slot_start' => now()->subHours(3)->subMinutes(30),
+            'slot_end'   => now()->subHours(3),
+        ]);
+
+        $this->get("/video-consulting-call/{$assignment->video_consulting_call_token}")
+            ->assertOk()
+            ->assertSee('60 Minute Script Consultation');
+    }
+
+    public function test_public_call_page_expires_once_the_grace_period_has_passed(): void
+    {
+        [, $assignment] = $this->makeAcceptedBooking();
+        $assignment->videoConsultingHold->update([
+            'slot_start' => now()->subHours(5)->subMinutes(30),
+            'slot_end'   => now()->subHours(5),
+        ]);
+
+        $this->get("/video-consulting-call/{$assignment->video_consulting_call_token}")
+            ->assertStatus(410);
+    }
+
     public function test_public_call_page_shows_not_ready_message_when_room_is_missing(): void
     {
         [, $assignment] = $this->makeAcceptedBooking();
