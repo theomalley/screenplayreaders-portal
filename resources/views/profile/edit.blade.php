@@ -394,7 +394,7 @@
                             <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label value="Top 5 Films/Shows" />
+                            <x-input-label value="Top 5 Titles" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"
@@ -1043,7 +1043,7 @@
                             <x-input-error :messages="$errors->get('favorite_genres.*')" class="mt-1" />
                         </div>
                         <div>
-                            <x-input-label value="Top 5 Films/Shows" />
+                            <x-input-label value="Top 5 Titles" />
                             <div class="mt-1 space-y-2">
                                 @for ($i = 0; $i < 5; $i++)
                                     <x-text-input name="favorite_films[]" type="text" class="block w-full"
