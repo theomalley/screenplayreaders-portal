@@ -1,5 +1,9 @@
 <?php
 
+// v1.8 — 2026-11-22 | BUG FIX: wordCountTotals()'s WD development_notes total still
+//                      unconditionally added the synopsis minimum — stale after the sibling fix
+//                      in StoreCoverageSubmissionRequest that correctly scoped Synopsis to
+//                      "coverage" only. Overstated the displayed minimum for that type.
 // v1.7 — 2026-11-20 | Add updateVideoConsultingCommission() — admin-only master toggle for
 //                      whether editors can earn commission on video consulting orders at all,
 //                      overriding any individual editor's own per-product commission config
@@ -105,8 +109,15 @@ class RatebookController extends Controller
             + (in_array($type, $srSynopsisTypes, true) ? $wc['wc_sr_synopsis'] : 0)
             + ($wc[$notesKey] ?? 0);
 
-        // WD: Logline and Synopsis are required for both assignment types, so both always count.
-        $wdTotal = fn (string $notesKey) => $wc['wc_wd_logline'] + $wc['wc_wd_synopsis'] + ($wc[$notesKey] ?? 0);
+        // FIX: Logline is required for both WD types, but per spec (and
+        // StoreCoverageSubmissionRequest::checkWdWordCounts(), fixed in the same audit
+        // pass that found this) Synopsis only applies to "coverage" — Development
+        // Notes doesn't have one, so this total was overstating that type's real
+        // minimum by the full synopsis word count.
+        $wdTotal = fn (string $type, string $notesKey) =>
+            $wc['wc_wd_logline']
+            + ($type === 'coverage' ? $wc['wc_wd_synopsis'] : 0)
+            + ($wc[$notesKey] ?? 0);
 
         return [
             'rate_sr_script_coverage'    => $srTotal('script_coverage', 'wc_sr_notes_script_coverage'),
@@ -115,8 +126,8 @@ class RatebookController extends Controller
             'rate_sr_deep_dive'          => $srTotal('deep_dive', 'wc_sr_notes_deep_dive'),
             'rate_sr_budget'             => $srTotal('budget', 'wc_sr_notes_budget'),
             'book'                       => $srTotal('book', 'wc_sr_notes_book'),
-            'rate_wd_coverage'           => $wdTotal('wc_wd_notes_coverage'),
-            'rate_wd_development_notes' => $wdTotal('wc_wd_notes_development_notes'),
+            'rate_wd_coverage'           => $wdTotal('coverage', 'wc_wd_notes_coverage'),
+            'rate_wd_development_notes' => $wdTotal('development_notes', 'wc_wd_notes_development_notes'),
         ];
     }
 

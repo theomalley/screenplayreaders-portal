@@ -1,5 +1,12 @@
 <?php
 
+// v1.24 — 2026-11-22 | BUG FIX: update() set is_1099 and video_consulting_enabled
+//                      unconditionally — unlike is_test in the same method, which was already
+//                      correctly gated to admins only. editEditor/editors.edit can be granted to
+//                      editors via the Permissions screen, not just admins. Also added a
+//                      uniqueness check on `initials` (see ReaderProfile::initialsTaken()) —
+//                      initials are the primary display identifier shared with readers, and
+//                      nothing previously stopped a collision across either table.
 // v1.23 — 2026-11-22 | updateVideoConsultingRates() now also saves a per-person fee override
 //                      (video_consulting_fee_override_enabled/_amount/_percent), mirroring
 //                      ReaderProfileController's equivalent method.
@@ -103,7 +110,14 @@ class EditorProfileController extends Controller
             'name'                 => ['required', 'string', 'max:255'],
             'email'                => ['required', 'email', 'max:255', 'unique:users,email'],
             'password'             => ['required', 'confirmed', Password::defaults()],
-            'initials'             => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
+            'initials'             => [
+                'required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/',
+                function ($attribute, $value, $fail) {
+                    if (\App\Models\ReaderProfile::initialsTaken($value)) {
+                        $fail('Those initials are already in use by another reader or editor.');
+                    }
+                },
+            ],
             'first_name'           => ['required', 'string', 'max:100'],
             'last_name'            => ['required', 'string', 'max:100'],
             'paypal_email'         => ['nullable', 'email', 'max:255'],
@@ -182,7 +196,14 @@ class EditorProfileController extends Controller
         }
 
         $data = $request->validate([
-            'initials'             => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
+            'initials'             => [
+                'required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (\App\Models\ReaderProfile::initialsTaken($value, $user->id)) {
+                        $fail('Those initials are already in use by another reader or editor.');
+                    }
+                },
+            ],
             'first_name'           => ['required', 'string', 'max:100'],
             'last_name'            => ['required', 'string', 'max:100'],
             'title'                => ['nullable', 'string', 'max:100'],
@@ -228,7 +249,13 @@ class EditorProfileController extends Controller
         }
         $user->update($userUpdate);
 
-        $data['is_1099'] = $request->boolean('is_1099');
+        // FIX: is_1099 and video_consulting_enabled are admin-only toggles — previously
+        // set unconditionally here while is_test (above) was already correctly gated.
+        // editEditor/editors.edit can be granted to editors via the Permissions screen,
+        // not just admins.
+        if (auth()->user()->isAdmin()) {
+            $data['is_1099'] = $request->boolean('is_1099');
+        }
 
         $user->editorProfile()->updateOrCreate(
             ['user_id' => $user->id],
@@ -238,12 +265,15 @@ class EditorProfileController extends Controller
         // $user here is always an editor or admin (see abort_unless() above) — both get the
         // reader_request_eligible control (see profile/edit.blade.php); only a plain reader
         // is automatically eligible and skips it.
-        VideoConsultingAccess::updateReaderProfileShell($user, [
+        $shellUpdate = [
             'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []),
             'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []),
-            'video_consulting_enabled' => VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled')),
             'video_consulting_reader_request_eligible' => $request->boolean('video_consulting_reader_request_eligible'),
-        ]);
+        ];
+        if (auth()->user()->isAdmin()) {
+            $shellUpdate['video_consulting_enabled'] = VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled'));
+        }
+        VideoConsultingAccess::updateReaderProfileShell($user, $shellUpdate);
 
         $label = $user->isAdmin() ? 'Admin' : 'Editor';
         return redirect()->route('admin.editors.edit', $user)->with('success', "{$label} profile updated.");

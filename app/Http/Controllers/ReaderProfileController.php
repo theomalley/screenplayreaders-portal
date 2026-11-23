@@ -1,5 +1,16 @@
 <?php
 
+// v1.25 — 2026-11-22 | BUG FIX: update() set video_consulting_enabled, requests_bypass_capacity,
+//                      and is_1099 unconditionally — unlike is_test in the same method, which was
+//                      already correctly gated to admins only. video_consulting_enabled is
+//                      documented (see v1.x history) as an admin-only per-reader kill switch, and
+//                      editReader/readers.edit can be granted to editors via the Permissions
+//                      screen, not just admins — closes the gap by requiring isAdmin() for all
+//                      three, matching is_test's existing pattern.
+//                      Also added a uniqueness check on `initials` across both reader_profiles
+//                      and editor_profiles — initials are the primary display identifier
+//                      throughout the app, and nothing previously stopped two people (reader or
+//                      editor) from colliding on the same ones.
 // v1.24 — 2026-11-22 | updateVideoConsultingRates() now also saves a per-person fee override
 //                      (video_consulting_fee_override_enabled/_amount/_percent) — lets the
 //                      admin replace this reader's SR fee (normally VideoConsultingDuration's
@@ -119,7 +130,14 @@ class ReaderProfileController extends Controller
             'name'                       => ['required', 'string', 'max:255'],
             'email'                      => ['required', 'email', 'max:255', 'unique:users,email'],
             'password'                   => ['required', 'confirmed', Password::defaults()],
-            'initials'                   => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
+            'initials'                   => [
+                'required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/',
+                function ($attribute, $value, $fail) {
+                    if (\App\Models\ReaderProfile::initialsTaken($value)) {
+                        $fail('Those initials are already in use by another reader or editor.');
+                    }
+                },
+            ],
             'first_name'                 => ['required', 'string', 'max:100'],
             'last_name'                  => ['required', 'string', 'max:100'],
             'max_concurrent_assignments' => ['nullable', 'integer', 'min:0', 'max:20'],
@@ -129,6 +147,11 @@ class ReaderProfileController extends Controller
             'availability'               => ['required', 'in:available,unavailable'],
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
+            // FIX: was synced with zero validation — a typo'd/non-existent tier ID
+            // would throw a raw foreign-key QueryException (500) instead of a clean
+            // validation error.
+            'tiers'                      => ['nullable', 'array'],
+            'tiers.*'                    => ['integer', 'exists:tiers,id'],
         ]);
 
         $data['requests_bypass_capacity']  = $request->boolean('requests_bypass_capacity');
@@ -157,7 +180,7 @@ class ReaderProfileController extends Controller
             'availability_message'        => $data['availability_message'] ?? null,
         ]);
 
-        $readerProfile->tiers()->sync($request->input('tiers', []));
+        $readerProfile->tiers()->sync($data['tiers'] ?? []);
 
         return redirect()->route('team.index')->with('success', 'Reader created.');
     }
@@ -201,7 +224,14 @@ class ReaderProfileController extends Controller
         }
 
         $data = $request->validate([
-            'initials'                   => ['required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/'],
+            'initials'                   => [
+                'required', 'string', 'max:3', 'regex:/^[A-Z]{1,3}$/',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (\App\Models\ReaderProfile::initialsTaken($value, $user->id)) {
+                        $fail('Those initials are already in use by another reader or editor.');
+                    }
+                },
+            ],
             'first_name'                 => ['required', 'string', 'max:100'],
             'last_name'                  => ['required', 'string', 'max:100'],
             'title'                      => ['nullable', 'string', 'max:100'],
@@ -220,6 +250,11 @@ class ReaderProfileController extends Controller
             'favorite_films'             => ['nullable', 'array', 'max:5'],
             'favorite_films.*'           => ['nullable', 'string', 'max:60'],
             'custom_message'             => ['nullable', 'string', 'max:200'],
+            // FIX: was synced with zero validation — a typo'd/non-existent tier ID
+            // would throw a raw foreign-key QueryException (500) instead of a clean
+            // validation error.
+            'tiers'                      => ['nullable', 'array'],
+            'tiers.*'                    => ['integer', 'exists:tiers,id'],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -261,19 +296,28 @@ class ReaderProfileController extends Controller
         }
         $user->update($userUpdate);
 
-        $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
-        $data['is_1099']                  = $request->boolean('is_1099');
+        // FIX: these three are admin-only toggles (video_consulting_enabled is a
+        // documented admin-only kill switch; is_1099/requests_bypass_capacity are
+        // equally sensitive) — previously set unconditionally here while is_test
+        // (above) was already correctly gated. editReader/readers.edit can be granted
+        // to editors via the Permissions screen, not just admins.
+        if (auth()->user()->isAdmin()) {
+            $data['requests_bypass_capacity'] = $request->boolean('requests_bypass_capacity');
+            $data['is_1099']                  = $request->boolean('is_1099');
+            if ($user->isReader()) {
+                $data['video_consulting_enabled'] = \App\Support\VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled'));
+            }
+        }
         if ($user->isReader()) {
-            $data['watermark_enabled']        = $request->boolean('watermark_enabled');
-            $data['video_consulting_enabled'] = \App\Support\VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled'));
+            $data['watermark_enabled'] = $request->boolean('watermark_enabled');
         }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(
             ['user_id' => $user->id],
-            collect($data)->except(['email', 'password', 'password_confirmation'])->toArray()
+            collect($data)->except(['email', 'password', 'password_confirmation', 'tiers'])->toArray()
         );
 
-        $readerProfile->tiers()->sync($request->input('tiers', []));
+        $readerProfile->tiers()->sync($data['tiers'] ?? []);
 
         return redirect()->route('readers.edit', $user)->with('success', 'Reader profile updated.');
     }

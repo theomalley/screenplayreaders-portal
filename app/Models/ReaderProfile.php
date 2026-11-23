@@ -1,5 +1,10 @@
 <?php
 
+// v1.29 — 2026-11-22 | Add initialsTaken() — initials are the primary display identifier
+//                      throughout the app, but nothing checked uniqueness across either table
+//                      it lives on (reader_profiles, editor_profiles), so two people could
+//                      collide on the same ones. Used by ReaderProfileController/
+//                      EditorProfileController's store()/update() validation.
 // v1.28 — 2026-11-22 | Add video_consulting_fee_override_enabled/_amount/_percent — an
 //                      admin-set per-person override of the company's video consulting fee,
 //                      replacing VideoConsultingDuration's own base_rate/base_rate_percent for
@@ -371,5 +376,26 @@ class ReaderProfile extends Model
             'upload_warning'             => $profile?->upload_warning,
             'timezone'                   => $profile?->timezone,
         ];
+    }
+
+    /**
+     * True if $initials is already in use by a DIFFERENT user, across either
+     * reader_profiles or editor_profiles — initials are the single display
+     * identifier shared by both roles, so uniqueness has to span both tables, not
+     * just the one being saved to. $excludeUserId lets an update keep its own value.
+     */
+    public static function initialsTaken(string $initials, ?int $excludeUserId = null): bool
+    {
+        $readerTaken = static::where('initials', $initials)
+            ->when($excludeUserId, fn ($q) => $q->where('user_id', '!=', $excludeUserId))
+            ->exists();
+
+        if ($readerTaken) {
+            return true;
+        }
+
+        return EditorProfile::where('initials', $initials)
+            ->when($excludeUserId, fn ($q) => $q->where('user_id', '!=', $excludeUserId))
+            ->exists();
     }
 }
