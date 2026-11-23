@@ -44,7 +44,8 @@
                         @endforeach
                     </div>
 
-                    @if($current['count'] > 0)
+                    @if($current['count'] > 0 || count($current['adjustments']) > 0)
+                        @if($current['count'] > 0)
                         <div class="text-sm text-gray-500">
                             This period:
                             @foreach($current['type_counts'] as $label => $count)
@@ -53,6 +54,7 @@
                                 </span>
                             @endforeach
                         </div>
+                        @endif
 
                         <div class="overflow-x-auto -mx-5 border-t border-gray-100">
                             <table class="min-w-full table-fixed divide-y divide-gray-100 text-sm">
@@ -91,6 +93,16 @@
                                             <td class="px-5 py-2 text-right font-medium text-gray-700">${{ number_format($a->pay_rate, 2) }}</td>
                                         </tr>
                                     @endforeach
+                                    @foreach($current['adjustments'] as $adj)
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-5 py-2 text-indigo-500 text-xs uppercase">Adjustment</td>
+                                            <td class="px-4 py-2 text-gray-800">{{ $adj->description }}</td>
+                                            <td class="px-4 py-2 text-gray-500 text-xs">{{ $adj->created_at->format('M j, Y') }}</td>
+                                            <td class="px-5 py-2 text-right font-medium {{ (float) $adj->amount >= 0 ? 'text-gray-700' : 'text-red-600' }}">
+                                                {{ (float) $adj->amount >= 0 ? '+' : '' }}${{ number_format($adj->amount, 2) }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -125,7 +137,12 @@
                             <summary class="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 list-none">
                                 <div class="flex items-center gap-4">
                                     <span class="text-sm font-medium text-gray-700">{{ $period['label'] }}</span>
-                                    <span class="text-xs text-gray-400">{{ $period['count'] }} assignment(s)</span>
+                                    <span class="text-xs text-gray-400">
+                                        {{ $period['count'] }} assignment(s)
+                                        @if(count($period['adjustments']) > 0)
+                                            + {{ count($period['adjustments']) }} adj.
+                                        @endif
+                                    </span>
                                     <span class="text-xs text-gray-400">
                                         ${{ number_format($period['paid_total'], 2) }} paid
                                         @if($period['pending_total'] > 0)
@@ -183,6 +200,27 @@
                                                     @if($a->reader_paid_at)
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
                                                             Paid {{ $a->reader_paid_at->format('M j') }}
+                                                        </span>
+                                                    @else
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                                            Pending
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        @foreach($period['adjustments'] as $adj)
+                                            <tr>
+                                                <td class="px-4 py-2 text-gray-500 whitespace-nowrap">{{ $adj->created_at->format('M j, Y') }}</td>
+                                                <td class="px-4 py-2 font-mono text-xs text-gray-400">&mdash;</td>
+                                                <td class="px-4 py-2 text-gray-700" colspan="2">{{ $adj->description }}</td>
+                                                <td class="px-4 py-2 text-right font-medium {{ (float) $adj->amount >= 0 ? 'text-gray-700' : 'text-red-600' }}">
+                                                    {{ (float) $adj->amount >= 0 ? '+' : '' }}${{ number_format($adj->amount, 2) }}
+                                                </td>
+                                                <td class="px-4 py-2 whitespace-nowrap">
+                                                    @if($adj->reader_paid_at)
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                            Paid {{ $adj->reader_paid_at->format('M j') }}
                                                         </span>
                                                     @else
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">

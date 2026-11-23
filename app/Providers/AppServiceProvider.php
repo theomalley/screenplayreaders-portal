@@ -76,6 +76,16 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('editor-pay.manage-commission', fn (User $user) => $user->isAdmin());
         Gate::define('editor-pay.delete-adjustment', fn (User $user) => $user->isAdmin());
 
+        // EditorPaymentsController::index() / EditorEarningsController::index() — "view my
+        // own dashboard" checks with no target model, replacing inline abort_unless() calls
+        // for consistency with the Policy/Gate-only-access convention used elsewhere.
+        Gate::define('view-editor-payments', fn (User $user) => $user->isEditor());
+        Gate::define('view-editor-earnings', fn (User $user) => $user->isAdminOrEditor());
+
+        // PaymentsController::index() — the reader-facing equivalent of view-editor-payments
+        // above; replaces its own inline abort_unless() for the same reason.
+        Gate::define('view-own-payments', fn (User $user) => $user->isReader());
+
         // SettingController: ~39 actions, but only two distinct rules — kept as two Gate
         // abilities rather than 39 near-duplicate lines.
         Gate::define('manage-settings', fn (User $user) => $user->canManageAssignments());

@@ -1,5 +1,12 @@
 <?php
 
+// v1.9 — 2026-11-23 | deleteAssignmentPay()/deleteAdjustment() now wrap their check-then-act
+//                     in DB::transaction()+lockForUpdate() to close a benign but unnecessary
+//                     race between the abort_unless() read and the update/delete.
+// v1.8 — 2026-11-23 | deleteAssignmentPay() now explicitly calls ReaderCogsService::syncForOrder()
+//                     after zeroing pay_rate — Assignment's saved() hook only re-syncs reader
+//                     COGS when assigned_reader_id changes, not pay_rate, so OrderRevenue.cog_reader/
+//                     cog_total/net_revenue were going stale after a pay removal.
 // v1.7 — 2026-07-23 | Authorization moved to UserPolicy readerPay* abilities (app/Policies),
 //                     replacing inline abort_unless(...) calls. Covered by
 //                     tests/Feature/ReaderPayControllerTest.php.
@@ -20,8 +27,10 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\ReaderPayAdjustment;
 use App\Models\User;
+use App\Services\ReaderCogsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReaderPayController extends Controller
 {
@@ -94,14 +103,27 @@ class ReaderPayController extends Controller
     public function deleteAssignmentPay(Assignment $assignment)
     {
         $this->authorize('readerPayDeleteAssignmentPay', User::class);
-        abort_unless(is_null($assignment->reader_paid_at), 422);
 
-        // Zero the pay and mark as paid (now) so it drops out of the unpaid batch entirely,
-        // while keeping the assignment record intact for order/coverage history.
-        $assignment->update(['pay_rate' => 0, 'reader_paid_at' => now()]);
+        $orderNumber = $assignment->order_number;
+
+        DB::transaction(function () use ($assignment) {
+            $locked = Assignment::lockForUpdate()->find($assignment->id);
+            abort_unless(is_null($locked->reader_paid_at), 422);
+
+            // Zero the pay and mark as paid (now) so it drops out of the unpaid batch entirely,
+            // while keeping the assignment record intact for order/coverage history.
+            $locked->update(['pay_rate' => 0, 'reader_paid_at' => now()]);
+        });
+
+        // Assignment's saved() hook only re-syncs reader COGS when assigned_reader_id changes,
+        // not pay_rate — so trigger the resync explicitly here, or OrderRevenue.cog_reader/
+        // cog_total/net_revenue for this order go stale (overstating reader cost).
+        if ($orderNumber) {
+            app(ReaderCogsService::class)->syncForOrder($orderNumber);
+        }
 
         return redirect()->route('payroll.index')
-            ->with('success', "Pay for order {$assignment->order_number} removed.");
+            ->with('success', "Pay for order {$orderNumber} removed.");
     }
 
     public function clearUnpaidBatch(User $reader)
@@ -157,9 +179,13 @@ class ReaderPayController extends Controller
     public function deleteAdjustment(ReaderPayAdjustment $adjustment)
     {
         $this->authorize('readerPayDeleteAdjustment', User::class);
-        abort_unless(is_null($adjustment->reader_paid_at), 422);
 
-        $adjustment->delete();
+        DB::transaction(function () use ($adjustment) {
+            $locked = ReaderPayAdjustment::lockForUpdate()->find($adjustment->id);
+            abort_unless(is_null($locked->reader_paid_at), 422);
+
+            $locked->delete();
+        });
 
         return redirect()->route('payroll.index')
             ->with('success', 'Adjustment removed.');

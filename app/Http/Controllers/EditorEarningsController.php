@@ -1,5 +1,8 @@
 <?php
 
+// v2.6 — 2026-11-23 | Move the "can view this dashboard" check to a Gate (view-editor-earnings,
+//                     registered in AppServiceProvider), replacing the inline abort_unless() —
+//                     consistent with EditorPayController's own v2.2 Policy/Gate convention.
 // v2.5 — 2026-09-09 | BUG FIX: the "strip paid flat-rate leftovers" logic only checked
 //                     for a *pending* flat rate before deciding to add a projected one —
 //                     a flat rate genuinely paid early for the current period got
@@ -26,8 +29,9 @@ class EditorEarningsController extends Controller
 {
     public function index()
     {
+        $this->authorize('view-editor-earnings');
+
         $user = auth()->user();
-        abort_unless($user->isAdminOrEditor(), 403);
 
         $orders = OrderRevenue::where('editor_id', $user->id)
             ->where('cog_commission', '>', 0)

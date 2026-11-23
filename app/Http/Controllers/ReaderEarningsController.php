@@ -1,5 +1,11 @@
 <?php
 
+// v2.5 — 2026-11-23 | Include ReaderPayAdjustment rows in period totals/paid/pending/chart data —
+//                     markPaid() (ReaderPayController) pays adjustments out alongside completed
+//                     assignments, but this dashboard only summed Assignment.pay_rate, so a reader
+//                     with a manual adjustment saw a total that didn't match what they're actually
+//                     paid. Mirrors PaymentsController's groupIntoPeriods() (same reader-facing
+//                     cluster), grouping adjustments by created_at like that controller does.
 // v2.4 — 2026-07-11 | Exclude is_test assignments — the tier-0 onboarding sandbox must never
 //                     appear as real completed work/pay on a reader's own earnings dashboard.
 // v2.3 — 2026-06-12 | Eager-load coverageSubmission so line items can show turnaround/page count/view-coverage details
@@ -11,6 +17,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
+use App\Models\ReaderPayAdjustment;
 use App\Support\PayPeriod;
 use Carbon\Carbon;
 
@@ -29,7 +36,14 @@ class ReaderEarningsController extends Controller
             ->orderByDesc('completed_at')
             ->get();
 
-        $periods = $this->groupByPayPeriod($assignments);
+        // markPaid() (ReaderPayController) pays these out alongside completed assignments,
+        // so they must count toward this dashboard's totals too — see PaymentsController's
+        // groupIntoPeriods() for the same pattern on the sibling reader-facing page.
+        $adjustments = ReaderPayAdjustment::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $periods = $this->groupByPayPeriod($assignments, $adjustments);
 
         [$curStart, $curEnd] = PayPeriod::current();
         $curKey = $curStart->toDateString();
@@ -71,7 +85,7 @@ class ReaderEarningsController extends Controller
         ));
     }
 
-    private function groupByPayPeriod($assignments): array
+    private function groupByPayPeriod($assignments, $adjustments = []): array
     {
         $periods = [];
 
@@ -82,10 +96,28 @@ class ReaderEarningsController extends Controller
             $periods[$key]['start']        ??= $start;
             $periods[$key]['end']          ??= $end;
             $periods[$key]['assignments'][] = $a;
+            $periods[$key]['adjustments']  ??= [];
             $periods[$key]['count']         = ($periods[$key]['count']         ?? 0) + 1;
             $periods[$key]['total']         = ($periods[$key]['total']         ?? 0) + (float) $a->pay_rate;
             $periods[$key]['paid_total']    = ($periods[$key]['paid_total']    ?? 0) + ($a->reader_paid_at ? (float) $a->pay_rate : 0);
             $periods[$key]['pending_total'] = ($periods[$key]['pending_total'] ?? 0) + ($a->reader_paid_at ? 0 : (float) $a->pay_rate);
+        }
+
+        // Manual pay adjustments (bonuses/corrections/deductions) — paid out alongside
+        // assignments by ReaderPayController::markPaid(), grouped by created_at the same
+        // way PaymentsController::groupIntoPeriods() groups them for the Payments page.
+        foreach ($adjustments as $adj) {
+            [$start, $end] = PayPeriod::bounds($adj->created_at);
+            $key = $start->toDateString();
+
+            $periods[$key]['start']        ??= $start;
+            $periods[$key]['end']          ??= $end;
+            $periods[$key]['assignments']  ??= [];
+            $periods[$key]['adjustments'][] = $adj;
+            $periods[$key]['count']         ??= 0;
+            $periods[$key]['total']         = ($periods[$key]['total']         ?? 0) + (float) $adj->amount;
+            $periods[$key]['paid_total']    = ($periods[$key]['paid_total']    ?? 0) + ($adj->reader_paid_at ? (float) $adj->amount : 0);
+            $periods[$key]['pending_total'] = ($periods[$key]['pending_total'] ?? 0) + ($adj->reader_paid_at ? 0 : (float) $adj->amount);
         }
 
         return $periods;
@@ -94,7 +126,7 @@ class ReaderEarningsController extends Controller
     private function emptyPeriod(Carbon $start, Carbon $end): array
     {
         return [
-            'start' => $start, 'end' => $end, 'assignments' => [],
+            'start' => $start, 'end' => $end, 'assignments' => [], 'adjustments' => [],
             'count' => 0, 'total' => 0, 'paid_total' => 0, 'pending_total' => 0,
         ];
     }

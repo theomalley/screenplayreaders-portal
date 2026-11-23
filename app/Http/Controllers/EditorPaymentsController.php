@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-23 | Move the "can view this dashboard" check to a Gate (view-editor-payments,
+//                     registered in AppServiceProvider), replacing the inline abort_unless() —
+//                     consistent with EditorPayController's own v2.2 Policy/Gate convention.
 // v1.1 — 2026-07-17 | Scope $unpaidOrders/$paidOrders by editor_id = $user->id — previously
 //                     showed every editor's commissions to whichever editor viewed the page.
 // v1.0 — 2026-05-25 | Editor-facing payments view — pending commissions, adjustments, history
@@ -15,8 +18,9 @@ class EditorPaymentsController extends Controller
 {
     public function index()
     {
+        $this->authorize('view-editor-payments');
+
         $user = auth()->user();
-        abort_unless($user->isEditor(), 403);
 
         [$currentStart, $currentEnd] = PayPeriod::current();
 

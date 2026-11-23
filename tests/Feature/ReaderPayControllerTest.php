@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Assignment;
+use App\Models\OrderRevenue;
 use App\Models\ReaderPayAdjustment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -102,5 +103,48 @@ class ReaderPayControllerTest extends TestCase
         $adjustment = $this->makeAdjustment($reader, $reader);
 
         $this->actingAs($reader)->delete("/reader-pay/adjustment/{$adjustment->id}")->assertForbidden();
+    }
+
+    /**
+     * Regression for audit finding 2: deleteAssignmentPay() zeroes pay_rate directly, which
+     * does NOT trigger Assignment's saved() hook (that only fires on assigned_reader_id
+     * changes) — so it must explicitly resync OrderRevenue's reader COGS itself, or
+     * cog_reader/cog_total/net_revenue go stale after a pay removal.
+     */
+    public function test_delete_assignment_pay_resyncs_order_revenue_cogs(): void
+    {
+        $admin       = User::factory()->create(['role' => 'admin']);
+        $reader      = $this->makeReader();
+        $orderNumber = 'TEST-' . random_int(100000, 999999);
+
+        OrderRevenue::create([
+            'order_number'      => $orderNumber,
+            'ordered_at'        => now(),
+            'order_total'       => 159.00,
+            'cog_reader'        => 50.00,
+            'cog_processing'    => 5.00,
+            'cog_precommission' => 84.00,
+            'cog_commission'    => 5.46,
+            'cog_total'         => 60.46,
+            'net_revenue'       => 98.54,
+        ]);
+
+        $assignment = Assignment::create([
+            'order_number'       => $orderNumber,
+            'script_title'       => 'Test Script',
+            'writer_name'        => 'Test Writer',
+            'page_count'         => 100,
+            'pay_rate'           => 50,
+            'status'             => Assignment::STATUS_COMPLETED,
+            'assigned_reader_id' => $reader->id,
+        ]);
+
+        $this->actingAs($admin)->delete("/reader-pay/assignment/{$assignment->id}")->assertRedirect();
+
+        $orderRevenue = OrderRevenue::where('order_number', $orderNumber)->first();
+
+        $this->assertSame(0.0, (float) $orderRevenue->cog_reader);
+        $this->assertSame(round(5.00 + 5.46, 2), (float) $orderRevenue->cog_total);
+        $this->assertSame(round(159.00 - (5.00 + 5.46), 2), (float) $orderRevenue->net_revenue);
     }
 }

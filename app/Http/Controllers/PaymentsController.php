@@ -1,5 +1,10 @@
 <?php
 
+// v1.2 — 2026-11-23 | Move the "can view this dashboard" check to a Gate (view-own-payments,
+//                     registered in AppServiceProvider), replacing the inline abort_unless() —
+//                     consistent with every sibling controller in this cluster
+//                     (PayoutScheduleController/PayrollController's Gates, InvoiceController's
+//                     InvoicePolicy, EditorPaymentsController's view-editor-payments Gate).
 // v1.1 — 2026-07-18 | Removed where('vendor', 'sr') — it silently excluded wd (Writers Digest)
 //                     assignments from this reader-facing view, same bug as PayrollController.
 // v1.0 — 2026-05-25 | Reader-facing payments view — current period, prior unpaid, paginated history
@@ -16,8 +21,9 @@ class PaymentsController extends Controller
 {
     public function index()
     {
+        $this->authorize('view-own-payments');
+
         $user = auth()->user();
-        abort_unless($user->isReader(), 403);
 
         [$currentStart, $currentEnd] = PayPeriod::current();
 
