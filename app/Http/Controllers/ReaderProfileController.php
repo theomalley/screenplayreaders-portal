@@ -1,5 +1,9 @@
 <?php
 
+// v1.28 — 2026-11-23 | update() now also saves video_consulting_reader_request_eligible for a
+//                      reader target — it's no longer hardcoded true with no toggle (see
+//                      VideoConsultingAccess::eligibleForReaderRequestWaiver() and
+//                      profile/edit.blade.php's self-edit "Video Consulting Settings" card).
 // v1.27 — 2026-11-23 | update() now also saves the reader's notification prefs (sms_*/
 //                      email_*/notify_only_if_under_capacity) — the admin-edit page's
 //                      "Notifications" card was previously read-only display; it's now an
@@ -368,6 +372,12 @@ class ReaderProfileController extends Controller
             $data['email_notify_requests']  = $request->boolean('email_notify_requests');
             $data['email_notify_video_consulting'] = $offersVideoConsulting ? true : $request->boolean('email_notify_video_consulting');
             $data['notify_only_if_under_capacity'] = $request->boolean('notify_only_if_under_capacity');
+
+            // Reader Request fee waiver — no longer hardcoded true for readers (see
+            // VideoConsultingAccess::eligibleForReaderRequestWaiver()); now an actual editable
+            // column here too, same as EditorProfileController::update() already does for an
+            // editor/admin target.
+            $data['video_consulting_reader_request_eligible'] = $request->boolean('video_consulting_reader_request_eligible');
         }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(

@@ -449,20 +449,24 @@
                                 <span class="text-sm text-green-600 mb-2">Saved.</span>
                             @endif
                         </form>
+                    </div>
+                    @endif
 
-                        {{-- Off by default — neither an admin nor an editor writes coverage
-                             automatically (unlike a reader), so a customer who books a call with
-                             one shouldn't be offered "count them as one of my requested readers
-                             too" unless they've opted in here. --}}
-                        <form method="POST" action="{{ route('profile.reader-request-eligible') }}" class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                    {{-- Reader Request fee waiver — any role can take video calls, so this is no
+                         longer admin/editor-only (a reader used to be hardcoded always-eligible
+                         with no toggle at all — see VideoConsultingAccess::
+                         eligibleForReaderRequestWaiver()). Defaults to on for everyone; the
+                         ?? true fallback below only matters before this person's first save. --}}
+                    <div class="pb-6 mb-6 border-b border-gray-100">
+                        <form method="POST" action="{{ route('profile.reader-request-eligible') }}" class="flex items-center gap-3">
                             @csrf
                             @method('PATCH')
                             <label class="flex items-center gap-2 text-sm text-gray-700">
                                 <input type="hidden" name="video_consulting_reader_request_eligible" value="0">
                                 <input type="checkbox" name="video_consulting_reader_request_eligible" value="1"
-                                       @checked(old('video_consulting_reader_request_eligible', $videoConsultingOverrideSource?->video_consulting_reader_request_eligible ?? false))
+                                       @checked(old('video_consulting_reader_request_eligible', $vcAvailabilitySource?->video_consulting_reader_request_eligible ?? true))
                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                                Let customers count me as one of their requested readers for coverage
+                                Let customers count you as one of their requested readers for coverage
                             </label>
                             <x-primary-button>Save</x-primary-button>
                             @if (session('status') === 'reader-request-eligible-updated')
@@ -470,7 +474,6 @@
                             @endif
                         </form>
                     </div>
-                    @endif
 
                     @if (\App\Support\VideoConsultingAccess::enabledFor($user))
                     <div class="pb-6 mb-6 border-b border-gray-100">
@@ -902,20 +905,21 @@
                                 <option value="disabled" @selected(old('video_consulting_enabled', $videoConsultingOverride) === 'disabled')>Disabled{{ $isEditingReader ? ' (overrides sitewide setting)' : '' }}</option>
                             </select>
                         </div>
-                        @if ($user->isAdminOrEditor())
-                        {{-- Off by default — see the matching self-edit toggle for why. This
-                             field is part of the single outer <form id="admin-form">, saved by
-                             any Save button on this page like the select above it. --}}
+                        {{-- Defaults to on for everyone (reader included — this used to be
+                             hardcoded true for readers with no toggle at all; now it's a real,
+                             editable column for every role — see VideoConsultingAccess::
+                             eligibleForReaderRequestWaiver()). Part of this same outer
+                             <form id="admin-form">, saved by any Save button on this page like
+                             the select above it. --}}
                         <div class="mb-4">
                             <label class="flex items-center gap-2 text-sm text-gray-700">
                                 <input type="hidden" name="video_consulting_reader_request_eligible" value="0">
                                 <input type="checkbox" name="video_consulting_reader_request_eligible" value="1"
-                                       @checked(old('video_consulting_reader_request_eligible', $videoConsultingProfileSource?->video_consulting_reader_request_eligible ?? false))
+                                       @checked(old('video_consulting_reader_request_eligible', $videoConsultingProfileSource?->video_consulting_reader_request_eligible ?? true))
                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                 Let customers count them as one of their requested readers for coverage
                             </label>
                         </div>
-                        @endif
 
                         {{-- Directly editable — unlike the self-serve "Listing" card, an admin's
                              save here goes straight live (no approval step; this whole page is

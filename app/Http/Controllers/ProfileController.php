@@ -1,5 +1,9 @@
 <?php
 
+// v1.10 — 2026-11-23 | updateReaderRequestEligible() now also allows a reader (previously
+//                      admin/editor-only) — the Reader Request fee waiver eligibility toggle
+//                      is no longer hardcoded true for readers; see
+//                      VideoConsultingAccess::eligibleForReaderRequestWaiver().
 // v1.9 — 2026-11-23 | updateVideoConsultingListing(): video_consulting_note/
 //                      video_consulting_blurb_header now capped at 30 words,
 //                      video_consulting_blurb at 70 words (wordLimitRule()); all three now go
@@ -208,15 +212,17 @@ class ProfileController extends Controller
     }
 
     /**
-     * Admin/editor-only: whether this person can be counted as one of a customer's requested
-     * readers when the customer books a video call with them (the theme's Reader Request fee
-     * waiver — see VideoConsultingAccess::eligibleForReaderRequestWaiver()). A reader is
-     * always eligible and doesn't get this control; admin/editor default to off and opt in here.
+     * Reader/admin/editor self-serve: whether this person can be counted as one of a
+     * customer's requested readers when the customer books a video call with them (the
+     * theme's Reader Request fee waiver — see VideoConsultingAccess::
+     * eligibleForReaderRequestWaiver()). Defaults to true for every role; updateReaderProfileShell()
+     * is a no-op shell-seed for a reader (their readerProfile already exists) so it works
+     * unconditionally for all three roles without branching here.
      */
     public function updateReaderRequestEligible(Request $request): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($user->isAdminOrEditor(), 404);
+        abort_unless($user->isReader() || $user->isAdminOrEditor(), 404);
 
         VideoConsultingAccess::updateReaderProfileShell($user, [
             'video_consulting_reader_request_eligible' => $request->boolean('video_consulting_reader_request_eligible'),

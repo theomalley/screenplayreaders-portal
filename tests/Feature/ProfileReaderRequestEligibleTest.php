@@ -7,11 +7,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Admin/editor self-serve toggle for whether this person can be counted as one of a
- * customer's requested readers when booking a video call with them — see
- * ProfileController::updateReaderRequestEligible(). A reader is always eligible and doesn't
- * get this control; neither admin nor editor writes coverage automatically, so both default
- * to off and opt in here.
+ * Self-serve toggle (every role: reader, admin, editor) for whether this person can be
+ * counted as one of a customer's requested readers when booking a video call with them —
+ * see ProfileController::updateReaderRequestEligible() and
+ * VideoConsultingAccess::eligibleForReaderRequestWaiver(). Defaults to true for everyone
+ * until explicitly turned off.
  */
 class ProfileReaderRequestEligibleTest extends TestCase
 {
@@ -55,14 +55,16 @@ class ProfileReaderRequestEligibleTest extends TestCase
         $this->assertTrue($editor->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
     }
 
-    public function test_reader_cannot_use_this_route(): void
+    public function test_reader_can_opt_out_for_themselves(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);
         $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
 
         $this->actingAs($reader)
-            ->patch('/profile/reader-request-eligible', ['video_consulting_reader_request_eligible' => '1'])
-            ->assertNotFound();
+            ->patch('/profile/reader-request-eligible', ['video_consulting_reader_request_eligible' => '0'])
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertFalse($reader->fresh('readerProfile')->readerProfile->video_consulting_reader_request_eligible);
     }
 
     public function test_admins_own_profile_page_shows_the_toggle(): void
@@ -71,7 +73,7 @@ class ProfileReaderRequestEligibleTest extends TestCase
 
         $this->actingAs($admin)->get('/profile')
             ->assertOk()
-            ->assertSee('count me as one of their requested readers');
+            ->assertSee('count you as one of their requested readers');
     }
 
     public function test_editors_own_profile_page_shows_the_toggle(): void
@@ -81,6 +83,37 @@ class ProfileReaderRequestEligibleTest extends TestCase
 
         $this->actingAs($editor)->get('/profile')
             ->assertOk()
-            ->assertSee('count me as one of their requested readers');
+            ->assertSee('count you as one of their requested readers');
+    }
+
+    public function test_readers_own_profile_page_shows_the_toggle_when_they_offer_video_consulting(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
+        $duration = \App\Models\VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        \App\Models\ReaderVideoConsultingRate::create(['reader_id' => $reader->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $this->actingAs($reader)->get('/profile')
+            ->assertOk()
+            ->assertSee('count you as one of their requested readers');
+    }
+
+    public function test_a_reader_who_has_never_touched_the_toggle_is_eligible_by_default(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
+
+        $this->assertTrue(\App\Support\VideoConsultingAccess::eligibleForReaderRequestWaiver($reader));
+    }
+
+    public function test_an_admin_or_editor_who_has_never_touched_the_toggle_is_eligible_by_default(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = User::factory()->create(['role' => 'editor']);
+
+        $this->assertTrue(\App\Support\VideoConsultingAccess::eligibleForReaderRequestWaiver($admin));
+        $this->assertTrue(\App\Support\VideoConsultingAccess::eligibleForReaderRequestWaiver($editor));
     }
 }

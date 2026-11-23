@@ -233,6 +233,8 @@ class VideoConsultingBookingApiTest extends TestCase
         $admin->readerProfile()->create([
             'initials' => 'AR', 'first_name' => 'Admin', 'last_name' => 'Reader',
             'video_consulting_enabled' => true,
+            // Eligible by default now — explicit false here is what "opted out" means.
+            'video_consulting_reader_request_eligible' => false,
         ]);
         $duration = VideoConsultingDuration::create([
             'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
@@ -271,6 +273,8 @@ class VideoConsultingBookingApiTest extends TestCase
         $editor->readerProfile()->create([
             'initials' => 'ER', 'first_name' => 'Editor', 'last_name' => 'Reader',
             'video_consulting_enabled' => true,
+            // Eligible by default now — explicit false here is what "opted out" means.
+            'video_consulting_reader_request_eligible' => false,
         ]);
         $duration = VideoConsultingDuration::create([
             'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,

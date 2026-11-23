@@ -1,5 +1,12 @@
 <?php
 
+// v1.9 — 2026-11-23 | eligibleForReaderRequestWaiver() is now a real per-person toggle for
+//                      every role, including readers — previously hardcoded true for a reader
+//                      with no way to turn it off. Defaults to true (?? true) for anyone who
+//                      hasn't explicitly set the column, matching the new checkbox shown on
+//                      every role's Profile page and the admin-edit page (ProfileController::
+//                      updateReaderRequestEligible() / ReaderProfileController::update() /
+//                      EditorProfileController::update()).
 // v1.8 — 2026-11-19 | Removed readerCouponMatches()/describeReaderCoupon()/applyReaderDiscount()
 //                      and the reader discount-code feature entirely — readers will instead note
 //                      a sale in their existing note field and lower their own rate.
@@ -104,10 +111,10 @@ class VideoConsultingAccess
 
     /**
      * Whether this person can be counted as one of a customer's requested readers when the
-     * customer books a video call with them (theme-side: the Reader Request fee waiver). A
-     * reader always can — it's literally their job. Admin/editor can't unless they explicitly
-     * opt in on their Profile page, since neither writes coverage by default (an editor CAN,
-     * but doesn't always — it's not automatic the way it is for a reader).
+     * customer books a video call with them (theme-side: the Reader Request fee waiver).
+     * Defaults to true for every role — a reader/editor/admin who's never touched their own
+     * copy of the checkbox (profile/edit.blade.php's "Video Consulting Settings" card, or the
+     * admin-edit equivalent) is still eligible until they explicitly turn it off.
      */
     public static function eligibleForReaderRequestWaiver(?User $user): bool
     {
@@ -115,11 +122,7 @@ class VideoConsultingAccess
             return false;
         }
 
-        if ($user->isReader()) {
-            return true;
-        }
-
-        return (bool) $user->readerProfile?->video_consulting_reader_request_eligible;
+        return (bool) ($user->readerProfile?->video_consulting_reader_request_eligible ?? true);
     }
 
     /** 'default'|'enabled'|'disabled' select -> null|true|false for ReaderProfile::video_consulting_enabled. */
