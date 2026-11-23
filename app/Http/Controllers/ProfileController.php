@@ -1,5 +1,11 @@
 <?php
 
+// v1.9 — 2026-11-23 | updateVideoConsultingListing(): video_consulting_note/
+//                      video_consulting_blurb_header now capped at 30 words,
+//                      video_consulting_blurb at 70 words (wordLimitRule()); all three now go
+//                      to video_consulting_listing_pending for admin approval instead of
+//                      saving live, unless the submitter is an admin (same bypass as
+//                      updateBio()). video_consulting_call_mode is unaffected (not free text).
 // v1.8 — 2026-11-23 | updateVideoConsultingListing() now also accepts
 //                      video_consulting_blurb_header/video_consulting_blurb — a reader-authored
 //                      header + paragraph replacing the generic bio shown on the Script
@@ -226,6 +232,13 @@ class ProfileController extends Controller
      * whether their calls run as video or audio-only (VideoConsultingAccess::enabledFor()
      * gates whether this card is shown at all, same as the Rate/Availability cards), and the
      * listing header + blurb shown on the Script Consulting page in place of their bio.
+     *
+     * The three free-text fields (header/blurb/note) go through the same admin-approval gate
+     * as bio/photo/about_photo — a non-admin's submission is held in
+     * video_consulting_listing_pending (reviewed as one bundle, since they're all submitted
+     * from this same form) until an admin approves/rejects it via AdminApprovalController; an
+     * admin's own submission goes live immediately, same as updateBio(). call_mode isn't
+     * free text and always saves live regardless of role.
      */
     public function updateVideoConsultingListing(Request $request): RedirectResponse
     {
@@ -233,18 +246,36 @@ class ProfileController extends Controller
         abort_unless($user->isReader() || $user->isAdminOrEditor(), 403);
 
         $data = $request->validate([
-            'video_consulting_note'         => 'nullable|string|max:500',
-            'video_consulting_call_mode'    => 'required|in:video,audio',
-            'video_consulting_blurb_header' => 'nullable|string|max:150',
-            'video_consulting_blurb'        => 'nullable|string|max:1000',
+            'video_consulting_note'         => ['nullable', 'string', 'max:500', self::wordLimitRule(30)],
+            'video_consulting_call_mode'    => ['required', 'in:video,audio'],
+            'video_consulting_blurb_header' => ['nullable', 'string', 'max:150', self::wordLimitRule(30)],
+            'video_consulting_blurb'        => ['nullable', 'string', 'max:1000', self::wordLimitRule(70)],
         ]);
 
-        $payload = [
-            'video_consulting_note'         => trim((string) ($data['video_consulting_note'] ?? '')) ?: null,
-            'video_consulting_call_mode'    => $data['video_consulting_call_mode'],
-            'video_consulting_blurb_header' => trim((string) ($data['video_consulting_blurb_header'] ?? '')) ?: null,
-            'video_consulting_blurb'        => trim((string) ($data['video_consulting_blurb'] ?? '')) ?: null,
-        ];
+        $note        = trim((string) ($data['video_consulting_note'] ?? '')) ?: null;
+        $blurbHeader = trim((string) ($data['video_consulting_blurb_header'] ?? '')) ?: null;
+        $blurb       = trim((string) ($data['video_consulting_blurb'] ?? '')) ?: null;
+
+        if ($user->isAdmin()) {
+            $payload = [
+                'video_consulting_call_mode'    => $data['video_consulting_call_mode'],
+                'video_consulting_note'         => $note,
+                'video_consulting_blurb_header' => $blurbHeader,
+                'video_consulting_blurb'        => $blurb,
+            ];
+            $status = 'video-consulting-listing-updated';
+        } else {
+            $payload = [
+                'video_consulting_call_mode'               => $data['video_consulting_call_mode'],
+                'video_consulting_listing_pending'         => [
+                    'video_consulting_note'         => $note,
+                    'video_consulting_blurb_header' => $blurbHeader,
+                    'video_consulting_blurb'        => $blurb,
+                ],
+                'video_consulting_listing_rejection_note'  => null,
+            ];
+            $status = 'video-consulting-listing-pending';
+        }
 
         if ($user->isReader()) {
             $user->readerProfile()->updateOrCreate(['user_id' => $user->id], $payload);
@@ -252,7 +283,22 @@ class ProfileController extends Controller
             VideoConsultingAccess::updateReaderProfileShell($user, $payload);
         }
 
-        return Redirect::route('profile.edit')->with('status', 'video-consulting-listing-updated');
+        return Redirect::route('profile.edit')->with('status', $status);
+    }
+
+    /** Rejects a nullable text value with more than $max whitespace-separated words. */
+    private static function wordLimitRule(int $max): \Closure
+    {
+        return function (string $attribute, $value, \Closure $fail) use ($max) {
+            if ($value === null || $value === '') {
+                return;
+            }
+
+            $wordCount = count(preg_split('/\s+/', trim((string) $value), -1, PREG_SPLIT_NO_EMPTY));
+            if ($wordCount > $max) {
+                $fail("The {$attribute} must not be more than {$max} words.");
+            }
+        };
     }
 
     public function updateCustomMessage(Request $request): RedirectResponse

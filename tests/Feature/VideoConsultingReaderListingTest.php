@@ -47,7 +47,7 @@ class VideoConsultingReaderListingTest extends TestCase
 
     // ---- Self-serve note + call mode -----------------------------------------------------
 
-    public function test_reader_can_set_and_clear_note_and_call_mode(): void
+    public function test_reader_submission_holds_text_fields_pending_but_saves_call_mode_live(): void
     {
         $reader = User::factory()->create(['role' => 'reader']);
         $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
@@ -56,23 +56,104 @@ class VideoConsultingReaderListingTest extends TestCase
             ->patch('/profile/video-consulting-listing', [
                 'video_consulting_note' => 'Back Monday!',
                 'video_consulting_call_mode' => 'audio',
+                'video_consulting_blurb_header' => 'Animation specialist',
+                'video_consulting_blurb' => 'I love animated features.',
             ])
             ->assertRedirect(route('profile.edit'));
 
         $profile = $reader->fresh('readerProfile')->readerProfile;
-        $this->assertSame('Back Monday!', $profile->video_consulting_note);
+        // Text fields don't go live yet — held for admin approval.
+        $this->assertNull($profile->video_consulting_note);
+        $this->assertNull($profile->video_consulting_blurb_header);
+        $this->assertNull($profile->video_consulting_blurb);
+        $this->assertSame([
+            'video_consulting_note' => 'Back Monday!',
+            'video_consulting_blurb_header' => 'Animation specialist',
+            'video_consulting_blurb' => 'I love animated features.',
+        ], $profile->video_consulting_listing_pending);
+        // call_mode isn't free text — saves live immediately regardless of role.
         $this->assertSame('audio', $profile->video_consulting_call_mode);
+    }
+
+    public function test_admin_approving_pending_listing_promotes_it_live_and_clears_pending(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $profile = $reader->readerProfile()->create([
+            'initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader',
+            'video_consulting_listing_pending' => [
+                'video_consulting_note' => 'Back Monday!',
+                'video_consulting_blurb_header' => 'Animation specialist',
+                'video_consulting_blurb' => 'I love animated features.',
+            ],
+        ]);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.approvals.video-consulting-listing.approve', $reader))
+            ->assertOk();
+
+        $profile->refresh();
+        $this->assertSame('Back Monday!', $profile->video_consulting_note);
+        $this->assertSame('Animation specialist', $profile->video_consulting_blurb_header);
+        $this->assertSame('I love animated features.', $profile->video_consulting_blurb);
+        $this->assertNull($profile->video_consulting_listing_pending);
+    }
+
+    public function test_admin_rejecting_pending_listing_clears_pending_and_stores_rejection_note(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $profile = $reader->readerProfile()->create([
+            'initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader',
+            'video_consulting_listing_pending' => ['video_consulting_note' => 'Back Monday!'],
+        ]);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.approvals.video-consulting-listing.reject', $reader), ['note' => 'Please shorten this.'])
+            ->assertOk();
+
+        $profile->refresh();
+        $this->assertNull($profile->video_consulting_listing_pending);
+        $this->assertNull($profile->video_consulting_note);
+        $this->assertSame('Please shorten this.', $profile->video_consulting_listing_rejection_note);
+    }
+
+    public function test_listing_header_and_note_are_capped_at_30_words_and_blurb_at_70(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
+
+        $thirtyOneWords = implode(' ', array_fill(0, 31, 'word'));
+        $seventyOneWords = implode(' ', array_fill(0, 71, 'word'));
 
         $this->actingAs($reader)
             ->patch('/profile/video-consulting-listing', [
-                'video_consulting_note' => '   ',
                 'video_consulting_call_mode' => 'video',
+                'video_consulting_blurb_header' => $thirtyOneWords,
+                'video_consulting_note' => $thirtyOneWords,
+                'video_consulting_blurb' => $seventyOneWords,
             ])
-            ->assertRedirect(route('profile.edit'));
+            ->assertSessionHasErrors([
+                'video_consulting_blurb_header',
+                'video_consulting_note',
+                'video_consulting_blurb',
+            ]);
 
-        $profile = $reader->fresh('readerProfile')->readerProfile;
-        $this->assertNull($profile->video_consulting_note);
-        $this->assertSame('video', $profile->video_consulting_call_mode);
+        $thirtyWords = implode(' ', array_fill(0, 30, 'word'));
+        $seventyWords = implode(' ', array_fill(0, 70, 'word'));
+
+        $this->actingAs($reader)
+            ->patch('/profile/video-consulting-listing', [
+                'video_consulting_call_mode' => 'video',
+                'video_consulting_blurb_header' => $thirtyWords,
+                'video_consulting_note' => $thirtyWords,
+                'video_consulting_blurb' => $seventyWords,
+            ])
+            ->assertSessionDoesntHaveErrors([
+                'video_consulting_blurb_header',
+                'video_consulting_note',
+                'video_consulting_blurb',
+            ]);
     }
 
     public function test_admin_can_set_note_and_call_mode_for_themselves(): void

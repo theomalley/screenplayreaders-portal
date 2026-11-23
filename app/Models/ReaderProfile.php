@@ -1,5 +1,11 @@
 <?php
 
+// v1.31 — 2026-11-23 | Add video_consulting_listing_pending/video_consulting_listing_rejection_note
+//                      — video_consulting_blurb_header/video_consulting_blurb/video_consulting_note
+//                      now go through the same admin-approval gate as bio/photo/about_photo
+//                      before going live (reader/editor submissions only; admin bypasses, same
+//                      as bio). All three are reviewed together as one JSON bundle since
+//                      they're submitted from the same form.
 // v1.30 — 2026-11-23 | Add video_consulting_blurb_header/video_consulting_blurb — a
 //                      reader-authored header + paragraph shown on the Script Consulting page,
 //                      replacing the generic About-page bio that used to be shown there.
@@ -133,6 +139,8 @@ class ReaderProfile extends Model
         'video_consulting_call_mode',
         'video_consulting_blurb_header',
         'video_consulting_blurb',
+        'video_consulting_listing_pending',
+        'video_consulting_listing_rejection_note',
         'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',
@@ -191,6 +199,7 @@ class ReaderProfile extends Model
         'sms_notify_qc_fail'    => 'boolean',
         'favorite_genres'       => 'array',
         'favorite_films'        => 'array',
+        'video_consulting_listing_pending' => 'array',
     ];
 
     public function user(): BelongsTo

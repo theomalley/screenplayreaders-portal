@@ -1,5 +1,8 @@
 <?php
 
+// v1.5 — 2026-11-23 | pendingApprovals count + $hasPending badges now also include a pending
+//                      video_consulting_listing submission (lives on readerProfile regardless
+//                      of role — editors query now also eager-loads readerProfile for this).
 // v1.4 — 2026-07-23 | Authorization moved to UserPolicy (app/Policies) abilities
 //                     (viewAnyTeam, toggleVisibility), replacing inline
 //                     abort_unless(...) calls. Covered by tests/Feature/TeamControllerTest.php.
@@ -30,7 +33,7 @@ class TeamController extends Controller
             ->get();
 
         $editors = $visibleOnly(User::where('role', 'editor')
-            ->with('editorProfile')
+            ->with(['editorProfile', 'readerProfile'])
             ->withCount([
                 'assignments as active_count'    => fn($q) => $q->where('status', Assignment::STATUS_ASSIGNED),
                 'assignments as completed_count' => fn($q) => $q->where('status', Assignment::STATUS_COMPLETED),
@@ -51,12 +54,14 @@ class TeamController extends Controller
 
         $pendingApprovals = 0;
         foreach ($readers as $r) {
-            if ($r->readerProfile?->bio_pending !== null)         $pendingApprovals++;
-            if ($r->readerProfile?->about_photo_pending)          $pendingApprovals++;
+            if ($r->readerProfile?->bio_pending !== null)                       $pendingApprovals++;
+            if ($r->readerProfile?->about_photo_pending)                        $pendingApprovals++;
+            if ($r->readerProfile?->video_consulting_listing_pending !== null)  $pendingApprovals++;
         }
         foreach ($editors as $e) {
-            if ($e->editorProfile?->bio_pending !== null)         $pendingApprovals++;
-            if ($e->editorProfile?->about_photo_pending)          $pendingApprovals++;
+            if ($e->editorProfile?->bio_pending !== null)                       $pendingApprovals++;
+            if ($e->editorProfile?->about_photo_pending)                        $pendingApprovals++;
+            if ($e->readerProfile?->video_consulting_listing_pending !== null)  $pendingApprovals++;
         }
 
         return view('team.index', [

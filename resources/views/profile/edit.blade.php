@@ -589,29 +589,43 @@
                         </form>
                     </div>
 
-                    @php $vcListingSource = $user->isReader() ? $profile : ($videoConsultingOverrideSource ?? null); @endphp
+                    @php
+                        $vcListingSource = $user->isReader() ? $profile : ($videoConsultingOverrideSource ?? null);
+                        $vcListingPending = $vcListingSource?->video_consulting_listing_pending;
+                        $vcListingRejectionNote = $vcListingSource?->video_consulting_listing_rejection_note;
+                    @endphp
                     <div class="pb-6 mb-6 border-b border-gray-100">
                         <h3 class="text-sm font-semibold text-gray-900 mb-1">Listing</h3>
-                        <p class="text-sm text-gray-600 mb-4">A header + blurb customers see on the Script Consulting page, a note customers see on your listing (e.g. when you'll be back), and what kind of calls you're available for.</p>
+                        <p class="text-sm text-gray-600 mb-4">A header + blurb customers see on the Script Consulting page, a note customers see on your listing (e.g. when you'll be back), and what kind of calls you're available for. The header/note are capped at 30 words and the blurb at 70 words; changes to any of these go live once an admin approves them.</p>
+                        @if ($vcListingRejectionNote)
+                            <div class="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                <p class="font-medium">Listing change rejected by admin:</p>
+                                <p class="mt-0.5">{{ $vcListingRejectionNote }}</p>
+                            </div>
+                        @elseif ($vcListingPending !== null)
+                            <div class="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                Listing change pending admin approval.
+                            </div>
+                        @endif
                         <form method="POST" action="{{ route('profile.video-consulting-listing') }}" class="space-y-4">
                             @csrf
                             @method('PATCH')
                             <div>
-                                <x-input-label for="video_consulting_blurb_header" value="Listing header (e.g. &quot;Animation specialist will take your script to next level&quot;)" />
+                                <x-input-label for="video_consulting_blurb_header" value="Listing header (e.g. &quot;Animation specialist will take your script to next level&quot;) — up to 30 words" />
                                 <x-text-input id="video_consulting_blurb_header" name="video_consulting_blurb_header" type="text" maxlength="150"
                                     class="mt-1 block w-full"
                                     value="{{ old('video_consulting_blurb_header', $vcListingSource?->video_consulting_blurb_header) }}" />
                                 <x-input-error :messages="$errors->get('video_consulting_blurb_header')" class="mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="video_consulting_blurb" value="Listing blurb" />
+                                <x-input-label for="video_consulting_blurb" value="Listing blurb — up to 70 words" />
                                 <textarea id="video_consulting_blurb" name="video_consulting_blurb" rows="4" maxlength="1000"
                                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                           placeholder="Tell customers a bit about yourself and what you bring to a call.">{{ old('video_consulting_blurb', $vcListingSource?->video_consulting_blurb) }}</textarea>
                                 <x-input-error :messages="$errors->get('video_consulting_blurb')" class="mt-1" />
                             </div>
                             <div>
-                                <x-input-label for="video_consulting_note" value="Note (shown even when you have no open times right now)" />
+                                <x-input-label for="video_consulting_note" value="Note (shown even when you have no open times right now) — up to 30 words" />
                                 <textarea id="video_consulting_note" name="video_consulting_note" rows="2" maxlength="500"
                                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
                                           placeholder="e.g. Back and taking calls again on Monday!">{{ old('video_consulting_note', $vcListingSource?->video_consulting_note) }}</textarea>
@@ -630,6 +644,8 @@
                                 <x-primary-button>Save</x-primary-button>
                                 @if (session('status') === 'video-consulting-listing-updated')
                                     <span class="text-sm text-green-600">Saved.</span>
+                                @elseif (session('status') === 'video-consulting-listing-pending')
+                                    <span class="text-sm text-amber-600">Saved — awaiting admin approval before it goes live.</span>
                                 @endif
                             </div>
                         </form>
@@ -899,6 +915,26 @@
                                 Let customers count them as one of their requested readers for coverage
                             </label>
                         </div>
+                        @endif
+
+                        @php
+                            $vcListingPendingAdmin = $videoConsultingProfileSource?->video_consulting_listing_pending;
+                        @endphp
+                        @if ($vcListingPendingAdmin !== null)
+                            <div class="pt-4 mt-4 border-t border-gray-100">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Listing (Script Consulting page)</p>
+                                @include('partials.approval-panel', [
+                                    'type'       => 'video-consulting-listing',
+                                    'approveUrl' => route('admin.approvals.video-consulting-listing.approve', $user),
+                                    'rejectUrl'  => route('admin.approvals.video-consulting-listing.reject', $user),
+                                    'preview'    => '<div class="text-xs text-gray-600 w-full space-y-1">'
+                                        .(!empty($vcListingPendingAdmin['video_consulting_blurb_header']) ? '<p class="font-medium">'.e($vcListingPendingAdmin['video_consulting_blurb_header']).'</p>' : '')
+                                        .(!empty($vcListingPendingAdmin['video_consulting_blurb']) ? '<p>'.e($vcListingPendingAdmin['video_consulting_blurb']).'</p>' : '')
+                                        .(!empty($vcListingPendingAdmin['video_consulting_note']) ? '<p class="italic">Note: '.e($vcListingPendingAdmin['video_consulting_note']).'</p>' : '')
+                                        .'</div>',
+                                    'label'      => 'Pending listing header/blurb/note waiting for approval:',
+                                ])
+                            </div>
                         @endif
                     </div>
                 </div>

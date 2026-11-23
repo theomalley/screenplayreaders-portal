@@ -1,5 +1,12 @@
 <?php
 
+// v1.5 — 2026-11-23 | BUG FIX: generateSlots() now converts the incoming $from/$to into the
+//                      app's configured timezone (Setting::getAppTimezone()) before computing
+//                      day boundaries / applying ReaderAvailabilityRule.start_time/end_time —
+//                      those are wall-clock strings meant as local time, but $from/$to arrive
+//                      in UTC (the theme sends gmdate('c')), so setTimeFromTimeString('09:00')
+//                      was setting 9am UTC, not 9am local. Reported as a reader's Mon/Fri
+//                      9am-5pm pattern showing a 1am slot.
 // v1.4 — 2026-11-23 | Add hasConflictingBooking() — a reschedule (reader proposing candidate
 //                      slots, or a customer accepting one) used to commit the new slot_start
 //                      with ZERO check against the reader's other holds/bookings, risking a
@@ -42,6 +49,7 @@ namespace App\Services;
 
 use App\Models\ReaderAvailabilityRule;
 use App\Models\ReaderBlackoutDate;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\VideoConsultingDuration;
 use App\Models\VideoConsultingHold;
@@ -164,6 +172,14 @@ class VideoConsultingAvailabilityService
         if (! $duration) {
             return [];
         }
+
+        // $from/$to arrive as whatever timezone the caller's Carbon instances carry (the theme
+        // sends UTC) — ReaderAvailabilityRule.start_time/end_time ("09:00") are wall-clock
+        // strings meant as local time in the app's configured timezone, so the day-boundary/
+        // setTimeFromTimeString() arithmetic below must operate in that timezone too, or a
+        // rule meant as "9am" gets applied as "9am UTC" and shows up at the wrong local hour.
+        $from = $from->copy()->setTimezone(Setting::getAppTimezone());
+        $to   = $to->copy()->setTimezone(Setting::getAppTimezone());
 
         $minutes = (int) $duration->minutes;
 

@@ -171,7 +171,8 @@
                                         $initials   = $profile?->initials ?? strtoupper(substr($editor->name, 0, 2));
                                         $photoUrl   = $profile?->photo ? asset('storage/' . $profile->photo) : null;
                                         $avail      = $profile?->availability ?? 'available';
-                                        $hasPending = $profile?->bio_pending !== null || (bool) $profile?->about_photo_pending;
+                                        $hasPending = $profile?->bio_pending !== null || (bool) $profile?->about_photo_pending
+                                            || $editor->readerProfile?->video_consulting_listing_pending !== null;
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $canEditEditors ? 'cursor-pointer' : '' }}"
                                         {{ $canEditEditors ? 'onclick=window.location.href=\''.route('admin.editors.edit', $editor).'\'' : '' }}>
@@ -192,7 +193,7 @@
                                                 <div class="font-medium text-gray-900 flex items-center gap-1.5">
                                                     {{ $profile?->displayName() ?? $editor->name }}
                                                     @if ($hasPending)
-                                                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Has pending bio or photo changes"></span>
+                                                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Has pending bio, photo, or video consulting listing changes"></span>
                                                     @endif
                                                 </div>
                                             </div>
@@ -268,7 +269,8 @@
                                         $initials     = $profile?->initials ?? strtoupper(substr($reader->name, 0, 2));
                                         $photoUrl     = $profile?->photo ? asset('storage/' . $profile->photo) : null;
                                         $avail        = $profile?->availability ?? 'available';
-                                        $hasPending   = $profile?->bio_pending !== null || (bool) $profile?->about_photo_pending;
+                                        $hasPending   = $profile?->bio_pending !== null || (bool) $profile?->about_photo_pending
+                                            || $profile?->video_consulting_listing_pending !== null;
                                     @endphp
                                     <tr class="hover:bg-gray-50 {{ $canEditReaders ? 'cursor-pointer' : '' }}"
                                         {{ $canEditReaders ? 'onclick=window.location.href=\''.route('readers.edit', $reader).'\'' : '' }}>
@@ -289,7 +291,7 @@
                                                 <div class="font-medium text-gray-900 flex items-center gap-1.5">
                                                     {{ $profile?->displayName() ?? $reader->name }}
                                                     @if ($hasPending)
-                                                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Has pending bio or photo changes"></span>
+                                                        <span class="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Has pending bio, photo, or video consulting listing changes"></span>
                                                     @endif
                                                 </div>
                                             </div>

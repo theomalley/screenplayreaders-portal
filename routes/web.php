@@ -278,6 +278,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/approvals/photo/{user}/reject',        [AdminApprovalController::class, 'rejectPhoto'])->name('admin.approvals.photo.reject');
         Route::post('/admin/approvals/about-photo/{user}/approve', [AdminApprovalController::class, 'approveAboutPhoto'])->name('admin.approvals.about-photo.approve');
         Route::post('/admin/approvals/about-photo/{user}/reject',  [AdminApprovalController::class, 'rejectAboutPhoto'])->name('admin.approvals.about-photo.reject');
+        Route::post('/admin/approvals/video-consulting-listing/{user}/approve', [AdminApprovalController::class, 'approveVideoConsultingListing'])->name('admin.approvals.video-consulting-listing.approve');
+        Route::post('/admin/approvals/video-consulting-listing/{user}/reject',  [AdminApprovalController::class, 'rejectVideoConsultingListing'])->name('admin.approvals.video-consulting-listing.reject');
     });
 
     Route::get('/announcements/history', [AnnouncementController::class, 'history'])->name('announcements.history');

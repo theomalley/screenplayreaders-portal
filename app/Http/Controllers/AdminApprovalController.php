@@ -1,5 +1,15 @@
 <?php
 
+// v1.6 — 2026-11-23 | Add approveVideoConsultingListing/rejectVideoConsultingListing — the
+//                      Script Consulting listing header/blurb/note (video_consulting_
+//                      listing_pending) are reviewed together as one bundle, not as three
+//                      separate pending fields, since they're all submitted from the reader's
+//                      single "Listing" form (ProfileController::updateVideoConsultingListing()).
+//                      Unlike bio/photo, this field lives on ReaderProfile regardless of role
+//                      (admin/editor video consulting uses a shell ReaderProfile row — see
+//                      VideoConsultingAccess::updateReaderProfileShell()), so it reads
+//                      $user->readerProfile directly instead of the reader-vs-editor profile()
+//                      helper below.
 // v1.5 — 2026-07-23 | Authorization moved to the manage-profile-approvals Gate ability
 //                     (AppServiceProvider), replacing inline abort_unless(isAdmin()) —
 //                     part of standardizing on Laravel's Gate/Policy system instead of
@@ -139,6 +149,44 @@ class AdminApprovalController extends Controller
             ]);
 
             NotificationHistory::log($user->id, 'About photo rejected', $data['note'] ?? null, route('profile.edit'));
+        }
+
+        return response()->json(['status' => 'rejected']);
+    }
+
+    public function approveVideoConsultingListing(User $user): JsonResponse
+    {
+        $this->authorize('manage-profile-approvals');
+
+        $profile = $user->readerProfile;
+        $pending = $profile?->video_consulting_listing_pending;
+
+        if ($profile && $pending !== null) {
+            $profile->update(array_merge($pending, [
+                'video_consulting_listing_pending'        => null,
+                'video_consulting_listing_rejection_note'  => null,
+            ]));
+
+            NotificationHistory::log($user->id, 'Video consulting listing approved', null, route('profile.edit'));
+        }
+
+        return response()->json(['status' => 'approved']);
+    }
+
+    public function rejectVideoConsultingListing(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('manage-profile-approvals');
+
+        $data    = $request->validate(['note' => 'nullable|string|max:1000']);
+        $profile = $user->readerProfile;
+
+        if ($profile && $profile->video_consulting_listing_pending !== null) {
+            $profile->update([
+                'video_consulting_listing_pending'        => null,
+                'video_consulting_listing_rejection_note'  => $data['note'] ?? null,
+            ]);
+
+            NotificationHistory::log($user->id, 'Video consulting listing rejected', $data['note'] ?? null, route('profile.edit'));
         }
 
         return response()->json(['status' => 'rejected']);
