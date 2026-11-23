@@ -1,5 +1,13 @@
 <?php
 
+// v1.2 — 2026-11-23 | FIX: the catch block below (added in v1.1's sibling fix) was marking
+//                      the order STATUS_FAILED on every caught exception, including on a
+//                      transient attempt the queue worker was about to retry (tries=3,
+//                      backoff=60) — same race as ProcessBudgetOrder/GenerateBudgetFiles'
+//                      fix in this commit. Moved the status/error_message write out of catch
+//                      (now just logs, still rethrows) and into failed(), called only once
+//                      retries are truly exhausted — preserves the original v1.1 intent (never
+//                      leave the order silently stuck) without the premature-FAILED race.
 // v1.1 — 2026-06-21 | Download PDF/XLSX from Drive and attach to email
 // v1.0 — 2026-06-21 | Initial: sends budget files to customer via MailerSend template email
 
@@ -13,6 +21,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class DeliverBudgetEmail implements ShouldQueue
 {
@@ -79,17 +88,7 @@ class DeliverBudgetEmail implements ShouldQueue
                 'attachments' => count($attachments),
             ]);
         } catch (\Throwable $e) {
-            // FIX: this job previously had no catch (only the finally below), unlike
-            // its two sibling jobs (ProcessBudgetOrder, GenerateBudgetFiles), which
-            // both mark the order failed with a reason. A permanent mail failure here
-            // (bad address, provider outage past retries) left the order silently
-            // stuck at STATUS_PROCESSING forever, with no error surfaced anywhere.
-            $order->update([
-                'status' => BudgetOrder::STATUS_FAILED,
-                'error_message' => 'Email delivery failed: ' . $e->getMessage(),
-            ]);
-
-            Log::error('DeliverBudgetEmail: failed', [
+            Log::error('DeliverBudgetEmail: attempt failed', [
                 'budget_order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);
@@ -100,5 +99,33 @@ class DeliverBudgetEmail implements ShouldQueue
                 @unlink($tmp);
             }
         }
+    }
+
+    /**
+     * Called by the queue worker once all retries are exhausted. Only now do we mark the
+     * order as permanently failed — not on every per-attempt exception (see v1.2 changelog).
+     * Without this, a permanent mail failure (bad address, provider outage past retries)
+     * would leave the order silently stuck at STATUS_PROCESSING forever (the original v1.1 fix).
+     */
+    public function failed(Throwable $exception): void
+    {
+        Log::error('DeliverBudgetEmail: permanently failed after all retries', [
+            'budget_order_id' => $this->budgetOrderId,
+            'error' => $exception->getMessage(),
+        ]);
+
+        $order = BudgetOrder::find($this->budgetOrderId);
+        if (! $order) {
+            return;
+        }
+
+        if ($order->status === BudgetOrder::STATUS_COMPLETED) {
+            return; // a retry (or a concurrent attempt) actually completed before this failure signal landed
+        }
+
+        $order->update([
+            'status' => BudgetOrder::STATUS_FAILED,
+            'error_message' => 'Email delivery failed: ' . $exception->getMessage(),
+        ]);
     }
 }

@@ -1,5 +1,11 @@
 <?php
 
+// v1.2 — 2026-11-23 | SECURITY FIX: dropped the pdf_url/xlsx_url MailerSend personalization
+//                      fields. They were populated from BudgetFileService::generate()'s now-removed
+//                      permanent "anyone with the link" Google Drive URLs (confidential budget
+//                      financials) — redundant exposure, since the actual PDF/XLSX bytes are
+//                      already attached to this email below. $fileUrls is kept on the constructor
+//                      (still passed by DeliverBudgetEmail) for compatibility but is no longer read.
 // v1.1 — 2026-06-21 | Attach PDF and XLSX files downloaded from Drive
 // v1.0 — 2026-06-21 | Initial: delivers budget PDF (and XLSX if applicable) to customer via MailerSend
 
@@ -47,8 +53,6 @@ class BudgetDeliveryMail extends Mailable
                         'data' => [
                             'firstname' => $nameFirst,
                             'budget_title' => $title,
-                            'pdf_url' => $this->fileUrls['pdf_download_url'] ?? '',
-                            'xlsx_url' => $this->fileUrls['xlsx_download_url'] ?? '',
                             'topsheet_only' => $this->order->topsheet_only ? 'true' : 'false',
                         ],
                     ],

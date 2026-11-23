@@ -1,5 +1,16 @@
 <?php
 
+// v1.1 — 2026-11-23 | SECURITY FIX: generate() made every Drive file (spreadsheet, PDF, XLSX) —
+//                      confidential film-budget financials, deals up to $250M — permanently
+//                      viewable by "anyone with the link" via makePublic(), with no expiry or
+//                      revocation. Verified BudgetDeliveryMail already attaches the actual PDF/XLSX
+//                      bytes to the customer email (see DeliverBudgetEmail), so the public Drive
+//                      grant and the pdf_url/xlsx_url/pdf_download_url/xlsx_download_url it fed
+//                      were pure redundant exposure, not load-bearing delivery — removed makePublic()
+//                      entirely (and the now-unused url fields from generate()'s return) and stopped
+//                      granting any public Drive permission. Customer delivery remains the email
+//                      attachment plus the policy-gated BudgetOrderController::downloadPdf()/
+//                      downloadXlsx() routes.
 // v1.0 — 2026-06-21 | Initial: copies Google Sheets template, replaces {{tokens}} with payload
 //                      values, exports to PDF and XLSX, extracts topsheet page via FPDI,
 //                      uploads all files to Google Drive.
@@ -12,7 +23,6 @@ use App\Services\SpacesStorageService;
 use Google\Client;
 use Google\Service\Drive;
 use Google\Service\Drive\DriveFile;
-use Google\Service\Drive\Permission;
 use Google\Service\Sheets;
 use Google\Service\Sheets\BatchUpdateSpreadsheetRequest;
 use Google\Service\Sheets\FindReplaceRequest;
@@ -51,7 +61,6 @@ class BudgetFileService
 
         $spreadsheetId = $this->copyTemplate($title);
         $this->replaceTokens($spreadsheetId, $payload);
-        $this->makePublic($spreadsheetId);
 
         $pdfBytes = $this->exportPdf($spreadsheetId);
         $xlsxBytes = $this->exportXlsx($spreadsheetId);
@@ -59,7 +68,6 @@ class BudgetFileService
         $outputFolder = config('services.google.budget_output_folder_id');
 
         $pdfFileId = $this->uploadToFolder($outputFolder, $title . '.pdf', $pdfBytes, 'application/pdf');
-        $this->makePublic($pdfFileId);
 
         $xlsxFileId = null;
         if (! $order->topsheet_only) {
@@ -67,7 +75,6 @@ class BudgetFileService
                 $outputFolder, $title . '.xlsx', $xlsxBytes,
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             );
-            $this->makePublic($xlsxFileId);
         }
 
         // Topsheet-only: extract just page 1 from the full PDF
@@ -93,16 +100,16 @@ class BudgetFileService
             $spaces->store($spacesXlsxPath, $xlsxBytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         }
 
+        // NOTE: no public Drive URLs are returned here (see v1.1 changelog above) — these
+        // files are never given an "anyone with the link" grant. Customer delivery is the
+        // email attachment (DeliverBudgetEmail) plus BudgetOrderController::downloadPdf()/
+        // downloadXlsx(), both policy-gated.
         return [
             'spreadsheet_id' => $spreadsheetId,
             'pdf_id' => $pdfFileId,
             'xlsx_id' => $xlsxFileId,
             'spaces_pdf_path' => $spacesPdfPath,
             'spaces_xlsx_path' => $spacesXlsxPath,
-            'pdf_url' => "https://drive.google.com/file/d/{$pdfFileId}/view",
-            'xlsx_url' => $xlsxFileId ? "https://drive.google.com/file/d/{$xlsxFileId}/view" : null,
-            'pdf_download_url' => "https://drive.google.com/uc?export=download&id={$pdfFileId}",
-            'xlsx_download_url' => $xlsxFileId ? "https://drive.google.com/uc?export=download&id={$xlsxFileId}" : null,
         ];
     }
 
@@ -317,18 +324,6 @@ class BudgetFileService
 
         @unlink($sourcePath);
         return $output;
-    }
-
-    private function makePublic(string $fileId): void
-    {
-        $this->drive->permissions->create(
-            $fileId,
-            new Permission([
-                'type' => 'anyone',
-                'role' => 'reader',
-            ]),
-            ['supportsAllDrives' => true]
-        );
     }
 
     /**

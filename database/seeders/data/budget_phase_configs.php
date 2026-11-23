@@ -1,6 +1,6 @@
-// 105 positions extracted
 <?php
 
+// 105 positions extracted
 // Phase configs auto-extracted from step-02-budget-calculations.js
 // Maps line_item_id => per-phase weeks multipliers and rate modifiers by budget class (1-8)
 
