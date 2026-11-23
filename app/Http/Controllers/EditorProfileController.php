@@ -1,5 +1,12 @@
 <?php
 
+// v1.25 — 2026-11-23 | update() now also saves video_consulting_blurb_header/
+//                      video_consulting_blurb/video_consulting_note/video_consulting_call_mode
+//                      to the target's readerProfile shell (VideoConsultingAccess::
+//                      updateReaderProfileShell()) directly — live, no admin-approval step.
+//                      Submitting any of the three free-text fields also clears a pending
+//                      reader-submitted listing + its rejection note. Mirrors
+//                      ReaderProfileController's equivalent change.
 // v1.24 — 2026-11-22 | BUG FIX: update() set is_1099 and video_consulting_enabled
 //                      unconditionally — unlike is_test in the same method, which was already
 //                      correctly gated to admins only. editEditor/editors.edit can be granted to
@@ -221,6 +228,10 @@ class EditorProfileController extends Controller
             'favorite_genres.*'    => ['nullable', 'string', 'max:60'],
             'favorite_films'       => ['nullable', 'array', 'max:5'],
             'favorite_films.*'     => ['nullable', 'string', 'max:60'],
+            'video_consulting_blurb_header' => ['nullable', 'string', 'max:150', \App\Http\Controllers\ProfileController::wordLimitRule(30)],
+            'video_consulting_blurb'        => ['nullable', 'string', 'max:1000', \App\Http\Controllers\ProfileController::wordLimitRule(70)],
+            'video_consulting_note'         => ['nullable', 'string', 'max:500', \App\Http\Controllers\ProfileController::wordLimitRule(30)],
+            'video_consulting_call_mode'    => ['nullable', 'in:video,audio'],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -259,17 +270,44 @@ class EditorProfileController extends Controller
 
         $user->editorProfile()->updateOrCreate(
             ['user_id' => $user->id],
-            collect($data)->except(['email', 'password', 'password_confirmation', 'favorite_genres', 'favorite_films'])->toArray()
+            collect($data)->except([
+                'email', 'password', 'password_confirmation', 'favorite_genres', 'favorite_films',
+                'video_consulting_blurb_header', 'video_consulting_blurb', 'video_consulting_note',
+                'video_consulting_call_mode',
+            ])->toArray()
         );
+
+        // The listing's 3 free-text fields (and call_mode) live on the readerProfile shell,
+        // not editorProfile — same as favorite_genres/films below. They trim-to-null like the
+        // self-serve form does, and a request that doesn't post them at all (e.g. an older
+        // test payload) leaves the stored value untouched instead of wiping it. Submitting
+        // any of the three also clears a pending reader-submitted listing — the admin's
+        // direct save here is now authoritative.
+        $listingTextFields = ['video_consulting_blurb_header', 'video_consulting_blurb', 'video_consulting_note'];
+        $touchedListingText = false;
+        $listingShellUpdate = [];
+        foreach ($listingTextFields as $field) {
+            if ($request->has($field)) {
+                $listingShellUpdate[$field] = trim((string) ($data[$field] ?? '')) ?: null;
+                $touchedListingText = true;
+            }
+        }
+        if ($touchedListingText) {
+            $listingShellUpdate['video_consulting_listing_pending']       = null;
+            $listingShellUpdate['video_consulting_listing_rejection_note'] = null;
+        }
+        if ($request->has('video_consulting_call_mode')) {
+            $listingShellUpdate['video_consulting_call_mode'] = $data['video_consulting_call_mode'];
+        }
 
         // $user here is always an editor or admin (see abort_unless() above) — both get the
         // reader_request_eligible control (see profile/edit.blade.php); only a plain reader
         // is automatically eligible and skips it.
-        $shellUpdate = [
+        $shellUpdate = array_merge($listingShellUpdate, [
             'favorite_genres' => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []),
             'favorite_films'  => \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []),
             'video_consulting_reader_request_eligible' => $request->boolean('video_consulting_reader_request_eligible'),
-        ];
+        ]);
         if (auth()->user()->isAdmin()) {
             $shellUpdate['video_consulting_enabled'] = VideoConsultingAccess::parseOverrideInput($request->input('video_consulting_enabled'));
         }

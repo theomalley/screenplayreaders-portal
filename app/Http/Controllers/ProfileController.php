@@ -286,8 +286,12 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', $status);
     }
 
-    /** Rejects a nullable text value with more than $max whitespace-separated words. */
-    private static function wordLimitRule(int $max): \Closure
+    /**
+     * Rejects a nullable text value with more than $max whitespace-separated words. Public —
+     * ReaderProfileController/EditorProfileController reuse this for the same listing fields
+     * when an admin edits another person's Listing directly from the admin-edit page.
+     */
+    public static function wordLimitRule(int $max): \Closure
     {
         return function (string $attribute, $value, \Closure $fail) use ($max) {
             if ($value === null || $value === '') {

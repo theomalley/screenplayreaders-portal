@@ -1,5 +1,12 @@
 <?php
 
+// v1.26 — 2026-11-23 | update() now also saves video_consulting_blurb_header/
+//                      video_consulting_blurb/video_consulting_note/video_consulting_call_mode
+//                      directly (live, no admin-approval step — this whole page is already an
+//                      elevated-permission surface) when those keys are present in the request;
+//                      submitting any of the three free-text fields also clears a pending
+//                      reader-submitted listing + its rejection note, since the admin's save
+//                      here is now authoritative. Reuses ProfileController::wordLimitRule().
 // v1.25 — 2026-11-22 | BUG FIX: update() set video_consulting_enabled, requests_bypass_capacity,
 //                      and is_1099 unconditionally — unlike is_test in the same method, which was
 //                      already correctly gated to admins only. video_consulting_enabled is
@@ -255,6 +262,10 @@ class ReaderProfileController extends Controller
             // validation error.
             'tiers'                      => ['nullable', 'array'],
             'tiers.*'                    => ['integer', 'exists:tiers,id'],
+            'video_consulting_blurb_header' => ['nullable', 'string', 'max:150', \App\Http\Controllers\ProfileController::wordLimitRule(30)],
+            'video_consulting_blurb'        => ['nullable', 'string', 'max:1000', \App\Http\Controllers\ProfileController::wordLimitRule(70)],
+            'video_consulting_note'         => ['nullable', 'string', 'max:500', \App\Http\Controllers\ProfileController::wordLimitRule(30)],
+            'video_consulting_call_mode'    => ['nullable', 'in:video,audio'],
         ]);
 
         if ($request->hasFile('photo')) {
@@ -283,6 +294,29 @@ class ReaderProfileController extends Controller
 
         $data['favorite_genres'] = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_genres'] ?? []);
         $data['favorite_films']  = \App\Models\ReaderProfile::parseFavoritesInput($data['favorite_films'] ?? []);
+
+        // The listing's 3 free-text fields trim-to-null like the self-serve form does; a
+        // request that doesn't post them at all (e.g. an older test payload) leaves the
+        // stored value untouched instead of wiping it, same as the photo/about_photo
+        // file handling above. Submitting any of the three also clears a pending
+        // reader-submitted listing — the admin's direct save here is now authoritative.
+        $listingTextFields = ['video_consulting_blurb_header', 'video_consulting_blurb', 'video_consulting_note'];
+        $touchedListingText = false;
+        foreach ($listingTextFields as $field) {
+            if ($request->has($field)) {
+                $data[$field] = trim((string) ($data[$field] ?? '')) ?: null;
+                $touchedListingText = true;
+            } else {
+                unset($data[$field]);
+            }
+        }
+        if ($touchedListingText) {
+            $data['video_consulting_listing_pending']        = null;
+            $data['video_consulting_listing_rejection_note']  = null;
+        }
+        if (! $request->has('video_consulting_call_mode')) {
+            unset($data['video_consulting_call_mode']);
+        }
 
         $userUpdate = [
             'name'  => $data['first_name'] . ' ' . $data['last_name'],

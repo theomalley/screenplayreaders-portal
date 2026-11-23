@@ -219,4 +219,127 @@ class VideoConsultingReaderListingTest extends TestCase
         $response->assertOk();
         $this->assertCount(0, $response->json());
     }
+
+    // ---- Admin direct-edit of another person's listing (ReaderProfileController::update() /
+    //      EditorProfileController::update()) — unlike the reader's own self-serve form, this
+    //      goes straight live with no pending-approval step. ------------------------------------
+
+    public function test_admin_can_directly_edit_a_readers_listing_fields_live(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}", $this->readerUpdatePayload($reader, [
+                'video_consulting_blurb_header' => 'Animation specialist',
+                'video_consulting_blurb' => 'I love animated features.',
+                'video_consulting_note' => 'Back Monday!',
+                'video_consulting_call_mode' => 'audio',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $profile = $reader->fresh('readerProfile')->readerProfile;
+        $this->assertSame('Animation specialist', $profile->video_consulting_blurb_header);
+        $this->assertSame('I love animated features.', $profile->video_consulting_blurb);
+        $this->assertSame('Back Monday!', $profile->video_consulting_note);
+        $this->assertSame('audio', $profile->video_consulting_call_mode);
+    }
+
+    public function test_admin_editing_a_readers_listing_clears_a_pending_submission(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+        $reader->readerProfile->update([
+            'video_consulting_listing_pending' => ['video_consulting_note' => 'Reader submitted this'],
+            'video_consulting_listing_rejection_note' => 'Old rejection note',
+        ]);
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}", $this->readerUpdatePayload($reader, [
+                'video_consulting_note' => 'Admin override',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $profile = $reader->fresh('readerProfile')->readerProfile;
+        $this->assertSame('Admin override', $profile->video_consulting_note);
+        $this->assertNull($profile->video_consulting_listing_pending);
+        $this->assertNull($profile->video_consulting_listing_rejection_note);
+    }
+
+    public function test_admin_editing_a_readers_listing_is_capped_at_word_limits(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}", $this->readerUpdatePayload($reader, [
+                'video_consulting_blurb_header' => implode(' ', array_fill(0, 31, 'word')),
+            ]))
+            ->assertSessionHasErrors('video_consulting_blurb_header');
+    }
+
+    public function test_omitting_listing_fields_from_an_unrelated_admin_update_leaves_them_untouched(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+        $reader->readerProfile->update(['video_consulting_note' => 'Existing note']);
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}", $this->readerUpdatePayload($reader))
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('Existing note', $reader->fresh('readerProfile')->readerProfile->video_consulting_note);
+    }
+
+    public function test_admin_can_directly_edit_an_editors_listing_fields_live_via_the_readerprofile_shell(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $editor = User::factory()->create(['role' => 'editor']);
+        $editor->editorProfile()->create(['initials' => 'ED', 'first_name' => 'Ed', 'last_name' => 'Itor']);
+
+        $this->actingAs($admin)
+            ->patch("/admin/editors/{$editor->id}", $this->editorUpdatePayload($editor, [
+                'video_consulting_blurb_header' => 'Thriller specialist',
+                'video_consulting_blurb' => 'Fast turnaround, sharp notes.',
+                'video_consulting_note' => 'Booked through Friday',
+                'video_consulting_call_mode' => 'audio',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $shell = $editor->fresh('readerProfile')->readerProfile;
+        $this->assertSame('Thriller specialist', $shell->video_consulting_blurb_header);
+        $this->assertSame('Fast turnaround, sharp notes.', $shell->video_consulting_blurb);
+        $this->assertSame('Booked through Friday', $shell->video_consulting_note);
+        $this->assertSame('audio', $shell->video_consulting_call_mode);
+    }
+
+    private function makeReader(): User
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+        $reader->readerProfile()->create(['initials' => 'TR', 'first_name' => 'Test', 'last_name' => 'Reader']);
+
+        return $reader;
+    }
+
+    private function readerUpdatePayload(User $reader, array $overrides = []): array
+    {
+        return array_merge([
+            'initials' => 'TR',
+            'first_name' => 'Test',
+            'last_name' => 'Reader',
+            'email' => $reader->email,
+            'availability' => 'available',
+        ], $overrides);
+    }
+
+    private function editorUpdatePayload(User $editor, array $overrides = []): array
+    {
+        return array_merge([
+            'initials' => 'ED',
+            'first_name' => 'Ed',
+            'last_name' => 'Itor',
+            'email' => $editor->email,
+            'availability' => 'available',
+        ], $overrides);
+    }
 }

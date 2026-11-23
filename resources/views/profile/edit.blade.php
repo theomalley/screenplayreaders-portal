@@ -917,12 +917,49 @@
                         </div>
                         @endif
 
+                        {{-- Directly editable — unlike the self-serve "Listing" card, an admin's
+                             save here goes straight live (no approval step; this whole page is
+                             already an elevated-permission surface — see
+                             ReaderProfileController::update()/EditorProfileController::update()).
+                             It's part of this same outer <form id="admin-form">. --}}
+                        <div class="pt-4 mt-4 border-t border-gray-100">
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Listing (Script Consulting page)</p>
+                            <div class="mb-3">
+                                <x-input-label for="video_consulting_blurb_header" value="Listing header — up to 30 words" />
+                                <x-text-input id="video_consulting_blurb_header" name="video_consulting_blurb_header" type="text" maxlength="150"
+                                    class="mt-1 block w-full"
+                                    value="{{ old('video_consulting_blurb_header', $videoConsultingProfileSource?->video_consulting_blurb_header) }}" />
+                                <x-input-error :messages="$errors->get('video_consulting_blurb_header')" class="mt-1" />
+                            </div>
+                            <div class="mb-3">
+                                <x-input-label for="video_consulting_blurb" value="Listing blurb — up to 70 words" />
+                                <textarea id="video_consulting_blurb" name="video_consulting_blurb" rows="4" maxlength="1000"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('video_consulting_blurb', $videoConsultingProfileSource?->video_consulting_blurb) }}</textarea>
+                                <x-input-error :messages="$errors->get('video_consulting_blurb')" class="mt-1" />
+                            </div>
+                            <div class="mb-3">
+                                <x-input-label for="video_consulting_note" value="Note (shown even with no open times right now) — up to 30 words" />
+                                <textarea id="video_consulting_note" name="video_consulting_note" rows="2" maxlength="500"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('video_consulting_note', $videoConsultingProfileSource?->video_consulting_note) }}</textarea>
+                                <x-input-error :messages="$errors->get('video_consulting_note')" class="mt-1" />
+                            </div>
+                            <div class="mb-1">
+                                <label for="video_consulting_call_mode" class="block text-xs text-gray-600 mb-1">Types of calls available</label>
+                                <select id="video_consulting_call_mode" name="video_consulting_call_mode"
+                                        class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="video" @selected(old('video_consulting_call_mode', $videoConsultingProfileSource?->video_consulting_call_mode ?? 'video') === 'video')>Video + Audio</option>
+                                    <option value="audio" @selected(old('video_consulting_call_mode', $videoConsultingProfileSource?->video_consulting_call_mode ?? 'video') === 'audio')>Audio only</option>
+                                </select>
+                                <x-input-error :messages="$errors->get('video_consulting_call_mode')" class="mt-1" />
+                            </div>
+                        </div>
+
                         @php
                             $vcListingPendingAdmin = $videoConsultingProfileSource?->video_consulting_listing_pending;
                         @endphp
                         @if ($vcListingPendingAdmin !== null)
                             <div class="pt-4 mt-4 border-t border-gray-100">
-                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Listing (Script Consulting page)</p>
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Pending reader-submitted listing change</p>
                                 @include('partials.approval-panel', [
                                     'type'       => 'video-consulting-listing',
                                     'approveUrl' => route('admin.approvals.video-consulting-listing.approve', $user),
