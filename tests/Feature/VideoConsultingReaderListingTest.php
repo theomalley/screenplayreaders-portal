@@ -313,6 +313,48 @@ class VideoConsultingReaderListingTest extends TestCase
         $this->assertSame('audio', $shell->video_consulting_call_mode);
     }
 
+    public function test_admin_can_edit_a_readers_notification_prefs_from_the_same_form(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}", $this->readerUpdatePayload($reader, [
+                'sms_notifications' => '1',
+                'sms_notify_any' => '1',
+                'email_notifications' => '1',
+                'email_notify_requests' => '1',
+                'notify_only_if_under_capacity' => '1',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $profile = $reader->fresh('readerProfile')->readerProfile;
+        $this->assertTrue($profile->sms_notifications);
+        $this->assertTrue($profile->sms_notify_any);
+        $this->assertTrue($profile->email_notifications);
+        $this->assertTrue($profile->email_notify_requests);
+        $this->assertTrue($profile->notify_only_if_under_capacity);
+    }
+
+    public function test_admin_cannot_turn_off_video_consulting_email_for_a_reader_who_offers_it(): void
+    {
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $reader = $this->makeReader();
+        $duration = VideoConsultingDuration::create([
+            'minutes' => 30, 'label' => '30 Minutes', 'base_rate' => 20, 'min_reader_rate' => 10, 'max_reader_rate' => 100,
+        ]);
+        ReaderVideoConsultingRate::create(['reader_id' => $reader->id, 'duration_id' => $duration->id, 'rate' => 50]);
+
+        $this->actingAs($admin)
+            ->patch("/readers/{$reader->id}", $this->readerUpdatePayload($reader, [
+                'email_notifications' => '1',
+                'email_notify_video_consulting' => '0',
+            ]))
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertTrue($reader->fresh('readerProfile')->readerProfile->email_notify_video_consulting);
+    }
+
     private function makeReader(): User
     {
         $reader = User::factory()->create(['role' => 'reader']);

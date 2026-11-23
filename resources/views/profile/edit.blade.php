@@ -952,6 +952,9 @@
                                 </select>
                                 <x-input-error :messages="$errors->get('video_consulting_call_mode')" class="mt-1" />
                             </div>
+                            <div class="flex justify-end pt-2 border-t border-gray-100">
+                                <x-primary-button>Save Video Consulting</x-primary-button>
+                            </div>
                         </div>
 
                         @php
@@ -1374,50 +1377,126 @@
                 @endif
 
                 @if ($isEditingReader)
-                {{-- Notifications (read-only) — admin/editor view of what the reader has opted into --}}
+                {{-- Notifications — admin override of what the reader gets alerted on. Readers
+                     manage this themselves under their own Profile too (ProfileController::
+                     updateNotifications()); this just lets an admin set it on their behalf
+                     (e.g. a reader who can't access their account). Same field names/forced
+                     video-consulting-email rule as the self-serve form
+                     (profile/partials/update-notifications-form.blade.php) — part of this same
+                     outer <form id="admin-form">. --}}
+                @php $offersVideoConsultingForNotifications = $user->videoConsultingRates()->exists(); @endphp
                 <div class="p-4 sm:p-8 bg-gray-50 shadow sm:rounded-lg">
-                    <div class="max-w-xl space-y-4">
-                        <h2 class="text-lg font-medium text-gray-900">Notifications <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">read only</span></h2>
-                        <p class="text-sm text-gray-600 -mt-2">What this reader has opted into for new-assignment alerts. Readers manage this themselves under their own Profile.</p>
+                    <div class="max-w-xl space-y-4" x-data="{
+                            smsOn: {{ old('sms_notifications', $profile?->sms_notifications) ? 'true' : 'false' }},
+                            smsAny: {{ old('sms_notify_any', $profile?->sms_notify_any) ? 'true' : 'false' }},
+                            smsRush: {{ old('sms_notify_rush', $profile?->sms_notify_rush) ? 'true' : 'false' }},
+                            smsRequests: {{ old('sms_notify_requests', $profile?->sms_notify_requests) ? 'true' : 'false' }},
+                            emailOn: {{ old('email_notifications', $profile?->email_notifications) ? 'true' : 'false' }},
+                            emailAny: {{ old('email_notify_any', $profile?->email_notify_any) ? 'true' : 'false' }},
+                            emailRush: {{ old('email_notify_rush', $profile?->email_notify_rush) ? 'true' : 'false' }},
+                            emailRequests: {{ old('email_notify_requests', $profile?->email_notify_requests) ? 'true' : 'false' }}
+                        }">
+                        <h2 class="text-lg font-medium text-gray-900">Notifications <span class="ml-1 align-middle text-[11px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">admin only</span></h2>
+                        <p class="text-sm text-gray-600 -mt-2">What this reader gets alerted on for new assignments. Readers manage this themselves under their own Profile.</p>
 
                         <div>
                             <label class="flex items-center gap-2">
-                                <input type="checkbox" disabled {{ $profile?->sms_notifications ? 'checked' : '' }}
-                                    class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-100" />
+                                <input type="hidden" name="sms_notifications" value="0">
+                                <input type="checkbox" name="sms_notifications" value="1" x-model="smsOn"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                 <span class="text-sm font-medium text-gray-700">SMS notifications</span>
                             </label>
-                            @if ($profile?->sms_notifications)
-                            <ul class="mt-2 ml-7 space-y-1 text-sm text-gray-600">
-                                <li>{{ $profile->sms_notify_any ? '✓' : '—' }} Any new assignment</li>
-                                <li>{{ ($profile->sms_notify_any || $profile->sms_notify_rush) ? '✓' : '—' }} Rush assignments</li>
-                                <li>{{ ($profile->sms_notify_any || $profile->sms_notify_requests) ? '✓' : '—' }} Reader requests</li>
-                                <li>{{ $profile->sms_notify_followup ? '✓' : '—' }} Followup questions</li>
-                            </ul>
-                            @endif
+                            <div x-show="smsOn" x-cloak class="mt-2 ml-7 space-y-1">
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="hidden" name="sms_notify_any" value="0">
+                                    <input type="checkbox" name="sms_notify_any" value="1" x-model="smsAny"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    Any new assignment
+                                </label>
+                                <label class="flex items-center gap-2 text-sm" :class="smsAny ? 'text-gray-400' : 'text-gray-700'">
+                                    <input type="hidden" name="sms_notify_rush" :value="(smsAny || smsRush) ? '1' : '0'">
+                                    <input type="checkbox" :checked="smsAny || smsRush" :disabled="smsAny"
+                                        @change="smsRush = $event.target.checked"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50" />
+                                    Rush assignments
+                                </label>
+                                <label class="flex items-center gap-2 text-sm" :class="smsAny ? 'text-gray-400' : 'text-gray-700'">
+                                    <input type="hidden" name="sms_notify_requests" :value="(smsAny || smsRequests) ? '1' : '0'">
+                                    <input type="checkbox" :checked="smsAny || smsRequests" :disabled="smsAny"
+                                        @change="smsRequests = $event.target.checked"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50" />
+                                    Reader requests
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="hidden" name="sms_notify_followup" value="0">
+                                    <input type="checkbox" name="sms_notify_followup" value="1"
+                                        {{ old('sms_notify_followup', $profile?->sms_notify_followup) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    Followup questions
+                                </label>
+                            </div>
                         </div>
 
                         <div>
                             <label class="flex items-center gap-2">
-                                <input type="checkbox" disabled {{ $profile?->email_notifications ? 'checked' : '' }}
-                                    class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-100" />
+                                <input type="hidden" name="email_notifications" value="0">
+                                <input type="checkbox" name="email_notifications" value="1" x-model="emailOn"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                 <span class="text-sm font-medium text-gray-700">Email notifications</span>
                             </label>
-                            @if ($profile?->email_notifications)
-                            <ul class="mt-2 ml-7 space-y-1 text-sm text-gray-600">
-                                <li>{{ $profile->email_notify_any ? '✓' : '—' }} Any new assignment</li>
-                                <li>{{ ($profile->email_notify_any || $profile->email_notify_rush) ? '✓' : '—' }} Rush assignments</li>
-                                <li>{{ ($profile->email_notify_any || $profile->email_notify_requests) ? '✓' : '—' }} Reader requests</li>
-                                <li>✓ Followup questions <span class="text-gray-400">(always on)</span></li>
-                                <li>✓ Coverage fails QC <span class="text-gray-400">(always on)</span></li>
-                            </ul>
-                            @endif
+                            <div x-show="emailOn" x-cloak class="mt-2 ml-7 space-y-1">
+                                <label class="flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="hidden" name="email_notify_any" value="0">
+                                    <input type="checkbox" name="email_notify_any" value="1" x-model="emailAny"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    Any new assignment
+                                </label>
+                                <label class="flex items-center gap-2 text-sm" :class="emailAny ? 'text-gray-400' : 'text-gray-700'">
+                                    <input type="hidden" name="email_notify_rush" :value="(emailAny || emailRush) ? '1' : '0'">
+                                    <input type="checkbox" :checked="emailAny || emailRush" :disabled="emailAny"
+                                        @change="emailRush = $event.target.checked"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50" />
+                                    Rush assignments
+                                </label>
+                                <label class="flex items-center gap-2 text-sm" :class="emailAny ? 'text-gray-400' : 'text-gray-700'">
+                                    <input type="hidden" name="email_notify_requests" :value="(emailAny || emailRequests) ? '1' : '0'">
+                                    <input type="checkbox" :checked="emailAny || emailRequests" :disabled="emailAny"
+                                        @change="emailRequests = $event.target.checked"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 disabled:opacity-50" />
+                                    Reader requests
+                                </label>
+                                @if ($offersVideoConsultingForNotifications)
+                                    <label class="flex items-center gap-2 text-sm text-gray-400">
+                                        <input type="hidden" name="email_notify_video_consulting" value="1">
+                                        <input type="checkbox" checked disabled
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-50" />
+                                        Consulting calls
+                                    </label>
+                                    <p class="text-xs text-gray-400">They've opted into offering video consulting calls, so this one can't be turned off.</p>
+                                @else
+                                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                                        <input type="hidden" name="email_notify_video_consulting" value="0">
+                                        <input type="checkbox" name="email_notify_video_consulting" value="1"
+                                            {{ old('email_notify_video_consulting', $profile?->email_notify_video_consulting) ? 'checked' : '' }}
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                        Consulting calls
+                                    </label>
+                                @endif
+                                <p class="text-xs text-gray-400">Always emailed about a followup question, or a coverage that fails QC — those aren't optional.</p>
+                            </div>
                         </div>
 
                         <label class="flex items-center gap-2 pt-2 border-t border-gray-200">
-                            <input type="checkbox" disabled {{ $profile?->notify_only_if_under_capacity ? 'checked' : '' }}
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm disabled:opacity-100" />
+                            <input type="hidden" name="notify_only_if_under_capacity" value="0">
+                            <input type="checkbox" name="notify_only_if_under_capacity" value="1"
+                                {{ old('notify_only_if_under_capacity', $profile?->notify_only_if_under_capacity) ? 'checked' : '' }}
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                             <span class="text-sm text-gray-700">Only notify when under capacity (max {{ $profile?->effectiveCap() ?? \App\Models\ReaderProfile::globalDefaultCap() }})</span>
                         </label>
+
+                        <div class="flex justify-end pt-2 border-t border-gray-100">
+                            <x-primary-button>Save Notifications</x-primary-button>
+                        </div>
                     </div>
                 </div>
                 @endif

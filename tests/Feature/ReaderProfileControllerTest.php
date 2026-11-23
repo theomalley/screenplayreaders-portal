@@ -118,8 +118,10 @@ class ReaderProfileControllerTest extends TestCase
 
         $html = $this->actingAs($admin)->get("/readers/{$reader->id}/edit")->getContent();
 
-        // Email section (enabled) should list its sub-items; SMS (disabled) should not.
-        $this->assertStringContainsString('Coverage fails QC', $html);
+        // The admin-editable Notifications card's Alpine state should seed from the reader's
+        // actual saved values, not default to unchecked/false regardless of what's stored.
+        $this->assertStringContainsString('smsOn: false', $html);
+        $this->assertStringContainsString('emailOn: true', $html);
         $this->assertStringContainsString('Only notify when under capacity (max 5)', $html);
     }
 

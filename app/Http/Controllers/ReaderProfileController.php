@@ -1,5 +1,12 @@
 <?php
 
+// v1.27 — 2026-11-23 | update() now also saves the reader's notification prefs (sms_*/
+//                      email_*/notify_only_if_under_capacity) — the admin-edit page's
+//                      "Notifications" card was previously read-only display; it's now an
+//                      editable part of this same form, mirroring ProfileController::
+//                      updateNotifications()'s field set and its forced-true rule for
+//                      email_notify_video_consulting when the reader already has a video
+//                      consulting rate set.
 // v1.26 — 2026-11-23 | update() now also saves video_consulting_blurb_header/
 //                      video_consulting_blurb/video_consulting_note/video_consulting_call_mode
 //                      directly (live, no admin-approval step — this whole page is already an
@@ -344,6 +351,23 @@ class ReaderProfileController extends Controller
         }
         if ($user->isReader()) {
             $data['watermark_enabled'] = $request->boolean('watermark_enabled');
+
+            // Mirrors ProfileController::updateNotifications() exactly, including the forced
+            // email_notify_video_consulting=true when the reader already has a video
+            // consulting rate set (the admin-view checkbox is rendered disabled+checked in
+            // that case, same UX signal as the self-serve form, but this is the real guarantee).
+            $offersVideoConsulting = \App\Models\ReaderVideoConsultingRate::where('reader_id', $user->id)->exists();
+            $data['sms_notifications']      = $request->boolean('sms_notifications');
+            $data['sms_notify_any']         = $request->boolean('sms_notify_any');
+            $data['sms_notify_rush']        = $request->boolean('sms_notify_rush');
+            $data['sms_notify_requests']    = $request->boolean('sms_notify_requests');
+            $data['sms_notify_followup']    = $request->boolean('sms_notify_followup');
+            $data['email_notifications']    = $request->boolean('email_notifications');
+            $data['email_notify_any']       = $request->boolean('email_notify_any');
+            $data['email_notify_rush']      = $request->boolean('email_notify_rush');
+            $data['email_notify_requests']  = $request->boolean('email_notify_requests');
+            $data['email_notify_video_consulting'] = $offersVideoConsulting ? true : $request->boolean('email_notify_video_consulting');
+            $data['notify_only_if_under_capacity'] = $request->boolean('notify_only_if_under_capacity');
         }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(
