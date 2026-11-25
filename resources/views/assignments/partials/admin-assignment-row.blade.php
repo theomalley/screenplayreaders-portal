@@ -254,7 +254,7 @@
         @endif
         @if($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
         <div class="mt-1.5 md:hidden">
-            <button type="button" @click="clientFocusOpen = !clientFocusOpen"
+            <button type="button" @click="clientFocusOpen = !clientFocusOpen" :aria-expanded="clientFocusOpen"
                     class="inline-flex items-center gap-0.5 text-[10px] text-indigo-500 font-semibold hover:text-indigo-700">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3 transition-transform" :class="clientFocusOpen ? 'rotate-45' : ''">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
@@ -359,7 +359,7 @@
 
         @if($assignment->customer_focus_categories || $assignment->customer_focus_notes || $assignment->customer_focus_exclude_notes)
             <div class="hidden md:block mt-1.5">
-                <button type="button" @click="clientFocusOpen = !clientFocusOpen"
+                <button type="button" @click="clientFocusOpen = !clientFocusOpen" :aria-expanded="clientFocusOpen"
                         class="inline-flex items-center gap-0.5 text-[10px] text-indigo-500 font-semibold hover:text-indigo-700">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3 transition-transform" :class="clientFocusOpen ? 'rotate-45' : ''">
                         <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
