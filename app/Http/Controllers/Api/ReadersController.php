@@ -1,5 +1,11 @@
 <?php
 
+// v1.3 — 2026-11-27 | Drop a reader from the response entirely when they're unavailable AND
+//                     have opted into hide_when_unavailable (admin-set on their profile) —
+//                     instead of just leaving them for the caller to grey out. Affects every
+//                     consumer of this endpoint uniformly (the theme's script-coverage reader
+//                     cards, and /upload/'s "Currently unavailable" notice/dropdown, which
+//                     already excluded them from selection but still named them there).
 // v1.2 — 2026-11-27 | Add id/name/photo_url/about_photo_url/favorite_genres/favorite_films —
 //                     needed by the theme's script-coverage form to show full reader cards
 //                     (photo/bio/genres/titles) for the complete reader-request pool, not just
@@ -26,6 +32,11 @@ class ReadersController extends Controller
             ->with('readerProfile')
             ->get()
             ->filter(fn ($u) => $u->readerProfile !== null)
+            ->filter(function ($u) {
+                $profile      = $u->readerProfile;
+                $unavailable  = ($profile->availability ?? 'available') === 'unavailable';
+                return ! ($unavailable && $profile->hide_when_unavailable);
+            })
             ->map(function ($u) {
                 $profile    = $u->readerProfile;
                 $photo      = $profile->photo;

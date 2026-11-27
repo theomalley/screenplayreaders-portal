@@ -1,5 +1,8 @@
 <?php
 
+// v1.12 — 2026-11-27 | updateBio() now enforces wordLimitRule(200) on bio for a reader (self-
+//                      service). Not applied to admin/editor self-edits through this same
+//                      method — see profile/edit.blade.php's conditional word-count display.
 // v1.11 — 2026-11-27 | Add testRoom() — opens (lazily creating/renewing) this reader/admin/
 //                      editor's always-available Whereby test room, so they can check their
 //                      camera/mic any time without a real booking. See VideoConsultingCallService::
@@ -410,7 +413,11 @@ class ProfileController extends Controller
         $user = $request->user();
         abort_unless($user->isAdminOrEditor() || $user->isReader(), 403);
 
-        $data  = $request->validate(['bio' => 'nullable|string|max:5000']);
+        $bioRules = ['nullable', 'string', 'max:5000'];
+        if ($user->isReader()) {
+            $bioRules[] = self::wordLimitRule(200);
+        }
+        $data  = $request->validate(['bio' => $bioRules]);
         $bio   = $user->isAdmin()
             ? Html::sanitizeBioHtml($data['bio'] ?? null)
             : Html::sanitizeBioPlainText($data['bio'] ?? null);

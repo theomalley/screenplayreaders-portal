@@ -168,6 +168,7 @@ class ReaderProfile extends Model
         'availability',
         'availability_message',
         'upload_warning',
+        'hide_when_unavailable',
         'timezone',
     ];
 
@@ -190,6 +191,7 @@ class ReaderProfile extends Model
         'video_consulting_fee_override_amount' => 'decimal:2',
         'video_consulting_fee_override_percent' => 'decimal:2',
         'video_consulting_reader_request_eligible' => 'boolean',
+        'hide_when_unavailable' => 'boolean',
         'test_room_expires_at' => 'datetime',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',

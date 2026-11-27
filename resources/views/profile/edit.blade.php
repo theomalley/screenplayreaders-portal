@@ -332,18 +332,25 @@
                         @csrf
                         @method('PATCH')
                         <div x-data="{
-                            wrap(b,a){const t=this.$refs.ta,s=t.selectionStart,e=t.selectionEnd,v=t.value.slice(s,e);t.value=t.value.slice(0,s)+b+v+a+t.value.slice(e);t.selectionStart=s+b.length;t.selectionEnd=s+b.length+v.length;t.focus()},
-                            link(){const u=prompt('URL (include https://)');if(u)this.wrap('<a href=\''+u+'\'>', '</a>')}
-                        }">
+                            wordCount: 0,
+                            wrap(b,a){const t=this.$refs.ta,s=t.selectionStart,e=t.selectionEnd,v=t.value.slice(s,e);t.value=t.value.slice(0,s)+b+v+a+t.value.slice(e);t.selectionStart=s+b.length;t.selectionEnd=s+b.length+v.length;t.focus();this.updateWordCount()},
+                            link(){const u=prompt('URL (include https://)');if(u)this.wrap('<a href=\''+u+'\'>', '</a>')},
+                            updateWordCount(){this.wordCount=(this.$refs.ta.value.trim().match(/\S+/g)||[]).length}
+                        }" x-init="updateWordCount()">
                             <div class="flex items-center gap-1 mb-1">
                                 <button type="button" @click="wrap('<b>','</b>')" class="px-2 py-0.5 text-xs font-bold border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">B</button>
                                 <button type="button" @click="wrap('<i>','</i>')" class="px-2 py-0.5 text-xs italic border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">I</button>
                                 <button type="button" @click="link()" class="px-2 py-0.5 text-xs border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">Link</button>
                             </div>
-                            <textarea x-ref="ta" id="bio" name="bio" rows="6"
+                            <textarea x-ref="ta" id="bio" name="bio" rows="6" @input="updateWordCount()"
                                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-y"
                                       maxlength="5000"
                                       placeholder="Write your bio here. HTML is allowed.">{{ old('bio', $profile?->bio) }}</textarea>
+                            @if (auth()->user()->isReader())
+                            <p class="mt-1 text-xs" :class="wordCount > 200 ? 'text-red-600 font-semibold' : 'text-gray-400'">
+                                <span x-text="wordCount"></span> / 200 words
+                            </p>
+                            @endif
                         </div>
                         <x-input-error :messages="$errors->get('bio')" class="mt-1" />
                         <div>
@@ -853,6 +860,16 @@
                                 </div>
                                 <x-input-error :messages="$errors->get('availability')" class="mt-1" />
                             </div>
+                            @if ($isEditingReader)
+                            <div>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="hide_when_unavailable" value="1"
+                                           {{ old('hide_when_unavailable', $profile?->hide_when_unavailable) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                                    <span class="text-sm text-gray-700">Hide this reader's card entirely on the coverage form when unavailable (instead of showing it greyed out)</span>
+                                </label>
+                            </div>
+                            @endif
                             <div>
                                 <x-input-label for="availability_message" value="Availability Note (optional)" />
                                 <textarea id="availability_message" name="availability_message" rows="2"
@@ -1003,18 +1020,25 @@
                         <h2 class="text-lg font-medium text-gray-900 mb-1">Bio</h2>
                         <p class="text-sm text-gray-600 -mt-2">Displayed on the public website. HTML is supported.</p>
                         <div x-data="{
-                            wrap(b,a){const t=this.$refs.ta,s=t.selectionStart,e=t.selectionEnd,v=t.value.slice(s,e);t.value=t.value.slice(0,s)+b+v+a+t.value.slice(e);t.selectionStart=s+b.length;t.selectionEnd=s+b.length+v.length;t.focus()},
-                            link(){const u=prompt('URL (include https://)');if(u)this.wrap('<a href=\''+u+'\'>', '</a>')}
-                        }">
+                            wordCount: 0,
+                            wrap(b,a){const t=this.$refs.ta,s=t.selectionStart,e=t.selectionEnd,v=t.value.slice(s,e);t.value=t.value.slice(0,s)+b+v+a+t.value.slice(e);t.selectionStart=s+b.length;t.selectionEnd=s+b.length+v.length;t.focus();this.updateWordCount()},
+                            link(){const u=prompt('URL (include https://)');if(u)this.wrap('<a href=\''+u+'\'>', '</a>')},
+                            updateWordCount(){this.wordCount=(this.$refs.ta.value.trim().match(/\S+/g)||[]).length}
+                        }" x-init="updateWordCount()">
                             <div class="flex items-center gap-1 mb-1">
                                 <button type="button" @click="wrap('<b>','</b>')" class="px-2 py-0.5 text-xs font-bold border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">B</button>
                                 <button type="button" @click="wrap('<i>','</i>')" class="px-2 py-0.5 text-xs italic border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">I</button>
                                 <button type="button" @click="link()" class="px-2 py-0.5 text-xs border border-gray-300 rounded bg-white hover:bg-gray-100 leading-5">Link</button>
                             </div>
-                            <textarea x-ref="ta" name="bio" rows="6"
+                            <textarea x-ref="ta" name="bio" rows="6" @input="updateWordCount()"
                                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-y"
                                       maxlength="5000"
                                       placeholder="Write their bio here. HTML is allowed.">{{ old('bio', $profile?->bio) }}</textarea>
+                            @if ($isEditingReader)
+                            <p class="mt-1 text-xs" :class="wordCount > 200 ? 'text-red-600 font-semibold' : 'text-gray-400'">
+                                <span x-text="wordCount"></span> / 200 words
+                            </p>
+                            @endif
                         </div>
                         <p class="text-xs text-gray-400">HTML allowed — &lt;b&gt;, &lt;i&gt;, &lt;a href=""&gt;, etc. Max 5000 characters.</p>
                         <x-input-error :messages="$errors->get('bio')" class="mt-1" />

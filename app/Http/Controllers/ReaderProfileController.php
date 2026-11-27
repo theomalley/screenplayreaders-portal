@@ -1,5 +1,10 @@
 <?php
 
+// v1.29 — 2026-11-27 | update() now also saves hide_when_unavailable for a reader target (new
+//                      reader_profiles column) — lets the admin hide a reader's card entirely
+//                      on the theme's script-coverage form, instead of greying it out, whenever
+//                      their availability is 'unavailable'. Also enforces ProfileController::
+//                      wordLimitRule(200) on bio, matching the new word-count UI.
 // v1.28 — 2026-11-23 | update() now also saves video_consulting_reader_request_eligible for a
 //                      reader target — it's no longer hardcoded true with no toggle (see
 //                      VideoConsultingAccess::eligibleForReaderRequestWaiver() and
@@ -262,7 +267,7 @@ class ReaderProfileController extends Controller
             'availability'               => ['required', 'in:available,unavailable'],
             'availability_message'       => ['nullable', 'string', 'max:500'],
             'upload_warning'             => ['nullable', 'string', 'max:1000'],
-            'bio'                        => ['nullable', 'string', 'max:5000'],
+            'bio'                        => ['nullable', 'string', 'max:5000', \App\Http\Controllers\ProfileController::wordLimitRule(200)],
             'favorite_genres'            => ['nullable', 'array', 'max:5'],
             'favorite_genres.*'          => ['nullable', 'string', 'max:60'],
             'favorite_films'             => ['nullable', 'array', 'max:5'],
@@ -378,6 +383,10 @@ class ReaderProfileController extends Controller
             // column here too, same as EditorProfileController::update() already does for an
             // editor/admin target.
             $data['video_consulting_reader_request_eligible'] = $request->boolean('video_consulting_reader_request_eligible');
+
+            // Whether this reader's card should be hidden entirely (rather than shown greyed
+            // out) on the theme's script-coverage form when their availability is 'unavailable'.
+            $data['hide_when_unavailable'] = $request->boolean('hide_when_unavailable');
         }
 
         $readerProfile = $user->readerProfile()->updateOrCreate(
