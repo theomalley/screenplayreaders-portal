@@ -50,7 +50,10 @@ class VideoConsultingCallPageTest extends TestCase
         $this->get("/video-consulting-call/{$assignment->video_consulting_call_token}")
             ->assertOk()
             ->assertSee('60 Minute Script Consultation')
-            ->assertSee('https://example.whereby.com/room-xyz', false);
+            ->assertSee('https://example.whereby.com/room-xyz', false)
+            ->assertSee('With Test', false)
+            ->assertSee('call-timer', false)
+            ->assertDontSee('call-notes-textarea', false);
     }
 
     public function test_public_call_page_404s_for_invalid_token(): void
@@ -100,7 +103,9 @@ class VideoConsultingCallPageTest extends TestCase
         $this->actingAs($reader)
             ->get("/video-consulting-bookings/{$assignment->id}/call")
             ->assertOk()
-            ->assertSee('Jane Writer');
+            ->assertSee('With Jane', false)
+            ->assertSee('call-timer', false)
+            ->assertSee('call-notes-textarea', false);
     }
 
     public function test_other_reader_cannot_view_someone_elses_call_page(): void
@@ -130,7 +135,7 @@ class VideoConsultingCallPageTest extends TestCase
         $this->get('/video-consulting-call/preview')
             ->assertOk()
             ->assertSee('The Great American Screenplay (Sample)')
-            ->assertSee('Jane Reader', false);
+            ->assertSee('With Jane', false);
 
         $this->assertSame($before, \App\Models\Assignment::count());
     }

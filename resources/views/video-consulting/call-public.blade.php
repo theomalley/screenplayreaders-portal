@@ -16,13 +16,20 @@
         .page-header h1 { font-size: 1.75rem; font-weight: 700; color: #2b4158; line-height: 1.2; }
         .page-header .order-num { margin-top: 0.35rem; font-size: 0.875rem; color: #666; }
         .call-card { background: #fff; border: 1px solid #d5cfc0; border-radius: 8px; padding: 1.5rem; text-align: center; }
-        .call-title { font-size: 1.25rem; font-weight: 700; color: #2b4158; margin-bottom: 0.5rem; }
+        .call-title { font-size: 1.25rem; font-weight: 700; color: #2b4158; margin-bottom: 0.25rem; }
+        .call-with { font-size: 1rem; color: #444; margin-bottom: 0.5rem; }
         .call-meta { font-size: 0.95rem; color: #555; margin-bottom: 0.25rem; }
-        .call-join-btn { display: inline-block; margin-top: 1.25rem; background: #2b4158; color: #fff; border: none; border-radius: 5px; padding: 0.7rem 1.75rem; font-size: 0.95rem; font-family: 'Aleo', Georgia, serif; font-weight: 600; text-decoration: none; }
-        .call-join-btn:hover { background: #1e2f40; }
         .call-not-ready { margin-top: 1.25rem; font-size: 0.9rem; color: #8a6d00; background: #fff8e1; border: 1px solid #f0dfa0; border-radius: 6px; padding: 0.75rem 1rem; }
         .call-consent { margin-top: 1.5rem; font-size: 0.8rem; color: #888; }
         .page-header .logo { max-height: 60px; max-width: 100%; margin: 0 auto 1.25rem; display: block; }
+
+        .call-timer { margin: 1.25rem 0; }
+        .call-timer-value { font-size: 3rem; font-weight: 700; font-family: 'SF Mono', 'Menlo', monospace; color: #2b4158; line-height: 1; }
+        .call-timer-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #777; margin-top: 0.25rem; }
+        .call-timer-over .call-timer-value { color: #b45309; }
+        .call-timer-upcoming .call-timer-value { color: #555; }
+
+        .call-embed { display: block; width: 100%; height: 70vh; border: 0; border-radius: 8px; margin-top: 1rem; }
     </style>
 </head>
 <body>
@@ -37,5 +44,7 @@
 
     @include('video-consulting.partials.call-details')
 </div>
+@vite(['resources/js/app.js'])
+@include('video-consulting.partials.call-scripts')
 </body>
 </html>

@@ -1,5 +1,11 @@
 <?php
 
+// v1.4 — 2026-11-27 | The shared call-details partial now embeds the Whereby room directly
+//                      (via the <whereby-embed> web component) instead of linking out to a new
+//                      tab, adds a client-side-only countdown timer (no server round-trip, never
+//                      ends the call itself), and shows each side's first name. The reader's page
+//                      also gets a private scratch-notes panel (localStorage only, no new column
+//                      or route). No controller changes were needed — this is view-only.
 // v1.3 — 2026-11-23 | showPublic() now expires the public call link — it used to authorize
 //                      solely via the bearer token with no time bound at all, so a leaked/
 //                      forwarded link stayed valid forever. Expires at scheduled slot_end +
