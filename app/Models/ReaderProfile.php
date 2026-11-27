@@ -87,6 +87,10 @@
 // v1.3 — 2026-05-24 | isAtCapacity() respects global capacity_override setting.
 // v1.2 — 2026-05-24 | Add upload_warning field (customer-facing per-reader message on upload form)
 // v1.1 — 2026-05-24 | Add availability + availability_message fields
+// v1.32 — 2026-11-27 | Add test_room_url/test_room_name/test_room_expires_at — a persistent
+//                      Whereby camera/mic test room, separate from the per-booking Whereby
+//                      rooms stored on Assignment. See VideoConsultingCallService::
+//                      getOrCreateTestRoomUrl().
 // v1.0 — 2026-05-16 | Initial scaffold: reader profile linked 1:1 to users
 
 namespace App\Models;
@@ -141,6 +145,9 @@ class ReaderProfile extends Model
         'video_consulting_blurb',
         'video_consulting_listing_pending',
         'video_consulting_listing_rejection_note',
+        'test_room_url',
+        'test_room_name',
+        'test_room_expires_at',
         'notify_only_if_under_capacity',
         'paypal_email',
         'is_1099',
@@ -183,6 +190,7 @@ class ReaderProfile extends Model
         'video_consulting_fee_override_amount' => 'decimal:2',
         'video_consulting_fee_override_percent' => 'decimal:2',
         'video_consulting_reader_request_eligible' => 'boolean',
+        'test_room_expires_at' => 'datetime',
         'notify_only_if_under_capacity' => 'boolean',
         'sms_notifications'    => 'boolean',
         'sms_notify_any'       => 'boolean',

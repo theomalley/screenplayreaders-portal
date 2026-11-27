@@ -452,6 +452,19 @@
                     </div>
                     @endif
 
+                    {{-- Always-available personal Whereby room, separate from any real booking —
+                         lets a reader/admin/editor check their camera/mic any time. Lazily
+                         created/renewed server-side on click, so there's nothing to configure
+                         here. --}}
+                    <div class="pb-6 mb-6 border-b border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">Test Your Camera &amp; Mic</h3>
+                        <p class="text-sm text-gray-600 mb-3">Your own private room — open it any time to check your camera and microphone before a call. No one else can join.</p>
+                        <a href="{{ route('profile.test-room') }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Open Test Room
+                        </a>
+                    </div>
+
                     {{-- Reader Request fee waiver — any role can take video calls, so this is no
                          longer admin/editor-only (a reader used to be hardcoded always-eligible
                          with no toggle at all — see VideoConsultingAccess::

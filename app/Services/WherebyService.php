@@ -1,5 +1,8 @@
 <?php
 
+// v1.2 — 2026-11-27 | createRoom() takes a $recording flag (default true, unchanged for every
+//                      existing caller) — the new per-reader test room passes false so a solo
+//                      camera/mic check never starts a cloud recording.
 // v1.1 — 2026-11-11 | recording.startTrigger changed 'automatic' -> 'automatic-2nd-participant'
 //                      so a reader previewing the room solo (e.g. ahead of the scheduled call)
 //                      never starts a recording — Whereby only starts recording once a second
@@ -23,18 +26,23 @@ class WherebyService
     /**
      * @return array{meetingId: string, roomName: string, roomUrl: string}
      */
-    public function createRoom(Carbon $endDate): array
+    public function createRoom(Carbon $endDate, bool $recording = true): array
     {
+        $payload = [
+            'endDate' => $endDate->toIso8601String(),
+        ];
+
+        if ($recording) {
+            $payload['recording'] = [
+                'type' => 'cloud',
+                'destination' => ['provider' => 'whereby'],
+                'startTrigger' => 'automatic-2nd-participant',
+            ];
+        }
+
         $response = Http::withToken((string) config('services.whereby.api_key'))
             ->timeout(30)
-            ->post(self::BASE_URL . '/meetings', [
-                'endDate' => $endDate->toIso8601String(),
-                'recording' => [
-                    'type' => 'cloud',
-                    'destination' => ['provider' => 'whereby'],
-                    'startTrigger' => 'automatic-2nd-participant',
-                ],
-            ])
+            ->post(self::BASE_URL . '/meetings', $payload)
             ->throw();
 
         $data = $response->json();

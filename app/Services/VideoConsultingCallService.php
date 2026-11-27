@@ -1,5 +1,9 @@
 <?php
 
+// v1.3 — 2026-11-27 | Add getOrCreateTestRoomUrl() — a persistent, non-recording Whereby room
+//                      per reader/admin/editor for testing camera/mic, stored on ReaderProfile
+//                      rather than Assignment. Reused (not recreated) until it's within 7 days
+//                      of Whereby's endDate, then silently renewed for another 6 months.
 // v1.2 — 2026-11-11 | Video consulting Phase 7 (partial) — generate video_consulting_call_token
 //                      alongside the room so both the customer email and the reader's portal
 //                      link can point at the new portal-hosted call page instead of handing out
@@ -16,6 +20,7 @@
 namespace App\Services;
 
 use App\Models\Assignment;
+use App\Models\ReaderProfile;
 use Illuminate\Support\Facades\Log;
 
 class VideoConsultingCallService
@@ -54,5 +59,34 @@ class VideoConsultingCallService
         ]);
 
         $this->notifications->notifyCustomerCallLinkReady($assignment->fresh());
+    }
+
+    /**
+     * This reader/admin/editor's always-available Whereby room for checking their own
+     * camera/mic — reused across visits (idempotent, like createRoomFor()) and renewed for
+     * another 6 months once it's within a week of Whereby's endDate, rather than created fresh
+     * on every click. No recording — only the owner ever joins it.
+     */
+    public function getOrCreateTestRoomUrl(ReaderProfile $profile): string
+    {
+        if ($profile->test_room_url && $profile->test_room_expires_at?->isAfter(now()->addDays(7))) {
+            return $profile->test_room_url;
+        }
+
+        $endDate = now()->addMonths(6);
+        $room = $this->whereby->createRoom($endDate, recording: false);
+
+        $profile->update([
+            'test_room_url'        => $room['roomUrl'],
+            'test_room_name'       => $room['roomName'],
+            'test_room_expires_at' => $endDate,
+        ]);
+
+        Log::info('VideoConsultingCallService: test room created/renewed', [
+            'reader_profile_id' => $profile->id,
+            'room_name'          => $room['roomName'],
+        ]);
+
+        return $room['roomUrl'];
     }
 }

@@ -1,5 +1,9 @@
 <?php
 
+// v1.11 — 2026-11-27 | Add testRoom() — opens (lazily creating/renewing) this reader/admin/
+//                      editor's always-available Whereby test room, so they can check their
+//                      camera/mic any time without a real booking. See VideoConsultingCallService::
+//                      getOrCreateTestRoomUrl().
 // v1.10 — 2026-11-23 | updateReaderRequestEligible() now also allows a reader (previously
 //                      admin/editor-only) — the Reader Request fee waiver eligibility toggle
 //                      is no longer hardcoded true for readers; see
@@ -59,6 +63,7 @@ use App\Models\ReaderBlackoutDate;
 use App\Models\ReaderProfile;
 use App\Models\ReaderVideoConsultingRate;
 use App\Models\VideoConsultingDuration;
+use App\Services\VideoConsultingCallService;
 use App\Support\Html;
 use App\Support\VideoConsultingAccess;
 use Illuminate\Http\RedirectResponse;
@@ -229,6 +234,24 @@ class ProfileController extends Controller
         ]);
 
         return Redirect::route('profile.edit')->with('status', 'reader-request-eligible-updated');
+    }
+
+    /**
+     * Opens this reader/admin/editor's always-available Whereby test room (lazily created or
+     * renewed on first/next use) so they can check their camera/mic without a real booking.
+     * Same role gate as the rest of the Video Consulting Settings card — anyone who can see
+     * that card can use this. Uses VideoConsultingAccess::updateReaderProfileShell()'s
+     * create-or-fetch so an admin/editor with no ReaderProfile row yet still gets one.
+     */
+    public function testRoom(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user->isReader() || $user->isAdminOrEditor(), 403);
+
+        $profile = VideoConsultingAccess::updateReaderProfileShell($user, []);
+        $url = app(VideoConsultingCallService::class)->getOrCreateTestRoomUrl($profile);
+
+        return Redirect::away($url);
     }
 
     /**
