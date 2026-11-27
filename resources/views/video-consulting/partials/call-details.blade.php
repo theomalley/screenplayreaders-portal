@@ -10,6 +10,7 @@
         : $slotEnd;
     $extendUrl ??= null;
     $statusUrl ??= null;
+    $showNotes ??= false;
     // Audio-only is the reader's own current profile setting, read live (not snapshotted at
     // booking time) — cameraAccess=off fully disables the camera for both parties (the
     // browser never even requests permission), not just starting muted/toggleable.
@@ -34,49 +35,59 @@
     <script type="module" src="https://cdn.srv.whereby.com/embed/v3-embed.js"></script>
 @endif
 
+{{-- Two-pane layout: video on the left, everything else in a scrollable sidebar on the
+     right — keeps the whole thing fitting in one viewport instead of a long stacked page. --}}
 <div class="call-card">
-    <h1 class="call-title">{{ $assignment->script_title }}</h1>
+    <div class="call-video-pane">
+        @if ($embedRoomUrl)
+            <whereby-embed room="{{ $embedRoomUrl }}" class="call-embed"></whereby-embed>
+        @else
+            <p class="call-not-ready">
+                {{ $callPageSettings['call_page_not_ready_text'] }}
+            </p>
+        @endif
+    </div>
 
-    @if ($counterpartFirstName !== '')
-        <p class="call-with">With {{ $counterpartFirstName }}</p>
-    @endif
-    @if ($slotStart)
-        <p class="call-meta">{{ $slotStart->format('l, F j, Y \a\t g:i A T') }}</p>
-    @endif
-    @if ($durationMinutes)
-        <p class="call-meta">{{ $durationMinutes }} minutes</p>
-    @endif
+    <div class="call-info-pane">
+        <h1 class="call-title">{{ $assignment->script_title }}</h1>
 
-    @if ($slotStart && $effectiveEnd)
-        <div
-            class="call-timer"
-            x-data="callCountdown('{{ $slotStart->toIso8601String() }}', '{{ $effectiveEnd->toIso8601String() }}', {{ $extendUrl ? '\'' . $extendUrl . '\'' : 'null' }}, {{ $statusUrl ? '\'' . $statusUrl . '\'' : 'null' }}, '{{ csrf_token() }}')"
-            x-init="start()"
-            :class="stateClass"
-        >
-            <div class="call-timer-value" x-text="display"></div>
-            <div class="call-timer-label" x-text="label"></div>
-            @if ($extendUrl)
-                <button
-                    type="button"
-                    class="call-extend-btn"
-                    @click="extend()"
-                    :disabled="extending || capped"
-                    x-text="capped ? 'Max extended' : (extending ? 'Extending…' : 'Extend +5 min')"
-                ></button>
-            @endif
-        </div>
-    @endif
+        @if ($counterpartFirstName !== '')
+            <p class="call-with">With {{ $counterpartFirstName }}</p>
+        @endif
+        @if ($slotStart)
+            <p class="call-meta">{{ $slotStart->format('l, F j, Y \a\t g:i A T') }}</p>
+        @endif
+        @if ($durationMinutes)
+            <p class="call-meta">{{ $durationMinutes }} minutes</p>
+        @endif
 
-    @if ($embedRoomUrl)
-        <whereby-embed room="{{ $embedRoomUrl }}" class="call-embed"></whereby-embed>
-    @else
-        <p class="call-not-ready">
-            {{ $callPageSettings['call_page_not_ready_text'] }}
+        @if ($slotStart && $effectiveEnd)
+            <div
+                class="call-timer"
+                x-data="callCountdown('{{ $slotStart->toIso8601String() }}', '{{ $effectiveEnd->toIso8601String() }}', {{ $extendUrl ? '\'' . $extendUrl . '\'' : 'null' }}, {{ $statusUrl ? '\'' . $statusUrl . '\'' : 'null' }}, '{{ csrf_token() }}')"
+                x-init="start()"
+                :class="stateClass"
+            >
+                <div class="call-timer-value" x-text="display"></div>
+                <div class="call-timer-label" x-text="label"></div>
+                @if ($extendUrl)
+                    <button
+                        type="button"
+                        class="call-extend-btn"
+                        @click="extend()"
+                        :disabled="extending || capped"
+                        x-text="capped ? 'Max extended' : (extending ? 'Extending…' : 'Extend +5 min')"
+                    ></button>
+                @endif
+            </div>
+        @endif
+
+        @if ($showNotes)
+            @include('video-consulting.partials.call-notes')
+        @endif
+
+        <p class="call-consent">
+            {{ $callPageSettings['call_page_consent_text'] }}
         </p>
-    @endif
-
-    <p class="call-consent">
-        {{ $callPageSettings['call_page_consent_text'] }}
-    </p>
+    </div>
 </div>
