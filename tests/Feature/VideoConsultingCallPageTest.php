@@ -140,6 +140,31 @@ class VideoConsultingCallPageTest extends TestCase
         $this->assertSame($before, \App\Models\Assignment::count());
     }
 
+    public function test_admin_can_view_the_reader_styled_preview_page(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $before = \App\Models\Assignment::count();
+
+        $this->actingAs($admin)
+            ->get('/admin/video-consulting-call/preview-reader')
+            ->assertOk()
+            ->assertSee('The Great American Screenplay (Sample)')
+            ->assertSee('With Jane', false)
+            ->assertSee('call-notes-textarea', false)
+            ->assertDontSee('extend-call', false);
+
+        $this->assertSame($before, \App\Models\Assignment::count());
+    }
+
+    public function test_reader_cannot_view_the_admin_reader_preview_page(): void
+    {
+        $reader = User::factory()->create(['role' => 'reader']);
+
+        $this->actingAs($reader)
+            ->get('/admin/video-consulting-call/preview-reader')
+            ->assertForbidden();
+    }
+
     public function test_preview_page_reflects_saved_call_page_settings(): void
     {
         \App\Models\Setting::setValue('call_page_heading', 'Custom Preview Heading');

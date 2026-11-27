@@ -2,9 +2,15 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Join Call</h2>
-            <a href="{{ route('assignments.show', $assignment) }}" class="text-sm text-gray-500 hover:text-gray-700">
-                &larr; Back to Assignment
-            </a>
+            @if ($previewMode ?? false)
+                <a href="{{ route('test-data.index') }}" class="text-sm text-gray-500 hover:text-gray-700">
+                    &larr; Back to Test Data
+                </a>
+            @else
+                <a href="{{ route('assignments.show', $assignment) }}" class="text-sm text-gray-500 hover:text-gray-700">
+                    &larr; Back to Assignment
+                </a>
+            @endif
         </div>
     </x-slot>
 
@@ -21,6 +27,9 @@
         .call-timer-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-top: 0.25rem; }
         .call-timer-over .call-timer-value { color: #b45309; }
         .call-timer-upcoming .call-timer-value { color: #4b5563; }
+        .call-extend-btn { display: inline-block; margin-top: 0.6rem; background: #fff; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; padding: 0.4rem 0.9rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .call-extend-btn:hover:not(:disabled) { background: #f3f4f6; }
+        .call-extend-btn:disabled { opacity: 0.6; cursor: default; }
 
         .call-embed { display: block; width: 100%; height: 70vh; border: 0; border-radius: 8px; margin-top: 1rem; }
 

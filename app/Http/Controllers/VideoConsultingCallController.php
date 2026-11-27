@@ -1,5 +1,13 @@
 <?php
 
+// v1.5 — 2026-11-27 | Add extendCall() (reader-initiated, capped at MAX_EXTEND_MINUTES past the
+//                      scheduled end) and status() (public, token-gated poll target so the
+//                      customer's independently-loaded page picks up a reader's extension).
+//                      showPublic()'s link-expiry check now keys off
+//                      Assignment::effectiveVideoConsultingEndAt() instead of the hold's raw
+//                      slot_end, so extending the call also extends the public link. Also adds
+//                      showPreviewReader() — an admin-only synthetic-data preview of the
+//                      reader-styled call page, mirroring showPreview()'s customer-styled one.
 // v1.4 — 2026-11-27 | The shared call-details partial now embeds the Whereby room directly
 //                      (via the <whereby-embed> web component) instead of linking out to a new
 //                      tab, adds a client-side-only countdown timer (no server round-trip, never
@@ -35,19 +43,26 @@ namespace App\Http\Controllers;
 
 use App\Models\Assignment;
 use App\Models\Setting;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 class VideoConsultingCallController extends Controller
 {
-    /** How long after the scheduled call ends the public link keeps working. */
+    /** How long after the call's effective end the public link keeps working. */
     private const LINK_EXPIRY_GRACE_HOURS = 4;
+
+    /** Each click on "Extend" pushes the effective end this many minutes further out. */
+    private const EXTEND_INCREMENT_MINUTES = 5;
+
+    /** Total extension is capped this many minutes past the originally scheduled end. */
+    private const MAX_EXTEND_MINUTES = 30;
 
     public function showPublic(string $token): View
     {
         $assignment = Assignment::where('video_consulting_call_token', $token)->firstOrFail();
 
-        $slotEnd = $assignment->videoConsultingHold?->slot_end;
-        if ($slotEnd && now()->greaterThan($slotEnd->copy()->addHours(self::LINK_EXPIRY_GRACE_HOURS))) {
+        $effectiveEnd = $assignment->effectiveVideoConsultingEndAt();
+        if ($effectiveEnd && now()->greaterThan($effectiveEnd->copy()->addHours(self::LINK_EXPIRY_GRACE_HOURS))) {
             abort(410, 'This call link has expired.');
         }
 
@@ -55,6 +70,7 @@ class VideoConsultingCallController extends Controller
             'assignment'       => $assignment,
             'counterpart'      => $this->readerDisplayName($assignment),
             'callPageSettings' => Setting::getCallPageSettings(),
+            'statusUrl'        => route('video-consulting-call.status', $token),
         ]);
     }
 
@@ -66,15 +82,73 @@ class VideoConsultingCallController extends Controller
             'assignment'       => $assignment,
             'counterpart'      => $this->customerDisplayName($assignment),
             'callPageSettings' => Setting::getCallPageSettings(),
+            'extendUrl'        => route('video-consulting-call.extend', $assignment),
+        ]);
+    }
+
+    /** Reader (or admin/editor) pushes the call's effective end further out, capped. */
+    public function extendCall(Assignment $assignment): JsonResponse
+    {
+        $this->authorize('joinVideoConsultingCall', $assignment);
+
+        $slotEnd = $assignment->videoConsultingHold?->slot_end;
+        abort_if(! $slotEnd, 422, 'This call has no scheduled end to extend.');
+
+        $base = $assignment->effectiveVideoConsultingEndAt() ?? $slotEnd;
+        $capAt = $slotEnd->copy()->addMinutes(self::MAX_EXTEND_MINUTES);
+        $next = min($base->copy()->addMinutes(self::EXTEND_INCREMENT_MINUTES), $capAt);
+
+        if ($next->greaterThan($base)) {
+            $assignment->update(['video_consulting_extended_until' => $next]);
+        }
+
+        return response()->json([
+            'effective_end' => $next->toIso8601String(),
+            'capped'        => $next->greaterThanOrEqualTo($capAt),
+        ]);
+    }
+
+    /** Public, token-gated poll target — lets the customer's page pick up a reader's extension. */
+    public function status(string $token): JsonResponse
+    {
+        $assignment = Assignment::where('video_consulting_call_token', $token)->firstOrFail();
+
+        return response()->json([
+            'effective_end' => $assignment->effectiveVideoConsultingEndAt()?->toIso8601String(),
         ]);
     }
 
     /** Public, no-login style preview — synthetic sample data only, never a real Assignment. */
     public function showPreview(): View
     {
+        return view('video-consulting.call-public', [
+            'assignment'       => $this->syntheticPreviewAssignment(),
+            'counterpart'      => 'Jane Reader',
+            'callPageSettings' => Setting::getCallPageSettings(),
+            'statusUrl'        => null,
+        ]);
+    }
+
+    /** Admin-only, no real Assignment — lets admins eyeball the reader-styled page too. */
+    public function showPreviewReader(): View
+    {
+        $this->authorize('manage-test-data');
+
+        return view('video-consulting.call', [
+            'assignment'       => $this->syntheticPreviewAssignment(),
+            'counterpart'      => 'Jane Writer',
+            'callPageSettings' => Setting::getCallPageSettings(),
+            'extendUrl'        => null,
+            'previewMode'      => true,
+        ]);
+    }
+
+    private function syntheticPreviewAssignment(): object
+    {
         $slotStart = now()->addDays(2)->setTime(14, 0);
 
-        $assignment = (object) [
+        return (object) [
+            'id'                  => 0,
             'script_title'        => 'The Great American Screenplay (Sample)',
             'order_number'        => 'SAMPLE-0001',
             'whereby_room_url'    => '#',
@@ -84,12 +158,6 @@ class VideoConsultingCallController extends Controller
                 'slot_end'   => $slotStart->copy()->addMinutes(60),
             ],
         ];
-
-        return view('video-consulting.call-public', [
-            'assignment'       => $assignment,
-            'counterpart'      => 'Jane Reader',
-            'callPageSettings' => Setting::getCallPageSettings(),
-        ]);
     }
 
     private function readerDisplayName(Assignment $assignment): string

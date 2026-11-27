@@ -1,5 +1,8 @@
 <?php
 
+// v1.37 — 2026-11-27 | Add video_consulting_extended_until + effectiveVideoConsultingEndAt() —
+//                      backs the reader "Extend +5 min" button on the call page. The hold's own
+//                      slot_end stays the scheduling/payroll source of truth.
 // v1.36 — 2026-11-19 | Dropped video_consulting_coupon_code_used/video_consulting_discount_amount
 //                      — the reader discount-code feature was removed.
 // v1.34 — 2026-11-11 | Video consulting Phase 7 (partial) — add video_consulting_call_token
@@ -89,6 +92,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 // v1.27 — 2026-07-20 | Replace the tier tinyint with a tiers() belongsToMany (assignment_tier
 //                      pivot) — an assignment can now belong to any number of dynamic tiers, or
@@ -160,6 +164,7 @@ class Assignment extends Model
         'whereby_room_name',
         'video_consulting_call_token',
         'video_consulting_reminder_24h_sent_at',
+        'video_consulting_extended_until',
         'video_consulting_recording_path',
         'video_consulting_last_recording_id',
         'video_consulting_transcript',
@@ -208,6 +213,7 @@ class Assignment extends Model
             'take_me_enabled'           => 'boolean',
             'upload_link_generated_at'  => 'datetime',
             'video_consulting_reminder_24h_sent_at' => 'datetime',
+            'video_consulting_extended_until'       => 'datetime',
         ];
     }
 
@@ -598,6 +604,12 @@ class Assignment extends Model
     public function videoConsultingHold(): BelongsTo
     {
         return $this->belongsTo(VideoConsultingHold::class, 'video_consulting_hold_id');
+    }
+
+    /** The call's current effective end — the hold's scheduled slot_end, or later if extended. */
+    public function effectiveVideoConsultingEndAt(): ?Carbon
+    {
+        return $this->video_consulting_extended_until ?? $this->videoConsultingHold?->slot_end;
     }
 
     public function rescheduleOffers(): HasMany

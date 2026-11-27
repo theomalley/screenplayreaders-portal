@@ -56,6 +56,7 @@ Route::post('/followup/{token}', [FollowupFormController::class, 'submit'])->nam
 // Public video consulting Join Call page — no auth required. The literal /preview route must
 // stay registered before the {token} wildcard below, or "preview" would be swallowed as a token.
 Route::get('/video-consulting-call/preview', [\App\Http\Controllers\VideoConsultingCallController::class, 'showPreview'])->name('video-consulting-call.preview');
+Route::get('/video-consulting-call/{token}/status', [\App\Http\Controllers\VideoConsultingCallController::class, 'status'])->middleware('throttle:30,1')->name('video-consulting-call.status');
 Route::get('/video-consulting-call/{token}', [\App\Http\Controllers\VideoConsultingCallController::class, 'showPublic'])->name('video-consulting-call.public');
 
 // Public video consulting reschedule offer — no auth required
@@ -148,6 +149,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('assignments/{assignment}/decline', [AssignmentController::class, 'decline'])->name('assignments.decline');
     Route::post('assignments/{assignment}/cancel', [AssignmentController::class, 'cancel'])->name('assignments.cancel');
     Route::get('video-consulting-bookings/{assignment}/call', [\App\Http\Controllers\VideoConsultingCallController::class, 'showForReader'])->name('video-consulting-call.reader');
+    Route::post('video-consulting-bookings/{assignment}/extend-call', [\App\Http\Controllers\VideoConsultingCallController::class, 'extendCall'])->middleware('throttle:10,1')->name('video-consulting-call.extend');
     Route::post('video-consulting-bookings/{assignment}/cancel', [\App\Http\Controllers\VideoConsultingCancellationController::class, 'store'])->name('video-consulting-booking.cancel');
     Route::post('video-consulting-bookings/{assignment}/no-show', [\App\Http\Controllers\VideoConsultingNoShowController::class, 'report'])->name('video-consulting-booking.no-show.report');
     Route::get('video-consulting-bookings/{assignment}/reschedule', [\App\Http\Controllers\VideoConsultingRescheduleController::class, 'create'])->name('video-consulting-reschedule.create');
@@ -301,6 +303,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/test-data/script', [\App\Http\Controllers\TestDataController::class, 'saveTestScript'])->name('test-data.script');
         Route::post('/admin/test-data/seed', [\App\Http\Controllers\TestDataController::class, 'seed'])->name('test-data.seed');
         Route::post('/admin/test-data/video-consulting-booking', [\App\Http\Controllers\TestDataController::class, 'createTestVideoConsultingBooking'])->name('test-data.video-consulting-booking');
+        Route::get('/admin/video-consulting-call/preview-reader', [\App\Http\Controllers\VideoConsultingCallController::class, 'showPreviewReader'])->name('video-consulting-call.preview-reader');
         Route::post('/admin/test-data/reset', [\App\Http\Controllers\TestDataController::class, 'reset'])->name('test-data.reset');
         Route::delete('/admin/test-data', [\App\Http\Controllers\TestDataController::class, 'destroy'])->name('test-data.destroy');
         Route::post('/admin/test-data/auto-reset', [\App\Http\Controllers\TestDataController::class, 'toggleAutoReset'])->name('test-data.auto-reset');

@@ -111,6 +111,11 @@
                         Creates a real booking (hold + assignment) requested for the chosen reader. Have them accept it
                         from their assignments list to trigger the real Whereby room-creation flow.
                     </p>
+                    <p class="text-xs mt-1">
+                        <a href="{{ route('video-consulting-call.preview') }}" target="_blank" class="text-indigo-600 hover:text-indigo-800">Preview call page — customer view ↗</a>
+                        &middot;
+                        <a href="{{ route('video-consulting-call.preview-reader') }}" target="_blank" class="text-indigo-600 hover:text-indigo-800">Preview call page — reader view ↗</a>
+                    </p>
                 </div>
 
                 @if($videoConsultingReaders->isEmpty())
